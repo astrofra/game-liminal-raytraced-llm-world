@@ -26,6 +26,7 @@ Windows helper:
 
 ```bat
 build_release.bat
+run_cornell_test.bat
 ```
 
 ## Run
@@ -42,3 +43,9 @@ Useful overrides:
 ```
 
 Default output: `output/cornell_box.pgm`
+
+Cornell Box test helper:
+
+```bat
+run_cornell_test.bat
+```

@@ -81,3 +81,26 @@ Le projet peut maintenant etre compile sous Windows en double-cliquant le script
 Observation :
 
 Le script reste volontairement simple et depend de la disponibilite de `cmake` dans le `PATH`.
+
+## 2026-07-29 - Iteration 0003 - Helper Windows pour le test Cornell Box
+
+Objectif :
+
+Ajouter un script de test a la racine qui recompile le projet puis lance immediatement le rendu de verification de la Cornell Box.
+
+Travail effectue :
+
+- ajout de `run_cornell_test.bat`
+- invocation de `build_release.bat` en mode chainable
+- ajout d'un mode `NO_PAUSE` dans `build_release.bat` pour eviter une pause intermediaire quand il est appele par un autre batch
+- lancement automatique de l'executable fraichement compile
+- sortie du test vers `output\cornell_box_test.pgm`
+- pause finale pour lire la sortie du terminal
+
+Resultat :
+
+Le projet peut maintenant etre rebuild puis teste via un seul batch a la racine.
+
+Observation :
+
+Le script cible un rendu de verification raisonnable en `256x256` et `32 spp`, pas un rendu final haute qualite.

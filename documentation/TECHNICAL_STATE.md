@@ -12,6 +12,7 @@ Ce module constitue un bootstrap du futur sous-systeme de rendu. Il ne s'agit pa
 
 - Build natif via CMake et Visual Studio 2022.
 - Helper Windows `build_release.bat` a la racine pour configurer et compiler la version `Release`.
+- Helper Windows `run_cornell_test.bat` a la racine pour compiler puis lancer le rendu de verification Cornell Box.
 - Executable CLI `liminal_cornell_renderer`.
 - Chargement d'un fichier OBJ triangule simple.
 - Chargement d'un fichier MTL reduit en materiaux grayscale.
@@ -50,6 +51,7 @@ Helper Windows :
 
 ```bat
 build_release.bat
+run_cornell_test.bat
 ```
 
 Exemple de rendu :

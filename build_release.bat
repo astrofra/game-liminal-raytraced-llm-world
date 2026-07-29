@@ -24,10 +24,11 @@ if exist "%EXE_PATH%" (
 ) else (
     echo Build finished but EXE not found at:
     echo "%EXE_PATH%"
+    exit /b 1
 )
 
 :end
 set "SCRIPT_EXIT_CODE=%errorlevel%"
 echo.
-pause
+if not defined NO_PAUSE pause
 exit /b %SCRIPT_EXIT_CODE%
