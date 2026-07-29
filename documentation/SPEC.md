@@ -273,6 +273,39 @@ image shown to the player
 
 Each stage is both an implementation boundary and a research surface. The system should be able to inspect and debug failures at every transition.
 
+### 8.4 C++ Coding Guidelines
+
+If the project takes the C++ implementation path, it should follow an Orthodox C++-style subset adapted from Branimir Karadzic's *Orthodox C++* guidelines.
+
+The purpose of this subset is to keep the codebase simple, portable, explicit in its resource usage, and easy to debug under real production constraints.
+
+Language baseline:
+
+- Prefer `C++11` as the default language baseline for the project.
+- Do not raise the language baseline casually.
+- Any post-`C++11` feature should require a concrete justification in readability, correctness, or portability, and should be rejected if it complicates the build, dependency, or platform story.
+
+Mandatory implementation guidelines:
+
+- Prefer simple C-like C++ that remains readable to programmers comfortable with C.
+- Prefer plain structs, free functions, and narrow classes with obvious ownership over deep inheritance or abstraction-heavy designs.
+- Do not use exceptions.
+- Do not use RTTI.
+- Do not use `iostream` or `stringstream`; use explicit logging and `printf`-style formatting instead.
+- Prefer C runtime headers such as `<stdio.h>`, `<stdlib.h>`, `<string.h>`, and `<math.h>` over C++ wrapper headers when practical.
+- Avoid STL containers or helpers that hide allocation behavior in runtime-critical code.
+- Keep memory ownership and allocator boundaries explicit in subsystem APIs.
+- Avoid template metaprogramming unless it clearly reduces complexity instead of increasing it.
+- Do not use C++ modules.
+- Treat newer standard features as opt-in exceptions, not as the default style of the codebase.
+
+Project-level implications:
+
+- The renderer, scene pipeline, save/load layer, and inference integration should be debuggable without relying on exceptions, RTTI, or heavy template indirection.
+- Subsystem boundaries should avoid hidden allocations and implicit ownership transfer.
+- External dependencies should preferably tolerate `no-exceptions` and `no-rtti` builds.
+- The preferred toolchain target is a conservative `C++11` subset with selectively approved later features only when their value is concrete and their cost is negligible.
+
 ## 9. World Model
 
 The world model should be intentionally asymmetric:
@@ -659,9 +692,11 @@ To keep the project achievable, v1 should commit to the following:
 - use `llama.cpp`
 - avoid Python and Ollama entirely
 - use `Ministral 3:14b` if licensing and compatibility allow it
+- if using C++, keep `C++11` as the baseline language target
 - treat the proprietary primitive scene format as the default rendering input
 - keep `.OBJ` generation experimental
 - preserve local continuity rather than global map consistency
+- if using C++, follow an Orthodox C++ subset with no exceptions, no RTTI, no modules, and explicit memory ownership
 - expose timing, validation, and debug data from the start
 - design the renderer around grayscale, camera-light, and noisy radiosity from the start
 - prioritize a research-grade vertical slice before full product ambitions
