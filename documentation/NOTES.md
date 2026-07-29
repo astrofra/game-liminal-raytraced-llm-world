@@ -60,9 +60,9 @@ Le rendu visuel est volontairement limité :
 
 L’image n’est plus le centre spectaculaire du système. Elle devient l’empreinte, la traduction ou parfois le résidu imparfait de ce que le modèle affirme dans le texte.
 
-## 4. Les réserves formulées par le directeur de thèse
+## 4. Les réserves à l'aune du sujet de thèse
 
-Le retour du directeur de thèse soulève plusieurs difficultés légitimes.
+La confrontation au sujet de thèse soulève plusieurs difficultés légitimes.
 
 ### 4.1. Le risque de la démonstration technique
 
@@ -86,10 +86,6 @@ Il serait fragile de se présenter soudainement comme spécialiste de la qualit�
 Le projet doctoral porte sur la démoscène, son histoire, ses formes contemporaines et sa postérité à l’ère de l’intelligence artificielle. Une fiction interactive générative n’est pas automatiquement un objet démoscène.
 
 La simple présence de jeux dans les bases de données de la scène ne suffit pas à établir un lien scientifique solide.
-
-### 4.4. Le biais de l’œuvre créée pour une conférence
-
-La démarche peut sembler inversée : au lieu de disposer d’une pratique ou d’un objet de recherche puis de chercher un lieu adapté pour en parler, le projet est développé après l’acceptation d’une proposition, afin de produire ce qui avait été annoncé.
 
 Ce biais devient problématique si l’œuvre est conçue uniquement pour illustrer une conclusion déjà fixée.
 
@@ -219,9 +215,9 @@ Le prototype devient alors le descendant fictif d’une branche dans laquelle :
 
 auraient continué à évoluer ensemble.
 
-## 11. Répondre au biais de la création pour un colloque
+## 11. Valoriser la création au sein du colloque
 
-Le colloque n’est pas nécessairement l’origine du projet. Il peut être compris comme son catalyseur.
+Le colloque peut être compris comme le catalyseur du projet.
 
 Le prototype prolonge des préoccupations déjà présentes :
 
@@ -233,7 +229,7 @@ Le prototype prolonge des préoccupations déjà présentes :
 - recherche sur la démoscène ;
 - interrogation sur les formes contemporaines de création avec l’IA.
 
-L’acceptation au colloque fournit une échéance et oblige à formaliser ces éléments dans une œuvre cohérente.
+L’acceptation au colloque fournit une échéance et permet de formaliser ces éléments dans une œuvre cohérente.
 
 Pour éviter que le prototype ne soit qu’une illustration, il doit être traité comme un instrument d’enquête. Sa réalisation doit pouvoir contredire, compliquer ou déplacer l’hypothèse initiale.
 
