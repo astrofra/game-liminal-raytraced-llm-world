@@ -1,0 +1,104 @@
+# Technical State
+
+Derniere mise a jour : 2026-07-29
+
+## Resume
+
+Le depot contient actuellement un premier module de rendu natif en C++11 centre sur une Cornell Box en niveaux de gris.
+
+Ce module constitue un bootstrap du futur sous-systeme de rendu. Il ne s'agit pas encore du renderer final du jeu, mais d'une premiere base executable, compilable et documentee.
+
+## Fonctionnalites presentes
+
+- Build natif via CMake et Visual Studio 2022.
+- Helper Windows `build_release.bat` a la racine pour configurer et compiler la version `Release`.
+- Executable CLI `liminal_cornell_renderer`.
+- Chargement d'un fichier OBJ triangule simple.
+- Chargement d'un fichier MTL reduit en materiaux grayscale.
+- Reconstruction locale de la lumiere de la Cornell Box a partir des metadonnees de la scene.
+- Structure d'acceleration BVH sur triangles.
+- Intersections rayon/AABB et rayon/triangle.
+- Path tracing diffus simple avec :
+  - echantillonnage direct de la lumiere
+  - un petit nombre de rebonds diffus
+  - roulette russe
+  - clamp simple des contributions extremes
+- Sortie image en `PGM` binaire.
+- Mesure du temps de chargement et du temps de rendu.
+
+## Fichiers importants
+
+- [../CMakeLists.txt](/C:/works/projects/game-liminal-raytraced-llm-world/CMakeLists.txt:1) : configuration du build.
+- [../src/core.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/core.h:1) : types de base, math, RNG, configuration de rendu.
+- [../src/scene.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.h:1) : structures de scene et BVH.
+- [../src/scene.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.cpp:330) : chargement OBJ/MTL, materiaux, lumiere Cornell, construction BVH.
+- [../src/renderer.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/renderer.cpp:317) : camera, intersections, visibilite, integrateur, export PGM.
+- [../src/main.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/main.cpp:76) : point d'entree CLI, parsing des options, telemetrie basique.
+- [../assets/cornell/cornell_box.obj](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.obj:1) : scene de reference vendorisee.
+- [../assets/cornell/cornell_box.mtl](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.mtl:1) : materiaux de reference.
+- [../vendor/legacy_rt2003/README.md](/C:/works/projects/game-liminal-raytraced-llm-world/vendor/legacy_rt2003/README.md:1) : provenance des idees reutilisees depuis le vieux projet.
+
+## Commandes de build et d'execution
+
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022"
+cmake --build build --config Release
+.\build\Release\liminal_cornell_renderer.exe
+```
+
+Helper Windows :
+
+```bat
+build_release.bat
+```
+
+Exemple de rendu :
+
+```powershell
+.\build\Release\liminal_cornell_renderer.exe --samples 32 --width 256 --height 256 --output output\cornell_box_32spp.pgm
+```
+
+## Parametres par defaut
+
+- largeur : `320`
+- hauteur : `320`
+- echantillons par pixel : `32`
+- rebonds diffus max : `3`
+- echantillons de lumiere directe : `2`
+- seed : `1337`
+- exposition : `1.0`
+
+## Resultats observes le 2026-07-29
+
+Contexte : build `Release` local sur la machine de travail actuelle.
+
+- `256x256`, `16 spp`, `3 bounces` : environ `1575.66 ms`
+- `256x256`, `32 spp`, `3 bounces` : environ `4327.92 ms`
+- `256x256`, `64 spp`, `3 bounces` : environ `6224.51 ms`
+
+Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encore un benchmark stable.
+
+## Ce que ce module ne fait pas encore
+
+- pas de scene proprietaire a primitives
+- pas de validation defensive d'une scene generee par LLM
+- pas de lumiere attachee a la camera comme prevu par la spec finale
+- pas d'API integrable propre pour un futur runtime de jeu
+- pas d'accumulation progressive pendant l'inference
+- pas d'UI, pas de transcript, pas de boucle narrative
+- pas de sauvegarde/chargement
+- pas de telemetrie CPU/GPU/memoire
+- pas de tests automatises
+
+## Ecart assume par rapport a la spec longue
+
+La spec cible a terme une image grayscale avec une lumiere portee par la camera, afin d'obtenir un rendu plus brutaliste et found-footage.
+
+Le bootstrap actuel commence par une Cornell Box plus canonique avec une lumiere de plafond, car cela permet de :
+
+- verifier rapidement la chaine de rendu
+- obtenir une scene de reference connue
+- mesurer les performances
+- documenter une premiere radiosite simple
+
+Cet ecart est intentionnel et provisoire.

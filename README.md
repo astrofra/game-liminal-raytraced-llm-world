@@ -11,11 +11,21 @@ Current state:
 - diffuse path tracing with direct light sampling and low-bounce radiosity
 - explicit provenance for the reused 2003 raytracer ideas
 
+Documentation index:
+
+- `documentation/README.md`
+
 ## Build
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022"
 cmake --build build --config Release
+```
+
+Windows helper:
+
+```bat
+build_release.bat
 ```
 
 ## Run
