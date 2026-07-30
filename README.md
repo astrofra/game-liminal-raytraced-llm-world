@@ -1,4 +1,6 @@
-# game-liminal-raytraced-llm-world
+# Liminal Raytraced-World LLM-Built Game
+
+![alt text](img/liminal-room.png)
 
 Initial bootstrap for the rendering side of the project.
 
