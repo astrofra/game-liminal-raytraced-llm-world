@@ -17,6 +17,7 @@ Il est organise de facon a separer :
 - [NOTES.md](./NOTES.md) : notes de recherche, formulations, pistes theoriques et materiau de communication.
 - [TECHNICAL_STATE.md](./TECHNICAL_STATE.md) : photographie technique du depot a l'instant present.
 - [SCENE_FORMAT_V1.md](./SCENE_FORMAT_V1.md) : format de scene proprietaire v1 actuellement implemente.
+- [MULTIPROCESSING_FEASIBILITY.md](./MULTIPROCESSING_FEASIBILITY.md) : etude de faisabilite pour un rendu CPU parallele a faible intrusion.
 - [DECISIONS.md](./DECISIONS.md) : decisions techniques et architecturales actees, avec justification.
 - [PROJECT_JOURNAL.md](./PROJECT_JOURNAL.md) : journal chronologique des iterations, essais, corrections et resultats.
 - [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) : erreurs, limitations, dettes techniques et points de vigilance.

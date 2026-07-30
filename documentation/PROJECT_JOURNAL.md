@@ -219,3 +219,32 @@ Ce qui reste fragile :
 Prochaine etape recommandee :
 
 Calibrer le spotlight camera et la composition de la scene liminale avant d'elargir encore le vocabulaire des primitives.
+
+## 2026-07-30 - Iteration 0006 - Etude de faisabilite pour le parallelisme CPU
+
+Objectif :
+
+Evaluer s'il est raisonnable d'activer un rendu multi-coeur dans le renderer sans alourdir la logique du code, en privilegiant une solution a base de macros compile-time.
+
+Travail effectue :
+
+- inspection du coeur de rendu dans `src/renderer.cpp`
+- verification des points de partage memoire :
+  - scene en lecture seule
+  - BVH en lecture seule
+  - RNG local par pixel
+  - buffer image ecrit par cases disjointes
+- comparaison entre plusieurs approches :
+  - OpenMP
+  - `std::thread`
+  - `std::async`
+  - vrai multi-processus
+- redaction d'une note de faisabilite dediee dans `documentation/MULTIPROCESSING_FEASIBILITY.md`
+
+Resultat :
+
+Le renderer actuel est un bon candidat pour une parallelisation CPU a faible intrusion, mais pas pour un vrai multi-processus sous la contrainte "juste avec des macros".
+
+Observation :
+
+La recommandation de travail est d'utiliser un mode OpenMP optionnel, borne a la boucle externe sur les lignes de rendu, avec une macro unique et un fallback mono-thread.
