@@ -3,3 +3,4 @@ output/*.pgm
 output/*.ppm
 output/*.bmp
 output/*.png
+.DS_Store
