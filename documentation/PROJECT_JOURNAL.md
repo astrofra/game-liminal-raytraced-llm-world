@@ -248,3 +248,30 @@ Le renderer actuel est un bon candidat pour une parallelisation CPU a faible int
 Observation :
 
 La recommandation de travail est d'utiliser un mode OpenMP optionnel, borne a la boucle externe sur les lignes de rendu, avec une macro unique et un fallback mono-thread.
+
+## 2026-07-30 - Iteration 0007 - Validation de la cible d'inference locale
+
+Objectif :
+
+Lever l'ambiguite restante sur le couple modele/runtime afin de stabiliser la suite de l'implementation.
+
+Travail effectue :
+
+- validation du choix `llama.cpp` comme runtime d'inference
+- validation du mode CUDA comme profil d'acceleration principal sur la machine de developpement actuelle
+- validation de `Ministral 3 8B Instruct 2512` comme cible modele v1
+- alignement de la documentation de reference sur ce choix
+
+Resultat :
+
+Le projet dispose maintenant d'une cible runtime explicite pour la couche narrative locale. La spec longue n'est plus en tension avec la note technique CUDA sur le point du modele.
+
+Observations :
+
+- ce choix clarifie le budget memoire et le profil de performance a viser
+- il ne supprime pas les questions de redistribution, de taille de package et de fallback CPU
+- il rend maintenant prioritaire l'integration effective de `llama.cpp` dans le binaire ou dans un chemin de validation local reproductible
+
+Prochaine etape recommandee :
+
+Construire une premiere boucle verticale headless qui enchaine chargement du modele, prompt structure, validation du tour, mise a jour d'etat, scene v1 et rendu.

@@ -172,7 +172,7 @@ The player should also feel the temporal structure of the system. Inference late
 
 ### 7.2 Narrative Generation
 
-- The current target model is `Ministral 3:14b`.
+- The current target model is `Ministral 3 8B Instruct 2512` in GGUF format, loaded through `llama.cpp`.
 - The game must generate short-form narrative output per turn.
 - The system must maintain enough state for local continuity across turns.
 - The system must support recurring locations, recurring objects, and recurring NPC references.
@@ -241,7 +241,10 @@ The main requirement is not the language itself, but avoiding a runtime architec
 
 The system should assume:
 
-- a `llama.cpp`-compatible model artifact is available for `Ministral 3:14b`
+- the selected target model is `Ministral 3 8B Instruct 2512`
+- the preferred artifact is the GGUF quantized build `Q4_K_M`
+- inference runs through `llama.cpp`
+- CUDA is the primary acceleration profile for the current development machine
 - quantized local inference is required for practical distribution
 - hardware acceleration should be optional but supported when available
 
@@ -561,14 +564,15 @@ The priority is not a finished consumer product. The priority is an experience s
 
 Goals:
 
-- confirm availability of `Ministral 3:14b` in a `llama.cpp`-compatible format
+- lock the runtime target to `llama.cpp` with `Ministral 3 8B`
+- validate the CUDA build and reproducible local inference workflow
 - confirm license terms for redistribution
 - estimate practical memory and latency targets
-- choose implementation language and packaging strategy
+- choose packaging strategy
 
 Exit criteria:
 
-- model/runtime feasibility is confirmed
+- model/runtime feasibility is confirmed for the selected `Ministral 3 8B` target
 - distribution constraints are understood
 - a v1 scene format is selected
 
@@ -635,11 +639,11 @@ Exit criteria:
 
 ### 18.1 Model Availability and Licensing
 
-The biggest non-creative risk is whether `Ministral 3:14b` is actually available in a form that can be used with `llama.cpp` and legally redistributed with the game.
+The biggest non-creative risk is no longer choosing a model family, but confirming the exact redistribution and packaging constraints of `Ministral 3 8B` in the intended shipping format.
 
 ### 18.2 Local Performance
 
-A 14B-class local model may still be heavy for a distributable art game, especially on lower-end machines. Latency, RAM pressure, load time, and package size are major concerns.
+Even an 8B-class local model remains heavy for a distributable art game, especially on lower-end machines or systems without usable GPU acceleration. Latency, RAM pressure, load time, VRAM budget, and package size are major concerns.
 
 ### 18.3 LLM as Parser
 
@@ -691,7 +695,8 @@ To keep the project achievable, v1 should commit to the following:
 
 - use `llama.cpp`
 - avoid Python and Ollama entirely
-- use `Ministral 3:14b` if licensing and compatibility allow it
+- use `Ministral 3 8B Instruct 2512` as the primary local model target
+- use CUDA as the primary acceleration profile during development, with CPU fallback kept possible
 - if using C++, keep `C++11` as the baseline language target
 - treat the proprietary primitive scene format as the default rendering input
 - keep `.OBJ` generation experimental
@@ -703,7 +708,7 @@ To keep the project achievable, v1 should commit to the following:
 
 ## 21. Open Questions
 
-- Is `Ministral 3:14b` confirmed as a redistributable and `llama.cpp`-compatible target, or is that still a working assumption?
+- Should the public build bundle the `Ministral 3 8B` weights, download them on first launch, or ship them as a separate package?
 - Should the world be framed as a pure wandering machine, or should it have a stronger authored premise and win/lose conditions?
 - How much of inventory and object interaction should be deterministic at the engine level versus entrusted to the LLM?
 - Should revisiting a location reproduce a stable scene fingerprint, or should it visibly mutate?

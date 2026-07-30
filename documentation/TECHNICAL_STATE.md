@@ -8,6 +8,8 @@ Le depot contient actuellement un premier module de rendu natif en C++11 centre 
 
 Ce module constitue un bootstrap du futur sous-systeme de rendu. Il ne s'agit pas encore du renderer final du jeu, mais d'une premiere base executable, compilable et documentee.
 
+Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cpp` avec acceleration CUDA autour de `Ministral 3 8B`, mais cette partie n'est pas encore integree dans le code du depot.
+
 ## Fonctionnalites presentes
 
 - Build natif via CMake et Visual Studio 2022.
@@ -112,6 +114,7 @@ Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encor
 
 - pas de scene v1 complete : seulement `plane` et `box` sont supportes
 - pas de validation defensive ou simplification automatique d'une scene generee par LLM
+- pas encore d'integration `llama.cpp` ni de chargement du modele `Ministral 3 8B`
 - pas d'API integrable propre pour un futur runtime de jeu
 - pas d'accumulation progressive pendant l'inference
 - pas d'UI, pas de transcript, pas de boucle narrative

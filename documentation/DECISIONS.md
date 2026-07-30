@@ -180,3 +180,20 @@ Raison :
 Consequence :
 
 Un lancement sans `--width` ni `--height` produit maintenant un rendu plus couteux, mais plus representatif du projet.
+
+## 2026-07-30 - Valider `llama.cpp` avec CUDA et `Ministral 3 8B` comme cible d'inference v1
+
+Decision :
+
+Le runtime narratif cible du projet est desormais acte comme etant `llama.cpp` avec acceleration CUDA, autour de `Ministral 3 8B Instruct 2512` en GGUF quantifie.
+
+Raison :
+
+- supprime l'ambiguite restante entre la spec longue et la spec technique CUDA
+- cadre plus proprement les contraintes de VRAM, de latence et de packaging
+- reste coherent avec une distribution locale native sans Python ni Ollama
+- correspond a la machine de developpement actuelle et au document `LLAMA_CUDA_SPECS.md`
+
+Consequence :
+
+Les prochaines iterations doivent maintenant viser une vraie integration locale de l'inference, la definition du contrat de tour structure, puis la boucle verticale texte -> etat -> scene -> rendu.
