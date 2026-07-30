@@ -42,6 +42,31 @@ La nostalgie utile ici n'est donc pas une nostalgie de collectionneur. C'est une
 
 La proposition contemporaine peut alors se comprendre comme une continuation plutot qu'une citation. Le projet ne revient pas au 16 bits ; il reprend ce que ces images ont fonde dans le regard, puis le deplace vers un autre partage du calcul, ou la depense technique quitte le rendu pour migrer vers l'inference, la fiction et l'instabilite du monde.
 
+## Jeux et demos : une meme scene d'apparition
+
+Ce qui frappe dans ce corpus, c'est la communication constante entre les jeux et les demos de la meme epoque. Cette communication n'est pas un simple air de famille. Elle tient a un socle commun :
+
+- la meme machine ou le meme horizon de machine
+- le meme moment d'invention visuelle
+- la meme economie de calcul
+- la meme volonte de faire apparaitre des images encore neuves
+
+Les jeux retenus ici ont, de ce point de vue, un statut tres particulier : ils appartiennent au moment des premiers jeux sortis sur Amiga. Ils ne sont donc pas seulement des references efficaces ; ils sont deja des gestes inauguraux. Ils posent tres tot des questions qui restent actives dans ce projet :
+
+- comment faire exister un espace avec peu
+- comment donner a l'image une force de monde sans realisme plein
+- comment articuler texte, interface et profondeur
+- comment faire sentir la machine a travers ce qu'elle montre
+
+Les demos sont pionnieres elles aussi, mais d'une autre maniere. Elles radicalisent l'apparition. Elles montrent moins un monde utilisable qu'une possibilite visuelle en train de naitre. Elles poussent plus loin :
+
+- l'image comme evenement
+- la plasticite du calcul
+- l'ivresse des premieres formes
+- la demonstration sensible d'une puissance encore instable
+
+D'ou cette porosite tres forte : les jeux semblent parfois etre des demos contraintes par l'action, tandis que les demos ressemblent parfois a des jeux liberes de l'obligation de jouabilite. Les uns et les autres parlent, a des intensites differentes, la meme langue historique : celle des premieres images Amiga assez fortes pour fonder durablement un regard.
+
 ## Visuels cles
 
 ### 1. Point d'ancrage contemporain
@@ -68,7 +93,21 @@ _Dans `Origin Complex`, l'architecture devient un dispositif de transit : profon
 
 _`Enigma` rappelle un moment fondateur : l'image calculee comme evenement en soi, avec peu d'elements mais une forte charge d'emerveillement technique._
 
-### 3. Interfaces comme appareils de lecture
+![Substance : corridor abstrait et spatialite minimale](./moodboard/demoscene/Substance_000.png)
+
+_`Substance` pousse l'abstraction jusqu'au seuil de l'image jouable : presque rien, mais deja une profondeur, un passage, une mise en tension du regard._
+
+![Hardwired : forme technique, surface et vertige de calcul](./moodboard/demoscene/Hardwired_005.png)
+
+_`Hardwired` montre une autre branche pionniere : l'espace comme performance geometrique et materielle, a mi-chemin entre objet, decor et demonstration._
+
+### 3. Texte et image a parts egales
+
+![The Pawn : picturalite pionniere et densite textuelle](./moodboard/video-games/pawn_06.png)
+
+_`The Pawn` est crucial ici : le texte y occupe autant de place que l'image, sans que l'un degrade l'autre. L'ecran affirme a la fois une ambition litteraire et une picturalite forte, deja pionniere sur Amiga._
+
+### 4. Interfaces comme appareils de lecture
 
 ![Tau Ceti : interface-outil et viewport instrumental](<./moodboard/video-games/Tau Ceti - 4880.png>)
 
@@ -101,6 +140,10 @@ Dans `driller`, `sentinel`, `Tau Ceti`, `Midwinter`, `Origin Complex` ou certain
 
 Le joueur ne lit pas un monde complet. Il lit une structure directionnelle. Cela produit une ambiance tres particuliere : on se sent situe, mais jamais totalement installe.
 
+![Voyage : grille, volume, emergence d'un espace](./moodboard/demoscene/Voyage_000.png)
+
+_Dans `Voyage`, quelques lignes suffisent a faire apparaitre un volume habitable. La profondeur n'est pas remplie ; elle est suggeree avec autorite._
+
 ### 2. La spatialite est faite de plans francs et de coupes nettes
 
 Le corpus insiste sur :
@@ -116,6 +159,12 @@ Cette brutalite de construction donne aux lieux une qualite mentale ou maquette.
 
 Pour le projet, cela confirme une piste importante : la force de l'image ne depend pas d'une complexite geometrique elevee, mais d'une **bonne repartition des masses, des vides et des seuils**.
 
+La presence des demos renforce encore ce point. Elles montrent que cette lecture par masses et par coupes n'est pas seulement un expedient du jeu commercial ; c'est un langage visuel commun a tout un moment pionnier de la machine.
+
+![Amiga Desert Dreams : couloir filaire et promesse de monde](./moodboard/demoscene/amiga-desert-dreams_0003.png)
+
+_Cette image de `Amiga Desert Dreams` est exemplaire : presque rien d'autre qu'un trace lumineux, mais deja une architecture mentale, un parcours, une sensation de seuil._
+
 ### 3. Le hors-champ compte autant que le visible
 
 Beaucoup d'images du moodboard laissent de larges zones opaques, noires, indeterminees ou peu informees. Ce manque n'est pas seulement une limitation : c'est un moteur d'ambiance.
@@ -129,6 +178,10 @@ L'espace low-fi fonctionne souvent par :
 - details repousses hors de l'image ou dans le texte
 
 L'effet produit est liminal : le lieu semble continuer au-dela de ce qui est rendu, mais sans garantie de coherence complete. Cela rejoint directement la spec du projet : coherence locale, derive globale.
+
+![Real Complex : aplats, horizon et vide operatoire](./moodboard/demoscene/Real_Complex_007.png)
+
+_`Real Complex` montre bien comment de grands aplats, peu d'objets et une perspective severe peuvent suffire a produire une ambiance de lieu incomplet mais pleinement actif._
 
 ### 4. La lumiere sert a reveler, pas a embellir
 
@@ -201,6 +254,8 @@ L'image, elle, sert a :
 - confirmer ou contredire partiellement le texte
 
 Cette tension texte-image est au coeur du projet. L'image ne doit pas devenir une illustration exhaustive de la narration. Elle doit rester une traduction partielle, parfois reductrice, parfois oblique.
+
+`The Pawn` est ici une reference essentielle, parce qu'il legitime une ambition double. Le texte n'y compense pas une faiblesse de l'image, et l'image n'y sert pas de simple recompense decorative au texte. Les deux construisent ensemble une meme promesse de monde. Pour `Liminal Raytraced LLM World`, c'est un precedent important : il n'y a pas a choisir entre heritage parser et force picturale, a condition d'assumer leur tension.
 
 ### 3. Les interfaces low-fi sont compartimentees
 
@@ -277,7 +332,7 @@ Dans le projet, la latence du LLM n'a donc pas besoin d'etre masquee absolument.
 
 La meilleure synthese du moodboard pour ce projet n'est ni "retro", ni "minimaliste", ni "brutaliste" pris isolement. C'est plutot :
 
-> une machine fictionnelle pauvre en image, mais precise en tension spatiale ; une interface-outil qui expose ses limites ; un monde visible par fragments, plus inquietant parce qu'il reste partiellement non calcule
+> une machine fictionnelle pauvre en image, mais precise en tension spatiale ; heritiere a la fois des premiers jeux Amiga et des demos pionnieres ; une interface-outil qui expose ses limites ; un monde visible par fragments, plus inquietant parce qu'il reste partiellement non calcule
 
 Autrement dit, l'ambiance vise moins la reconstitution historique que la **traduction contemporaine d'une expressivite sous contrainte** :
 
@@ -292,3 +347,5 @@ Autrement dit, l'ambiance vise moins la reconstitution historique que la **tradu
 Le moodboard confirme que la force de ces univers low-fi ne vient pas d'une "pauvrete" prise comme manque, mais d'une repartition tres nette des fonctions entre geometrique, cadrage, texte et interface. Pour `Liminal Raytraced LLM World`, cela ouvre une direction claire : conserver la severite monochrome du rendu actuel, mais lui donner un cadre d'usage plus fortement instrumental, plus compartimente, et plus habite par l'idee qu'on explore un monde calcule a moitie, observe a travers une machine.
 
 Ce cadre a aussi une fonction plus intime : faire remonter, sans pastiche, ce que les images 16 bits ont installe une premiere fois dans le regard adolescent. Le projet devient alors moins une imitation du passe qu'une reactivation contemporaine de son pouvoir de fondation.
+
+La porosite entre jeux fondateurs et demos pionnieres permet d'ailleurs de formuler plus justement cette filiation. Ce qui revient ici, ce n'est pas un style retro ferme sur lui-meme. C'est un moment historique ou jouer, regarder, attendre et croire a l'apparition d'une image relevaient encore d'une meme experience. C'est ce noyau sensible que le projet peut reprendre aujourd'hui.
