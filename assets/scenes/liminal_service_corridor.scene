@@ -4,10 +4,11 @@
 room "liminal service corridor"
 
 camera eye(0.0,1.45,-7.4) target(0.4,1.30,4.0) up(0.0,1.0,0.0) fov(50.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(16.0,38.0) intensity(180.0)
 
 plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(8.4,18.0) gray(0.14)
 plane "ceiling" pos(0.0,2.8,0.0) normal(0.0,-1.0,0.0) size(8.4,18.0) gray(0.37)
-plane "light_panel" pos(0.2,2.79,-0.6) normal(0.0,-1.0,0.0) size(1.1,6.4) gray(0.0) emit(10.5)
+plane "light_panel" pos(0.2,2.79,-0.6) normal(0.0,-1.0,0.0) size(1.1,6.4) gray(0.52)
 
 box "wall_left" pos(-4.2,1.4,0.0) size(0.2,2.8,18.0) gray(0.31)
 box "wall_right" pos(4.2,1.4,0.0) size(0.2,2.8,18.0) gray(0.34)

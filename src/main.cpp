@@ -14,7 +14,7 @@ static void PrintUsage()
     printf("Options:\n");
     printf("  --scene <path>           Scene file to render (.scene or .obj)\n");
     printf("  --obj <path>             Legacy alias for --scene\n");
-    printf("  --output <path>          Output PGM path\n");
+    printf("  --output <path>          Output image path (.png or .pgm)\n");
     printf("  --width <n>              Output width\n");
     printf("  --height <n>             Output height\n");
     printf("  --samples <n>            Samples per pixel\n");
@@ -77,7 +77,7 @@ static bool ReadFloat(const char* text, float* value)
 int main(int argc, char** argv)
 {
     const char* scene_path = "assets/scenes/liminal_service_corridor.scene";
-    const char* output_path = "output/liminal_service_corridor.pgm";
+    const char* output_path = "output/liminal_service_corridor.png";
     liminal::RenderConfig config;
 
     for (int index = 1; index < argc; ++index) {
@@ -174,7 +174,7 @@ int main(int argc, char** argv)
         std::chrono::duration<double, std::milli>(load_end - load_start).count());
 
     const std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();
-    if (!liminal::RenderSceneToPgm(scene, config, output_path)) {
+    if (!liminal::RenderSceneToImage(scene, config, output_path)) {
         fprintf(stderr, "Rendering failed.\n");
         return 1;
     }

@@ -196,6 +196,29 @@ struct Camera {
     }
 };
 
+struct CameraSpotlight {
+    bool enabled;
+    float panel_width;
+    float panel_height;
+    Vec3 local_offset;
+    float range;
+    float cone_inner_degrees;
+    float cone_outer_degrees;
+    float intensity;
+
+    CameraSpotlight()
+        : enabled(false)
+        , panel_width(1.0f)
+        , panel_height(1.0f)
+        , local_offset(0.0f, 0.0f, 0.35f)
+        , range(12.0f)
+        , cone_inner_degrees(16.0f)
+        , cone_outer_degrees(36.0f)
+        , intensity(120.0f)
+    {
+    }
+};
+
 struct RenderConfig {
     int width;
     int height;
@@ -206,8 +229,8 @@ struct RenderConfig {
     float exposure;
 
     RenderConfig()
-        : width(320)
-        , height(320)
+        : width(800)
+        , height(400)
         , samples_per_pixel(32)
         , max_bounces(3)
         , direct_light_samples(2)

@@ -5,7 +5,7 @@
 
 namespace liminal {
 
-bool RenderSceneToPgm(const Scene& scene, const RenderConfig& config, const char* output_path);
+bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const char* output_path);
 
 }  // namespace liminal
 

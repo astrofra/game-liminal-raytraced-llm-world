@@ -12,7 +12,7 @@ add_executable(liminal_cornell_renderer
     src/renderer.cpp
 )
 
-target_include_directories(liminal_cornell_renderer PRIVATE src)
+target_include_directories(liminal_cornell_renderer PRIVATE src vendor/stb)
 
 if(MSVC)
     target_compile_options(liminal_cornell_renderer PRIVATE /W4 /wd4996)

@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 namespace liminal {
 
 namespace {
@@ -14,7 +17,74 @@ struct CameraBasis {
     Vec3 up;
 };
 
+struct CameraLightState {
+    bool enabled;
+    Vec3 center;
+    Vec3 normal;
+    Vec3 tangent;
+    Vec3 bitangent;
+    float panel_width;
+    float panel_height;
+    float area;
+    float range;
+    float cone_inner_cos;
+    float cone_outer_cos;
+    float intensity;
+
+    CameraLightState()
+        : enabled(false)
+        , center(0.0f)
+        , normal(0.0f, 0.0f, 1.0f)
+        , tangent(1.0f, 0.0f, 0.0f)
+        , bitangent(0.0f, 1.0f, 0.0f)
+        , panel_width(1.0f)
+        , panel_height(1.0f)
+        , area(1.0f)
+        , range(12.0f)
+        , cone_inner_cos(1.0f)
+        , cone_outer_cos(0.0f)
+        , intensity(120.0f)
+    {
+    }
+};
+
 static const float kSampleRadianceClamp = 6.0f;
+
+static float Saturate(float value)
+{
+    return Clamp(value, 0.0f, 1.0f);
+}
+
+static float Smoothstep(float edge0, float edge1, float value)
+{
+    if (fabsf(edge1 - edge0) <= kEpsilon) {
+        return value >= edge1 ? 1.0f : 0.0f;
+    }
+    const float t = Saturate((value - edge0) / (edge1 - edge0));
+    return t * t * (3.0f - 2.0f * t);
+}
+
+static std::string ToLowerCopy(const char* text)
+{
+    std::string lower = text ? text : "";
+    for (size_t index = 0; index < lower.size(); ++index) {
+        if (lower[index] >= 'A' && lower[index] <= 'Z') {
+            lower[index] = static_cast<char>(lower[index] - 'A' + 'a');
+        }
+    }
+    return lower;
+}
+
+static std::string ExtensionOf(const char* path)
+{
+    if (!path) {
+        return std::string();
+    }
+
+    const std::string lower = ToLowerCopy(path);
+    const size_t dot = lower.find_last_of('.');
+    return dot == std::string::npos ? std::string() : lower.substr(dot);
+}
 
 static CameraBasis BuildCameraBasis(const Camera& camera)
 {
@@ -23,6 +93,35 @@ static CameraBasis BuildCameraBasis(const Camera& camera)
     basis.right = Normalize(Cross(basis.forward, camera.up));
     basis.up = Normalize(Cross(basis.right, basis.forward));
     return basis;
+}
+
+static CameraLightState BuildCameraLightState(
+    const Scene& scene,
+    const CameraBasis& basis)
+{
+    CameraLightState state;
+    if (!scene.camera_spotlight.enabled) {
+        return state;
+    }
+
+    state.enabled = true;
+    state.normal = basis.forward;
+    state.tangent = basis.right;
+    state.bitangent = basis.up;
+    state.panel_width = scene.camera_spotlight.panel_width;
+    state.panel_height = scene.camera_spotlight.panel_height;
+    state.area = state.panel_width * state.panel_height;
+    state.range = scene.camera_spotlight.range;
+    state.intensity = scene.camera_spotlight.intensity;
+    state.center = scene.camera.eye +
+        basis.right * scene.camera_spotlight.local_offset.x +
+        basis.up * scene.camera_spotlight.local_offset.y +
+        basis.forward * scene.camera_spotlight.local_offset.z;
+
+    const float to_radians = kPi / 180.0f;
+    state.cone_inner_cos = cosf(scene.camera_spotlight.cone_inner_degrees * to_radians);
+    state.cone_outer_cos = cosf(scene.camera_spotlight.cone_outer_degrees * to_radians);
+    return state;
 }
 
 // Rewritten from the slab-style rejection logic in the 2003 raytracer.
@@ -182,7 +281,16 @@ static Vec3 SamplePointOnTriangle(const Triangle& triangle, Rng* rng)
     return triangle.v0 + (triangle.v1 - triangle.v0) * u + (triangle.v2 - triangle.v0) * v;
 }
 
-static float EstimateDirectLighting(
+static Vec3 SamplePointOnCameraLight(const CameraLightState& light, Rng* rng)
+{
+    const float u = rng->NextFloat() - 0.5f;
+    const float v = rng->NextFloat() - 0.5f;
+    return light.center +
+        light.tangent * (u * light.panel_width) +
+        light.bitangent * (v * light.panel_height);
+}
+
+static float EstimateEmissiveTriangleLighting(
     const Scene& scene,
     const Hit& hit,
     const Material& material,
@@ -237,7 +345,83 @@ static float EstimateDirectLighting(
     return contribution / static_cast<float>(light_samples);
 }
 
-static float TracePath(const Scene& scene, const RenderConfig& config, const Ray& camera_ray, Rng* rng)
+static float EstimateCameraSpotLighting(
+    const Scene& scene,
+    const CameraLightState& camera_light,
+    const Hit& hit,
+    const Material& material,
+    int light_samples,
+    Rng* rng)
+{
+    if (!camera_light.enabled || material.albedo <= 0.0f || light_samples <= 0) {
+        return 0.0f;
+    }
+
+    float contribution = 0.0f;
+    const float area_pdf = 1.0f / std::max(camera_light.area, kEpsilon);
+    const float brdf = material.albedo / kPi;
+
+    for (int sample_index = 0; sample_index < light_samples; ++sample_index) {
+        const Vec3 sample_point = SamplePointOnCameraLight(camera_light, rng);
+        const Vec3 to_light = sample_point - hit.position;
+        const float distance_squared = LengthSquared(to_light);
+        if (distance_squared <= kEpsilon) {
+            continue;
+        }
+
+        const float distance = sqrtf(distance_squared);
+        if (distance >= camera_light.range) {
+            continue;
+        }
+
+        const Vec3 direction = to_light / distance;
+        const Vec3 light_to_surface = -direction;
+
+        const float cos_surface = Dot(hit.normal, direction);
+        const float cos_light = Dot(camera_light.normal, light_to_surface);
+        if (cos_surface <= 0.0f || cos_light <= 0.0f) {
+            continue;
+        }
+
+        const float cone_factor =
+            1.0f - Smoothstep(camera_light.cone_inner_cos, camera_light.cone_outer_cos, cos_light);
+        const float range_factor = 1.0f - Smoothstep(camera_light.range * 0.55f, camera_light.range, distance);
+        if (cone_factor <= 0.0f || range_factor <= 0.0f) {
+            continue;
+        }
+
+        Ray shadow_ray;
+        shadow_ray.origin = hit.position + hit.normal * 0.001f;
+        shadow_ray.direction = direction;
+        if (IsOccluded(scene, shadow_ray, distance - 0.002f)) {
+            continue;
+        }
+
+        contribution += brdf * camera_light.intensity * cone_factor * range_factor * cos_surface * cos_light /
+            (distance_squared * area_pdf);
+    }
+
+    return contribution / static_cast<float>(light_samples);
+}
+
+static float EstimateDirectLighting(
+    const Scene& scene,
+    const CameraLightState& camera_light,
+    const Hit& hit,
+    const Material& material,
+    int light_samples,
+    Rng* rng)
+{
+    return EstimateEmissiveTriangleLighting(scene, hit, material, light_samples, rng) +
+        EstimateCameraSpotLighting(scene, camera_light, hit, material, light_samples, rng);
+}
+
+static float TracePath(
+    const Scene& scene,
+    const CameraLightState& camera_light,
+    const RenderConfig& config,
+    const Ray& camera_ray,
+    Rng* rng)
 {
     Ray ray = camera_ray;
     float throughput = 1.0f;
@@ -258,7 +442,7 @@ static float TracePath(const Scene& scene, const RenderConfig& config, const Ray
         }
 
         radiance += throughput *
-            EstimateDirectLighting(scene, hit, material, config.direct_light_samples, rng);
+            EstimateDirectLighting(scene, camera_light, hit, material, config.direct_light_samples, rng);
 
         if (material.albedo <= 0.0f) {
             break;
@@ -277,7 +461,6 @@ static float TracePath(const Scene& scene, const RenderConfig& config, const Ray
         ray.direction = SampleCosineHemisphere(hit.normal, rng);
     }
 
-    // Keep the image gritty without letting a few rare paths dominate whole pixels.
     return std::min(radiance, kSampleRadianceClamp);
 }
 
@@ -312,32 +495,69 @@ static unsigned char ToneMapToByte(float luminance, float exposure)
     return static_cast<unsigned char>(Clamp(gamma * 255.0f, 0.0f, 255.0f));
 }
 
-}  // namespace
-
-bool RenderSceneToPgm(const Scene& scene, const RenderConfig& config, const char* output_path)
+static bool WritePgm(const char* output_path, const std::vector<unsigned char>& pixels, int width, int height)
 {
-    if (!output_path || config.width <= 0 || config.height <= 0) {
-        return false;
-    }
-
     FILE* file = fopen(output_path, "wb");
     if (!file) {
         fprintf(stderr, "Cannot open output file: %s\n", output_path);
         return false;
     }
 
-    fprintf(file, "P5\n%d %d\n255\n", config.width, config.height);
+    fprintf(file, "P5\n%d %d\n255\n", width, height);
+    fwrite(&pixels[0], sizeof(unsigned char), pixels.size(), file);
+    fclose(file);
+    return true;
+}
+
+static bool WritePng(const char* output_path, const std::vector<unsigned char>& pixels, int width, int height)
+{
+    const int stride = width;
+    return stbi_write_png(output_path, width, height, 1, &pixels[0], stride) != 0;
+}
+
+static bool WriteImageByExtension(
+    const char* output_path,
+    const std::vector<unsigned char>& pixels,
+    int width,
+    int height)
+{
+    const std::string extension = ExtensionOf(output_path);
+    if (extension == ".png") {
+        if (!WritePng(output_path, pixels, width, height)) {
+            fprintf(stderr, "Failed to write PNG: %s\n", output_path);
+            return false;
+        }
+        return true;
+    }
+
+    if (extension == ".pgm" || extension.empty()) {
+        return WritePgm(output_path, pixels, width, height);
+    }
+
+    fprintf(stderr, "Unsupported output extension: %s\n", output_path);
+    return false;
+}
+
+}  // namespace
+
+bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const char* output_path)
+{
+    if (!output_path || config.width <= 0 || config.height <= 0) {
+        return false;
+    }
 
     const CameraBasis basis = BuildCameraBasis(scene.camera);
-    std::vector<unsigned char> row(static_cast<size_t>(config.width));
+    const CameraLightState camera_light = BuildCameraLightState(scene, basis);
+    std::vector<unsigned char> pixels(static_cast<size_t>(config.width * config.height));
 
     printf(
-        "Rendering %dx%d, spp=%d, bounces=%d, lights=%d\n",
+        "Rendering %dx%d, spp=%d, bounces=%d, emissive=%d, camera_spot=%s\n",
         config.width,
         config.height,
         config.samples_per_pixel,
         config.max_bounces,
-        static_cast<int>(scene.emissive_triangles.size()));
+        static_cast<int>(scene.emissive_triangles.size()),
+        camera_light.enabled ? "on" : "off");
 
     for (int y = 0; y < config.height; ++y) {
         for (int x = 0; x < config.width; ++x) {
@@ -348,22 +568,19 @@ bool RenderSceneToPgm(const Scene& scene, const RenderConfig& config, const char
             float accumulated = 0.0f;
             for (int sample_index = 0; sample_index < config.samples_per_pixel; ++sample_index) {
                 const Ray ray = GenerateCameraRay(scene.camera, basis, x, y, config, &rng);
-                accumulated += TracePath(scene, config, ray, &rng);
+                accumulated += TracePath(scene, camera_light, config, ray, &rng);
             }
 
             const float average = accumulated / static_cast<float>(config.samples_per_pixel);
-            row[static_cast<size_t>(x)] = ToneMapToByte(average, config.exposure);
+            pixels[static_cast<size_t>(x + y * config.width)] = ToneMapToByte(average, config.exposure);
         }
-
-        fwrite(&row[0], sizeof(unsigned char), row.size(), file);
 
         if ((y % 16) == 0 || y + 1 == config.height) {
             printf("  line %d / %d\n", y + 1, config.height);
         }
     }
 
-    fclose(file);
-    return true;
+    return WriteImageByExtension(output_path, pixels, config.width, config.height);
 }
 
 }  // namespace liminal

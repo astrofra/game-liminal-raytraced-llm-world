@@ -31,6 +31,7 @@ struct FaceQuad {
 static void ResetScene(Scene* scene)
 {
     scene->name.clear();
+    scene->camera_spotlight = CameraSpotlight();
     scene->materials.clear();
     scene->triangles.clear();
     scene->emissive_triangles.clear();
@@ -926,6 +927,48 @@ bool LoadSceneFromSceneV1(const char* scene_path, Scene* scene, char* error_buff
             if (ExtractFloatProperty(line, "fov(", &fov)) {
                 scene->camera.vertical_fov_degrees = fov;
             }
+            continue;
+        }
+
+        if (StartsWith(line, "spotlight")) {
+            float panel_width = scene->camera_spotlight.panel_width;
+            float panel_height = scene->camera_spotlight.panel_height;
+            float cone_inner = scene->camera_spotlight.cone_inner_degrees;
+            float cone_outer = scene->camera_spotlight.cone_outer_degrees;
+            Vec3 offset = scene->camera_spotlight.local_offset;
+            float range_value = scene->camera_spotlight.range;
+            float intensity_value = scene->camera_spotlight.intensity;
+
+            if (!ExtractVec2Property(line, "panel(", &panel_width, &panel_height) ||
+                !ExtractVec2Property(line, "cone(", &cone_inner, &cone_outer) ||
+                !ExtractVec3Property(line, "offset(", &offset) ||
+                !ExtractFloatProperty(line, "range(", &range_value) ||
+                !ExtractFloatProperty(line, "intensity(", &intensity_value)) {
+                fclose(file);
+                SetLineError(
+                    error_buffer,
+                    error_buffer_size,
+                    scene_path,
+                    line_number,
+                    "Spotlight requires panel(), cone(), offset(), range(), and intensity()");
+                return false;
+            }
+
+            if (panel_width <= 0.0f || panel_height <= 0.0f || range_value <= 0.0f || cone_inner <= 0.0f ||
+                cone_outer <= cone_inner || intensity_value <= 0.0f) {
+                fclose(file);
+                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "Spotlight has invalid parameters");
+                return false;
+            }
+
+            scene->camera_spotlight.enabled = true;
+            scene->camera_spotlight.panel_width = panel_width;
+            scene->camera_spotlight.panel_height = panel_height;
+            scene->camera_spotlight.local_offset = offset;
+            scene->camera_spotlight.range = range_value;
+            scene->camera_spotlight.cone_inner_degrees = cone_inner;
+            scene->camera_spotlight.cone_outer_degrees = cone_outer;
+            scene->camera_spotlight.intensity = intensity_value;
             continue;
         }
 

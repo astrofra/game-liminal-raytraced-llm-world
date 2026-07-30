@@ -1,6 +1,6 @@
 # Decisions
 
-Derniere mise a jour : 2026-07-29
+Derniere mise a jour : 2026-07-30
 
 ## 2026-07-29 - Base du renderer en C++11
 
@@ -131,3 +131,52 @@ Raison :
 Consequence :
 
 Le depot commence a produire une image plus proche de son identite future, tout en conservant un test de reference stable.
+
+## 2026-07-30 - Utiliser un spotlight analytique attache a la camera pour les scenes proprietaires
+
+Decision :
+
+Les scenes `.scene` proprietaires peuvent activer un spotlight analytique fixe a la camera, parametre par panneau, offset, portee, cone et intensite.
+
+Raison :
+
+- rapproche le renderer du modele d'eclairage cible de la spec
+- donne une image plus found-footage et plus oppressante
+- evite de dependre uniquement d'une surface emissive dans la scene
+- reste plus simple a controler qu'un systeme d'eclairage plus general
+
+Consequence :
+
+La scene liminale est maintenant eclairee par la camera, tandis que la Cornell Box conserve son eclairage emissif de reference.
+
+## 2026-07-30 - Vendoriser `stb_image_write.h` pour la sortie PNG
+
+Decision :
+
+Le projet vendorise `stb_image_write.h` et utilise le PNG comme format de sortie par defaut.
+
+Raison :
+
+- format plus pratique a ouvrir et partager que le `PGM`
+- dependance legere et facile a embarquer
+- pas besoin d'introduire une bibliotheque image plus lourde
+
+Consequence :
+
+Le chemin de sortie par defaut passe en `.png`, tout en gardant le `PGM` en mode legacy selon l'extension demandee.
+
+## 2026-07-30 - Adopter un preset panorama `800x400` comme resolution par defaut
+
+Decision :
+
+Le renderer utilise desormais `800x400` comme resolution de rendu par defaut pour la scene liminale.
+
+Raison :
+
+- le cadrage panorama expose mieux la longueur laterale du corridor
+- la composition gagne en lecture architecturale
+- cela rapproche davantage l'image par defaut de l'intention visuelle du projet
+
+Consequence :
+
+Un lancement sans `--width` ni `--height` produit maintenant un rendu plus couteux, mais plus representatif du projet.

@@ -1,6 +1,6 @@
 # Scene Format V1
 
-Derniere mise a jour : 2026-07-29
+Derniere mise a jour : 2026-07-30
 
 ## Statut
 
@@ -45,6 +45,26 @@ Exemple :
 
 ```text
 camera eye(0.0,1.45,-7.4) target(0.4,1.30,4.0) up(0.0,1.0,0.0) fov(50.0)
+```
+
+### `spotlight`
+
+Definit un spot analytique attache a la camera.
+
+Proprietes supportees :
+
+- `panel(width,height)` obligatoire
+- `offset(x,y,z)` obligatoire, exprime en espace camera
+- `range(value)` obligatoire
+- `cone(inner,outer)` obligatoire, en degres
+- `intensity(value)` obligatoire
+
+Le spot est rendu comme un petit panneau lumineux 1x1m fixe a la camera, oriente vers l'avant, avec attenuation par distance et cone progressif.
+
+Exemple :
+
+```text
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(16.0,38.0) intensity(180.0)
 ```
 
 ### `plane`

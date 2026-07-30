@@ -1,6 +1,6 @@
 # Known Issues
 
-Derniere mise a jour : 2026-07-29
+Derniere mise a jour : 2026-07-30
 
 ## Ouverts
 
@@ -32,7 +32,7 @@ Pistes :
 - separer mieux bruit voulu et valeurs aberrantes
 - tester un clamp plus fin ou une strategie de normalisation plus defendable
 
-### 2026-07-29 - Le renderer courant ne suit pas encore le modele d'eclairage cible de la spec
+### 2026-07-30 - Le spotlight camera demande encore une calibration esthetique
 
 Statut :
 
@@ -40,16 +40,16 @@ Ouvert.
 
 Description :
 
-La spec vise une lumiere attachee a la camera. Le bootstrap Cornell Box utilise une aire lumineuse de plafond.
+Le spotlight camera est implemente, mais son cone, sa portee et son intensite restent a calibrer finement pour obtenir l'esthetique oppressive visee sans eclairer la scene de maniere trop uniforme.
 
 Impact :
 
-- la scene de test valide la radiosite
-- mais elle n'exprime pas encore l'esthetique found-footage / brutalist visee
+- l'intention architecturale est maintenant respectee
+- mais le rendu final peut encore sembler trop plat ou trop large selon la scene et le cadrage
 
 Piste :
 
-Introduire un mode d'eclairage camera pour la future scene proprietaire.
+Iterer sur les parametres du spotlight et sur la composition des scenes proprietaires.
 
 ### 2026-07-29 - Format de scene v1 encore partiel
 

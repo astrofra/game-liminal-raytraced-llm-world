@@ -2,3 +2,4 @@ build/
 output/*.pgm
 output/*.ppm
 output/*.bmp
+output/*.png

@@ -160,3 +160,62 @@ Ce qui reste fragile :
 Prochaine etape recommandee :
 
 Faire converger le renderer vers le modele d'eclairage cible de la spec : une seule lumiere attachee a la camera, avec la scene proprietaire comme support principal.
+
+## 2026-07-30 - Iteration 0005 - Spotlight camera et sortie PNG
+
+Objectif :
+
+Faire converger le renderer vers l'esthetique cible en ajoutant une lumiere attachee a la camera, puis sortir les images en PNG.
+
+Travail effectue :
+
+- vendorisation de `stb_image_write.h`
+- ajout du support `PNG` dans le renderer
+- conservation du `PGM` selon l'extension du fichier de sortie
+- ajout d'une structure `CameraSpotlight`
+- ajout du support `spotlight` dans le format `.scene`
+- implementation d'un spot analytique attache a la camera :
+  - petit panneau lumineux parametrique
+  - orientation vers l'avant
+  - portee limitee
+  - cone progressif
+- adaptation de la scene liminale pour supprimer l'emission du plafond et activer le spotlight camera
+- adaptation de `run_cornell_test.bat` pour sortir en PNG
+- bascule du preset de rendu par defaut vers `800x400` en panorama
+- verification du rendu Cornell apres la refonte
+- verification du rendu liminal avec le nouveau spot
+- rendu panorama `800x400` de la scene liminale
+
+Resultat :
+
+Le renderer produit maintenant des PNG en natif et la scene proprietaire est eclairee par un spot fixe a la camera, conforme a l'orientation generale de la spec.
+
+Observations :
+
+- la Cornell Box reste stable comme scene de regression
+- la scene liminale ne depend plus d'une surface emissive de plafond
+- le spotlight camera fonctionne, mais demande encore une calibration artistique
+- le panorama `800x400` ouvre mieux la scene lateralement
+- le preset panorama devient maintenant le comportement par defaut du binaire
+
+Mesures relevees :
+
+- scene liminale, `256x256`, `32 spp`, `3 bounces` : environ `5430.59 ms`
+- Cornell Box, `256x256`, `32 spp`, `3 bounces` : environ `4061.97 ms`
+- scene liminale panorama, `800x400`, `32 spp`, `3 bounces` : environ `35748.60 ms`
+
+Ce qui a bien marche :
+
+- la sortie PNG simplifie immediatement l'usage
+- le spotlight camera rapproche nettement l'architecture du renderer de la spec
+- la separation entre Cornell de regression et scene proprietaire s'est renforcee
+
+Ce qui reste fragile :
+
+- le spotlight demande encore du tuning
+- le format de scene v1 reste volontairement incomplet
+- les `fireflies` n'ont pas disparu
+
+Prochaine etape recommandee :
+
+Calibrer le spotlight camera et la composition de la scene liminale avant d'elargir encore le vocabulaire des primitives.

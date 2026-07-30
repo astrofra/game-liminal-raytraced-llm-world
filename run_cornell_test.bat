@@ -6,7 +6,7 @@ if "%ROOT_DIR:~-1%"=="\" set "ROOT_DIR=%ROOT_DIR:~0,-1%"
 set "BUILD_DIR=%ROOT_DIR%\build"
 set "EXE_PATH=%BUILD_DIR%\Release\liminal_cornell_renderer.exe"
 set "OUTPUT_DIR=%ROOT_DIR%\output"
-set "OUTPUT_PATH=%OUTPUT_DIR%\cornell_box_test.pgm"
+set "OUTPUT_PATH=%OUTPUT_DIR%\cornell_box_test.png"
 set "SCENE_PATH=%ROOT_DIR%\assets\cornell\cornell_box.obj"
 
 echo.
