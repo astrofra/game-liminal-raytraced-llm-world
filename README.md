@@ -37,6 +37,7 @@ Windows helper:
 build_release.bat
 run_cornell_test.bat
 download_ministral.bat
+ask_ministral.bat
 ```
 
 If you want the vendorized `llama.cpp` build with CUDA enabled, keep the default CMake options:
@@ -58,6 +59,13 @@ Windows shortcut:
 ```bat
 download_ministral.bat
 download_ministral.bat --force-download
+```
+
+Quick local LLM question:
+
+```bat
+ask_ministral.bat "Quel est le sens de la vie ?"
+ask_ministral.bat "Resume-moi ce projet en 3 phrases."
 ```
 
 ## Run

@@ -16,6 +16,8 @@ Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cp
 - Options CMake `LIMINAL_ENABLE_LLAMA_CPP` et `LIMINAL_ENABLE_LLAMA_CUDA` pour raccorder un `llama.cpp` vendorise.
 - Helper Windows `build_release.bat` a la racine pour configurer et compiler la version `Release`.
 - Helper Windows `run_cornell_test.bat` a la racine pour compiler puis lancer le rendu de verification Cornell Box.
+- Helper Windows `download_ministral.bat` pour telecharger le modele cible.
+- Helper Windows `ask_ministral.bat` pour lancer une question libre contre le modele local via `llama-cli`.
 - Executable CLI `liminal_cornell_renderer`.
 - Option CLI `--llama-info` pour verifier la presence du runtime `llama.cpp`, le commit vendorise et la disponibilite de l'offload GPU.
 - Preset de rendu par defaut en `800x400` pour la scene liminale, avec cadrage panorama.
@@ -40,6 +42,7 @@ Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cp
 - Mesure du temps de chargement et du temps de rendu.
 - Arborescence `vendor/llama.cpp` ajoutee au depot comme base d'integration locale du runtime LLM.
 - Script Python `scripts/download_ministral.py` pour telecharger et valider `Ministral 3 8B Instruct 2512` en GGUF `Q4_K_M`.
+- Smoke test local `llama-cli` valide sur `Ministral 3 8B`, avec reponse effective a une question libre.
 
 ## Fichiers importants
 
@@ -89,6 +92,8 @@ Helper Windows :
 ```bat
 build_release.bat
 run_cornell_test.bat
+download_ministral.bat
+ask_ministral.bat
 ```
 
 Exemple de rendu :

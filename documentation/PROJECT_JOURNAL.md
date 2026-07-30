@@ -315,3 +315,32 @@ Observations :
 Prochaine etape recommandee :
 
 Ajouter un premier chargement de modele et une interface headless minimale de type `prompt -> completion structuree`, avant de lier cela a l'etat de jeu et au renderer.
+
+## 2026-07-30 - Iteration 0009 - Helper Windows pour interroger le modele local
+
+Objectif :
+
+Ajouter un point d'entree simple pour verifier rapidement le modele telecharge sans retaper toute la ligne `llama-cli`.
+
+Travail effectue :
+
+- ajout de `ask_ministral.bat` a la racine
+- verification du chemin par defaut vers :
+  - `vendor\llama.cpp\build-cuda\bin\Release\llama-cli.exe`
+  - `models\ministral-3-8b\Ministral-3-8B-Instruct-2512-Q4_K_M.gguf`
+- support d'une question passee en argument ou saisie interactivement
+- ajout d'un preset de lancement raisonnable :
+  - `--n-gpu-layers auto`
+  - `--ctx-size 4096`
+  - `--flash-attn on`
+  - `--single-turn`
+- mise a jour de la documentation d'usage
+- verification pratique avec une question libre
+
+Resultat :
+
+Le depot dispose maintenant d'un helper minimal pour faire un smoke test du LLM local en une seule commande.
+
+Observation :
+
+Le chemin `ask_ministral.bat "Quel est le sens de la vie ?"` suffit maintenant a valider rapidement que le modele, `llama-cli` et le backend CUDA cooperent bien.
