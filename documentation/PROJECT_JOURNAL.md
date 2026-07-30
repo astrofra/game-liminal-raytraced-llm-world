@@ -275,3 +275,43 @@ Observations :
 Prochaine etape recommandee :
 
 Construire une premiere boucle verticale headless qui enchaine chargement du modele, prompt structure, validation du tour, mise a jour d'etat, scene v1 et rendu.
+
+## 2026-07-30 - Iteration 0008 - Vendorisation de `llama.cpp` et verification CUDA locale
+
+Objectif :
+
+Transformer la decision runtime en integration de depot verifiable, tout en confirmant l'etat reel du toolchain CUDA sur cette machine.
+
+Travail effectue :
+
+- verification locale de `nvidia-smi`
+- verification locale de `nvcc --version`
+- constat que la machine expose une `RTX 4060` et un toolkit CUDA `13.0`
+- ajout d'une copie vendorisee de `llama.cpp` dans `vendor/llama.cpp`
+- ajout d'un fichier `VENDORED_COMMIT.txt` pour tracer le commit exact
+- extension du `CMakeLists.txt` principal avec :
+  - `LIMINAL_ENABLE_LLAMA_CPP`
+  - `LIMINAL_ENABLE_LLAMA_CUDA`
+- ajout d'une couche minimale `src/llm_runtime.h/.cpp`
+- ajout d'une option CLI `--llama-info`
+- ajout du script `scripts/download_ministral.py`
+- extension de `.gitignore` pour les poids et les builds `llama.cpp`
+- verification CMake configure + build `Release`
+- verification du binaire final avec `--llama-info`
+
+Resultat :
+
+Le depot peut maintenant compiler un executable `liminal_cornell_renderer` qui integre `llama.cpp` et confirme localement la disponibilite de l'offload GPU via CUDA.
+
+Observations :
+
+- la compilation CUDA de `llama.cpp` est lourde mais aboutit
+- le binaire final signale correctement :
+  - `llama.cpp compiled in: yes`
+  - `GPU offload available: yes`
+  - la detection de la `RTX 4060`
+- l'inference reelle du modele n'est pas encore branchee a la boucle du jeu
+
+Prochaine etape recommandee :
+
+Ajouter un premier chargement de modele et une interface headless minimale de type `prompt -> completion structuree`, avant de lier cela a l'etat de jeu et au renderer.

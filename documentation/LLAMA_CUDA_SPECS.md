@@ -88,7 +88,7 @@ Suggested `.gitignore` entries:
 ```gitignore
 models/*.gguf
 models/**/*.gguf
-external/llama.cpp/build*/
+vendor/llama.cpp/build*/
 logs/*.txt
 ```
 
@@ -322,26 +322,22 @@ sha256sum models/ministral-3-8b/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf
 
 ## 6. Obtaining `llama.cpp`
 
-From the project root:
+The repository now vendors `llama.cpp` in:
 
-```powershell
-New-Item -ItemType Directory -Force external | Out-Null
-
-git clone `
-  https://github.com/ggml-org/llama.cpp.git `
-  external\llama.cpp
+```text
+vendor/llama.cpp
 ```
 
-Enter the repository:
+Record the exact vendored revision with:
 
 ```powershell
-Set-Location external\llama.cpp
+Get-Content vendor\llama.cpp\VENDORED_COMMIT.txt
 ```
 
-Record the exact source revision:
+If the vendor tree must be refreshed manually, replace that directory with a fresh checkout of:
 
-```powershell
-git rev-parse HEAD | Tee-Object ..\..\llama-cpp-commit.txt
+```text
+https://github.com/ggml-org/llama.cpp.git
 ```
 
 This commit identifier must be kept with test logs so that the build can be reproduced later.
@@ -355,7 +351,7 @@ This commit identifier must be kept with test logs so that the build can be repr
 Run from:
 
 ```text
-project-root/external/llama.cpp
+project-root/vendor/llama.cpp
 ```
 
 in **Developer PowerShell for Visual Studio**:
@@ -388,7 +384,7 @@ cmake `
 Expected Windows output directory:
 
 ```text
-external/llama.cpp/build-cuda/bin/Release/
+vendor/llama.cpp/build-cuda/bin/Release/
 ```
 
 Expected binaries include:
@@ -431,7 +427,7 @@ Define convenient PowerShell variables from the project root:
 
 ```powershell
 $LlamaBin = Resolve-Path `
-  "external\llama.cpp\build-cuda\bin\Release"
+  "vendor\llama.cpp\build-cuda\bin\Release"
 
 $Model = Resolve-Path `
   "models\ministral-3-8b\Ministral-3-8B-Instruct-2512-Q4_K_M.gguf"
@@ -712,7 +708,7 @@ cmake `
 Run the executable from:
 
 ```text
-external/llama.cpp/build-cuda/bin/Release/
+vendor/llama.cpp/build-cuda/bin/Release/
 ```
 
 Do not copy only `llama-cli.exe` to another folder without its runtime DLLs.
@@ -814,7 +810,7 @@ Get-FileHash $Model -Algorithm SHA256 |
 Also preserve:
 
 ```text
-llama-cpp-commit.txt
+vendor/llama.cpp/VENDORED_COMMIT.txt
 ```
 
 A reproducible test record should contain:
@@ -857,11 +853,10 @@ The setup is accepted when all the following conditions are met:
 
 Install the compiler, CMake, Git, Python, NVIDIA driver, and CUDA Toolkit using the distribution-specific instructions.
 
-Clone and build:
+Build from the vendored tree:
 
 ```bash
-git clone https://github.com/ggml-org/llama.cpp.git external/llama.cpp
-cd external/llama.cpp
+cd vendor/llama.cpp
 
 cmake \
   -S . \
@@ -879,15 +874,15 @@ cmake \
 Expected binaries:
 
 ```text
-external/llama.cpp/build-cuda/bin/llama-cli
-external/llama.cpp/build-cuda/bin/llama-server
-external/llama.cpp/build-cuda/bin/llama-bench
+vendor/llama.cpp/build-cuda/bin/llama-cli
+vendor/llama.cpp/build-cuda/bin/llama-server
+vendor/llama.cpp/build-cuda/bin/llama-bench
 ```
 
 Example test:
 
 ```bash
-./external/llama.cpp/build-cuda/bin/llama-cli \
+./vendor/llama.cpp/build-cuda/bin/llama-cli \
   --model models/ministral-3-8b/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf \
   --n-gpu-layers all \
   --ctx-size 4096 \

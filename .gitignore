@@ -1,6 +1,13 @@
 build/
+build_verify/
 output/*.pgm
 output/*.ppm
 output/*.bmp
 output/*.png
+models/*.gguf
+models/**/*.gguf
+vendor/llama.cpp/build*/
+external/llama.cpp/
+__pycache__/
+*.pyc
 .DS_Store

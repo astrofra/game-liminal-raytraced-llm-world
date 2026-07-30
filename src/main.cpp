@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "llm_runtime.h"
 #include "renderer.h"
 
 namespace {
@@ -22,6 +23,7 @@ static void PrintUsage()
     printf("  --direct-samples <n>     Direct light samples per hit\n");
     printf("  --seed <n>               Random seed\n");
     printf("  --exposure <f>           Tone mapping exposure\n");
+    printf("  --llama-info             Print llama.cpp runtime information and exit\n");
 }
 
 static bool ReadInt(const char* text, int* value)
@@ -79,6 +81,7 @@ int main(int argc, char** argv)
     const char* scene_path = "assets/scenes/liminal_service_corridor.scene";
     const char* output_path = "output/liminal_service_corridor.png";
     liminal::RenderConfig config;
+    bool print_llama_info_only = false;
 
     for (int index = 1; index < argc; ++index) {
         if ((strcmp(argv[index], "--scene") == 0 || strcmp(argv[index], "--obj") == 0) && index + 1 < argc) {
@@ -140,6 +143,10 @@ int main(int argc, char** argv)
             }
             continue;
         }
+        if (strcmp(argv[index], "--llama-info") == 0) {
+            print_llama_info_only = true;
+            continue;
+        }
         if (strcmp(argv[index], "--help") == 0 || strcmp(argv[index], "-h") == 0) {
             PrintUsage();
             return 0;
@@ -148,6 +155,12 @@ int main(int argc, char** argv)
         fprintf(stderr, "Unknown option: %s\n", argv[index]);
         PrintUsage();
         return 1;
+    }
+
+    if (print_llama_info_only) {
+        liminal::PrintLlmRuntimeInfo(stdout);
+        liminal::ShutdownLlmRuntime();
+        return 0;
     }
 
     liminal::Scene scene;
@@ -184,5 +197,6 @@ int main(int argc, char** argv)
         "Render time: %.2f ms\n",
         std::chrono::duration<double, std::milli>(render_end - render_start).count());
     printf("Wrote %s\n", output_path);
+    liminal::ShutdownLlmRuntime();
     return 0;
 }

@@ -13,9 +13,11 @@ Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cp
 ## Fonctionnalites presentes
 
 - Build natif via CMake et Visual Studio 2022.
+- Options CMake `LIMINAL_ENABLE_LLAMA_CPP` et `LIMINAL_ENABLE_LLAMA_CUDA` pour raccorder un `llama.cpp` vendorise.
 - Helper Windows `build_release.bat` a la racine pour configurer et compiler la version `Release`.
 - Helper Windows `run_cornell_test.bat` a la racine pour compiler puis lancer le rendu de verification Cornell Box.
 - Executable CLI `liminal_cornell_renderer`.
+- Option CLI `--llama-info` pour verifier la presence du runtime `llama.cpp`, le commit vendorise et la disponibilite de l'offload GPU.
 - Preset de rendu par defaut en `800x400` pour la scene liminale, avec cadrage panorama.
 - Chargement de scene generique via `--scene <path>` pour `.scene` ou `.obj`.
 - Parseur de format de scene proprietaire v1.
@@ -36,6 +38,8 @@ Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cp
 - Sortie image en `PNG` via `stb_image_write`.
 - Sortie `PGM` legacy encore supportee selon l'extension du fichier.
 - Mesure du temps de chargement et du temps de rendu.
+- Arborescence `vendor/llama.cpp` ajoutee au depot comme base d'integration locale du runtime LLM.
+- Script Python `scripts/download_ministral.py` pour telecharger et valider `Ministral 3 8B Instruct 2512` en GGUF `Q4_K_M`.
 
 ## Fichiers importants
 
@@ -45,10 +49,15 @@ Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cp
 - [../src/scene.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.cpp:1) : chargement `.scene` et `.obj`, conversion des primitives, materiaux, lumiere Cornell, construction BVH.
 - [../src/renderer.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/renderer.cpp:1) : camera, spotlight analytique, intersections, visibilite, integrateur, export PNG/PGM.
 - [../src/main.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/main.cpp:76) : point d'entree CLI, parsing des options, telemetrie basique.
+- [../src/llm_runtime.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/llm_runtime.h:1) : interface minimale du runtime `llama.cpp`.
+- [../src/llm_runtime.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/llm_runtime.cpp:1) : initialisation backend, introspection GPU et impression de l'etat `llama.cpp`.
 - [../assets/cornell/cornell_box.obj](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.obj:1) : scene de reference vendorisee.
 - [../assets/cornell/cornell_box.mtl](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.mtl:1) : materiaux de reference.
 - [../assets/scenes/liminal_service_corridor.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/liminal_service_corridor.scene:1) : premiere scene proprietaire liminale.
+- [../scripts/download_ministral.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/download_ministral.py:1) : telechargement et validation du modele cible.
 - [SCENE_FORMAT_V1.md](./SCENE_FORMAT_V1.md) : description du format de scene implemente.
+- [LLAMA_CUDA_SPECS.md](./LLAMA_CUDA_SPECS.md) : procedure de build et de validation du runtime `llama.cpp` cible.
+- [../vendor/llama.cpp/VENDORED_COMMIT.txt](/C:/works/projects/game-liminal-raytraced-llm-world/vendor/llama.cpp/VENDORED_COMMIT.txt:1) : commit exact de `llama.cpp` vendorise.
 - [../vendor/stb/stb_image_write.h](/C:/works/projects/game-liminal-raytraced-llm-world/vendor/stb/stb_image_write.h:1) : sortie PNG vendorisee.
 - [../vendor/legacy_rt2003/README.md](/C:/works/projects/game-liminal-raytraced-llm-world/vendor/legacy_rt2003/README.md:1) : provenance des idees reutilisees depuis le vieux projet.
 
@@ -58,6 +67,14 @@ Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cp
 cmake -S . -B build -G "Visual Studio 17 2022"
 cmake --build build --config Release
 .\build\Release\liminal_cornell_renderer.exe
+```
+
+Avec `llama.cpp` et CUDA :
+
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -DLIMINAL_ENABLE_LLAMA_CPP=ON -DLIMINAL_ENABLE_LLAMA_CUDA=ON
+cmake --build build --config Release
+.\build\Release\liminal_cornell_renderer.exe --llama-info
 ```
 
 Exemple avec scene explicite :
@@ -114,7 +131,8 @@ Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encor
 
 - pas de scene v1 complete : seulement `plane` et `box` sont supportes
 - pas de validation defensive ou simplification automatique d'une scene generee par LLM
-- pas encore d'integration `llama.cpp` ni de chargement du modele `Ministral 3 8B`
+- pas encore de chargement effectif du modele `Ministral 3 8B` dans la boucle du jeu
+- pas encore d'inference de tour, ni de prompt assembly, ni de schema de sortie structuree
 - pas d'API integrable propre pour un futur runtime de jeu
 - pas d'accumulation progressive pendant l'inference
 - pas d'UI, pas de transcript, pas de boucle narrative

@@ -197,3 +197,20 @@ Raison :
 Consequence :
 
 Les prochaines iterations doivent maintenant viser une vraie integration locale de l'inference, la definition du contrat de tour structure, puis la boucle verticale texte -> etat -> scene -> rendu.
+
+## 2026-07-30 - Vendoriser `llama.cpp` dans `vendor/llama.cpp`
+
+Decision :
+
+La base `llama.cpp` retenue par le projet est copiee dans `vendor/llama.cpp` et raccordee au `CMakeLists.txt` principal derriere des options explicites.
+
+Raison :
+
+- evite une dependance reseau au moment du build du runtime narratif
+- garde un commit exact de provenance dans le depot
+- rend l'integration future plus concrete qu'une simple note de faisabilite
+- reste coherent avec la logique de vendoring deja utilisee pour d'autres assets et dependances simples
+
+Consequence :
+
+Le projet peut maintenant compiler un binaire `Release` qui linke `llama.cpp`, detecte le backend CUDA et expose un point de verification minimal via `--llama-info`.

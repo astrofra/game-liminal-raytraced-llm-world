@@ -7,6 +7,7 @@ Initial bootstrap for the rendering side of the project.
 Current state:
 
 - vendored Cornell Box assets
+- vendored `llama.cpp` tree in `vendor/llama.cpp`
 - clean C++11 CLI renderer
 - proprietary scene format v1 bootstrap
 - first handcrafted liminal scene
@@ -15,6 +16,8 @@ Current state:
 - simple BVH acceleration
 - diffuse path tracing with direct light sampling and low-bounce radiosity
 - native PNG output via vendored `stb_image_write.h`
+- optional `llama.cpp` runtime wiring in CMake
+- Python helper to download `Ministral 3 8B Instruct 2512` GGUF
 - explicit provenance for the reused 2003 raytracer ideas
 
 Documentation index:
@@ -33,12 +36,40 @@ Windows helper:
 ```bat
 build_release.bat
 run_cornell_test.bat
+download_ministral.bat
+```
+
+If you want the vendorized `llama.cpp` build with CUDA enabled, keep the default CMake options:
+
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -DLIMINAL_ENABLE_LLAMA_CPP=ON -DLIMINAL_ENABLE_LLAMA_CUDA=ON
+cmake --build build --config Release
+```
+
+Model download helper:
+
+```powershell
+python -m pip install "huggingface_hub<1.0"
+python scripts\download_ministral.py
+```
+
+Windows shortcut:
+
+```bat
+download_ministral.bat
+download_ministral.bat --force-download
 ```
 
 ## Run
 
 ```powershell
 .\build\Release\liminal_cornell_renderer.exe
+```
+
+Inspect the compiled `llama.cpp` runtime wiring:
+
+```powershell
+.\build\Release\liminal_cornell_renderer.exe --llama-info
 ```
 
 The default run now renders:
