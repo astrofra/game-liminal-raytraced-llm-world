@@ -14,6 +14,11 @@ Ce module constitue un bootstrap du futur sous-systeme de rendu. Il ne s'agit pa
 - Helper Windows `build_release.bat` a la racine pour configurer et compiler la version `Release`.
 - Helper Windows `run_cornell_test.bat` a la racine pour compiler puis lancer le rendu de verification Cornell Box.
 - Executable CLI `liminal_cornell_renderer`.
+- Chargement de scene generique via `--scene <path>` pour `.scene` ou `.obj`.
+- Parseur de format de scene proprietaire v1.
+- Validation syntaxique de base pour `room`, `camera`, `plane` et `box`.
+- Conversion des primitives `plane` et `box` vers le backend triangle/BVH existant.
+- Premiere scene liminale handcraftee dans `assets/scenes/liminal_service_corridor.scene`.
 - Chargement d'un fichier OBJ triangule simple.
 - Chargement d'un fichier MTL reduit en materiaux grayscale.
 - Reconstruction locale de la lumiere de la Cornell Box a partir des metadonnees de la scene.
@@ -32,11 +37,13 @@ Ce module constitue un bootstrap du futur sous-systeme de rendu. Il ne s'agit pa
 - [../CMakeLists.txt](/C:/works/projects/game-liminal-raytraced-llm-world/CMakeLists.txt:1) : configuration du build.
 - [../src/core.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/core.h:1) : types de base, math, RNG, configuration de rendu.
 - [../src/scene.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.h:1) : structures de scene et BVH.
-- [../src/scene.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.cpp:330) : chargement OBJ/MTL, materiaux, lumiere Cornell, construction BVH.
+- [../src/scene.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.cpp:1) : chargement `.scene` et `.obj`, conversion des primitives, materiaux, lumiere Cornell, construction BVH.
 - [../src/renderer.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/renderer.cpp:317) : camera, intersections, visibilite, integrateur, export PGM.
 - [../src/main.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/main.cpp:76) : point d'entree CLI, parsing des options, telemetrie basique.
 - [../assets/cornell/cornell_box.obj](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.obj:1) : scene de reference vendorisee.
 - [../assets/cornell/cornell_box.mtl](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.mtl:1) : materiaux de reference.
+- [../assets/scenes/liminal_service_corridor.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/liminal_service_corridor.scene:1) : premiere scene proprietaire liminale.
+- [SCENE_FORMAT_V1.md](./SCENE_FORMAT_V1.md) : description du format de scene implemente.
 - [../vendor/legacy_rt2003/README.md](/C:/works/projects/game-liminal-raytraced-llm-world/vendor/legacy_rt2003/README.md:1) : provenance des idees reutilisees depuis le vieux projet.
 
 ## Commandes de build et d'execution
@@ -45,6 +52,13 @@ Ce module constitue un bootstrap du futur sous-systeme de rendu. Il ne s'agit pa
 cmake -S . -B build -G "Visual Studio 17 2022"
 cmake --build build --config Release
 .\build\Release\liminal_cornell_renderer.exe
+```
+
+Exemple avec scene explicite :
+
+```powershell
+.\build\Release\liminal_cornell_renderer.exe --scene assets\scenes\liminal_service_corridor.scene
+.\build\Release\liminal_cornell_renderer.exe --scene assets\cornell\cornell_box.obj
 ```
 
 Helper Windows :
@@ -82,8 +96,8 @@ Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encor
 
 ## Ce que ce module ne fait pas encore
 
-- pas de scene proprietaire a primitives
-- pas de validation defensive d'une scene generee par LLM
+- pas de scene v1 complete : seulement `plane` et `box` sont supportes
+- pas de validation defensive ou simplification automatique d'une scene generee par LLM
 - pas de lumiere attachee a la camera comme prevu par la spec finale
 - pas d'API integrable propre pour un futur runtime de jeu
 - pas d'accumulation progressive pendant l'inference
@@ -96,7 +110,9 @@ Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encor
 
 La spec cible a terme une image grayscale avec une lumiere portee par la camera, afin d'obtenir un rendu plus brutaliste et found-footage.
 
-Le bootstrap actuel commence par une Cornell Box plus canonique avec une lumiere de plafond, car cela permet de :
+Le depot n'est plus limite a la Cornell Box : il sait maintenant rendre une premiere scene proprietaire a primitives. En revanche, le modele d'eclairage reste encore base sur une surface emissive dans la scene plutot que sur une lumiere portee par la camera.
+
+La Cornell Box reste preservee comme scene de reference, car cela permet de :
 
 - verifier rapidement la chaine de rendu
 - obtenir une scene de reference connue

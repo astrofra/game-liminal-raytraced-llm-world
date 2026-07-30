@@ -24,6 +24,7 @@ struct BvhNode {
 };
 
 struct Scene {
+    std::string name;
     std::vector<Material> materials;
     std::vector<Triangle> triangles;
     std::vector<int> emissive_triangles;
@@ -32,7 +33,9 @@ struct Scene {
     Camera camera;
 };
 
+bool LoadSceneFromPath(const char* scene_path, Scene* scene, char* error_buffer, size_t error_buffer_size);
 bool LoadSceneFromObj(const char* obj_path, Scene* scene, char* error_buffer, size_t error_buffer_size);
+bool LoadSceneFromSceneV1(const char* scene_path, Scene* scene, char* error_buffer, size_t error_buffer_size);
 
 }  // namespace liminal
 

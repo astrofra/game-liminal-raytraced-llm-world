@@ -1,0 +1,25 @@
+# Scene format v1
+# First handcrafted liminal test scene
+
+room "liminal service corridor"
+
+camera eye(0.0,1.45,-7.4) target(0.4,1.30,4.0) up(0.0,1.0,0.0) fov(50.0)
+
+plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(8.4,18.0) gray(0.14)
+plane "ceiling" pos(0.0,2.8,0.0) normal(0.0,-1.0,0.0) size(8.4,18.0) gray(0.37)
+plane "light_panel" pos(0.2,2.79,-0.6) normal(0.0,-1.0,0.0) size(1.1,6.4) gray(0.0) emit(10.5)
+
+box "wall_left" pos(-4.2,1.4,0.0) size(0.2,2.8,18.0) gray(0.31)
+box "wall_right" pos(4.2,1.4,0.0) size(0.2,2.8,18.0) gray(0.34)
+box "back_wall" pos(0.0,1.4,9.0) size(8.4,2.8,0.2) gray(0.39)
+
+box "front_left" pos(-3.0,1.4,-9.0) size(2.4,2.8,0.2) gray(0.35)
+box "front_right" pos(2.8,1.4,-9.0) size(2.8,2.8,0.2) gray(0.36)
+box "front_header" pos(0.1,2.45,-9.0) size(1.8,0.7,0.2) gray(0.39)
+
+box "side_recess_mask" pos(-2.9,1.4,4.2) size(1.4,2.8,2.6) gray(0.28)
+box "pillar" pos(2.6,1.4,2.2) size(0.55,2.8,0.55) gray(0.43)
+box "bench" pos(-1.6,0.45,1.8) size(1.8,0.9,0.65) gray(0.24)
+box "tilted_panel" pos(1.45,1.35,-1.9) size(0.12,2.2,1.1) rot(0.0,18.0,0.0) gray(0.46)
+box "far_block" pos(1.6,0.55,6.2) size(1.5,1.1,1.6) gray(0.29)
+box "ceiling_drop" pos(-1.8,2.45,5.0) size(2.0,0.5,2.8) gray(0.33)

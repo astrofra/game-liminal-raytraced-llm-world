@@ -98,3 +98,36 @@ Raison :
 Consequence :
 
 La base actuelle valide la radiosite simple, mais ne represente pas encore l'esthetique finale du projet.
+
+## 2026-07-29 - Commencer le format de scene v1 avec un sous-ensemble restreint
+
+Decision :
+
+Le format de scene v1 est implemente d'abord avec `room`, `camera`, `plane` et `box`.
+
+Raison :
+
+- c'est le plus petit sous-ensemble utile pour sortir du test pur OBJ
+- cela suffit a construire une premiere scene liminale credible
+- cela garde le parseur simple et defensible
+- cela permet de reutiliser sans rupture le backend triangle/BVH deja en place
+
+Consequence :
+
+Le pipeline scene proprietaire existe maintenant, mais il reste incomplet vis-a-vis de la spec longue.
+
+## 2026-07-29 - Basculer le rendu par defaut vers une scene liminale proprietaire
+
+Decision :
+
+L'executable rend par defaut `assets/scenes/liminal_service_corridor.scene` au lieu de la Cornell Box.
+
+Raison :
+
+- le projet doit maintenant montrer sa propre image, pas seulement une scene canonique de reference
+- cela force le pipeline `.scene` a rester vivant
+- la Cornell Box reste disponible pour les tests de regression via `run_cornell_test.bat`
+
+Consequence :
+
+Le depot commence a produire une image plus proche de son identite future, tout en conservant un test de reference stable.

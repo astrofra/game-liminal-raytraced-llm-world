@@ -12,7 +12,8 @@ static void PrintUsage()
     printf("Usage:\n");
     printf("  liminal_cornell_renderer [options]\n\n");
     printf("Options:\n");
-    printf("  --obj <path>             OBJ file to render\n");
+    printf("  --scene <path>           Scene file to render (.scene or .obj)\n");
+    printf("  --obj <path>             Legacy alias for --scene\n");
     printf("  --output <path>          Output PGM path\n");
     printf("  --width <n>              Output width\n");
     printf("  --height <n>             Output height\n");
@@ -75,13 +76,13 @@ static bool ReadFloat(const char* text, float* value)
 
 int main(int argc, char** argv)
 {
-    const char* obj_path = "assets/cornell/cornell_box.obj";
-    const char* output_path = "output/cornell_box.pgm";
+    const char* scene_path = "assets/scenes/liminal_service_corridor.scene";
+    const char* output_path = "output/liminal_service_corridor.pgm";
     liminal::RenderConfig config;
 
     for (int index = 1; index < argc; ++index) {
-        if (strcmp(argv[index], "--obj") == 0 && index + 1 < argc) {
-            obj_path = argv[++index];
+        if ((strcmp(argv[index], "--scene") == 0 || strcmp(argv[index], "--obj") == 0) && index + 1 < argc) {
+            scene_path = argv[++index];
             continue;
         }
         if (strcmp(argv[index], "--output") == 0 && index + 1 < argc) {
@@ -154,12 +155,15 @@ int main(int argc, char** argv)
     memset(error_buffer, 0, sizeof(error_buffer));
 
     const std::chrono::steady_clock::time_point load_start = std::chrono::steady_clock::now();
-    if (!liminal::LoadSceneFromObj(obj_path, &scene, error_buffer, sizeof(error_buffer))) {
+    if (!liminal::LoadSceneFromPath(scene_path, &scene, error_buffer, sizeof(error_buffer))) {
         fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Scene loading failed.");
         return 1;
     }
     const std::chrono::steady_clock::time_point load_end = std::chrono::steady_clock::now();
 
+    printf(
+        "Loaded scene %s\n",
+        scene.name.empty() ? "(unnamed)" : scene.name.c_str());
     printf(
         "Loaded %zu triangles, %zu materials, %zu emissive triangles\n",
         scene.triangles.size(),

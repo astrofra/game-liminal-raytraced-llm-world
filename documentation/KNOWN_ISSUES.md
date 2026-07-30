@@ -51,7 +51,7 @@ Piste :
 
 Introduire un mode d'eclairage camera pour la future scene proprietaire.
 
-### 2026-07-29 - Format de scene encore absent
+### 2026-07-29 - Format de scene v1 encore partiel
 
 Statut :
 
@@ -59,16 +59,17 @@ Ouvert.
 
 Description :
 
-Le depot sait charger un OBJ de reference, mais pas encore le futur langage de scene proprietaire base sur primitives.
+Le depot sait maintenant charger un format de scene proprietaire v1, mais seulement pour un sous-ensemble restreint.
 
 Impact :
 
-- impossible pour l'instant de connecter proprement un futur LLM a une scene validable
-- le pipeline de jeu complet n'existe pas encore
+- le pipeline scene proprietaire existe
+- mais il ne couvre pas encore tout le vocabulaire prevu par la spec
+- la connexion future a un LLM resterait fragile sans validation plus forte
 
 Piste :
 
-Definir un parseur et un validateur pour le format de scene minimal decrit dans `SPEC.md`.
+Etendre progressivement le support a d'autres primitives et renforcer la validation.
 
 ### 2026-07-29 - Telemetrie encore insuffisante
 

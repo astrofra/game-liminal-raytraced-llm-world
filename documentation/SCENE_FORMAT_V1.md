@@ -1,0 +1,118 @@
+# Scene Format V1
+
+Derniere mise a jour : 2026-07-29
+
+## Statut
+
+Ce document decrit le format de scene proprietaire v1 actuellement implemente dans le depot.
+
+Le format cible plus large de la spec n'est pas encore entierement supporte. L'implementation actuelle couvre un sous-ensemble volontairement petit, suffisant pour amorcer le pipeline scene -> validation -> rendu.
+
+## Intentions
+
+Le format v1 doit rester :
+
+- lisible par un humain
+- facile a produire ou corriger
+- compact
+- defensif a parser
+- plus stable qu'un `.OBJ` genere brut
+
+## Directives actuellement supportees
+
+### `room`
+
+Definit un nom de scene.
+
+Exemple :
+
+```text
+room "liminal service corridor"
+```
+
+### `camera`
+
+Definit la camera de rendu.
+
+Proprietes supportees :
+
+- `eye(x,y,z)` obligatoire
+- `target(x,y,z)` obligatoire
+- `up(x,y,z)` optionnel
+- `fov(value)` optionnel
+
+Exemple :
+
+```text
+camera eye(0.0,1.45,-7.4) target(0.4,1.30,4.0) up(0.0,1.0,0.0) fov(50.0)
+```
+
+### `plane`
+
+Primitive plane finie, rendue comme un quad triangule.
+
+Proprietes supportees :
+
+- nom entre guillemets obligatoire
+- `pos(x,y,z)` obligatoire
+- `normal(x,y,z)` obligatoire
+- `size(width,depth)` obligatoire
+- `gray(value)` obligatoire
+- `emit(value)` optionnel
+
+Exemple :
+
+```text
+plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(8.4,18.0) gray(0.14)
+plane "light_panel" pos(0.2,2.79,-0.6) normal(0.0,-1.0,0.0) size(1.1,6.4) gray(0.0) emit(10.5)
+```
+
+### `box`
+
+Primitive boite, rendue comme 12 triangles.
+
+Proprietes supportees :
+
+- nom entre guillemets obligatoire
+- `pos(x,y,z)` obligatoire
+- `size(x,y,z)` obligatoire
+- `gray(value)` obligatoire
+- `rot(x,y,z)` optionnel, en degres Euler
+- `emit(value)` optionnel
+
+Exemple :
+
+```text
+box "pillar" pos(2.6,1.4,2.2) size(0.55,2.8,0.55) gray(0.43)
+box "tilted_panel" pos(1.45,1.35,-1.9) size(0.12,2.2,1.1) rot(0.0,18.0,0.0) gray(0.46)
+```
+
+## Commentaires
+
+Les commentaires commencent par `#` et vont jusqu'a la fin de la ligne.
+
+## Validation actuelle
+
+Le parseur valide actuellement :
+
+- la presence des proprietes obligatoires
+- les tailles strictement positives
+- les normales non nulles pour les planes
+- l'extension du fichier charge (`.scene` ou `.obj`)
+- l'existence d'au moins une geometrie rendable
+
+## Limitations actuelles
+
+Le format implemente ne supporte pas encore :
+
+- `sphere`
+- `cylinder`
+- `cone`
+- `mesh reference`
+- materiaux plus riches que `gray` et `emit`
+- simplification automatique d'une scene invalide
+- schema contraint pour un futur LLM
+
+## Exemple complet
+
+Voir [../assets/scenes/liminal_service_corridor.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/liminal_service_corridor.scene:1).

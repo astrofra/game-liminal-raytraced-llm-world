@@ -6,6 +6,8 @@ Current state:
 
 - vendored Cornell Box assets
 - clean C++11 CLI renderer
+- proprietary scene format v1 bootstrap
+- first handcrafted liminal scene
 - grayscale material reduction from the Cornell MTL
 - simple BVH acceleration
 - diffuse path tracing with direct light sampling and low-bounce radiosity
@@ -35,14 +37,18 @@ run_cornell_test.bat
 .\build\Release\liminal_cornell_renderer.exe
 ```
 
+The default run now renders:
+
+- `assets/scenes/liminal_service_corridor.scene`
+
 Useful overrides:
 
 ```powershell
-.\build\Release\liminal_cornell_renderer.exe --samples 16 --width 256 --height 256
-.\build\Release\liminal_cornell_renderer.exe --output output\cornell_box_512.pgm --samples 64 --width 512 --height 512
+.\build\Release\liminal_cornell_renderer.exe --scene assets\scenes\liminal_service_corridor.scene --samples 16 --width 256 --height 256
+.\build\Release\liminal_cornell_renderer.exe --scene assets\cornell\cornell_box.obj --output output\cornell_box_512.pgm --samples 64 --width 512 --height 512
 ```
 
-Default output: `output/cornell_box.pgm`
+Default output: `output/liminal_service_corridor.pgm`
 
 Cornell Box test helper:
 

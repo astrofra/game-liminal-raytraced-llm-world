@@ -104,3 +104,59 @@ Le projet peut maintenant etre rebuild puis teste via un seul batch a la racine.
 Observation :
 
 Le script cible un rendu de verification raisonnable en `256x256` et `32 spp`, pas un rendu final haute qualite.
+
+## 2026-07-29 - Iteration 0004 - Scene format v1 et premiere scene liminale
+
+Objectif :
+
+Sortir du simple test OBJ de reference en implementant un premier format de scene proprietaire et une scene liminale handcraftee.
+
+Travail effectue :
+
+- ajout d'un chargeur generique `--scene` pour `.scene` et `.obj`
+- implementation d'un parseur scene v1
+- support des directives :
+  - `room`
+  - `camera`
+  - `plane`
+  - `box`
+- support de `emit` pour les surfaces emissives
+- support de `rot` sur les boites
+- conversion des primitives vers le backend triangles/BVH existant
+- ajout de `assets/scenes/liminal_service_corridor.scene`
+- bascule du rendu par defaut vers la scene liminale
+- adaptation de `run_cornell_test.bat` pour pointer explicitement vers l'OBJ Cornell
+- verification du rendu Cornell apres refactorisation
+- verification du rendu de la scene liminale
+
+Resultat :
+
+Le depot ne depend plus exclusivement d'un OBJ de reference pour exister visuellement. Il possede maintenant un pipeline scene v1 minimal et une premiere image proprietaire.
+
+Observations :
+
+- la scene liminale est lisible et deja plus specifique au projet que la Cornell Box
+- le backend triangle/BVH existant se reutilise bien
+- l'eclairage reste encore emissif dans la scene, pas attache a la camera
+- le format de scene reste volontairement restreint
+
+Mesures relevees :
+
+- scene liminale, `256x256`, `24 spp`, `3 bounces` : environ `4295.14 ms`
+- Cornell Box, `256x256`, `32 spp`, `3 bounces` : environ `4166.69 ms` apres refactorisation
+
+Ce qui a bien marche :
+
+- le passage `.scene` -> triangles ne demande pas de changer le renderer
+- le test Cornell reste utile comme garde-fou de regression
+- la scene liminale suffit deja a valider l'etape architecturale la plus importante
+
+Ce qui reste fragile :
+
+- pas encore de lumiere portee par la camera
+- pas encore de schema contraint pour un futur LLM
+- pas encore de support `sphere`, `cylinder`, `cone` ou `mesh reference`
+
+Prochaine etape recommandee :
+
+Faire converger le renderer vers le modele d'eclairage cible de la spec : une seule lumiere attachee a la camera, avec la scene proprietaire comme support principal.

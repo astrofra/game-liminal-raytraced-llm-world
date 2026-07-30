@@ -7,6 +7,7 @@ set "BUILD_DIR=%ROOT_DIR%\build"
 set "EXE_PATH=%BUILD_DIR%\Release\liminal_cornell_renderer.exe"
 set "OUTPUT_DIR=%ROOT_DIR%\output"
 set "OUTPUT_PATH=%OUTPUT_DIR%\cornell_box_test.pgm"
+set "SCENE_PATH=%ROOT_DIR%\assets\cornell\cornell_box.obj"
 
 echo.
 echo === Build Fresh Release ===
@@ -18,7 +19,7 @@ if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 echo.
 echo === Run Cornell Box Test ===
-"%EXE_PATH%" --samples 32 --width 256 --height 256 --output "%OUTPUT_PATH%"
+"%EXE_PATH%" --scene "%SCENE_PATH%" --samples 32 --width 256 --height 256 --output "%OUTPUT_PATH%"
 if errorlevel 1 goto :end
 
 echo.
