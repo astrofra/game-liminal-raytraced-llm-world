@@ -2,7 +2,7 @@
 
 ## Objet
 
-Ce document synthétise ce que le moodboard de `documentation/moodboard` produit comme ambiance lorsqu'on le relit a travers la note d'intention de [`SPEC.md`](./SPEC.md) et le rendu actuel de [`img/liminal-room.png`](../img/liminal-room.png).
+Ce document synthetise ce que le moodboard de `documentation/moodboard` produit comme ambiance lorsqu'on le relit a travers la note d'intention de [`SPEC.md`](./SPEC.md) et le rendu actuel de [`img/liminal-room.png`](../img/liminal-room.png).
 
 L'enjeu n'est pas de copier une esthetique retro comme un vernis. Le point commun du corpus est plus precis : une image pauvre, parfois brutale, mais tres lisible dans ses intentions, ou la contrainte technique devient une maniere de penser l'espace, l'action et l'interface.
 
@@ -41,6 +41,50 @@ La nostalgie utile ici n'est donc pas une nostalgie de collectionneur. C'est une
 - relation a une image encore assez pauvre pour demander un travail actif au regardeur
 
 La proposition contemporaine peut alors se comprendre comme une continuation plutot qu'une citation. Le projet ne revient pas au 16 bits ; il reprend ce que ces images ont fonde dans le regard, puis le deplace vers un autre partage du calcul, ou la depense technique quitte le rendu pour migrer vers l'inference, la fiction et l'instabilite du monde.
+
+## Visuels cles
+
+### 1. Point d'ancrage contemporain
+
+![Rendu actuel du projet](../img/liminal-room.png)
+
+_Le rendu actuel pose deja une base juste : espace nu, brutalite geometrique, lumiere portee, bruit conserve, profondeur inquietante._
+
+### 2. Espaces low-fi, directionnels, incomplets
+
+![Driller : plans francs et espace de seuil](./moodboard/video-games/driller_05.png)
+
+_`Driller` montre comment quelques volumes simples et des diagonales dures suffisent a produire une sensation d'hostilite, de passage et de desorientation._
+
+![The Sentinel : minimalisme spatial et menace](./moodboard/video-games/sentinel_03.png)
+
+_`The Sentinel` pousse encore plus loin cette logique : l'espace est presque vide, mais il reste tendu, lisible, et mentalement tres actif._
+
+![Origin Complex : couloir liminal et architecture modulaire](./moodboard/demoscene/Origin_Complex_008.png)
+
+_Dans `Origin Complex`, l'architecture devient un dispositif de transit : profondeur coupee, modules repetes, promesse d'un au-dela non garanti._
+
+![Enigma : ray tracing fondateur et artificialite assumee](./moodboard/demoscene/Enigma_003.png)
+
+_`Enigma` rappelle un moment fondateur : l'image calculee comme evenement en soi, avec peu d'elements mais une forte charge d'emerveillement technique._
+
+### 3. Interfaces comme appareils de lecture
+
+![Tau Ceti : interface-outil et viewport instrumental](<./moodboard/video-games/Tau Ceti - 4880.png>)
+
+_`Tau Ceti` montre une image enchassee dans un appareil. Le monde n'apparait pas nu : il est lu a travers un tableau de bord._
+
+![Borrowed Time : partage net entre image, verbes et texte](./moodboard/video-games/borrowed_time_02.png)
+
+_`Borrowed Time` est important pour la relation texte-image-action : l'interface ne masque pas son systeme, elle l'expose clairement._
+
+![Whale's Voyage : scene, personnage et etat machine dans un meme cadre](./moodboard/video-games/whales_voyage_23.png)
+
+_`Whale's Voyage` donne une reference utile pour une UI compacte, appareillee, ou la scene et les donnees de contexte cohabitent sans se dissoudre._
+
+![Les Portes du Temps : poste d'observation compartimente](<./moodboard/video-games/portes_du_temps_(french)_02.png>)
+
+_`Les Portes du Temps` insiste sur la logique de fenetres, de cadres et de zones fonctionnelles ; une piste pertinente pour une interface de surveillance fictionnelle._
 
 ## Visualisation spatiale
 
@@ -231,7 +275,7 @@ Dans le projet, la latence du LLM n'a donc pas besoin d'etre masquee absolument.
 
 ## Direction d'ambiance
 
-La meilleure synthese du moodboard pour ce projet n'est ni "retro", ni "minimaliste", ni "brutaliste" pris isolément. C'est plutot :
+La meilleure synthese du moodboard pour ce projet n'est ni "retro", ni "minimaliste", ni "brutaliste" pris isolement. C'est plutot :
 
 > une machine fictionnelle pauvre en image, mais precise en tension spatiale ; une interface-outil qui expose ses limites ; un monde visible par fragments, plus inquietant parce qu'il reste partiellement non calcule
 
