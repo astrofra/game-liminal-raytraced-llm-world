@@ -68,6 +68,7 @@ En revanche, la boucle de jeu, l'inference de tour et la future couche multimedi
 - [../assets/scenes/liminal_service_corridor.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/liminal_service_corridor.scene:1) : premiere scene proprietaire liminale.
 - [../scripts/download_ministral.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/download_ministral.py:1) : telechargement et validation du modele cible.
 - [SCENE_FORMAT_V1.md](./SCENE_FORMAT_V1.md) : description du format de scene implemente.
+- [SPATIAL_VALIDATION_PLAN.md](./SPATIAL_VALIDATION_PLAN.md) : protocole de validation du lien entre brief narratif, texte, scene v1 et rendu.
 - [LLAMA_CUDA_SPECS.md](./LLAMA_CUDA_SPECS.md) : procedure de build et de validation du runtime `llama.cpp` cible.
 - [../vendor/llama.cpp/VENDORED_COMMIT.txt](/C:/works/projects/game-liminal-raytraced-llm-world/vendor/llama.cpp/VENDORED_COMMIT.txt:1) : commit exact de `llama.cpp` vendorise.
 - [../vendor/stb/stb_image_write.h](/C:/works/projects/game-liminal-raytraced-llm-world/vendor/stb/stb_image_write.h:1) : sortie PNG vendorisee.

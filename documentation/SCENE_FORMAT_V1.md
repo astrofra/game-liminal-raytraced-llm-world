@@ -1,6 +1,6 @@
 # Scene Format V1
 
-Derniere mise a jour : 2026-07-30
+Derniere mise a jour : 2026-07-31
 
 ## Statut
 
@@ -130,9 +130,22 @@ Le format implemente ne supporte pas encore :
 - `cone`
 - `mesh reference`
 - materiaux plus riches que `gray` et `emit`
+- ciel, fond ou horizon explicite
+- degrade vertical natif pour un ciel ou un arriere-plan
 - simplification automatique d'une scene invalide
 - schema contraint pour un futur LLM
+
+## Limites importantes pour la validation spatiale
+
+Pour la premiere batterie de tests exterieurs autour du datacenter et du desert, il faut garder a l'esprit que :
+
+- un exterieur vaste devra etre suggere avec tres peu de masses
+- le desert ne peut pas encore exister comme type de surface dedie
+- le ciel de fin de journee devra etre simule pauvrement ou servira de preuve qu'une extension du format est necessaire
+- la lisibilite devra venir surtout du cadrage, du parapet, du seuil, des grandes surfaces et de la ligne d'horizon
 
 ## Exemple complet
 
 Voir [../assets/scenes/liminal_service_corridor.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/liminal_service_corridor.scene:1).
+
+Pour la prochaine phase de travail, voir aussi [SPATIAL_VALIDATION_PLAN.md](./SPATIAL_VALIDATION_PLAN.md).

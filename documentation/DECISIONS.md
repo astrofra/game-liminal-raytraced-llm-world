@@ -231,3 +231,24 @@ Raison :
 Consequence :
 
 Les prochaines iterations de la boucle verticale devront viser un runtime natif avec `SDL3` pour la HMI, le transcript, la ligne de commande parser et l'affichage temps reel du viewport.
+
+## 2026-07-31 - Valider d'abord la chaine scenario -> scene -> rendu sur trois lieux canoniques
+
+Decision :
+
+Avant d'ouvrir largement la generation de scenes par le LLM, la premiere validation spatiale du projet passera par trois lieux de reference :
+
+- le portail d'entree du datacenter
+- l'interieur du datacenter avec ses travees de serveurs
+- le toit du datacenter comme tour de ronde ouvrant vers le desert
+
+Raison :
+
+- la difficulte principale du projet n'est pas d'abord conversationnelle, mais traductive
+- il faut verifier ce que le format `scene v1` sait vraiment exprimer
+- ces trois lieux couvrent trois regimes essentiels : seuil, interieur dense, exterieur de veille
+- le test du toit forcera rapidement la question du ciel, de l'horizon et des limites du format actuel
+
+Consequence :
+
+La prochaine phase doit produire une batterie de tests fonctionnels et des scenes canoniques de reference avant toute generalisation de la generation spatiale.

@@ -1,6 +1,6 @@
 # Known Issues
 
-Derniere mise a jour : 2026-07-30
+Derniere mise a jour : 2026-07-31
 
 ## Ouverts
 
@@ -70,6 +70,26 @@ Impact :
 Piste :
 
 Etendre progressivement le support a d'autres primitives et renforcer la validation.
+
+### 2026-07-31 - Les exterieurs vastes et le ciel sombre sont mal representes par `scene v1`
+
+Statut :
+
+Ouvert.
+
+Description :
+
+Le format `scene v1` actuel sait bien decrire des interieurs simples a base de `plane` et `box`, mais il n'offre pas encore de mecanisme propre pour representer un ciel, un degrade de fond, un horizon stable ou un exterieur desertique vaste.
+
+Impact :
+
+- risque de rendre le portail d'entree trop interieur ou trop abstrait
+- risque de rendre le toit du datacenter peu lisible comme poste d'observation
+- difficulte a faire exister la reference au desert sans bricolages de composition
+
+Piste :
+
+Executer d'abord la batterie de tests de `SPATIAL_VALIDATION_PLAN.md`, puis decider si une extension minimale du format est necessaire.
 
 ### 2026-07-29 - Telemetrie encore insuffisante
 

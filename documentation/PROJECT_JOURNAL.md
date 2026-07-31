@@ -377,3 +377,36 @@ Observations :
 Prochaine etape recommandee :
 
 Commencer la boucle verticale `GameState -> input texte -> appel LLM -> resultat structure -> scene -> rendu -> presentation SDL3`.
+
+## 2026-07-31 - Iteration 0011 - Plan de validation spatiale des lieux canoniques
+
+Objectif :
+
+Preparer la premiere vraie validation du lien entre fiction du datacenter, texte de lieu, scene v1 et rendu 3D.
+
+Travail effectue :
+
+- relecture du format actuel dans `assets/scenes/liminal_service_corridor.scene`
+- relecture de `SCENE_FORMAT_V1.md`
+- recoupement avec `STORY.md` pour identifier les lieux les plus structurants
+- formalisation d'un plan de validation dedie
+- choix de trois lieux canoniques :
+  - portail d'entree
+  - travees de serveurs
+  - toit / tour de ronde
+- explicitation des limites actuelles du format pour le ciel, l'horizon et les exterieurs
+- mise a jour de l'index documentaire et des issues connues
+
+Resultat :
+
+Le projet dispose maintenant d'un protocole explicite pour tester la chaine `scenario -> texte -> scene -> rendu` avant de brancher la generation spatiale du LLM.
+
+Observations :
+
+- la scene de corridor existante reste un bon point de controle interieur
+- le portail et surtout le toit vont servir de tests de stress du format v1
+- la question du ciel sombre et du degrade est probablement le meilleur revelateur des limites actuelles
+
+Prochaine etape recommandee :
+
+Ecrire les trois scenes canoniques a la main, produire leurs rendus de reference, puis comparer ce qui tient ou casse entre brief narratif et image.
