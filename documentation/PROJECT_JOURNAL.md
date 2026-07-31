@@ -561,3 +561,98 @@ Ce qui reste fragile :
 Prochaine etape recommandee :
 
 Factoriser la bibliotheque prefab, puis reduire son cout en introduisant soit des materiaux partages, soit une notion de repetition modulaire plus compacte.
+
+## 2026-07-31 - Iteration 0015 - OpenMP optionnel et preset de travail plus rapide
+
+Objectif :
+
+Reduire le temps de rendu des scenes denses sans engager tout de suite une refonte architecturale du renderer.
+
+Travail effectue :
+
+- ajout de l'option CMake `LIMINAL_ENABLE_OPENMP`, activee par defaut
+- integration conditionnelle de `find_package(OpenMP)` avec fallback mono-thread si indisponible
+- parallelisation de la boucle externe de rendu par lignes dans `src/renderer.cpp`
+- ajustement du logging de progression pour le mode OpenMP
+- abaissement du preset par defaut de `32 spp` a `16 spp`
+- generation de deux builds de comparaison sans `llama.cpp` :
+  - `build_noomp`
+  - `build_omp`
+- benchmark comparatif sur la scene canonique la plus lourde
+- verification de l'identite binaire des PNG produits avec la meme seed
+
+Resultat :
+
+Le renderer dispose maintenant d'un mode multi-coeur optionnel a faible intrusion. Sur la scene des travees de serveurs, le gain observe est tres important sans changement d'image detecte sur le test mene.
+
+Observations :
+
+- la baisse a `16 spp` renforce le grain mais reste compatible avec l'intention visuelle actuelle
+- OpenMP soulage fortement le cout des prefabs denses
+- la cause structurelle du cout geometrique n'est pas supprimee pour autant
+- le fallback mono-thread reste utile pour conserver un comportement simple et portable
+
+Mesures relevees :
+
+- travees de serveurs, `800x400`, `16 spp`, `3 bounces`, mono-thread : environ `24376.07 ms`
+- travees de serveurs, `800x400`, `16 spp`, `3 bounces`, OpenMP, `16` threads annonces : environ `2708.34 ms`
+- hash SHA-256 identique entre `output\datacenter_server_aisles_noomp.png` et `output\datacenter_server_aisles_omp.png`
+
+Ce qui a bien marche :
+
+- le parallelisme par lignes se branche proprement sur l'architecture existante
+- le speed-up observe est largement suffisant pour justifier l'option
+- le determinisme du rendu reste bon sur le cas teste
+
+Ce qui reste fragile :
+
+- OpenMP depend encore du compilateur et de la configuration locale
+- les prefabs restent trop couteux en triangles et en materiaux
+- la progression par ligne est moins fine en mode parallele
+
+Prochaine etape recommandee :
+
+Attaquer la reduction du cout structurel des prefabs, par exemple via materiaux partages, repetition modulaire ou instanciation plus compacte.
+
+## 2026-07-31 - Iteration 0016 - Cadrage fonctionnel de la boucle de tour et de la generation de scene
+
+Objectif :
+
+Clarifier la prochaine grande inconnue du projet : l'articulation entre memoire du monde, texte genere, continuite du recit et generation de scenes rendables.
+
+Travail effectue :
+
+- clarification documentaire sur les vraies priorites de la preuve de concept
+  - latence d'inference
+  - temps de rendu CPU par tour
+- notation explicite que le temps de fabrication runtime des scenes et l'occupation RAM ne sont pas encore les priorites critiques
+- decision de ne pas prendre comme voie principale une generation libre de scene complete par le LLM
+- formalisation d'une strategie `hard state -> soft state -> spatial state -> scene v1`
+- ajout d'un document dedie `FUNCTIONAL_PIPELINE_V1.md`
+- mise a jour de la documentation d'etat, des decisions et des risques ouverts
+
+Resultat :
+
+Le projet dispose maintenant d'un cadrage explicite pour attaquer la boucle verticale fonctionnelle sans confondre d'emblee recit, memoire, geographie et geometrie brute.
+
+Observations :
+
+- la vraie difficulte n'est pas seulement de faire produire du texte au modele
+- le point sensible est la traduction stable entre ce qui doit rester actionnable et ce qui peut rester flottant
+- `Ministral` a `temperature 0` parait mieux adapte a des deltas structures qu'a une scene complete libre
+
+Ce qui a bien marche :
+
+- la distinction `hard state` / `soft state` / `spatial state` rend le probleme beaucoup plus lisible
+- le recentrage sur le volet fonctionnel evite de surinvestir trop tot dans les optimisations profondes du renderer
+- la voie deterministe `spatial state -> scene v1` offre une meilleure surface de validation
+
+Ce qui reste fragile :
+
+- aucun contrat de tour n'est encore implemente
+- aucun compilateur de scene depuis l'etat spatial n'existe encore
+- la generation de nouveaux lieux hors fixtures canoniques reste entierement ouverte
+
+Prochaine etape recommandee :
+
+Definir les structures C++ du monde, le schema de sortie structuree de `Ministral`, puis brancher une premiere boucle headless `commande -> tour -> scene -> rendu`.

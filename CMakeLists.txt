@@ -4,6 +4,7 @@ project(liminal_raytraced_renderer LANGUAGES CXX)
 
 option(LIMINAL_ENABLE_LLAMA_CPP "Build with vendorized llama.cpp runtime support" ON)
 option(LIMINAL_ENABLE_LLAMA_CUDA "Enable CUDA backend in vendorized llama.cpp build" ON)
+option(LIMINAL_ENABLE_OPENMP "Enable OpenMP render parallelism when available" ON)
 
 set(LIMINAL_LLAMA_CPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp" CACHE PATH "Path to the vendorized llama.cpp tree")
 
@@ -19,6 +20,16 @@ add_executable(liminal_cornell_renderer
 )
 
 target_include_directories(liminal_cornell_renderer PRIVATE src vendor/stb)
+
+if (LIMINAL_ENABLE_OPENMP)
+    find_package(OpenMP)
+    if (OpenMP_CXX_FOUND)
+        target_link_libraries(liminal_cornell_renderer PRIVATE OpenMP::OpenMP_CXX)
+        target_compile_definitions(liminal_cornell_renderer PRIVATE LIMINAL_ENABLE_OPENMP=1)
+    else()
+        message(STATUS "OpenMP requested but not found; building renderer without OpenMP")
+    endif()
+endif()
 
 set(LIMINAL_LLAMA_VENDORED_COMMIT "not-vendored")
 if (EXISTS "${LIMINAL_LLAMA_CPP_DIR}/VENDORED_COMMIT.txt")

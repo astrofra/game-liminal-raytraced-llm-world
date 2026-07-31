@@ -17,6 +17,7 @@ Current state:
 - diffuse path tracing with direct light sampling and low-bounce radiosity
 - native PNG output via vendored `stb_image_write.h`
 - optional `llama.cpp` runtime wiring in CMake
+- optional OpenMP line-parallel rendering in CMake
 - Python helper to download `Ministral 3 8B Instruct 2512` GGUF
 - explicit provenance for the reused 2003 raytracer ideas
 
@@ -44,6 +45,13 @@ If you want the vendorized `llama.cpp` build with CUDA enabled, keep the default
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -DLIMINAL_ENABLE_LLAMA_CPP=ON -DLIMINAL_ENABLE_LLAMA_CUDA=ON
+cmake --build build --config Release
+```
+
+OpenMP is enabled by default when the local compiler supports it. To force a mono-thread build:
+
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -DLIMINAL_ENABLE_OPENMP=OFF
 cmake --build build --config Release
 ```
 
@@ -84,6 +92,7 @@ The default run now renders:
 
 - `assets/scenes/liminal_service_corridor.scene`
 - en `800x400` par defaut, en cadrage panorama
+- avec `16 spp` par defaut
 
 Useful overrides:
 

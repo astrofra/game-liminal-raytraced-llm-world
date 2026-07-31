@@ -18,7 +18,8 @@ Il est organise de facon a separer :
 - [TECHNICAL_STATE.md](./TECHNICAL_STATE.md) : photographie technique du depot a l'instant present.
 - [SCENE_FORMAT_V1.md](./SCENE_FORMAT_V1.md) : format de scene proprietaire v1 actuellement implemente.
 - [SPATIAL_VALIDATION_PLAN.md](./SPATIAL_VALIDATION_PLAN.md) : plan de validation du lien entre scenario, texte, scene v1 et rendu 3D.
-- [MULTIPROCESSING_FEASIBILITY.md](./MULTIPROCESSING_FEASIBILITY.md) : etude de faisabilite pour un rendu CPU parallele a faible intrusion.
+- [FUNCTIONAL_PIPELINE_V1.md](./FUNCTIONAL_PIPELINE_V1.md) : cadrage de la future boucle `etat -> texte -> scene -> rendu` et de la generation de scene assistee par LLM.
+- [MULTIPROCESSING_FEASIBILITY.md](./MULTIPROCESSING_FEASIBILITY.md) : etude puis base de validation pour le rendu CPU parallele a faible intrusion, maintenant concretisee par une option OpenMP dans le build.
 - [DECISIONS.md](./DECISIONS.md) : decisions techniques et architecturales actees, avec justification.
 - [PROJECT_JOURNAL.md](./PROJECT_JOURNAL.md) : journal chronologique des iterations, essais, corrections et resultats.
 - [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) : erreurs, limitations, dettes techniques et points de vigilance.

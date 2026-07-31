@@ -4,8 +4,22 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(LIMINAL_ENABLE_OPENMP)
+  #include <omp.h>
+#endif
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+
+#if defined(LIMINAL_ENABLE_OPENMP)
+  #if defined(_MSC_VER)
+    #define LIMINAL_OMP_PARALLEL_FOR __pragma(omp parallel for schedule(dynamic, 1))
+  #else
+    #define LIMINAL_OMP_PARALLEL_FOR _Pragma("omp parallel for schedule(dynamic, 1)")
+  #endif
+#else
+  #define LIMINAL_OMP_PARALLEL_FOR
+#endif
 
 namespace liminal {
 
@@ -655,16 +669,26 @@ bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const ch
     const CameraBasis basis = BuildCameraBasis(scene.camera);
     const CameraLightState camera_light = BuildCameraLightState(scene, basis);
     std::vector<unsigned char> pixels(static_cast<size_t>(config.width * config.height));
+    bool parallel_enabled = false;
+    int openmp_threads = 1;
+
+#if defined(LIMINAL_ENABLE_OPENMP)
+    parallel_enabled = true;
+    openmp_threads = omp_get_max_threads();
+#endif
 
     printf(
-        "Rendering %dx%d, spp=%d, bounces=%d, emissive=%d, camera_spot=%s\n",
+        "Rendering %dx%d, spp=%d, bounces=%d, emissive=%d, camera_spot=%s, openmp=%s, threads=%d\n",
         config.width,
         config.height,
         config.samples_per_pixel,
         config.max_bounces,
         static_cast<int>(scene.emissive_triangles.size()),
-        camera_light.enabled ? "on" : "off");
+        camera_light.enabled ? "on" : "off",
+        parallel_enabled ? "on" : "off",
+        openmp_threads);
 
+    LIMINAL_OMP_PARALLEL_FOR
     for (int y = 0; y < config.height; ++y) {
         for (int x = 0; x < config.width; ++x) {
             const uint32_t pixel_seed =
@@ -681,9 +705,13 @@ bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const ch
             pixels[static_cast<size_t>(x + y * config.width)] = ToneMapToByte(average, config.exposure);
         }
 
-        if ((y % 16) == 0 || y + 1 == config.height) {
+        if (!parallel_enabled && ((y % 16) == 0 || y + 1 == config.height)) {
             printf("  line %d / %d\n", y + 1, config.height);
         }
+    }
+
+    if (parallel_enabled) {
+        printf("  lines %d / %d\n", config.height, config.height);
     }
 
     return WriteImageByExtension(output_path, pixels, config.width, config.height);

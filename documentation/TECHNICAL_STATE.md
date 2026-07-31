@@ -22,7 +22,7 @@ En revanche, la boucle de jeu, l'inference de tour et la future couche multimedi
 ## Fonctionnalites presentes
 
 - Build natif via CMake et Visual Studio 2022.
-- Options CMake `LIMINAL_ENABLE_LLAMA_CPP` et `LIMINAL_ENABLE_LLAMA_CUDA` pour raccorder un `llama.cpp` vendorise.
+- Options CMake `LIMINAL_ENABLE_LLAMA_CPP`, `LIMINAL_ENABLE_LLAMA_CUDA` et `LIMINAL_ENABLE_OPENMP` pour raccorder un `llama.cpp` vendorise et activer le parallelisme CPU si disponible.
 - Helper Windows `build_release.bat` a la racine pour configurer et compiler la version `Release`.
 - Helper Windows `run_cornell_test.bat` a la racine pour compiler puis lancer le rendu de verification Cornell Box.
 - Helper Windows `download_ministral.bat` pour telecharger le modele cible.
@@ -61,6 +61,7 @@ En revanche, la boucle de jeu, l'inference de tour et la future couche multimedi
   - un petit nombre de rebonds diffus
   - roulette russe
   - clamp simple des contributions extremes
+- Parallelisation optionnelle de la boucle de rendu par lignes via OpenMP, avec fallback mono-thread.
 - Sortie image en `PNG` via `stb_image_write`.
 - Sortie `PGM` legacy encore supportee selon l'extension du fichier.
 - Mesure du temps de chargement et du temps de rendu.
@@ -87,6 +88,7 @@ En revanche, la boucle de jeu, l'inference de tour et la future couche multimedi
 - [../scripts/download_ministral.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/download_ministral.py:1) : telechargement et validation du modele cible.
 - [SCENE_FORMAT_V1.md](./SCENE_FORMAT_V1.md) : description du format de scene implemente.
 - [SPATIAL_VALIDATION_PLAN.md](./SPATIAL_VALIDATION_PLAN.md) : protocole de validation du lien entre brief narratif, texte, scene v1 et rendu.
+- [FUNCTIONAL_PIPELINE_V1.md](./FUNCTIONAL_PIPELINE_V1.md) : cadrage de la future boucle fonctionnelle et de la generation de scene assistee par LLM.
 - [LLAMA_CUDA_SPECS.md](./LLAMA_CUDA_SPECS.md) : procedure de build et de validation du runtime `llama.cpp` cible.
 - [../vendor/llama.cpp/VENDORED_COMMIT.txt](/C:/works/projects/game-liminal-raytraced-llm-world/vendor/llama.cpp/VENDORED_COMMIT.txt:1) : commit exact de `llama.cpp` vendorise.
 - [../vendor/stb/stb_image_write.h](/C:/works/projects/game-liminal-raytraced-llm-world/vendor/stb/stb_image_write.h:1) : sortie PNG vendorisee.
@@ -106,6 +108,13 @@ Avec `llama.cpp` et CUDA :
 cmake -S . -B build -G "Visual Studio 17 2022" -DLIMINAL_ENABLE_LLAMA_CPP=ON -DLIMINAL_ENABLE_LLAMA_CUDA=ON
 cmake --build build --config Release
 .\build\Release\liminal_cornell_renderer.exe --llama-info
+```
+
+Avec OpenMP desactive explicitement :
+
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -DLIMINAL_ENABLE_OPENMP=OFF
+cmake --build build --config Release
 ```
 
 Exemple avec scene explicite :
@@ -134,7 +143,7 @@ Exemple de rendu :
 
 - largeur : `800`
 - hauteur : `400`
-- echantillons par pixel : `32`
+- echantillons par pixel : `16`
 - rebonds diffus max : `3`
 - echantillons de lumiere directe : `2`
 - seed : `1337`
@@ -166,14 +175,24 @@ Contexte : build `Release` local sur la machine de travail actuelle, scenes cano
 - travees de serveurs avec prefabs : environ `23903.92 ms`
 - toit / tour de ronde avec prefabs : environ `7797.88 ms`
 
+### 2026-07-31 - Validation OpenMP
+
+Contexte : scene `datacenter_server_aisles.scene`, `800x400`, `16 spp`, `3 bounces`, meme seed, build sans `llama.cpp`.
+
+- build mono-thread `LIMINAL_ENABLE_OPENMP=OFF` : environ `24376.07 ms`
+- build OpenMP `LIMINAL_ENABLE_OPENMP=ON`, `16` threads annonces : environ `2708.34 ms`
+- image de sortie bit-identique entre les deux builds sur ce test
+
 Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encore un benchmark stable.
 
 ## Ce que ce module ne fait pas encore
 
-- pas de scene v1 complete : seulement `plane` et `box` sont supportes
+- pas de scene v1 complete : seulement un sous-ensemble centre sur `room`, `camera`, `spotlight`, `sky`, `plane`, `box` et les premiers `prefab_*` est supporte
 - pas de validation defensive ou simplification automatique d'une scene generee par LLM
 - pas encore de chargement effectif du modele `Ministral 3 8B` dans la boucle du jeu
 - pas encore d'inference de tour, ni de prompt assembly, ni de schema de sortie structuree
+- pas encore de separation explicite entre `hard state`, `soft state` et `spatial state`
+- pas encore de compilateur de scene deterministe a partir d'un etat spatial intermediaire
 - pas d'API integrable propre pour un futur runtime de jeu
 - pas d'accumulation progressive pendant l'inference
 - pas encore de couche `SDL3` pour fenetre, transcript, ligne de commande parser et presentation temps reel du bitmap

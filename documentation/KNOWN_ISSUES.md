@@ -103,13 +103,39 @@ La premiere couche `prefab_*` stabilise bien la lecture semantique du decor, mai
 
 Impact :
 
-- temps de rendu en hausse sur les scenes denses
+- temps de rendu en hausse sur les scenes denses, surtout en mono-thread
 - inflation du nombre de materiaux
+- OpenMP masque partiellement le probleme sur machine multi-coeur, sans le resoudre sur le fond
 - risque de perdre l'avantage de contrainte simple si la bibliotheque grossit sans discipline
 
 Piste :
 
 Introduire ensuite soit des materiaux partages, soit une repetition modulaire plus compacte, soit une couche d'instanciation plus sobre.
+
+### 2026-07-31 - Le contrat de tour et le pont entre etat du monde, narration et scene ne sont pas encore formalises
+
+Statut :
+
+Ouvert.
+
+Description :
+
+Le projet sait maintenant rendre des scenes canoniques et interroger un LLM local, mais il ne dispose pas encore du maillon central qui relie de facon robuste :
+
+- l'etat actionnable du monde
+- la prose retournee au joueur
+- la description spatiale utile
+- la scene effectivement rendue
+
+Impact :
+
+- une generation directe de scene complete par le LLM serait trop fragile comme voie principale
+- la continuite inter-tour resterait difficile a maintenir et a debugger
+- la future boucle verticale risquerait de melanger plusieurs problemes a la fois
+
+Piste :
+
+Introduire un `hard state` autoritatif, un `soft state` resumable, un `spatial state` intermediaire et un contrat de tour structure a tres basse temperature avant d'ouvrir une generation spatiale plus libre.
 
 ### 2026-07-29 - Telemetrie encore insuffisante
 

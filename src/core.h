@@ -260,7 +260,7 @@ struct RenderConfig {
     RenderConfig()
         : width(800)
         , height(400)
-        , samples_per_pixel(32)
+        , samples_per_pixel(16)
         , max_bounces(3)
         , direct_light_samples(2)
         , seed(1337u)

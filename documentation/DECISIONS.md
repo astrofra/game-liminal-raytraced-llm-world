@@ -252,3 +252,37 @@ Raison :
 Consequence :
 
 La prochaine phase doit produire une batterie de tests fonctionnels et des scenes canoniques de reference avant toute generalisation de la generation spatiale.
+
+## 2026-07-31 - Activer OpenMP en option de build et abaisser le preset par defaut a `16 spp`
+
+Decision :
+
+Le renderer active desormais un parallelisme CPU OpenMP quand le compilateur le permet, via l'option CMake `LIMINAL_ENABLE_OPENMP`, et le preset de rendu par defaut passe de `32` a `16` echantillons par pixel.
+
+Raison :
+
+- le cout des scenes canoniques les plus denses devient trop eleve en mono-thread, surtout depuis l'introduction des prefabs
+- un grain plus fort reste compatible avec l'intention esthetique du projet
+- OpenMP permet un gain de temps immediat sans rearchitecture lourde du renderer
+- le fallback mono-thread reste disponible si OpenMP n'est pas present localement
+
+Consequence :
+
+Le depot privilegie maintenant un rendu de travail plus rapide, multi-coeur quand disponible, tout en conservant un mode deterministe et un comportement de repli simple.
+
+## 2026-07-31 - Prioriser la chaine fonctionnelle et un etat spatial intermediaire avant les optimisations profondes
+
+Decision :
+
+Pour la preuve de concept, les prochaines iterations priorisent la chaine `etat -> texte -> scene -> rendu`. Le LLM ne doit pas generer librement toute la scene `v1` a chaque tour : il doit d'abord produire un resultat structure a tres basse temperature, qui alimente un etat spatial intermediaire compile ensuite de facon deterministe.
+
+Raison :
+
+- les vrais budgets de temps sont d'abord la latence d'inference et le rendu CPU par tour
+- le temps de fabrication runtime des scenes et l'occupation RAM ne sont pas encore les priorites critiques du prototype
+- `Ministral` a `temperature 0` est plus defendable sur des deltas structures que sur une geometrie libre complete
+- separer hard state, soft state, etat spatial, narration et scene facilite la validation et le debug
+
+Consequence :
+
+La prochaine etape doit definir un contrat de tour structure, les structures de memoire du monde et un compilateur de scene deterministe pour les lieux canoniques avant d'ouvrir une generation spatiale plus libre.

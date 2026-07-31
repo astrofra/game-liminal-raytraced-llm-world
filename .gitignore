@@ -12,3 +12,5 @@ __pycache__/
 *.pyc
 .DS_Store
 /build_skytest
+/build_omp
+/build_noomp
