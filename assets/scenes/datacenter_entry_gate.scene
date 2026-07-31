@@ -1,0 +1,37 @@
+# Scene format v1
+# Canonical spatial validation fixture SV-001
+
+room "datacenter entry gate"
+
+camera eye(0.0,1.70,-13.8) target(0.0,1.85,7.2) up(0.0,1.0,0.0) fov(44.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(26.0) cone(12.0,30.0) intensity(95.0)
+
+plane "forecourt" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(22.0,46.0) gray(0.18)
+plane "desert_left" pos(-11.2,0.02,8.0) normal(0.0,1.0,0.0) size(15.0,24.0) gray(0.22)
+plane "desert_right" pos(11.2,0.02,8.0) normal(0.0,1.0,0.0) size(15.0,24.0) gray(0.21)
+
+plane "sky_upper" pos(0.0,10.5,26.5) normal(0.0,0.0,-1.0) size(84.0,20.0) gray(0.05) emit(0.04)
+plane "sky_mid" pos(0.0,6.0,26.1) normal(0.0,0.0,-1.0) size(84.0,9.0) gray(0.10) emit(0.06)
+plane "sky_low" pos(0.0,2.5,25.7) normal(0.0,0.0,-1.0) size(84.0,4.5) gray(0.18) emit(0.08)
+
+box "left_boundary_wall" pos(-8.8,1.25,1.0) size(0.6,2.5,20.0) gray(0.25)
+box "right_boundary_wall" pos(8.8,1.25,1.0) size(0.6,2.5,20.0) gray(0.26)
+box "gate_threshold" pos(0.0,0.18,4.6) size(5.8,0.36,1.4) gray(0.20)
+
+box "gate_pillar_left" pos(-2.8,1.55,4.8) size(0.55,3.1,0.55) gray(0.43)
+box "gate_pillar_right" pos(2.8,1.55,4.8) size(0.55,3.1,0.55) gray(0.44)
+box "gate_header" pos(0.0,2.95,4.8) size(6.15,0.30,0.40) gray(0.47)
+box "gate_bar_1" pos(-1.60,1.55,4.8) size(0.18,2.55,0.12) gray(0.55)
+box "gate_bar_2" pos(-0.80,1.55,4.8) size(0.18,2.55,0.12) gray(0.56)
+box "gate_bar_3" pos(0.00,1.55,4.8) size(0.18,2.55,0.12) gray(0.57)
+box "gate_bar_4" pos(0.80,1.55,4.8) size(0.18,2.55,0.12) gray(0.56)
+box "gate_bar_5" pos(1.60,1.55,4.8) size(0.18,2.55,0.12) gray(0.55)
+
+box "left_wing" pos(-5.5,2.8,9.4) size(6.6,5.6,3.0) gray(0.27)
+box "right_wing" pos(5.5,2.8,9.4) size(6.6,5.6,3.0) gray(0.28)
+box "entry_header" pos(0.0,4.85,9.4) size(4.4,1.1,3.0) gray(0.23)
+box "entry_back" pos(0.0,2.8,11.1) size(4.2,5.6,0.28) gray(0.21)
+box "service_mass_left" pos(-7.9,2.2,13.2) size(4.4,4.4,4.2) gray(0.23)
+box "service_mass_right" pos(7.9,2.2,13.2) size(4.4,4.4,4.2) gray(0.24)
+box "roofline_block" pos(0.0,5.9,12.7) size(17.0,1.2,5.6) gray(0.19)
+box "rear_mass" pos(0.0,3.0,16.2) size(18.0,6.0,3.0) gray(0.20)

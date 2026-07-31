@@ -410,3 +410,55 @@ Observations :
 Prochaine etape recommandee :
 
 Ecrire les trois scenes canoniques a la main, produire leurs rendus de reference, puis comparer ce qui tient ou casse entre brief narratif et image.
+
+## 2026-07-31 - Iteration 0012 - Fixtures spatiales canoniques et rendus de reference
+
+Objectif :
+
+Passer du plan de validation a une premiere implementation concrete des trois lieux canoniques.
+
+Travail effectue :
+
+- ecriture de `assets/scenes/datacenter_entry_gate.scene`
+- ecriture de `assets/scenes/datacenter_server_aisles.scene`
+- ecriture de `assets/scenes/datacenter_roof_watch.scene`
+- rendu smoke test des trois scenes en basse resolution
+- rendu de reference des trois scenes en `800x400`, `16 spp`
+- inspection visuelle des PNG produits
+
+Resultat :
+
+Le depot contient maintenant trois fixtures spatiales explicites qui couvrent :
+
+- le seuil exterieur
+- l'interieur technique dense
+- le point haut d'observation vers le desert
+
+Observations :
+
+- le portail d'entree lit correctement comme un exterieur ferme et controle
+- les travees de serveurs produisent une interiorite dense et repetitive, mais restent encore plus architecturales que semantiquement "serveurs"
+- le toit fonctionne comme poste d'observation, mais le ciel sombre est obtenu par empilement de plans emissifs plutot que par un vrai fond ou degrade
+- les trois scenes sont distinguables sans aide textuelle, ce qui valide la methode de fixtures manuelles
+
+Mesures relevees :
+
+- portail d'entree, `800x400`, `16 spp`, `3 bounces` : environ `16207.52 ms`
+- travees de serveurs, `800x400`, `16 spp`, `3 bounces` : environ `11063.99 ms`
+- toit / tour de ronde, `800x400`, `16 spp`, `3 bounces` : environ `9253.65 ms`
+
+Ce qui a bien marche :
+
+- le vocabulaire `plane` + `box` suffit deja a distinguer trois regimes spatiaux nets
+- la scene du toit prouve qu'un horizon pauvre peut exister visuellement, meme de facon tres contrainte
+- la batterie de tests rend maintenant visible ce que le format sait ou ne sait pas traduire
+
+Ce qui reste fragile :
+
+- le desert et le ciel reposent encore sur des approximations de composition
+- l'interieur du datacenter reste typologiquement juste, mais pas encore assez signe comme "baies de serveurs"
+- le lien entre description textuelle et scene n'est pas encore automatise par un contrat de donnees
+
+Prochaine etape recommandee :
+
+Comparer chaque fixture a un brief narratif court, documenter les pertes de traduction, puis decider des extensions minimales du format `scene v1`.

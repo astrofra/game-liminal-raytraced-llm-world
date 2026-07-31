@@ -36,6 +36,10 @@ En revanche, la boucle de jeu, l'inference de tour et la future couche multimedi
 - Spot analytique attache a la camera, avec panneau parametrique, portee limitee et cone progressif.
 - Conversion des primitives `plane` et `box` vers le backend triangle/BVH existant.
 - Premiere scene liminale handcraftee dans `assets/scenes/liminal_service_corridor.scene`.
+- Trois scenes canoniques de validation spatiale handcraftees :
+  - `assets/scenes/datacenter_entry_gate.scene`
+  - `assets/scenes/datacenter_server_aisles.scene`
+  - `assets/scenes/datacenter_roof_watch.scene`
 - Chargement d'un fichier OBJ triangule simple.
 - Chargement d'un fichier MTL reduit en materiaux grayscale.
 - Reconstruction locale de la lumiere de la Cornell Box a partir des metadonnees de la scene.
@@ -66,6 +70,9 @@ En revanche, la boucle de jeu, l'inference de tour et la future couche multimedi
 - [../assets/cornell/cornell_box.obj](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.obj:1) : scene de reference vendorisee.
 - [../assets/cornell/cornell_box.mtl](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.mtl:1) : materiaux de reference.
 - [../assets/scenes/liminal_service_corridor.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/liminal_service_corridor.scene:1) : premiere scene proprietaire liminale.
+- [../assets/scenes/datacenter_entry_gate.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_entry_gate.scene:1) : fixture canonique du portail d'entree.
+- [../assets/scenes/datacenter_server_aisles.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_server_aisles.scene:1) : fixture canonique des travees de serveurs.
+- [../assets/scenes/datacenter_roof_watch.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_roof_watch.scene:1) : fixture canonique du toit / tour de ronde.
 - [../scripts/download_ministral.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/download_ministral.py:1) : telechargement et validation du modele cible.
 - [SCENE_FORMAT_V1.md](./SCENE_FORMAT_V1.md) : description du format de scene implemente.
 - [SPATIAL_VALIDATION_PLAN.md](./SPATIAL_VALIDATION_PLAN.md) : protocole de validation du lien entre brief narratif, texte, scene v1 et rendu.
@@ -140,6 +147,14 @@ Contexte : build `Release` local sur la machine de travail actuelle, apres ajout
 - Cornell Box, `256x256`, `32 spp`, `3 bounces` : environ `4061.97 ms`
 - scene liminale panorama, `800x400`, `32 spp`, `3 bounces` : environ `35748.60 ms`
 
+### 2026-07-31
+
+Contexte : build `Release` local sur la machine de travail actuelle, scenes canoniques de validation spatiale, `800x400`, `16 spp`, `3 bounces`.
+
+- portail d'entree du datacenter : environ `16207.52 ms`
+- travees de serveurs : environ `11063.99 ms`
+- toit / tour de ronde : environ `9253.65 ms`
+
 Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encore un benchmark stable.
 
 ## Ce que ce module ne fait pas encore
@@ -152,6 +167,7 @@ Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encor
 - pas d'accumulation progressive pendant l'inference
 - pas encore de couche `SDL3` pour fenetre, transcript, ligne de commande parser et presentation temps reel du bitmap
 - pas d'UI jouable, pas de transcript integre, pas de boucle narrative
+- pas de ciel natif ni de degrade de fond dans le format `scene v1`
 - pas de sauvegarde/chargement
 - pas de telemetrie CPU/GPU/memoire
 - pas de tests automatises
