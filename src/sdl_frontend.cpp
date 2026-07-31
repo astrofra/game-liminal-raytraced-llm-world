@@ -17,16 +17,25 @@ namespace liminal {
 
 namespace {
 
+enum WorkerActivity {
+    kWorkerActivityIdle = 0,
+    kWorkerActivityLlm,
+    kWorkerActivityRenderer,
+    kWorkerActivityComplete,
+    kWorkerActivityFailed,
+};
+
 struct WorkerSharedState {
     std::mutex mutex;
     std::atomic<bool> stop_requested;
     bool busy;
     bool result_ready;
     bool error_ready;
+    WorkerActivity activity;
     std::string status_text;
-    std::string live_phase_label;
-    std::string live_text;
     std::string error_text;
+    bool terminal_stream_open;
+    std::string terminal_stream_phase_label;
     SessionState session_state;
     HeadlessTurnResult turn_result;
     std::vector<unsigned char> pixels;
@@ -36,6 +45,8 @@ struct WorkerSharedState {
         , busy(false)
         , result_ready(false)
         , error_ready(false)
+        , activity(kWorkerActivityIdle)
+        , terminal_stream_open(false)
     {
     }
 };
@@ -99,6 +110,28 @@ static const char* StreamPhaseStatus(HeadlessTurnStreamPhase phase)
         default:
             return "Streaming...";
     }
+}
+
+static const char* ActivityLabel(WorkerActivity activity)
+{
+    switch (activity) {
+        case kWorkerActivityLlm:
+            return "llm";
+        case kWorkerActivityRenderer:
+            return "cpu";
+        case kWorkerActivityComplete:
+            return "done";
+        case kWorkerActivityFailed:
+            return "error";
+        default:
+            return "idle";
+    }
+}
+
+static char SpinnerGlyph(Uint64 ticks_ms)
+{
+    static const char kSpinner[] = {'/', '-', '\\', '|'};
+    return kSpinner[(ticks_ms / 120u) % 4u];
 }
 
 static bool IsUtf8Continuation(unsigned char value)
@@ -327,10 +360,76 @@ static void UploadSceneTexture(
     SDL_UpdateTexture(texture, 0, &(*rgba_pixels)[0], width * 4);
 }
 
+static void CloseTerminalStreamLocked(WorkerSharedState* shared_state)
+{
+    if (!shared_state || !shared_state->terminal_stream_open) {
+        return;
+    }
+
+    fputc('\n', stdout);
+    fflush(stdout);
+    shared_state->terminal_stream_open = false;
+    shared_state->terminal_stream_phase_label.clear();
+}
+
+static void WriteTerminalStreamChunkLocked(
+    WorkerSharedState* shared_state,
+    HeadlessTurnStreamPhase phase,
+    const char* delta_text)
+{
+    if (!shared_state) {
+        return;
+    }
+
+    const std::string phase_label = StreamPhaseLabel(phase);
+    if (!shared_state->terminal_stream_open || shared_state->terminal_stream_phase_label != phase_label) {
+        CloseTerminalStreamLocked(shared_state);
+        fprintf(stdout, "[%s] ", phase_label.c_str());
+        fflush(stdout);
+        shared_state->terminal_stream_open = true;
+        shared_state->terminal_stream_phase_label = phase_label;
+    }
+
+    if (delta_text && delta_text[0]) {
+        fputs(delta_text, stdout);
+        fflush(stdout);
+    }
+}
+
+static bool LoadSceneForSessionPlace(
+    const SessionState& session_state,
+    Scene* scene,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (!scene) {
+        SetError(error_buffer, error_buffer_size, "Invalid scene target.");
+        return false;
+    }
+
+    if (IsGeneratedPlaceId(session_state.current_place_id)) {
+        for (size_t index = 0; index < session_state.generated_rooms.size(); ++index) {
+            if (session_state.generated_rooms[index].room_id == session_state.current_place_id) {
+                return AuditSceneCandidateText(
+                    session_state.current_place_id.c_str(),
+                    session_state.generated_rooms[index].scene_text.c_str(),
+                    scene,
+                    error_buffer,
+                    error_buffer_size);
+            }
+        }
+
+        SetError(error_buffer, error_buffer_size, "Unknown generated place in session state.");
+        return false;
+    }
+
+    return CompileSpatialStateToScene(session_state.spatial_state, scene, error_buffer, error_buffer_size);
+}
+
 static bool OnHeadlessTurnStream(
     HeadlessTurnStreamPhase phase,
-    const char* accumulated_text,
     const char*,
+    const char* delta_text,
     void* user_data)
 {
     WorkerSharedState* shared_state = static_cast<WorkerSharedState*>(user_data);
@@ -343,9 +442,9 @@ static bool OnHeadlessTurnStream(
     }
 
     std::lock_guard<std::mutex> lock(shared_state->mutex);
+    shared_state->activity = kWorkerActivityLlm;
     shared_state->status_text = StreamPhaseStatus(phase);
-    shared_state->live_phase_label = StreamPhaseLabel(phase);
-    shared_state->live_text = accumulated_text ? accumulated_text : "";
+    WriteTerminalStreamChunkLocked(shared_state, phase, delta_text);
     return !shared_state->stop_requested.load();
 }
 
@@ -356,9 +455,11 @@ static void FinalizeWorkerFailure(WorkerSharedState* shared_state, const char* m
     }
 
     std::lock_guard<std::mutex> lock(shared_state->mutex);
+    CloseTerminalStreamLocked(shared_state);
     shared_state->busy = false;
     shared_state->result_ready = false;
     shared_state->error_ready = true;
+    shared_state->activity = kWorkerActivityFailed;
     shared_state->status_text = "Turn failed.";
     shared_state->error_text = message ? message : "Unknown error.";
 }
@@ -381,9 +482,8 @@ static void RunTurnWorker(
 
     {
         std::lock_guard<std::mutex> lock(shared_state->mutex);
+        shared_state->activity = kWorkerActivityLlm;
         shared_state->status_text = "Preparing turn...";
-        shared_state->live_phase_label.clear();
-        shared_state->live_text.clear();
         shared_state->error_text.clear();
     }
 
@@ -416,9 +516,9 @@ static void RunTurnWorker(
 
     {
         std::lock_guard<std::mutex> lock(shared_state->mutex);
+        CloseTerminalStreamLocked(shared_state);
+        shared_state->activity = kWorkerActivityRenderer;
         shared_state->status_text = "Raytracing scene...";
-        shared_state->live_phase_label.clear();
-        shared_state->live_text.clear();
     }
 
     std::vector<unsigned char> pixels;
@@ -434,12 +534,12 @@ static void RunTurnWorker(
 
     {
         std::lock_guard<std::mutex> lock(shared_state->mutex);
+        CloseTerminalStreamLocked(shared_state);
         shared_state->busy = false;
         shared_state->result_ready = true;
         shared_state->error_ready = false;
+        shared_state->activity = kWorkerActivityComplete;
         shared_state->status_text = "Turn complete.";
-        shared_state->live_phase_label.clear();
-        shared_state->live_text.clear();
         shared_state->session_state = updated_session_state;
         shared_state->turn_result = turn_result;
         shared_state->pixels.swap(pixels);
@@ -448,43 +548,46 @@ static void RunTurnWorker(
 
 static std::string BuildStatusLine(
     const SessionState& session_state,
+    WorkerActivity activity,
     const std::string& worker_status,
     const HeadlessTurnResult& last_turn_result,
     bool have_last_turn,
-    bool busy)
+    bool busy,
+    Uint64 ticks_ms)
 {
     char buffer[512];
+    const char spinner = busy ? SpinnerGlyph(ticks_ms) : ' ';
     if (have_last_turn) {
         snprintf(
             buffer,
             sizeof(buffer),
-            "loc=%s turn=%d alert=%d status=%s prompt=%d gen=%d time=%.0f ms%s",
+            "[%c] %s | loc=%s turn=%d alert=%d | %s | prompt=%d gen=%d time=%.0f ms",
+            spinner,
+            ActivityLabel(activity),
             DescribeCurrentPlaceLabel(session_state).c_str(),
             session_state.hard_state.turn_number,
             session_state.hard_state.alert_level,
             worker_status.c_str(),
             last_turn_result.prompt_tokens,
             last_turn_result.generated_tokens,
-            last_turn_result.inference_time_ms,
-            busy ? " [busy]" : "");
+            last_turn_result.inference_time_ms);
     } else {
         snprintf(
             buffer,
             sizeof(buffer),
-            "loc=%s turn=%d alert=%d status=%s%s",
+            "[%c] %s | loc=%s turn=%d alert=%d | %s",
+            spinner,
+            ActivityLabel(activity),
             DescribeCurrentPlaceLabel(session_state).c_str(),
             session_state.hard_state.turn_number,
             session_state.hard_state.alert_level,
-            worker_status.c_str(),
-            busy ? " [busy]" : "");
+            worker_status.c_str());
     }
     return buffer;
 }
 
 static void BuildTranscriptLines(
     const SessionState& session_state,
-    const std::string& live_phase_label,
-    const std::string& live_text,
     const std::string& ui_message,
     size_t max_chars,
     std::vector<std::string>* lines)
@@ -501,18 +604,10 @@ static void BuildTranscriptLines(
         if (!record.narration.empty()) {
             AppendWrappedText(record.narration, max_chars, lines);
         }
-        if (!record.clarification.empty()) {
-            AppendWrappedText(std::string("[") + record.clarification + "]", max_chars, lines);
-        }
     }
 
     if (!ui_message.empty()) {
         AppendWrappedText(std::string("[") + ui_message + "]", max_chars, lines);
-    }
-
-    if (!live_text.empty()) {
-        AppendWrappedText(std::string("[live ") + live_phase_label + "]", max_chars, lines);
-        AppendWrappedText(live_text, max_chars, lines);
     }
 }
 
@@ -556,7 +651,7 @@ bool RunSdlFrontend(
     memset(local_error, 0, sizeof(local_error));
 
     Scene initial_scene;
-    if (!CompileSpatialStateToScene(current_session_state.spatial_state, &initial_scene, local_error, sizeof(local_error))) {
+    if (!LoadSceneForSessionPlace(current_session_state, &initial_scene, local_error, sizeof(local_error))) {
         SetError(error_buffer, error_buffer_size, local_error[0] ? local_error : "Cannot compile initial scene.");
         return false;
     }
@@ -650,10 +745,10 @@ bool RunSdlFrontend(
     size_t input_cursor = 0;
     int history_index = -1;
     std::string history_draft;
-    std::string ui_message = "Ready. Press Enter to send a command.";
+    std::string ui_message;
+    std::string persistent_hint = "Ready. Press Enter to send a command.";
+    WorkerActivity worker_activity = kWorkerActivityIdle;
     std::string worker_status = "idle";
-    std::string live_phase_label;
-    std::string live_text;
     std::vector<std::string> transcript_lines;
     bool worker_busy = false;
 
@@ -792,9 +887,8 @@ bool RunSdlFrontend(
                     worker_shared_state.busy = true;
                     worker_shared_state.result_ready = false;
                     worker_shared_state.error_ready = false;
+                    worker_shared_state.activity = kWorkerActivityLlm;
                     worker_shared_state.status_text = "Preparing turn...";
-                    worker_shared_state.live_phase_label.clear();
-                    worker_shared_state.live_text.clear();
                     worker_shared_state.error_text.clear();
                 }
                 worker_shared_state.stop_requested.store(false);
@@ -805,7 +899,7 @@ bool RunSdlFrontend(
                     command,
                     &worker_shared_state);
                 worker_joined = false;
-                ui_message = std::string("Command queued: ") + command;
+                ui_message.clear();
                 continue;
             }
         }
@@ -817,9 +911,8 @@ bool RunSdlFrontend(
         {
             std::lock_guard<std::mutex> lock(worker_shared_state.mutex);
             worker_busy = worker_shared_state.busy;
+            worker_activity = worker_shared_state.activity;
             worker_status = worker_shared_state.status_text.empty() ? "idle" : worker_shared_state.status_text;
-            live_phase_label = worker_shared_state.live_phase_label;
-            live_text = worker_shared_state.live_text;
 
             if (worker_shared_state.result_ready) {
                 current_session_state = worker_shared_state.session_state;
@@ -834,9 +927,7 @@ bool RunSdlFrontend(
                     scene_texture);
                 worker_shared_state.result_ready = false;
                 turn_completed = true;
-                ui_message = last_turn_result.turn_result.narration.empty()
-                    ? "Turn complete."
-                    : last_turn_result.turn_result.narration;
+                ui_message.clear();
             } else if (worker_shared_state.error_ready) {
                 failure_text = worker_shared_state.error_text;
                 worker_shared_state.error_ready = false;
@@ -851,21 +942,22 @@ bool RunSdlFrontend(
         }
 
         if (turn_completed) {
-            live_phase_label.clear();
-            live_text.clear();
+            persistent_hint.clear();
         } else if (turn_failed) {
-            live_phase_label.clear();
-            live_text.clear();
+            persistent_hint.clear();
         }
 
         const std::string status_line = BuildStatusLine(
             current_session_state,
+            worker_activity,
             worker_status.empty() ? "idle" : worker_status,
             last_turn_result,
             have_last_turn,
-            worker_busy);
+            worker_busy,
+            SDL_GetTicks());
 
-        BuildTranscriptLines(current_session_state, live_phase_label, live_text, ui_message, console_max_chars, &transcript_lines);
+        const std::string display_message = !ui_message.empty() ? ui_message : persistent_hint;
+        BuildTranscriptLines(current_session_state, display_message, console_max_chars, &transcript_lines);
 
         InputWindow input_window;
         BuildInputWindow(input_text, input_cursor, input_max_chars, &input_window);

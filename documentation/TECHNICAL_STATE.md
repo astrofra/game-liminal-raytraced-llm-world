@@ -100,9 +100,10 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
 - Premiere HMI `SDL3` desktop :
   - event loop non bloquante
   - worker thread dedie a l'inference et au raytracing
-  - affichage du flux brut du modele pendant la generation du JSON
-  - panneau de transcript
+  - flux brut du modele et `.scene` dans le terminal
+  - panneau de transcript joueur avec narration finale seulement
   - ligne de commande avec edition clavier et historique haut/bas
+  - ligne de statut avec spinner ASCII pour distinguer `llm` et `cpu`
   - annulation best-effort via `Escape`
 - Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`.
 - Options CLI de boucle fonctionnelle :

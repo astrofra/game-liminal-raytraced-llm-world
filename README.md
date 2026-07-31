@@ -124,8 +124,10 @@ Useful overrides:
 `--sdl` opens the first desktop loop:
 
 - top panel: raytraced scene
-- lower panel: transcript and live raw model stream while the turn JSON is still being generated
+- lower panel: transcript joueur avec la narration finale seulement
 - input line: text entry with edition, history on arrow up/down, submit on Enter
+- status line with ASCII spinner for `llm` and `cpu`
+- raw LLM output and generated `.scene` stream to the terminal, not to the player GUI
 - `Escape` while busy: cancellation request
 - cardinal commands like `NORTH`, `EAST`, `SOUTH`, `WEST` can now generate and cache improvised rooms on first entry
 
