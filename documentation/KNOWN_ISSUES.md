@@ -112,7 +112,7 @@ Piste :
 
 Introduire ensuite soit des materiaux partages, soit une repetition modulaire plus compacte, soit une couche d'instanciation plus sobre.
 
-### 2026-07-31 - Le contrat de tour et le pont entre etat du monde, narration et scene ne sont pas encore formalises
+### 2026-07-31 - Le contrat de tour et le pont entre etat du monde, narration et scene sont formalises mais pas encore executes de bout en bout
 
 Statut :
 
@@ -120,7 +120,7 @@ Ouvert.
 
 Description :
 
-Le projet sait maintenant rendre des scenes canoniques et interroger un LLM local, mais il ne dispose pas encore du maillon central qui relie de facon robuste :
+Le projet sait maintenant decrire ce maillon et en poser les premiers structs et prompts, mais il ne dispose pas encore d'une boucle runtime complete qui relie de facon robuste :
 
 - l'etat actionnable du monde
 - la prose retournee au joueur
@@ -129,13 +129,13 @@ Le projet sait maintenant rendre des scenes canoniques et interroger un LLM loca
 
 Impact :
 
-- une generation directe de scene complete par le LLM serait trop fragile comme voie principale
-- la continuite inter-tour resterait difficile a maintenir et a debugger
-- la future boucle verticale risquerait de melanger plusieurs problemes a la fois
+- la generation directe de scene complete par le LLM reste trop fragile comme voie principale
+- la continuite inter-tour n'est pas encore executee ni testee
+- la validation du schema structure et l'application des deltas restent a implementer
 
 Piste :
 
-Introduire un `hard state` autoritatif, un `soft state` resumable, un `spatial state` intermediaire et un contrat de tour structure a tres basse temperature avant d'ouvrir une generation spatiale plus libre.
+Brancher la premiere boucle headless `commande -> prompt -> resultat structure -> mise a jour d'etat -> compilation de scene -> rendu`, puis auditer la qualite des scenes `.scene` candidates generees en memoire.
 
 ### 2026-07-29 - Telemetrie encore insuffisante
 

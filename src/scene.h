@@ -38,6 +38,12 @@ struct Scene {
 bool LoadSceneFromPath(const char* scene_path, Scene* scene, char* error_buffer, size_t error_buffer_size);
 bool LoadSceneFromObj(const char* obj_path, Scene* scene, char* error_buffer, size_t error_buffer_size);
 bool LoadSceneFromSceneV1(const char* scene_path, Scene* scene, char* error_buffer, size_t error_buffer_size);
+bool LoadSceneFromSceneText(
+    const char* scene_name,
+    const char* scene_text,
+    Scene* scene,
+    char* error_buffer,
+    size_t error_buffer_size);
 
 }  // namespace liminal
 

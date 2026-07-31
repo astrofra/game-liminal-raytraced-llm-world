@@ -656,3 +656,67 @@ Ce qui reste fragile :
 Prochaine etape recommandee :
 
 Definir les structures C++ du monde, le schema de sortie structuree de `Ministral`, puis brancher une premiere boucle headless `commande -> tour -> scene -> rendu`.
+
+## 2026-07-31 - Iteration 0017 - Noyau fonctionnel en C++ et audit memoire des scenes candidates
+
+Objectif :
+
+Traduire le cadrage fonctionnel en premieres briques executables cote moteur, avant l'integration complete de l'inference.
+
+Travail effectue :
+
+- ajout de `src/game_state.h/.cpp`
+  - `HardState`
+  - `SoftState`
+  - `SpatialState`
+  - `HardStateDelta`
+  - `SpatialStateDelta`
+  - `TurnResult`
+- ajout de `src/turn_contract.h/.cpp`
+  - schema de sortie structuree v1
+  - prompt de tour structure
+  - prompt d'audit direct `.scene`
+- ajout de `src/scene_compiler.h/.cpp`
+  - etats spatiaux canoniques pour `gate`, `server_aisles`, `roof_watch`
+  - compilation deterministe de ces lieux vers une `Scene`
+  - point d'audit d'une scene candidate fournie comme texte
+- extension du parseur scene pour accepter aussi une scene `v1` en memoire, pas seulement depuis un fichier
+- extension de la CLI avec :
+  - `--dump-turn-contract`
+  - `--dump-scene-audit-prompt`
+  - `--compile-location`
+  - `--audit-scene-text`
+- build de verification sans `llama.cpp`
+- test de compilation du lieu `gate` depuis `SpatialState`
+- test d'audit memoire de `datacenter_roof_watch.scene`
+
+Resultat :
+
+Le projet dispose maintenant d'un premier noyau fonctionnel executable pour preparer la vraie boucle verticale. Le pipeline final n'a plus besoin d'etre pense comme un echange par fichiers entre LLM et raytracer : les scenes candidates peuvent etre validatees directement depuis un bloc texte en memoire.
+
+Observations :
+
+- la distinction entre chemin principal structure et chemin d'audit `.scene` devient nette
+- le compilateur canonique repose encore sur les fixtures existantes, ce qui est suffisant pour un v1 defensif
+- la scene libre generee par le modele peut maintenant etre auditee sans devenir le bus interne obligatoire du moteur
+
+Mesures relevees :
+
+- `--compile-location gate`, `800x400`, `16 spp`, `3 bounces` : environ `1387.04 ms`
+- `--audit-scene-text assets\scenes\datacenter_roof_watch.scene`, `800x400`, `16 spp`, `3 bounces` : environ `1481.94 ms`
+
+Ce qui a bien marche :
+
+- le passage scene texte -> parseur memoire -> rendu fonctionne
+- les prompts v1 deviennent inspectables et versionnables
+- les trois lieux canoniques ont maintenant une representation exploitable cote etat spatial
+
+Ce qui reste fragile :
+
+- aucun appel `Ministral` n'est encore branche sur ce contrat
+- aucun parseur JSON de `TurnResult` n'est encore implemente
+- l'application des deltas de monde reste a coder
+
+Prochaine etape recommandee :
+
+Brancher un premier tour headless reel avec `Ministral`, parser la sortie structuree, puis appliquer les deltas sur `HardState` et `SpatialState`.

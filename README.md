@@ -99,7 +99,9 @@ Useful overrides:
 ```powershell
 .\build\Release\liminal_cornell_renderer.exe --scene assets\scenes\liminal_service_corridor.scene --samples 16 --width 256 --height 256
 .\build\Release\liminal_cornell_renderer.exe --scene assets\cornell\cornell_box.obj --output output\cornell_box_512.png --samples 64 --width 512 --height 512
-```
+.\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location roof_watch --command "observe the horizon"
+.\build\Release\liminal_cornell_renderer.exe --compile-location gate --output output\compiled_gate.png
+``` 
 
 Default output: `output/liminal_service_corridor.png`
 

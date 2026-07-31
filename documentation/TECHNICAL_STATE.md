@@ -29,9 +29,15 @@ En revanche, la boucle de jeu, l'inference de tour et la future couche multimedi
 - Helper Windows `ask_ministral.bat` pour lancer une question libre contre le modele local via `llama-cli`.
 - Executable CLI `liminal_cornell_renderer`.
 - Option CLI `--llama-info` pour verifier la presence du runtime `llama.cpp`, le commit vendorise et la disponibilite de l'offload GPU.
+- Options CLI pour le noyau fonctionnel en preparation :
+  - `--dump-turn-contract`
+  - `--dump-scene-audit-prompt`
+  - `--compile-location`
+  - `--audit-scene-text`
 - Preset de rendu par defaut en `800x400` pour la scene liminale, avec cadrage panorama.
 - Chargement de scene generique via `--scene <path>` pour `.scene` ou `.obj`.
 - Parseur de format de scene proprietaire v1.
+- Chargement equivalent d'une scene `v1` depuis un bloc texte en memoire, sans passer obligatoirement par un fichier comme interface interne.
 - Validation syntaxique de base pour `room`, `camera`, `spotlight`, `sky`, `plane`, `box` et les premiers `prefab_*`.
 - Spot analytique attache a la camera, avec panneau parametrique, portee limitee et cone progressif.
 - Fond proceduriel `sky` optionnel pour les rayons sans intersection :
@@ -68,15 +74,26 @@ En revanche, la boucle de jeu, l'inference de tour et la future couche multimedi
 - Arborescence `vendor/llama.cpp` ajoutee au depot comme base d'integration locale du runtime LLM.
 - Script Python `scripts/download_ministral.py` pour telecharger et valider `Ministral 3 8B Instruct 2512` en GGUF `Q4_K_M`.
 - Smoke test local `llama-cli` valide sur `Ministral 3 8B`, avec reponse effective a une question libre.
+- Premier noyau fonctionnel pour la future boucle de tour :
+  - structs `HardState`, `SoftState`, `SpatialState`, `TurnResult`
+  - contrat de tour structure et prompt builder v1
+  - prompt d'audit direct pour une sortie `.scene`
+  - compilateur deterministe des trois lieux canoniques depuis `SpatialState`
 
 ## Fichiers importants
 
 - [../CMakeLists.txt](/C:/works/projects/game-liminal-raytraced-llm-world/CMakeLists.txt:1) : configuration du build.
 - [../src/core.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/core.h:1) : types de base, math, RNG, configuration de rendu.
 - [../src/scene.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.h:1) : structures de scene et BVH.
-- [../src/scene.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.cpp:1) : chargement `.scene` et `.obj`, conversion des primitives, materiaux, lumiere Cornell, construction BVH.
+- [../src/scene.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.cpp:1) : chargement `.scene` et `.obj`, parseur scene v1 fichier ou memoire, conversion des primitives, materiaux, lumiere Cornell, construction BVH.
 - [../src/renderer.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/renderer.cpp:1) : camera, spotlight analytique, intersections, visibilite, integrateur, export PNG/PGM.
-- [../src/main.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/main.cpp:76) : point d'entree CLI, parsing des options, telemetrie basique.
+- [../src/main.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/main.cpp:76) : point d'entree CLI, parsing des options, telemetrie basique et premieres commandes de debug fonctionnel.
+- [../src/game_state.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/game_state.h:1) : structures du monde, des deltas et du contrat de tour.
+- [../src/game_state.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/game_state.cpp:1) : enums, etats initiaux et resumes de debug.
+- [../src/turn_contract.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/turn_contract.h:1) : interface de generation des prompts structure et audit.
+- [../src/turn_contract.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/turn_contract.cpp:1) : texte du schema de sortie, brief spatial et prompts v1.
+- [../src/scene_compiler.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene_compiler.h:1) : interface de compilation d'un `SpatialState` vers une scene rendable.
+- [../src/scene_compiler.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene_compiler.cpp:1) : mapping des lieux canoniques et audit memoire d'une scene candidate.
 - [../src/llm_runtime.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/llm_runtime.h:1) : interface minimale du runtime `llama.cpp`.
 - [../src/llm_runtime.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/llm_runtime.cpp:1) : initialisation backend, introspection GPU et impression de l'etat `llama.cpp`.
 - [../assets/cornell/cornell_box.obj](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.obj:1) : scene de reference vendorisee.
@@ -122,6 +139,15 @@ Exemple avec scene explicite :
 ```powershell
 .\build\Release\liminal_cornell_renderer.exe --scene assets\scenes\liminal_service_corridor.scene
 .\build\Release\liminal_cornell_renderer.exe --scene assets\cornell\cornell_box.obj
+```
+
+Exemples du noyau fonctionnel :
+
+```powershell
+.\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location roof_watch --command "observe the horizon"
+.\build\Release\liminal_cornell_renderer.exe --dump-scene-audit-prompt --location server_aisles
+.\build\Release\liminal_cornell_renderer.exe --compile-location gate --output output\compiled_gate.png
+.\build\Release\liminal_cornell_renderer.exe --audit-scene-text assets\scenes\datacenter_roof_watch.scene --output output\audited_roof_watch.png
 ```
 
 Helper Windows :
@@ -188,11 +214,10 @@ Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encor
 ## Ce que ce module ne fait pas encore
 
 - pas de scene v1 complete : seulement un sous-ensemble centre sur `room`, `camera`, `spotlight`, `sky`, `plane`, `box` et les premiers `prefab_*` est supporte
-- pas de validation defensive ou simplification automatique d'une scene generee par LLM
+- pas encore de validation semantique riche ou de simplification automatique d'une scene generee par LLM
 - pas encore de chargement effectif du modele `Ministral 3 8B` dans la boucle du jeu
-- pas encore d'inference de tour, ni de prompt assembly, ni de schema de sortie structuree
-- pas encore de separation explicite entre `hard state`, `soft state` et `spatial state`
-- pas encore de compilateur de scene deterministe a partir d'un etat spatial intermediaire
+- pas encore d'inference de tour effective, ni de parsing de la sortie structuree de `Ministral`
+- pas encore d'application automatique des deltas de tour sur les etats du monde
 - pas d'API integrable propre pour un futur runtime de jeu
 - pas d'accumulation progressive pendant l'inference
 - pas encore de couche `SDL3` pour fenetre, transcript, ligne de commande parser et presentation temps reel du bitmap

@@ -899,6 +899,350 @@ static std::string ExtensionOf(const char* path)
     return dot == std::string::npos ? std::string() : ToLowerCopy(base_name.substr(dot));
 }
 
+static bool ParseSceneV1Directive(
+    const std::string& line,
+    const char* scene_name,
+    int line_number,
+    Scene* scene,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (StartsWith(line, "room ")) {
+        std::string room_name;
+        if (!ExtractQuotedString(line, &room_name)) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "Invalid room declaration");
+            return false;
+        }
+        scene->name = room_name;
+        return true;
+    }
+
+    if (StartsWith(line, "camera ")) {
+        Vec3 eye;
+        Vec3 target;
+
+        if (!ExtractVec3Property(line, "eye(", &eye) ||
+            !ExtractVec3Property(line, "target(", &target)) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "Camera requires eye() and target()");
+            return false;
+        }
+
+        scene->camera.eye = eye;
+        scene->camera.target = target;
+
+        Vec3 up;
+        if (ExtractVec3Property(line, "up(", &up)) {
+            scene->camera.up = up;
+        }
+
+        float fov = 0.0f;
+        if (ExtractFloatProperty(line, "fov(", &fov)) {
+            scene->camera.vertical_fov_degrees = fov;
+        }
+        return true;
+    }
+
+    if (StartsWith(line, "spotlight")) {
+        float panel_width = scene->camera_spotlight.panel_width;
+        float panel_height = scene->camera_spotlight.panel_height;
+        float cone_inner = scene->camera_spotlight.cone_inner_degrees;
+        float cone_outer = scene->camera_spotlight.cone_outer_degrees;
+        Vec3 offset = scene->camera_spotlight.local_offset;
+        float range_value = scene->camera_spotlight.range;
+        float intensity_value = scene->camera_spotlight.intensity;
+
+        if (!ExtractVec2Property(line, "panel(", &panel_width, &panel_height) ||
+            !ExtractVec2Property(line, "cone(", &cone_inner, &cone_outer) ||
+            !ExtractVec3Property(line, "offset(", &offset) ||
+            !ExtractFloatProperty(line, "range(", &range_value) ||
+            !ExtractFloatProperty(line, "intensity(", &intensity_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "Spotlight requires panel(), cone(), offset(), range(), and intensity()");
+            return false;
+        }
+
+        if (panel_width <= 0.0f || panel_height <= 0.0f || range_value <= 0.0f || cone_inner <= 0.0f ||
+            cone_outer <= cone_inner || intensity_value <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "Spotlight has invalid parameters");
+            return false;
+        }
+
+        scene->camera_spotlight.enabled = true;
+        scene->camera_spotlight.panel_width = panel_width;
+        scene->camera_spotlight.panel_height = panel_height;
+        scene->camera_spotlight.local_offset = offset;
+        scene->camera_spotlight.range = range_value;
+        scene->camera_spotlight.cone_inner_degrees = cone_inner;
+        scene->camera_spotlight.cone_outer_degrees = cone_outer;
+        scene->camera_spotlight.intensity = intensity_value;
+        return true;
+    }
+
+    if (StartsWith(line, "sky ")) {
+        float zenith_luminance = scene->sky_background.zenith_luminance;
+        float horizon_luminance = scene->sky_background.horizon_luminance;
+        float nadir_luminance = scene->sky_background.nadir_luminance;
+        float horizon_band = scene->sky_background.horizon_band;
+        float horizon_curve = scene->sky_background.horizon_curve;
+        float noise_amount = scene->sky_background.noise_amount;
+        Vec3 stars(
+            scene->sky_background.star_density,
+            scene->sky_background.star_intensity,
+            scene->sky_background.star_radius);
+        unsigned int seed = scene->sky_background.seed;
+
+        if (!ExtractFloatProperty(line, "zenith(", &zenith_luminance) ||
+            !ExtractFloatProperty(line, "horizon(", &horizon_luminance) ||
+            !ExtractFloatProperty(line, "nadir(", &nadir_luminance) ||
+            !ExtractFloatProperty(line, "band(", &horizon_band) ||
+            !ExtractFloatProperty(line, "curve(", &horizon_curve) ||
+            !ExtractFloatProperty(line, "noise(", &noise_amount)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "Sky requires zenith(), horizon(), nadir(), band(), curve(), and noise()");
+            return false;
+        }
+
+        ExtractVec3Property(line, "stars(", &stars);
+        ExtractUnsignedProperty(line, "seed(", &seed);
+
+        if (zenith_luminance < 0.0f || horizon_luminance < 0.0f || nadir_luminance < 0.0f ||
+            horizon_band <= 0.0f || horizon_band > 1.0f || horizon_curve <= 0.0f || noise_amount < 0.0f ||
+            stars.x < 0.0f || stars.y < 0.0f || stars.z < 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "Sky has invalid parameters");
+            return false;
+        }
+
+        scene->sky_background.enabled = true;
+        scene->sky_background.zenith_luminance = zenith_luminance;
+        scene->sky_background.horizon_luminance = horizon_luminance;
+        scene->sky_background.nadir_luminance = nadir_luminance;
+        scene->sky_background.horizon_band = horizon_band;
+        scene->sky_background.horizon_curve = horizon_curve;
+        scene->sky_background.noise_amount = noise_amount;
+        scene->sky_background.star_density = stars.x;
+        scene->sky_background.star_intensity = stars.y;
+        scene->sky_background.star_radius = stars.z;
+        scene->sky_background.seed = seed;
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_gate ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float detail_value = 0.0f;
+        unsigned int bars = 5u;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_gate requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_gate has invalid size");
+            return false;
+        }
+
+        if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
+            detail_value = Clamp(gray_value + 0.12f, 0.0f, 0.95f);
+        }
+        ExtractUnsignedProperty(line, "bars(", &bars);
+        AddGatePrefab(scene, name, position, size, gray_value, detail_value, bars);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_rack ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float detail_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_rack requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_rack has invalid size");
+            return false;
+        }
+
+        if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
+            detail_value = Clamp(gray_value + 0.16f, 0.0f, 0.95f);
+        }
+        AddRackPrefab(scene, name, position, size, gray_value, detail_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_crate ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float detail_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_crate requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_crate has invalid size");
+            return false;
+        }
+
+        if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
+            detail_value = Clamp(gray_value + 0.12f, 0.0f, 0.95f);
+        }
+        AddCratePrefab(scene, name, position, size, gray_value, detail_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_cooling_unit ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float detail_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_cooling_unit requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_cooling_unit has invalid size");
+            return false;
+        }
+
+        if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
+            detail_value = Clamp(gray_value + 0.11f, 0.0f, 0.95f);
+        }
+        AddCoolingUnitPrefab(scene, name, position, size, gray_value, detail_value);
+        return true;
+    }
+
+    if (StartsWith(line, "plane ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 normal;
+        float size_x = 0.0f;
+        float size_y = 0.0f;
+        float gray_value = 0.0f;
+        float emission_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "normal(", &normal) ||
+            !ExtractVec2Property(line, "size(", &size_x, &size_y) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "Plane requires name, pos(), normal(), size(), and gray()");
+            return false;
+        }
+
+        if (size_x <= 0.0f || size_y <= 0.0f || Length(normal) <= kEpsilon) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "Plane has invalid size or normal");
+            return false;
+        }
+
+        ExtractFloatProperty(line, "emit(", &emission_value);
+        AddPlanePrimitive(scene, name, position, normal, size_x, size_y, gray_value, emission_value);
+        return true;
+    }
+
+    if (StartsWith(line, "box ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        Vec3 rotation(0.0f);
+        float gray_value = 0.0f;
+        float emission_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "Box requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "Box has invalid size");
+            return false;
+        }
+
+        ExtractVec3Property(line, "rot(", &rotation);
+        ExtractFloatProperty(line, "emit(", &emission_value);
+        AddBoxPrimitive(scene, name, position, size, rotation, gray_value, emission_value);
+        return true;
+    }
+
+    SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "Unknown scene directive");
+    return false;
+}
+
+static bool FinalizeSceneLoad(const char* scene_name, Scene* scene, char* error_buffer, size_t error_buffer_size)
+{
+    FinalizeSceneGeometry(scene);
+    if (scene->triangles.empty()) {
+        SetError(error_buffer, error_buffer_size, "Scene contains no renderable geometry: %s", scene_name ? scene_name : "(scene)");
+        return false;
+    }
+    return true;
+}
+
 }  // namespace
 
 bool LoadSceneFromPath(const char* scene_path, Scene* scene, char* error_buffer, size_t error_buffer_size)
@@ -1111,364 +1455,56 @@ bool LoadSceneFromSceneV1(const char* scene_path, Scene* scene, char* error_buff
         if (line.empty()) {
             continue;
         }
-
-        if (StartsWith(line, "room ")) {
-            std::string room_name;
-            if (!ExtractQuotedString(line, &room_name)) {
-                fclose(file);
-                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "Invalid room declaration");
-                return false;
-            }
-            scene->name = room_name;
-            continue;
+        if (!ParseSceneV1Directive(line, scene_path, line_number, scene, error_buffer, error_buffer_size)) {
+            fclose(file);
+            return false;
         }
-
-        if (StartsWith(line, "camera ")) {
-            Vec3 eye;
-            Vec3 target;
-
-            if (!ExtractVec3Property(line, "eye(", &eye) ||
-                !ExtractVec3Property(line, "target(", &target)) {
-                fclose(file);
-                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "Camera requires eye() and target()");
-                return false;
-            }
-
-            scene->camera.eye = eye;
-            scene->camera.target = target;
-
-            Vec3 up;
-            if (ExtractVec3Property(line, "up(", &up)) {
-                scene->camera.up = up;
-            }
-
-            float fov = 0.0f;
-            if (ExtractFloatProperty(line, "fov(", &fov)) {
-                scene->camera.vertical_fov_degrees = fov;
-            }
-            continue;
-        }
-
-        if (StartsWith(line, "spotlight")) {
-            float panel_width = scene->camera_spotlight.panel_width;
-            float panel_height = scene->camera_spotlight.panel_height;
-            float cone_inner = scene->camera_spotlight.cone_inner_degrees;
-            float cone_outer = scene->camera_spotlight.cone_outer_degrees;
-            Vec3 offset = scene->camera_spotlight.local_offset;
-            float range_value = scene->camera_spotlight.range;
-            float intensity_value = scene->camera_spotlight.intensity;
-
-            if (!ExtractVec2Property(line, "panel(", &panel_width, &panel_height) ||
-                !ExtractVec2Property(line, "cone(", &cone_inner, &cone_outer) ||
-                !ExtractVec3Property(line, "offset(", &offset) ||
-                !ExtractFloatProperty(line, "range(", &range_value) ||
-                !ExtractFloatProperty(line, "intensity(", &intensity_value)) {
-                fclose(file);
-                SetLineError(
-                    error_buffer,
-                    error_buffer_size,
-                    scene_path,
-                    line_number,
-                    "Spotlight requires panel(), cone(), offset(), range(), and intensity()");
-                return false;
-            }
-
-            if (panel_width <= 0.0f || panel_height <= 0.0f || range_value <= 0.0f || cone_inner <= 0.0f ||
-                cone_outer <= cone_inner || intensity_value <= 0.0f) {
-                fclose(file);
-                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "Spotlight has invalid parameters");
-                return false;
-            }
-
-            scene->camera_spotlight.enabled = true;
-            scene->camera_spotlight.panel_width = panel_width;
-            scene->camera_spotlight.panel_height = panel_height;
-            scene->camera_spotlight.local_offset = offset;
-            scene->camera_spotlight.range = range_value;
-            scene->camera_spotlight.cone_inner_degrees = cone_inner;
-            scene->camera_spotlight.cone_outer_degrees = cone_outer;
-            scene->camera_spotlight.intensity = intensity_value;
-            continue;
-        }
-
-        if (StartsWith(line, "sky ")) {
-            float zenith_luminance = scene->sky_background.zenith_luminance;
-            float horizon_luminance = scene->sky_background.horizon_luminance;
-            float nadir_luminance = scene->sky_background.nadir_luminance;
-            float horizon_band = scene->sky_background.horizon_band;
-            float horizon_curve = scene->sky_background.horizon_curve;
-            float noise_amount = scene->sky_background.noise_amount;
-            Vec3 stars(
-                scene->sky_background.star_density,
-                scene->sky_background.star_intensity,
-                scene->sky_background.star_radius);
-            unsigned int seed = scene->sky_background.seed;
-
-            if (!ExtractFloatProperty(line, "zenith(", &zenith_luminance) ||
-                !ExtractFloatProperty(line, "horizon(", &horizon_luminance) ||
-                !ExtractFloatProperty(line, "nadir(", &nadir_luminance) ||
-                !ExtractFloatProperty(line, "band(", &horizon_band) ||
-                !ExtractFloatProperty(line, "curve(", &horizon_curve) ||
-                !ExtractFloatProperty(line, "noise(", &noise_amount)) {
-                fclose(file);
-                SetLineError(
-                    error_buffer,
-                    error_buffer_size,
-                    scene_path,
-                    line_number,
-                    "Sky requires zenith(), horizon(), nadir(), band(), curve(), and noise()");
-                return false;
-            }
-
-            ExtractVec3Property(line, "stars(", &stars);
-            ExtractUnsignedProperty(line, "seed(", &seed);
-
-            if (zenith_luminance < 0.0f || horizon_luminance < 0.0f || nadir_luminance < 0.0f ||
-                horizon_band <= 0.0f || horizon_band > 1.0f || horizon_curve <= 0.0f || noise_amount < 0.0f ||
-                stars.x < 0.0f || stars.y < 0.0f || stars.z < 0.0f) {
-                fclose(file);
-                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "Sky has invalid parameters");
-                return false;
-            }
-
-            scene->sky_background.enabled = true;
-            scene->sky_background.zenith_luminance = zenith_luminance;
-            scene->sky_background.horizon_luminance = horizon_luminance;
-            scene->sky_background.nadir_luminance = nadir_luminance;
-            scene->sky_background.horizon_band = horizon_band;
-            scene->sky_background.horizon_curve = horizon_curve;
-            scene->sky_background.noise_amount = noise_amount;
-            scene->sky_background.star_density = stars.x;
-            scene->sky_background.star_intensity = stars.y;
-            scene->sky_background.star_radius = stars.z;
-            scene->sky_background.seed = seed;
-            continue;
-        }
-
-        if (StartsWith(line, "prefab_gate ")) {
-            std::string name;
-            Vec3 position;
-            Vec3 size;
-            float gray_value = 0.0f;
-            float detail_value = 0.0f;
-            unsigned int bars = 5u;
-
-            if (!ExtractQuotedString(line, &name) ||
-                !ExtractVec3Property(line, "pos(", &position) ||
-                !ExtractVec3Property(line, "size(", &size) ||
-                !ExtractFloatProperty(line, "gray(", &gray_value)) {
-                fclose(file);
-                SetLineError(
-                    error_buffer,
-                    error_buffer_size,
-                    scene_path,
-                    line_number,
-                    "prefab_gate requires name, pos(), size(), and gray()");
-                return false;
-            }
-
-            if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
-                fclose(file);
-                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "prefab_gate has invalid size");
-                return false;
-            }
-
-            if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
-                detail_value = Clamp(gray_value + 0.12f, 0.0f, 0.95f);
-            }
-            ExtractUnsignedProperty(line, "bars(", &bars);
-            AddGatePrefab(scene, name, position, size, gray_value, detail_value, bars);
-            continue;
-        }
-
-        if (StartsWith(line, "prefab_rack ")) {
-            std::string name;
-            Vec3 position;
-            Vec3 size;
-            float gray_value = 0.0f;
-            float detail_value = 0.0f;
-
-            if (!ExtractQuotedString(line, &name) ||
-                !ExtractVec3Property(line, "pos(", &position) ||
-                !ExtractVec3Property(line, "size(", &size) ||
-                !ExtractFloatProperty(line, "gray(", &gray_value)) {
-                fclose(file);
-                SetLineError(
-                    error_buffer,
-                    error_buffer_size,
-                    scene_path,
-                    line_number,
-                    "prefab_rack requires name, pos(), size(), and gray()");
-                return false;
-            }
-
-            if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
-                fclose(file);
-                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "prefab_rack has invalid size");
-                return false;
-            }
-
-            if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
-                detail_value = Clamp(gray_value + 0.16f, 0.0f, 0.95f);
-            }
-            AddRackPrefab(scene, name, position, size, gray_value, detail_value);
-            continue;
-        }
-
-        if (StartsWith(line, "prefab_crate ")) {
-            std::string name;
-            Vec3 position;
-            Vec3 size;
-            float gray_value = 0.0f;
-            float detail_value = 0.0f;
-
-            if (!ExtractQuotedString(line, &name) ||
-                !ExtractVec3Property(line, "pos(", &position) ||
-                !ExtractVec3Property(line, "size(", &size) ||
-                !ExtractFloatProperty(line, "gray(", &gray_value)) {
-                fclose(file);
-                SetLineError(
-                    error_buffer,
-                    error_buffer_size,
-                    scene_path,
-                    line_number,
-                    "prefab_crate requires name, pos(), size(), and gray()");
-                return false;
-            }
-
-            if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
-                fclose(file);
-                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "prefab_crate has invalid size");
-                return false;
-            }
-
-            if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
-                detail_value = Clamp(gray_value + 0.12f, 0.0f, 0.95f);
-            }
-            AddCratePrefab(scene, name, position, size, gray_value, detail_value);
-            continue;
-        }
-
-        if (StartsWith(line, "prefab_cooling_unit ")) {
-            std::string name;
-            Vec3 position;
-            Vec3 size;
-            float gray_value = 0.0f;
-            float detail_value = 0.0f;
-
-            if (!ExtractQuotedString(line, &name) ||
-                !ExtractVec3Property(line, "pos(", &position) ||
-                !ExtractVec3Property(line, "size(", &size) ||
-                !ExtractFloatProperty(line, "gray(", &gray_value)) {
-                fclose(file);
-                SetLineError(
-                    error_buffer,
-                    error_buffer_size,
-                    scene_path,
-                    line_number,
-                    "prefab_cooling_unit requires name, pos(), size(), and gray()");
-                return false;
-            }
-
-            if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
-                fclose(file);
-                SetLineError(
-                    error_buffer,
-                    error_buffer_size,
-                    scene_path,
-                    line_number,
-                    "prefab_cooling_unit has invalid size");
-                return false;
-            }
-
-            if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
-                detail_value = Clamp(gray_value + 0.11f, 0.0f, 0.95f);
-            }
-            AddCoolingUnitPrefab(scene, name, position, size, gray_value, detail_value);
-            continue;
-        }
-
-        if (StartsWith(line, "plane ")) {
-            std::string name;
-            Vec3 position;
-            Vec3 normal;
-            float size_x = 0.0f;
-            float size_y = 0.0f;
-            float gray_value = 0.0f;
-            float emission_value = 0.0f;
-
-            if (!ExtractQuotedString(line, &name) ||
-                !ExtractVec3Property(line, "pos(", &position) ||
-                !ExtractVec3Property(line, "normal(", &normal) ||
-                !ExtractVec2Property(line, "size(", &size_x, &size_y) ||
-                !ExtractFloatProperty(line, "gray(", &gray_value)) {
-                fclose(file);
-                SetLineError(
-                    error_buffer,
-                    error_buffer_size,
-                    scene_path,
-                    line_number,
-                    "Plane requires name, pos(), normal(), size(), and gray()");
-                return false;
-            }
-
-            if (size_x <= 0.0f || size_y <= 0.0f || Length(normal) <= kEpsilon) {
-                fclose(file);
-                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "Plane has invalid size or normal");
-                return false;
-            }
-
-            ExtractFloatProperty(line, "emit(", &emission_value);
-            AddPlanePrimitive(scene, name, position, normal, size_x, size_y, gray_value, emission_value);
-            continue;
-        }
-
-        if (StartsWith(line, "box ")) {
-            std::string name;
-            Vec3 position;
-            Vec3 size;
-            Vec3 rotation(0.0f);
-            float gray_value = 0.0f;
-            float emission_value = 0.0f;
-
-            if (!ExtractQuotedString(line, &name) ||
-                !ExtractVec3Property(line, "pos(", &position) ||
-                !ExtractVec3Property(line, "size(", &size) ||
-                !ExtractFloatProperty(line, "gray(", &gray_value)) {
-                fclose(file);
-                SetLineError(
-                    error_buffer,
-                    error_buffer_size,
-                    scene_path,
-                    line_number,
-                    "Box requires name, pos(), size(), and gray()");
-                return false;
-            }
-
-            if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
-                fclose(file);
-                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "Box has invalid size");
-                return false;
-            }
-
-            ExtractVec3Property(line, "rot(", &rotation);
-            ExtractFloatProperty(line, "emit(", &emission_value);
-            AddBoxPrimitive(scene, name, position, size, rotation, gray_value, emission_value);
-            continue;
-        }
-
-        fclose(file);
-        SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "Unknown scene directive");
-        return false;
     }
 
     fclose(file);
-    FinalizeSceneGeometry(scene);
-    if (scene->triangles.empty()) {
-        SetError(error_buffer, error_buffer_size, "Scene contains no renderable geometry: %s", scene_path);
+    return FinalizeSceneLoad(scene_path, scene, error_buffer, error_buffer_size);
+}
+
+bool LoadSceneFromSceneText(
+    const char* scene_name,
+    const char* scene_text,
+    Scene* scene,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (!scene_name || !scene_text || !scene) {
+        SetError(error_buffer, error_buffer_size, "Invalid scene text source: %s", scene_name ? scene_name : "(null)");
         return false;
     }
-    return true;
+
+    ResetScene(scene);
+    scene->name = BasenameOf(scene_name);
+
+    const char* cursor = scene_text;
+    int line_number = 0;
+    while (*cursor) {
+        const char* line_start = cursor;
+        while (*cursor && *cursor != '\n') {
+            ++cursor;
+        }
+
+        std::string raw_line(line_start, cursor - line_start);
+        if (*cursor == '\n') {
+            ++cursor;
+        }
+
+        ++line_number;
+        std::string line = Trim(StripComment(raw_line));
+        if (line.empty()) {
+            continue;
+        }
+
+        if (!ParseSceneV1Directive(line, scene_name, line_number, scene, error_buffer, error_buffer_size)) {
+            return false;
+        }
+    }
+
+    return FinalizeSceneLoad(scene_name, scene, error_buffer, error_buffer_size);
 }
 
 }  // namespace liminal

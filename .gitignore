@@ -14,3 +14,4 @@ __pycache__/
 /build_skytest
 /build_omp
 /build_noomp
+/build_functional

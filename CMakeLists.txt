@@ -14,9 +14,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(liminal_cornell_renderer
     src/main.cpp
+    src/game_state.cpp
     src/llm_runtime.cpp
     src/scene.cpp
+    src/scene_compiler.cpp
     src/renderer.cpp
+    src/turn_contract.cpp
 )
 
 target_include_directories(liminal_cornell_renderer PRIVATE src vendor/stb)
