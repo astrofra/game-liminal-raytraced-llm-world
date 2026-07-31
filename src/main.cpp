@@ -214,6 +214,22 @@ static bool SaveSessionStateToPath(const char* path, const liminal::SessionState
 
 static void PrintTurnSummary(const liminal::HeadlessTurnResult& turn_result, bool dump_raw_turn)
 {
+    liminal::SessionState initial_session_state;
+    initial_session_state.current_place_id = turn_result.initial_place_id;
+    initial_session_state.spatial_state = turn_result.initial_spatial_state;
+    liminal::NormalizeSessionState(&initial_session_state);
+
+    liminal::SessionState updated_session_state;
+    updated_session_state.current_place_id = turn_result.updated_place_id;
+    updated_session_state.spatial_state = turn_result.updated_spatial_state;
+    updated_session_state.generated_rooms = turn_result.generated_rooms_to_add;
+    liminal::NormalizeSessionState(&updated_session_state);
+
+    const char* rendered_scene_source =
+        turn_result.used_candidate_scene_for_render
+            ? "candidate_scene_text"
+            : (liminal::IsGeneratedPlaceId(turn_result.updated_place_id) ? "generated_room_cache" : "compiled_spatial_state");
+
     printf("Turn %d completed.\n", turn_result.initial_hard_state.turn_number);
     printf("Prompt tokens: %d\n", turn_result.prompt_tokens);
     printf("Generated tokens: %d\n", turn_result.generated_tokens);
@@ -227,6 +243,8 @@ static void PrintTurnSummary(const liminal::HeadlessTurnResult& turn_result, boo
     }
     printf("Initial location: %s\n", liminal::LocationIdToString(turn_result.initial_spatial_state.location_id));
     printf("Updated location: %s\n", liminal::LocationIdToString(turn_result.updated_spatial_state.location_id));
+    printf("Initial place: %s\n", liminal::DescribeCurrentPlaceLabel(initial_session_state).c_str());
+    printf("Updated place: %s\n", liminal::DescribeCurrentPlaceLabel(updated_session_state).c_str());
     printf(
         "Candidate scene audit: %s\n",
         turn_result.turn_result.candidate_scene_included
@@ -242,7 +260,7 @@ static void PrintTurnSummary(const liminal::HeadlessTurnResult& turn_result, boo
     }
     printf(
         "Rendered scene source: %s\n",
-        turn_result.used_candidate_scene_for_render ? "candidate_scene_text" : "compiled_spatial_state");
+        rendered_scene_source);
     if (dump_raw_turn) {
         printf("\n=== Raw Turn Response ===\n%s\n", turn_result.raw_response_text.c_str());
         if (!turn_result.repair_response_text.empty()) {
@@ -676,9 +694,12 @@ int main(int argc, char** argv)
         printf("Total generated tokens: %d\n", total_generated_tokens);
         printf("Total inference time: %.2f ms\n", total_inference_time_ms);
         printf("Final location: %s\n", liminal::LocationIdToString(session_state.spatial_state.location_id));
+        printf("Final place: %s\n", liminal::DescribeCurrentPlaceLabel(session_state).c_str());
         printf(
             "Last rendered scene source: %s\n",
-            last_turn_result.used_candidate_scene_for_render ? "candidate_scene_text" : "compiled_spatial_state");
+            last_turn_result.used_candidate_scene_for_render
+                ? "candidate_scene_text"
+                : (liminal::IsGeneratedPlaceId(last_turn_result.updated_place_id) ? "generated_room_cache" : "compiled_spatial_state"));
         if (dump_session_state) {
             printf("\n");
             liminal::PrintSessionStateSummary(session_state, stdout);

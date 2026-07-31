@@ -19,6 +19,7 @@ Current state:
 - optional `llama.cpp` runtime wiring in CMake
 - optional OpenMP line-parallel rendering in CMake
 - first SDL3 interactive frontend with streaming LLM output
+- first generated-room graph for improvised cardinal navigation
 - Python helper to download `Ministral 3 8B Instruct 2512` GGUF
 - first headless `Ministral` turn pipeline wired to the renderer
 - explicit provenance for the reused 2003 raytracer ideas
@@ -126,6 +127,7 @@ Useful overrides:
 - lower panel: transcript and live raw model stream while the turn JSON is still being generated
 - input line: text entry with edition, history on arrow up/down, submit on Enter
 - `Escape` while busy: cancellation request
+- cardinal commands like `NORTH`, `EAST`, `SOUTH`, `WEST` can now generate and cache improvised rooms on first entry
 
 Default output: `output/liminal_service_corridor.png`
 

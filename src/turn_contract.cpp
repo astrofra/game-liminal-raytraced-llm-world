@@ -43,7 +43,7 @@ static void AppendRecentHistory(std::string* text, const std::vector<SessionTurn
         text->append("turn ");
         text->append(std::to_string(record.turn_number));
         text->append(" @ ");
-        text->append(LocationIdToString(record.location_id));
+        text->append(record.location_label.empty() ? LocationIdToString(record.location_id) : record.location_label.c_str());
         text->append("\n");
         AppendLabelValue(text, "command: ", record.player_command.c_str());
         AppendLabelValue(text, "intent: ", record.intent.c_str());
@@ -104,6 +104,30 @@ std::string BuildTurnResultSchemaText()
     return text;
 }
 
+std::string BuildGeneratedRoomSchemaText()
+{
+    std::string text;
+    text += "Return exactly one JSON object with these top-level keys:\n";
+    text += "{\n";
+    text += "  \"title\": string,\n";
+    text += "  \"summary\": string,\n";
+    text += "  \"arrival_narration\": string,\n";
+    text += "  \"spatial_state\": {\n";
+    text += "    \"location_archetype\": string,\n";
+    text += "    \"time_of_day\": \"day\" | \"dusk\" | \"night\" | \"unknown\",\n";
+    text += "    \"visibility_level\": \"clear\" | \"dusty\" | \"low\" | \"unknown\",\n";
+    text += "    \"desert_state\": \"still\" | \"windy\" | \"dusty\" | \"unknown\",\n";
+    text += "    \"interior_density\": \"sparse\" | \"dense\" | \"unknown\",\n";
+    text += "    \"alert_level\": integer,\n";
+    text += "    \"anchors\": [string],\n";
+    text += "    \"visible_objects\": [string],\n";
+    text += "    \"blocked_exits\": [\"north\" | \"east\" | \"south\" | \"west\"],\n";
+    text += "    \"spatial_anomalies\": [string]\n";
+    text += "  }\n";
+    text += "}";
+    return text;
+}
+
 std::string BuildSceneFormatRuleText()
 {
     std::string text;
@@ -118,7 +142,7 @@ std::string BuildSceneFormatRuleText()
     text += "- prefer stable repeated objects through prefab_* directives\n";
     text += "- avoid long decorative lists of tiny objects\n";
     text += "- keep the place readable at 800x400 grayscale noisy rendering\n";
-    text += "- stay inside the datacenter fiction and the three canonical lieux\n";
+    text += "- stay inside the datacenter + desert fiction; canonical lieux are examples, not limits\n";
     text += "- use gray(), not color() or opacity()\n";
     text += "- valid examples:\n";
     text += "  room \"datacenter roof watch\"\n";
@@ -136,6 +160,14 @@ std::string BuildSpatialBriefText(const SpatialState& spatial_state)
 {
     std::string text;
     AppendLabelValue(&text, "location_id: ", LocationIdToString(spatial_state.location_id));
+    AppendLabelValue(
+        &text,
+        "room_title: ",
+        spatial_state.room_title.empty() ? "unknown" : spatial_state.room_title.c_str());
+    AppendLabelValue(
+        &text,
+        "room_summary: ",
+        spatial_state.room_summary.empty() ? "unknown" : spatial_state.room_summary.c_str());
     AppendLabelValue(
         &text,
         "location_archetype: ",
@@ -172,6 +204,9 @@ std::string BuildTurnPrompt(
     text += "You are the structured turn engine for a local interactive fiction prototype.\n";
     text += "Return concise playable output. Preserve hard-state continuity. Do not write markdown.\n";
     text += "Do not invent new locations outside gate, server_aisles, roof_watch unless explicitly required.\n";
+    if (spatial_state.location_id == kLocationUnknown) {
+        text += "The current room may be an improvised generated room. Keep that room stable unless the player explicitly moves.\n";
+    }
     text += "Narration must stay short, concrete, and spatially actionable.\n";
     text += "\nCurrent hard state\n";
     AppendLabelValue(&text, "turn_number: ", std::to_string(hard_state.turn_number).c_str());
@@ -209,6 +244,62 @@ std::string BuildTurnPrompt(
         text += BuildSceneFormatRuleText();
     }
 
+    return text;
+}
+
+std::string BuildGeneratedRoomPrompt(
+    const HardState& hard_state,
+    const SoftState& soft_state,
+    const SpatialState& current_spatial_state,
+    const std::vector<SessionTurnRecord>* recent_history,
+    CardinalDirection direction)
+{
+    std::string text;
+    text += "You invent one neighboring room for a local interactive-fiction prototype.\n";
+    text += "Return valid JSON only. Do not write markdown fences. Do not return explanations.\n";
+    text += "The new room must stay inside the same liminal datacenter / desert fiction.\n";
+    text += "It must be spatially readable, sparse, and suitable for grayscale raytracing.\n";
+    text += "Do not describe a whole region. Describe one immediate neighboring room only.\n";
+    text += "The reverse direction back to the source room should usually remain possible.\n";
+    text += "\nCurrent hard state\n";
+    AppendLabelValue(&text, "turn_number: ", std::to_string(hard_state.turn_number).c_str());
+    AppendLabelValue(&text, "alert_level: ", std::to_string(hard_state.alert_level).c_str());
+    AppendLabelValue(&text, "cooling_state: ", ResourceStateToString(hard_state.cooling_state));
+    AppendLabelValue(&text, "water_state: ", ResourceStateToString(hard_state.water_state));
+    AppendLabelValue(&text, "power_state: ", ResourceStateToString(hard_state.power_state));
+    AppendStringList(&text, "unresolved_threats: ", hard_state.unresolved_threats);
+
+    text += "\nCurrent soft state\n";
+    AppendLabelValue(&text, "rolling_summary: ", soft_state.rolling_summary.c_str());
+    AppendLabelValue(&text, "atmosphere: ", soft_state.atmosphere.c_str());
+    AppendRecentHistory(&text, recent_history);
+
+    text += "\nCurrent room brief\n";
+    text += BuildSpatialBriefText(current_spatial_state);
+
+    text += "\nTraversal request\n";
+    AppendLabelValue(&text, "direction: ", CardinalDirectionToString(direction));
+
+    text += "\nGenerated room schema\n";
+    text += BuildGeneratedRoomSchemaText();
+    return text;
+}
+
+std::string BuildGeneratedRoomScenePrompt(
+    const SpatialState& current_spatial_state,
+    const SpatialState& generated_spatial_state,
+    CardinalDirection direction)
+{
+    std::string text;
+    text += "You are in scene-audit mode for a newly discovered neighboring room.\n";
+    text += "Return only a .scene program, no markdown, no explanations.\n";
+    text += BuildSceneFormatRuleText();
+    text += "\nSource room brief\n";
+    text += BuildSpatialBriefText(current_spatial_state);
+    text += "\nTraversal direction\n";
+    AppendLabelValue(&text, "direction: ", CardinalDirectionToString(direction));
+    text += "\nNew room brief\n";
+    text += BuildSpatialBriefText(generated_spatial_state);
     return text;
 }
 

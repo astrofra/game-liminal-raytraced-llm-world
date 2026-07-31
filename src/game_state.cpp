@@ -89,6 +89,20 @@ static void SetError(char* buffer, size_t buffer_size, const char* format, const
     snprintf(buffer, buffer_size, format, argument ? argument : "(null)");
 }
 
+static std::string BuildPlaceLabelFromSpatialState(const SpatialState& state)
+{
+    if (!state.room_title.empty()) {
+        return state.room_title;
+    }
+    if (state.location_id != kLocationUnknown) {
+        return LocationIdToString(state.location_id);
+    }
+    if (!state.location_archetype.empty()) {
+        return state.location_archetype;
+    }
+    return "unknown";
+}
+
 static json MakeHardStateJson(const HardState& state)
 {
     json node = json::object();
@@ -118,6 +132,8 @@ static json MakeSpatialStateJson(const SpatialState& state)
 {
     json node = json::object();
     node["location_id"] = LocationIdToString(state.location_id);
+    node["room_title"] = state.room_title;
+    node["room_summary"] = state.room_summary;
     node["location_archetype"] = state.location_archetype;
     node["canonical_fixture"] = state.canonical_fixture;
     node["time_of_day"] = TimeOfDayToString(state.time_of_day);
@@ -140,10 +156,37 @@ static json MakeSessionHistoryJson(const std::vector<SessionTurnRecord>& history
         json item = json::object();
         item["turn_number"] = record.turn_number;
         item["location_id"] = LocationIdToString(record.location_id);
+        item["location_label"] = record.location_label;
         item["player_command"] = record.player_command;
         item["intent"] = record.intent;
         item["narration"] = record.narration;
         item["clarification"] = record.clarification;
+        node.push_back(item);
+    }
+    return node;
+}
+
+static json MakeGeneratedRoomsJson(const std::vector<GeneratedRoom>& rooms)
+{
+    json node = json::array();
+    for (size_t index = 0; index < rooms.size(); ++index) {
+        json item = json::object();
+        item["room_id"] = rooms[index].room_id;
+        item["spatial_state"] = MakeSpatialStateJson(rooms[index].spatial_state);
+        item["scene_text"] = rooms[index].scene_text;
+        node.push_back(item);
+    }
+    return node;
+}
+
+static json MakeRoomLinksJson(const std::vector<RoomLink>& links)
+{
+    json node = json::array();
+    for (size_t index = 0; index < links.size(); ++index) {
+        json item = json::object();
+        item["from_place_id"] = links[index].from_place_id;
+        item["direction"] = CardinalDirectionToString(links[index].direction);
+        item["to_place_id"] = links[index].to_place_id;
         node.push_back(item);
     }
     return node;
@@ -195,6 +238,8 @@ static void ParseSpatialStateNode(const json& node, SpatialState* state)
     }
 
     ParseLocationId(ReadStringNode(node, "location_id").c_str(), &state->location_id);
+    state->room_title = ReadStringNode(node, "room_title");
+    state->room_summary = ReadStringNode(node, "room_summary");
     state->location_archetype = ReadStringNode(node, "location_archetype");
     state->canonical_fixture = ReadStringNode(node, "canonical_fixture");
     ParseTimeOfDay(ReadStringNode(node, "time_of_day").c_str(), &state->time_of_day);
@@ -231,11 +276,58 @@ static void ParseHistoryNode(const json& node, std::vector<SessionTurnRecord>* h
         SessionTurnRecord record;
         record.turn_number = ReadIntNode(node[index], "turn_number", 0);
         ParseLocationId(ReadStringNode(node[index], "location_id").c_str(), &record.location_id);
+        record.location_label = ReadStringNode(node[index], "location_label");
         record.player_command = ReadStringNode(node[index], "player_command");
         record.intent = ReadStringNode(node[index], "intent");
         record.narration = ReadStringNode(node[index], "narration");
         record.clarification = ReadStringNode(node[index], "clarification");
         history->push_back(record);
+    }
+}
+
+static void ParseGeneratedRoomsNode(const json& node, std::vector<GeneratedRoom>* rooms)
+{
+    if (!rooms || !node.is_array()) {
+        return;
+    }
+
+    rooms->clear();
+    for (size_t index = 0; index < node.size(); ++index) {
+        if (!node[index].is_object()) {
+            continue;
+        }
+
+        GeneratedRoom room;
+        room.room_id = ReadStringNode(node[index], "room_id");
+        if (node[index].contains("spatial_state")) {
+            ParseSpatialStateNode(node[index]["spatial_state"], &room.spatial_state);
+        }
+        room.scene_text = ReadStringNode(node[index], "scene_text");
+        if (!room.room_id.empty()) {
+            rooms->push_back(room);
+        }
+    }
+}
+
+static void ParseRoomLinksNode(const json& node, std::vector<RoomLink>* links)
+{
+    if (!links || !node.is_array()) {
+        return;
+    }
+
+    links->clear();
+    for (size_t index = 0; index < node.size(); ++index) {
+        if (!node[index].is_object()) {
+            continue;
+        }
+
+        RoomLink link;
+        link.from_place_id = ReadStringNode(node[index], "from_place_id");
+        ParseCardinalDirection(ReadStringNode(node[index], "direction").c_str(), &link.direction);
+        link.to_place_id = ReadStringNode(node[index], "to_place_id");
+        if (!link.from_place_id.empty() && !link.to_place_id.empty() && link.direction != kDirectionUnknown) {
+            links->push_back(link);
+        }
     }
 }
 
@@ -250,6 +342,22 @@ const char* LocationIdToString(LocationId value)
         return "server_aisles";
     case kLocationRoofWatch:
         return "roof_watch";
+    default:
+        return "unknown";
+    }
+}
+
+const char* CardinalDirectionToString(CardinalDirection value)
+{
+    switch (value) {
+    case kDirectionNorth:
+        return "north";
+    case kDirectionEast:
+        return "east";
+    case kDirectionSouth:
+        return "south";
+    case kDirectionWest:
+        return "west";
     default:
         return "unknown";
     }
@@ -343,6 +451,33 @@ bool ParseLocationId(const char* text, LocationId* value)
     }
 
     *value = kLocationUnknown;
+    return false;
+}
+
+bool ParseCardinalDirection(const char* text, CardinalDirection* value)
+{
+    if (!text || !value) {
+        return false;
+    }
+
+    if (EqualsAsciiNoCase(text, "north") || EqualsAsciiNoCase(text, "n")) {
+        *value = kDirectionNorth;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "east") || EqualsAsciiNoCase(text, "e")) {
+        *value = kDirectionEast;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "south") || EqualsAsciiNoCase(text, "s")) {
+        *value = kDirectionSouth;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "west") || EqualsAsciiNoCase(text, "w")) {
+        *value = kDirectionWest;
+        return true;
+    }
+
+    *value = kDirectionUnknown;
     return false;
 }
 
@@ -457,6 +592,81 @@ bool ParseResourceState(const char* text, ResourceState* value)
     return false;
 }
 
+CardinalDirection OppositeCardinalDirection(CardinalDirection value)
+{
+    switch (value) {
+    case kDirectionNorth:
+        return kDirectionSouth;
+    case kDirectionEast:
+        return kDirectionWest;
+    case kDirectionSouth:
+        return kDirectionNorth;
+    case kDirectionWest:
+        return kDirectionEast;
+    default:
+        return kDirectionUnknown;
+    }
+}
+
+std::string BuildCanonicalPlaceId(LocationId location_id)
+{
+    return std::string("canonical:") + LocationIdToString(location_id);
+}
+
+bool ParseCanonicalPlaceId(const std::string& place_id, LocationId* location_id)
+{
+    if (!location_id) {
+        return false;
+    }
+
+    const std::string prefix = "canonical:";
+    if (place_id.compare(0, prefix.size(), prefix) != 0) {
+        *location_id = kLocationUnknown;
+        return false;
+    }
+
+    return ParseLocationId(place_id.substr(prefix.size()).c_str(), location_id);
+}
+
+bool IsCanonicalPlaceId(const std::string& place_id)
+{
+    LocationId location_id = kLocationUnknown;
+    return ParseCanonicalPlaceId(place_id, &location_id);
+}
+
+bool IsGeneratedPlaceId(const std::string& place_id)
+{
+    return place_id.compare(0, 10, "generated:") == 0;
+}
+
+std::string DescribePlaceLabel(const SessionState& state, const std::string& place_id)
+{
+    LocationId location_id = kLocationUnknown;
+    if (ParseCanonicalPlaceId(place_id, &location_id)) {
+        return LocationIdToString(location_id);
+    }
+
+    if (IsGeneratedPlaceId(place_id)) {
+        for (size_t index = 0; index < state.generated_rooms.size(); ++index) {
+            if (state.generated_rooms[index].room_id == place_id) {
+                return BuildPlaceLabelFromSpatialState(state.generated_rooms[index].spatial_state);
+            }
+        }
+        return place_id;
+    }
+
+    if (!place_id.empty()) {
+        return place_id;
+    }
+
+    return BuildPlaceLabelFromSpatialState(state.spatial_state);
+}
+
+std::string DescribeCurrentPlaceLabel(const SessionState& state)
+{
+    return DescribePlaceLabel(state, state.current_place_id);
+}
+
 HardState MakeInitialHardState()
 {
     HardState state;
@@ -488,19 +698,53 @@ void NormalizeSessionState(SessionState* state)
         return;
     }
 
+    if (state->next_generated_room_index <= 0) {
+        state->next_generated_room_index = 1;
+    }
+
+    if (state->current_place_id.empty()) {
+        if (state->spatial_state.location_id != kLocationUnknown) {
+            state->current_place_id = BuildCanonicalPlaceId(state->spatial_state.location_id);
+        } else if (state->hard_state.current_location_id != kLocationUnknown) {
+            state->current_place_id = BuildCanonicalPlaceId(state->hard_state.current_location_id);
+        }
+    }
+
+    bool current_place_exists = state->current_place_id.empty();
+    LocationId current_place_location = kLocationUnknown;
+    if (ParseCanonicalPlaceId(state->current_place_id, &current_place_location)) {
+        current_place_exists = true;
+    } else if (IsGeneratedPlaceId(state->current_place_id)) {
+        for (size_t index = 0; index < state->generated_rooms.size(); ++index) {
+            if (state->generated_rooms[index].room_id == state->current_place_id) {
+                current_place_exists = true;
+                break;
+            }
+        }
+    }
+    if (!current_place_exists) {
+        state->current_place_id.clear();
+    }
+
+    const bool in_generated_room = IsGeneratedPlaceId(state->current_place_id);
+
     if (state->hard_state.turn_number <= 0) {
         state->hard_state.turn_number = 1;
     }
-    if (state->hard_state.current_location_id == kLocationUnknown && state->spatial_state.location_id != kLocationUnknown) {
+
+    if (in_generated_room) {
+        state->hard_state.current_location_id = kLocationUnknown;
+        state->spatial_state.location_id = kLocationUnknown;
+    } else if (state->hard_state.current_location_id == kLocationUnknown && state->spatial_state.location_id != kLocationUnknown) {
         state->hard_state.current_location_id = state->spatial_state.location_id;
     }
-    if (state->spatial_state.location_id == kLocationUnknown && state->hard_state.current_location_id != kLocationUnknown) {
+    if (!in_generated_room && state->spatial_state.location_id == kLocationUnknown && state->hard_state.current_location_id != kLocationUnknown) {
         state->spatial_state.location_id = state->hard_state.current_location_id;
     }
-    if (state->hard_state.current_location_id == kLocationUnknown) {
+    if (!in_generated_room && state->hard_state.current_location_id == kLocationUnknown) {
         state->hard_state.current_location_id = kLocationGate;
     }
-    if (state->spatial_state.location_id == kLocationUnknown) {
+    if (!in_generated_room && state->spatial_state.location_id == kLocationUnknown) {
         state->spatial_state.location_id = state->hard_state.current_location_id;
     }
     if (state->hard_state.alert_level <= 0 && state->spatial_state.alert_level > 0) {
@@ -515,6 +759,20 @@ void NormalizeSessionState(SessionState* state)
     if (state->spatial_state.alert_level <= 0) {
         state->spatial_state.alert_level = state->hard_state.alert_level;
     }
+
+    if (state->spatial_state.room_title.empty()) {
+        state->spatial_state.room_title = BuildPlaceLabelFromSpatialState(state->spatial_state);
+    }
+
+    for (size_t index = 0; index < state->history.size(); ++index) {
+        if (state->history[index].location_label.empty()) {
+            if (state->history[index].location_id != kLocationUnknown) {
+                state->history[index].location_label = LocationIdToString(state->history[index].location_id);
+            } else {
+                state->history[index].location_label = "unknown";
+            }
+        }
+    }
 }
 
 bool SerializeSessionStateToJsonString(const SessionState& state, std::string* json_text)
@@ -528,6 +786,10 @@ bool SerializeSessionStateToJsonString(const SessionState& state, std::string* j
     root["soft_state"] = MakeSoftStateJson(state.soft_state);
     root["spatial_state"] = MakeSpatialStateJson(state.spatial_state);
     root["history"] = MakeSessionHistoryJson(state.history);
+    root["current_place_id"] = state.current_place_id;
+    root["next_generated_room_index"] = state.next_generated_room_index;
+    root["generated_rooms"] = MakeGeneratedRoomsJson(state.generated_rooms);
+    root["room_links"] = MakeRoomLinksJson(state.room_links);
     *json_text = root.dump(2);
     return true;
 }
@@ -562,6 +824,14 @@ bool ParseSessionStateFromJson(
         }
         if (root.contains("history")) {
             ParseHistoryNode(root["history"], &state->history);
+        }
+        state->current_place_id = ReadStringNode(root, "current_place_id");
+        state->next_generated_room_index = ReadIntNode(root, "next_generated_room_index", state->next_generated_room_index);
+        if (root.contains("generated_rooms")) {
+            ParseGeneratedRoomsNode(root["generated_rooms"], &state->generated_rooms);
+        }
+        if (root.contains("room_links")) {
+            ParseRoomLinksNode(root["room_links"], &state->room_links);
         }
 
         NormalizeSessionState(state);
@@ -602,6 +872,8 @@ void PrintSpatialStateSummary(const SpatialState& state, FILE* stream)
     FILE* out = stream ? stream : stdout;
     fprintf(out, "SpatialState\n");
     fprintf(out, "  location_id: %s\n", LocationIdToString(state.location_id));
+    fprintf(out, "  room_title: %s\n", state.room_title.empty() ? "(empty)" : state.room_title.c_str());
+    fprintf(out, "  room_summary: %s\n", state.room_summary.empty() ? "(empty)" : state.room_summary.c_str());
     fprintf(out, "  location_archetype: %s\n", state.location_archetype.empty() ? "(empty)" : state.location_archetype.c_str());
     fprintf(out, "  canonical_fixture: %s\n", state.canonical_fixture.empty() ? "(empty)" : state.canonical_fixture.c_str());
     fprintf(out, "  time_of_day: %s\n", TimeOfDayToString(state.time_of_day));
@@ -619,6 +891,10 @@ void PrintSessionStateSummary(const SessionState& state, FILE* stream)
 {
     FILE* out = stream ? stream : stdout;
     fprintf(out, "SessionState\n");
+    fprintf(out, "  current_place_id: %s\n", state.current_place_id.empty() ? "(empty)" : state.current_place_id.c_str());
+    fprintf(out, "  current_place_label: %s\n", DescribeCurrentPlaceLabel(state).c_str());
+    fprintf(out, "  generated_rooms: %zu\n", state.generated_rooms.size());
+    fprintf(out, "  room_links: %zu\n", state.room_links.size());
     PrintHardStateSummary(state.hard_state, out);
     PrintSoftStateSummary(state.soft_state, out);
     PrintSpatialStateSummary(state.spatial_state, out);
@@ -636,7 +912,11 @@ void PrintSessionHistory(const SessionState& state, FILE* stream)
 
     for (size_t index = 0; index < state.history.size(); ++index) {
         const SessionTurnRecord& record = state.history[index];
-        fprintf(out, "  turn %d @ %s\n", record.turn_number, LocationIdToString(record.location_id));
+        fprintf(
+            out,
+            "  turn %d @ %s\n",
+            record.turn_number,
+            record.location_label.empty() ? LocationIdToString(record.location_id) : record.location_label.c_str());
         fprintf(out, "    command: %s\n", record.player_command.empty() ? "(empty)" : record.player_command.c_str());
         fprintf(out, "    intent: %s\n", record.intent.empty() ? "(empty)" : record.intent.c_str());
         fprintf(out, "    narration: %s\n", record.narration.empty() ? "(empty)" : record.narration.c_str());

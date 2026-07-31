@@ -53,6 +53,8 @@ static const char* CanonicalFixturePath(LocationId location_id)
 
 static void SetCommonGateSpatialState(SpatialState* state)
 {
+    state->room_title = "Entry Gate";
+    state->room_summary = "A checkpoint threshold between the datacenter compound and the desert road.";
     state->location_archetype = "entry_threshold";
     state->canonical_fixture = CanonicalFixturePath(kLocationGate);
     state->time_of_day = kTimeDusk;
@@ -70,6 +72,8 @@ static void SetCommonGateSpatialState(SpatialState* state)
 
 static void SetCommonAislesSpatialState(SpatialState* state)
 {
+    state->room_title = "Server Aisles";
+    state->room_summary = "Dense rows of racks, maintenance lanes, cooling blocks and low night visibility.";
     state->location_archetype = "dense_server_interior";
     state->canonical_fixture = CanonicalFixturePath(kLocationServerAisles);
     state->time_of_day = kTimeNight;
@@ -87,6 +91,8 @@ static void SetCommonAislesSpatialState(SpatialState* state)
 
 static void SetCommonRoofSpatialState(SpatialState* state)
 {
+    state->room_title = "Roof Watch";
+    state->room_summary = "A parapet walk above the datacenter with a dark horizon and a dusty desert beyond.";
     state->location_archetype = "watch_post_exterior";
     state->canonical_fixture = CanonicalFixturePath(kLocationRoofWatch);
     state->time_of_day = kTimeDusk;

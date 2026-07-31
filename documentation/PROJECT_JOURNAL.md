@@ -898,3 +898,50 @@ Stabiliser le frontend SDL3 autour d'un protocole de sortie a deux canaux :
 
 - canal live pour l'attente perceptive
 - canal structure pour l'etat du monde et le rendu final
+
+## 2026-07-31 - Iteration 0021 - Salles improvisees et graphe cardinal persistant
+
+Objectif :
+
+Mettre a l'epreuve le concept central du jeu en laissant le LLM fabriquer une nouvelle salle a la volee sur un deplacement cardinal vers un espace encore inconnu.
+
+Travail effectue :
+
+- extension de `SessionState` avec :
+  - `current_place_id`
+  - `generated_rooms`
+  - `room_links`
+  - compteur `next_generated_room_index`
+- ajout d'un branchement special dans `RunHeadlessTurnFromState()` pour `NORTH`, `EAST`, `SOUTH`, `WEST`
+- generation d'un nouveau voisin uniquement si aucun lien n'existe encore dans cette direction
+- cache persistant du `scene_text` pour recharger une salle deja inventee sans repasser par le modele
+- retour possible d'une salle generee vers un lieu canonique via les liens reciproques
+- ajout de fallbacks :
+  - metadata de salle si le JSON de room generation est inutilisable
+  - scene de salle si le `.scene` genere reste invalide
+
+Resultat :
+
+Le projet peut maintenant improviser une salle 3D "a partir de rien" lors d'un deplacement cardinal vers un espace inexplore, memoriser cette salle, puis y revenir plus tard dans la meme session.
+
+Observations :
+
+- le principe de "monde non predetermine" fonctionne maintenant sur une tranche v0 exploitable
+- la topologie minimale locale est preservee grace au graphe de liens cardinaux
+- la partie la plus fragile reste la generation du JSON de metadata de salle, plus instable que le simple rendu de scene fallback
+
+Validation pratique :
+
+- session `NORTH -> EAST -> WEST` validee localement le vendredi 31 juillet 2026
+- resultat observe :
+  - `2` salles generees persistantes
+  - retour `WEST` vers la salle precedente sans inference LLM supplementaire
+- reprise `SOUTH` depuis la salle nord validee vers `gate`
+
+Prochaine etape recommandee :
+
+Faire monter d'un cran la qualite des salles improvisees :
+
+- repair dedie du JSON de room generation
+- mise a jour optionnelle de la scene d'une salle existante apres certaines actions locales
+- etiquette visuelle explicite des sorties disponibles dans le transcript ou l'HMI

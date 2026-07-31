@@ -43,6 +43,8 @@ struct HeadlessTurnResult {
     std::string raw_response_text;
     std::string repair_response_text;
     std::string raw_scene_audit_response_text;
+    std::string initial_place_id;
+    std::string updated_place_id;
     TurnResult turn_result;
     HardState initial_hard_state;
     SoftState initial_soft_state;
@@ -57,6 +59,8 @@ struct HeadlessTurnResult {
     bool used_turn_repair;
     bool used_turn_fallback;
     std::string candidate_scene_error;
+    std::vector<GeneratedRoom> generated_rooms_to_add;
+    std::vector<RoomLink> room_links_to_add;
     int prompt_tokens;
     int generated_tokens;
     double inference_time_ms;

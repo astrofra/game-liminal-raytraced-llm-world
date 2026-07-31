@@ -15,6 +15,14 @@ enum LocationId {
     kLocationRoofWatch,
 };
 
+enum CardinalDirection {
+    kDirectionUnknown = 0,
+    kDirectionNorth,
+    kDirectionEast,
+    kDirectionSouth,
+    kDirectionWest,
+};
+
 enum TimeOfDay {
     kTimeUnknown = 0,
     kTimeDay,
@@ -80,6 +88,8 @@ struct SoftState {
 
 struct SpatialState {
     LocationId location_id;
+    std::string room_title;
+    std::string room_summary;
     std::string location_archetype;
     std::string canonical_fixture;
     TimeOfDay time_of_day;
@@ -186,6 +196,7 @@ struct TurnResult {
 struct SessionTurnRecord {
     int turn_number;
     LocationId location_id;
+    std::string location_label;
     std::string player_command;
     std::string intent;
     std::string narration;
@@ -198,14 +209,41 @@ struct SessionTurnRecord {
     }
 };
 
+struct GeneratedRoom {
+    std::string room_id;
+    SpatialState spatial_state;
+    std::string scene_text;
+};
+
+struct RoomLink {
+    std::string from_place_id;
+    CardinalDirection direction;
+    std::string to_place_id;
+
+    RoomLink()
+        : direction(kDirectionUnknown)
+    {
+    }
+};
+
 struct SessionState {
     HardState hard_state;
     SoftState soft_state;
     SpatialState spatial_state;
     std::vector<SessionTurnRecord> history;
+    std::string current_place_id;
+    int next_generated_room_index;
+    std::vector<GeneratedRoom> generated_rooms;
+    std::vector<RoomLink> room_links;
+
+    SessionState()
+        : next_generated_room_index(1)
+    {
+    }
 };
 
 const char* LocationIdToString(LocationId value);
+const char* CardinalDirectionToString(CardinalDirection value);
 const char* TimeOfDayToString(TimeOfDay value);
 const char* VisibilityLevelToString(VisibilityLevel value);
 const char* DesertStateToString(DesertState value);
@@ -213,11 +251,19 @@ const char* InteriorDensityToString(InteriorDensity value);
 const char* ResourceStateToString(ResourceState value);
 
 bool ParseLocationId(const char* text, LocationId* value);
+bool ParseCardinalDirection(const char* text, CardinalDirection* value);
 bool ParseTimeOfDay(const char* text, TimeOfDay* value);
 bool ParseVisibilityLevel(const char* text, VisibilityLevel* value);
 bool ParseDesertState(const char* text, DesertState* value);
 bool ParseInteriorDensity(const char* text, InteriorDensity* value);
 bool ParseResourceState(const char* text, ResourceState* value);
+CardinalDirection OppositeCardinalDirection(CardinalDirection value);
+std::string BuildCanonicalPlaceId(LocationId location_id);
+bool ParseCanonicalPlaceId(const std::string& place_id, LocationId* location_id);
+bool IsCanonicalPlaceId(const std::string& place_id);
+bool IsGeneratedPlaceId(const std::string& place_id);
+std::string DescribePlaceLabel(const SessionState& state, const std::string& place_id);
+std::string DescribeCurrentPlaceLabel(const SessionState& state);
 
 HardState MakeInitialHardState();
 SoftState MakeInitialSoftState();

@@ -91,6 +91,12 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - application des deltas sur `HardState`, `SoftState` et `SpatialState`
   - deuxieme appel LLM separe pour l'audit `.scene`
   - rendu final depuis la voie deterministe `SpatialState -> Scene`
+- Premier graphe de salles improvisees :
+  - interception de `NORTH`, `EAST`, `SOUTH`, `WEST`
+  - generation d'une nouvelle salle seulement a la premiere entree
+  - cache persistant du `scene_text` et des liens cardinaux en session
+  - retour possible vers une salle deja decouverte sans repasser par le LLM
+  - coexistence entre lieux canoniques et lieux generes dans la meme session
 - Premiere HMI `SDL3` desktop :
   - event loop non bloquante
   - worker thread dedie a l'inference et au raytracing
@@ -305,6 +311,9 @@ Observation importante :
   - pas encore de police bitmap custom
   - pas encore de layout plus riche ou de widgets dedies
 - le streaming actuel expose le flux brut du modele pendant la fabrication du JSON, pas encore une narration incrementalement parsee
+- la generation de metadata de salle improvisee reste fragile :
+  - fallback metadata utilise si le JSON de room generation est mal forme
+  - fallback scene utilise si le `.scene` genere reste invalide
 - la grammaire JSON `llama.cpp` n'est pas activee par defaut car l'appel bas niveau s'est montre instable sur ce build Windows/CUDA
 - pas encore de couche compacte d'instanciation ou de repetition pour les prefabs
 - les prefabs actuels augmentent fortement le nombre de triangles et de materiaux

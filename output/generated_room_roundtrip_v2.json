@@ -1,0 +1,166 @@
+{
+  "current_place_id": "generated:room_0001",
+  "generated_rooms": [
+    {
+      "room_id": "generated:room_0001",
+      "scene_text": "room \"generated room\"\ncamera eye(0.0,1.82,-8.4) target(0.0,1.20,8.2) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(72.0)\nsky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(91)\nplane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(18.0,30.0) gray(0.13)\nbox \"wall_back\" pos(0.0,2.1,10.4) size(18.0,4.2,0.8) gray(0.18)\nbox \"parapet_left\" pos(-7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\nbox \"parapet_right\" pos(7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\nbox \"parapet_front\" pos(0.0,0.65,1.9) size(14.0,1.3,0.8) gray(0.26)\nprefab_gate \"aux_gate\" pos(0.0,1.4,7.2) size(4.6,2.8,0.5) gray(0.28) detail(0.40)\nprefab_crate \"service_crate\" pos(2.6,0.55,-1.8) size(1.8,1.1,1.5) gray(0.20) detail(0.31)\nprefab_cooling_unit \"vent_stack\" pos(-4.1,1.0,-2.8) size(1.0,2.0,1.0) gray(0.30) detail(0.39)\n",
+      "spatial_state": {
+        "alert_level": 1,
+        "anchors": [
+          "perimeter",
+          "compound_wall",
+          "equipment_pad"
+        ],
+        "blocked_exits": [],
+        "canonical_fixture": "",
+        "desert_state": "dusty",
+        "interior_density": "sparse",
+        "location_archetype": "generated_perimeter_space",
+        "location_id": "unknown",
+        "room_summary": "A narrow exterior walk skirting the datacenter shell, open to dust and horizon.",
+        "room_title": "North Perimeter Walk",
+        "spatial_anomalies": [],
+        "time_of_day": "dusk",
+        "visibility_level": "dusty",
+        "visible_objects": [
+          "crate",
+          "cooling_unit",
+          "gate"
+        ]
+      }
+    },
+    {
+      "room_id": "generated:room_0002",
+      "scene_text": "room \"generated room\"\ncamera eye(0.0,1.78,-7.8) target(0.0,1.20,8.4) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(14.0,24.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.2,0.0) normal(0.0,-1.0,0.0) size(14.0,24.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.6,11.4) size(14.0,3.2,0.6) gray(0.20)\nbox \"wall_left\" pos(-6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"wall_right\" pos(6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"threshold_frame\" pos(0.0,1.5,8.8) size(3.6,3.0,0.45) gray(0.24)\nprefab_cooling_unit \"cooling_block\" pos(-4.4,1.0,-2.5) size(1.1,2.0,1.1) gray(0.31) detail(0.39)\nprefab_crate \"maintenance_crate\" pos(2.4,0.55,-1.6) size(1.7,1.0,1.4) gray(0.20) detail(0.30)\n",
+      "spatial_state": {
+        "alert_level": 2,
+        "anchors": [
+          "sloping_grating",
+          "corroded_pipe_network",
+          "server_rack",
+          "emergency_light"
+        ],
+        "blocked_exits": [],
+        "canonical_fixture": "",
+        "desert_state": "still",
+        "interior_density": "sparse",
+        "location_archetype": "subshell_service_passage",
+        "location_id": "unknown",
+        "room_summary": "A narrow, sloping passage beneath the datacenter’s outer shell, lined with rusted conduit and half-buried machinery.",
+        "room_title": "Dust-Choked Equipment Corridor",
+        "spatial_anomalies": [
+          "flickering_light_phase_shift",
+          "subtle_pressure_gradient"
+        ],
+        "time_of_day": "dusk",
+        "visibility_level": "dusty",
+        "visible_objects": [
+          "exposed_cable",
+          "rusted_vent",
+          "dust_mound",
+          "half-buried_toolbox"
+        ]
+      }
+    }
+  ],
+  "hard_state": {
+    "alert_level": 1,
+    "cooling_state": "stable",
+    "current_location_id": "unknown",
+    "inventory_items": [],
+    "named_entities": [
+      "duty_officer"
+    ],
+    "power_state": "stable",
+    "turn_number": 4,
+    "unresolved_threats": [
+      "possible_external_attack"
+    ],
+    "water_state": "stable"
+  },
+  "history": [
+    {
+      "clarification": "Generated room metadata fallback was used: Failed to parse generated room JSON: [json.exception.parse_error.101] parse error at line 1, column 1: syntax error while parsing value - invalid literal; last read: '`' Generated room scene fallback was used.",
+      "intent": "move_north_generated_room",
+      "location_id": "unknown",
+      "location_label": "North Perimeter Walk",
+      "narration": "You move north. A narrow exterior walk skirting the datacenter shell, open to dust and horizon.",
+      "player_command": "NORTH",
+      "turn_number": 1
+    },
+    {
+      "clarification": "Generated room scene fallback was used.",
+      "intent": "move_east_generated_room",
+      "location_id": "unknown",
+      "location_label": "Dust-Choked Equipment Corridor",
+      "narration": "You step east onto a slanted metal grating, the surface groaning underfoot. The air is thick with dust that clings to your boots and the exposed wiring of a half-submerged server rack. A faint hum pulses from somewhere ahead—either a dying generator or a ghost signal. The corridor slopes downward, its walls lined with corroded pipes and the occasional flickering emergency light.",
+      "player_command": "EAST",
+      "turn_number": 2
+    },
+    {
+      "clarification": "",
+      "intent": "move_west_known_room",
+      "location_id": "unknown",
+      "location_label": "North Perimeter Walk",
+      "narration": "You go west and enter North Perimeter Walk. A narrow exterior walk skirting the datacenter shell, open to dust and horizon.",
+      "player_command": "WEST",
+      "turn_number": 3
+    }
+  ],
+  "next_generated_room_index": 3,
+  "room_links": [
+    {
+      "direction": "north",
+      "from_place_id": "canonical:gate",
+      "to_place_id": "generated:room_0001"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "generated:room_0001",
+      "to_place_id": "canonical:gate"
+    },
+    {
+      "direction": "east",
+      "from_place_id": "generated:room_0001",
+      "to_place_id": "generated:room_0002"
+    },
+    {
+      "direction": "west",
+      "from_place_id": "generated:room_0002",
+      "to_place_id": "generated:room_0001"
+    }
+  ],
+  "soft_state": {
+    "active_hypotheses": [
+      "the threat may be real",
+      "the institution may be manufacturing the threat"
+    ],
+    "atmosphere": "administrative, dry, watchful",
+    "rolling_summary": "You go west and enter North Perimeter Walk. A narrow exterior walk skirting the datacenter shell, open to dust and horizon.",
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "alert_level": 1,
+    "anchors": [
+      "perimeter",
+      "compound_wall",
+      "equipment_pad"
+    ],
+    "blocked_exits": [],
+    "canonical_fixture": "",
+    "desert_state": "dusty",
+    "interior_density": "sparse",
+    "location_archetype": "generated_perimeter_space",
+    "location_id": "unknown",
+    "room_summary": "A narrow exterior walk skirting the datacenter shell, open to dust and horizon.",
+    "room_title": "North Perimeter Walk",
+    "spatial_anomalies": [],
+    "time_of_day": "dusk",
+    "visibility_level": "dusty",
+    "visible_objects": [
+      "crate",
+      "cooling_unit",
+      "gate"
+    ]
+  }
+}

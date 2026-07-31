@@ -1,6 +1,7 @@
 #include "turn_runner.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "scene_compiler.h"
 #include "turn_contract.h"
@@ -23,6 +24,13 @@ struct StreamForwarder {
         , user_data(0)
     {
     }
+};
+
+struct GeneratedRoomDraft {
+    std::string title;
+    std::string summary;
+    std::string arrival_narration;
+    SpatialState spatial_state;
 };
 
 static void SetError(char* buffer, size_t buffer_size, const char* format, const char* argument)
@@ -502,6 +510,453 @@ static void ApplySpatialDelta(SpatialState* state, const SpatialStateDelta& delt
     state->spatial_anomalies = delta.spatial_anomalies;
 }
 
+static std::string ToLowerAsciiCopy(const std::string& text)
+{
+    std::string lower = text;
+    for (size_t index = 0; index < lower.size(); ++index) {
+        if (lower[index] >= 'A' && lower[index] <= 'Z') {
+            lower[index] = static_cast<char>(lower[index] - 'A' + 'a');
+        }
+    }
+    return lower;
+}
+
+static bool TryParseTraversalCommand(const char* player_command, CardinalDirection* direction)
+{
+    if (!direction) {
+        return false;
+    }
+
+    const std::string normalized = ToLowerAsciiCopy(CollapseWhitespaceCopy(player_command ? player_command : ""));
+    if (ParseCardinalDirection(normalized.c_str(), direction)) {
+        return true;
+    }
+
+    const char* prefixes[] = {"go ", "move ", "walk "};
+    for (size_t index = 0; index < sizeof(prefixes) / sizeof(prefixes[0]); ++index) {
+        const std::string prefix = prefixes[index];
+        if (normalized.compare(0, prefix.size(), prefix) == 0) {
+            return ParseCardinalDirection(normalized.substr(prefix.size()).c_str(), direction);
+        }
+    }
+
+    *direction = kDirectionUnknown;
+    return false;
+}
+
+static bool SpatialStateBlocksDirection(const SpatialState& state, CardinalDirection direction)
+{
+    for (size_t index = 0; index < state.blocked_exits.size(); ++index) {
+        CardinalDirection blocked_direction = kDirectionUnknown;
+        if (ParseCardinalDirection(state.blocked_exits[index].c_str(), &blocked_direction) && blocked_direction == direction) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static std::string BuildGeneratedPlaceId(int room_index)
+{
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "generated:room_%04d", room_index > 0 ? room_index : 1);
+    return buffer;
+}
+
+static const GeneratedRoom* FindGeneratedRoomById(const SessionState& session_state, const std::string& room_id)
+{
+    for (size_t index = 0; index < session_state.generated_rooms.size(); ++index) {
+        if (session_state.generated_rooms[index].room_id == room_id) {
+            return &session_state.generated_rooms[index];
+        }
+    }
+    return 0;
+}
+
+static bool FindRoomLinkTarget(
+    const SessionState& session_state,
+    const std::string& from_place_id,
+    CardinalDirection direction,
+    std::string* to_place_id)
+{
+    if (!to_place_id) {
+        return false;
+    }
+
+    for (size_t index = 0; index < session_state.room_links.size(); ++index) {
+        const RoomLink& link = session_state.room_links[index];
+        if (link.from_place_id == from_place_id && link.direction == direction) {
+            *to_place_id = link.to_place_id;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void AddRoomLinkUnique(
+    std::vector<RoomLink>* room_links,
+    const std::string& from_place_id,
+    CardinalDirection direction,
+    const std::string& to_place_id)
+{
+    if (!room_links || from_place_id.empty() || to_place_id.empty() || direction == kDirectionUnknown) {
+        return;
+    }
+
+    for (size_t index = 0; index < room_links->size(); ++index) {
+        if ((*room_links)[index].from_place_id == from_place_id && (*room_links)[index].direction == direction) {
+            (*room_links)[index].to_place_id = to_place_id;
+            return;
+        }
+    }
+
+    RoomLink link;
+    link.from_place_id = from_place_id;
+    link.direction = direction;
+    link.to_place_id = to_place_id;
+    room_links->push_back(link);
+}
+
+static void AddGeneratedRoomUnique(std::vector<GeneratedRoom>* rooms, const GeneratedRoom& room)
+{
+    if (!rooms || room.room_id.empty()) {
+        return;
+    }
+
+    for (size_t index = 0; index < rooms->size(); ++index) {
+        if ((*rooms)[index].room_id == room.room_id) {
+            (*rooms)[index] = room;
+            return;
+        }
+    }
+
+    rooms->push_back(room);
+}
+
+static bool SpatialFeelsExterior(const SpatialState& state)
+{
+    const std::string combined = ToLowerAsciiCopy(
+        state.room_title + " " + state.room_summary + " " + state.location_archetype + " " + state.canonical_fixture);
+    return combined.find("exterior") != std::string::npos ||
+        combined.find("roof") != std::string::npos ||
+        combined.find("gate") != std::string::npos ||
+        combined.find("yard") != std::string::npos ||
+        combined.find("perimeter") != std::string::npos ||
+        combined.find("desert") != std::string::npos ||
+        combined.find("threshold") != std::string::npos ||
+        combined.find("watch") != std::string::npos;
+}
+
+static bool ListContainsSubstring(const std::vector<std::string>& values, const char* pattern)
+{
+    if (!pattern) {
+        return false;
+    }
+
+    const std::string lower_pattern = ToLowerAsciiCopy(pattern);
+    for (size_t index = 0; index < values.size(); ++index) {
+        if (ToLowerAsciiCopy(values[index]).find(lower_pattern) != std::string::npos) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(const SessionState& initial_session_state, CardinalDirection direction)
+{
+    GeneratedRoomDraft draft;
+    const SpatialState& origin = initial_session_state.spatial_state;
+    const bool exterior = SpatialFeelsExterior(origin);
+
+    draft.spatial_state.location_id = kLocationUnknown;
+    draft.spatial_state.canonical_fixture.clear();
+    draft.spatial_state.time_of_day = origin.time_of_day;
+    draft.spatial_state.visibility_level = origin.visibility_level;
+    draft.spatial_state.desert_state = origin.desert_state;
+    draft.spatial_state.interior_density = exterior ? kInteriorSparse : kInteriorDense;
+    draft.spatial_state.alert_level = origin.alert_level > 0 ? origin.alert_level : initial_session_state.hard_state.alert_level;
+
+    switch (direction) {
+    case kDirectionNorth:
+        draft.title = exterior ? "North Perimeter Walk" : "North Service Bay";
+        draft.summary = exterior
+            ? "A narrow exterior walk skirting the datacenter shell, open to dust and horizon."
+            : "A service bay beyond the main route, lined with maintenance hardware and heavy shadow.";
+        break;
+    case kDirectionEast:
+        draft.title = exterior ? "East Service Yard" : "East Switching Hall";
+        draft.summary = exterior
+            ? "An exposed yard of crates, conduit and service fixtures at the edge of the compound."
+            : "A lateral switching hall with conduit runs, racks and a hard industrial silence.";
+        break;
+    case kDirectionSouth:
+        draft.title = exterior ? "South Ramp" : "South Cooling Trench";
+        draft.summary = exterior
+            ? "A sloped service ramp where the compound thins toward the outer ground."
+            : "A cooling trench and access lane where airflow and machinery dominate the room.";
+        break;
+    case kDirectionWest:
+        draft.title = exterior ? "West Maintenance Apron" : "West Access Lane";
+        draft.summary = exterior
+            ? "A maintenance apron of parapets, housings and scattered equipment facing the darkening desert."
+            : "An access lane between utility blocks, with spare equipment stacked against the walls.";
+        break;
+    default:
+        draft.title = exterior ? "Peripheral Exterior" : "Utility Interior";
+        draft.summary = exterior
+            ? "A sparse exterior threshold around the datacenter perimeter."
+            : "A utility interior neighboring the current room.";
+        break;
+    }
+
+    draft.arrival_narration = std::string("You move ") + CardinalDirectionToString(direction) + ". " + draft.summary;
+    draft.spatial_state.room_title = draft.title;
+    draft.spatial_state.room_summary = draft.summary;
+    draft.spatial_state.location_archetype = exterior ? "generated_perimeter_space" : "generated_service_interior";
+    draft.spatial_state.anchors.push_back(exterior ? "perimeter" : "service_lane");
+    draft.spatial_state.anchors.push_back(exterior ? "compound_wall" : "utility_wall");
+    draft.spatial_state.anchors.push_back(exterior ? "equipment_pad" : "maintenance_lane");
+    draft.spatial_state.visible_objects.push_back(exterior ? "crate" : "rack");
+    draft.spatial_state.visible_objects.push_back("cooling_unit");
+    draft.spatial_state.visible_objects.push_back(exterior ? "gate" : "crate");
+    return draft;
+}
+
+static std::string BuildFallbackGeneratedRoomSceneText(const SpatialState& spatial_state)
+{
+    const bool exterior = SpatialFeelsExterior(spatial_state);
+    std::string text;
+    text += "room \"generated room\"\n";
+
+    if (exterior) {
+        text += "camera eye(0.0,1.82,-8.4) target(0.0,1.20,8.2) up(0.0,1.0,0.0) fov(46.0)\n";
+        text += "spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(72.0)\n";
+        text += "sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(91)\n";
+        text += "plane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(18.0,30.0) gray(0.13)\n";
+        text += "box \"wall_back\" pos(0.0,2.1,10.4) size(18.0,4.2,0.8) gray(0.18)\n";
+        text += "box \"parapet_left\" pos(-7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\n";
+        text += "box \"parapet_right\" pos(7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\n";
+        text += "box \"parapet_front\" pos(0.0,0.65,1.9) size(14.0,1.3,0.8) gray(0.26)\n";
+        if (ListContainsSubstring(spatial_state.visible_objects, "gate")) {
+            text += "prefab_gate \"aux_gate\" pos(0.0,1.4,7.2) size(4.6,2.8,0.5) gray(0.28) detail(0.40)\n";
+        }
+        text += "prefab_crate \"service_crate\" pos(2.6,0.55,-1.8) size(1.8,1.1,1.5) gray(0.20) detail(0.31)\n";
+        text += "prefab_cooling_unit \"vent_stack\" pos(-4.1,1.0,-2.8) size(1.0,2.0,1.0) gray(0.30) detail(0.39)\n";
+    } else {
+        text += "camera eye(0.0,1.78,-7.8) target(0.0,1.20,8.4) up(0.0,1.0,0.0) fov(46.0)\n";
+        text += "spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)\n";
+        text += "plane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(14.0,24.0) gray(0.12)\n";
+        text += "plane \"ceiling\" pos(0.0,3.2,0.0) normal(0.0,-1.0,0.0) size(14.0,24.0) gray(0.19)\n";
+        text += "box \"wall_back\" pos(0.0,1.6,11.4) size(14.0,3.2,0.6) gray(0.20)\n";
+        text += "box \"wall_left\" pos(-6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\n";
+        text += "box \"wall_right\" pos(6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\n";
+        text += "box \"threshold_frame\" pos(0.0,1.5,8.8) size(3.6,3.0,0.45) gray(0.24)\n";
+        if (ListContainsSubstring(spatial_state.visible_objects, "rack")) {
+            text += "prefab_rack \"rack_left\" pos(-3.0,1.25,2.8) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\n";
+            text += "prefab_rack \"rack_right\" pos(3.0,1.25,4.4) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\n";
+        }
+        text += "prefab_cooling_unit \"cooling_block\" pos(-4.4,1.0,-2.5) size(1.1,2.0,1.1) gray(0.31) detail(0.39)\n";
+        text += "prefab_crate \"maintenance_crate\" pos(2.4,0.55,-1.6) size(1.7,1.0,1.4) gray(0.20) detail(0.30)\n";
+    }
+
+    return text;
+}
+
+static std::string BuildBlockedTraversalNarration(const SpatialState& spatial_state, CardinalDirection direction)
+{
+    std::string narration = "The way ";
+    narration += CardinalDirectionToString(direction);
+    narration += " is blocked.";
+    if (!spatial_state.room_summary.empty()) {
+        narration += " ";
+        narration += spatial_state.room_summary;
+    }
+    return narration;
+}
+
+static std::string BuildTraversalNarrationForKnownPlace(const SessionState& session_state, const std::string& place_id, CardinalDirection direction)
+{
+    std::string narration = "You go ";
+    narration += CardinalDirectionToString(direction);
+    narration += " and enter ";
+    narration += DescribePlaceLabel(session_state, place_id);
+    narration += ".";
+
+    const GeneratedRoom* room = FindGeneratedRoomById(session_state, place_id);
+    if (room && !room->spatial_state.room_summary.empty()) {
+        narration += " ";
+        narration += room->spatial_state.room_summary;
+    }
+    return narration;
+}
+
+static bool ParseGeneratedSpatialStateNode(const json& node, SpatialState* spatial_state)
+{
+    if (!spatial_state || !node.is_object()) {
+        return false;
+    }
+
+    spatial_state->location_id = kLocationUnknown;
+    spatial_state->canonical_fixture.clear();
+    spatial_state->location_archetype = ReadStringValue(node, "location_archetype");
+    ParseTimeOfDay(ReadStringValue(node, "time_of_day").c_str(), &spatial_state->time_of_day);
+    ParseVisibilityLevel(ReadStringValue(node, "visibility_level").c_str(), &spatial_state->visibility_level);
+    ParseDesertState(ReadStringValue(node, "desert_state").c_str(), &spatial_state->desert_state);
+    ParseInteriorDensity(ReadStringValue(node, "interior_density").c_str(), &spatial_state->interior_density);
+    spatial_state->alert_level = ReadIntValue(node, "alert_level", spatial_state->alert_level);
+    spatial_state->anchors = ReadStringArray(node.contains("anchors") ? node["anchors"] : json());
+    spatial_state->visible_objects = ReadStringArray(node.contains("visible_objects") ? node["visible_objects"] : json());
+    spatial_state->blocked_exits = ReadStringArray(node.contains("blocked_exits") ? node["blocked_exits"] : json());
+    spatial_state->spatial_anomalies = ReadStringArray(node.contains("spatial_anomalies") ? node["spatial_anomalies"] : json());
+    return true;
+}
+
+static bool ParseGeneratedRoomJson(
+    const char* json_text,
+    GeneratedRoomDraft* draft,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (!json_text || !draft) {
+        SetError(error_buffer, error_buffer_size, "Invalid generated room JSON: %s", "(null)");
+        return false;
+    }
+
+    *draft = GeneratedRoomDraft();
+    try {
+        json root;
+        try {
+            root = json::parse(json_text);
+        } catch (const std::exception&) {
+            std::string extracted_json;
+            if (!ExtractFirstJsonObject(json_text, &extracted_json)) {
+                throw;
+            }
+            root = json::parse(extracted_json);
+        }
+        if (!root.is_object()) {
+            SetError(error_buffer, error_buffer_size, "Generated room JSON is not an object: %s", "(root)");
+            return false;
+        }
+
+        draft->title = ReadStringValue(root, "title");
+        draft->summary = ReadStringValue(root, "summary");
+        draft->arrival_narration = ReadStringValue(root, "arrival_narration");
+        if (root.contains("spatial_state")) {
+            ParseGeneratedSpatialStateNode(root["spatial_state"], &draft->spatial_state);
+        }
+
+        draft->spatial_state.room_title = draft->title;
+        draft->spatial_state.room_summary = draft->summary;
+        draft->spatial_state.location_id = kLocationUnknown;
+        draft->spatial_state.canonical_fixture.clear();
+
+        if (draft->title.empty()) {
+            SetError(error_buffer, error_buffer_size, "Generated room JSON missing title: %s", "(title)");
+            return false;
+        }
+        if (draft->arrival_narration.empty()) {
+            draft->arrival_narration = draft->summary.empty()
+                ? std::string("You enter ") + draft->title + "."
+                : draft->summary;
+        }
+        return true;
+    } catch (const std::exception& exception) {
+        SetError(error_buffer, error_buffer_size, "Failed to parse generated room JSON: %s", exception.what());
+        return false;
+    }
+}
+
+static bool LoadSceneForPlace(
+    const SessionState& session_state,
+    const std::string& place_id,
+    Scene* scene,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (!scene) {
+        SetError(error_buffer, error_buffer_size, "Invalid scene target: %s", "(null)");
+        return false;
+    }
+
+    LocationId location_id = kLocationUnknown;
+    if (ParseCanonicalPlaceId(place_id, &location_id)) {
+        SpatialState spatial_state;
+        if (!BuildCanonicalSpatialState(location_id, &spatial_state)) {
+            SetError(error_buffer, error_buffer_size, "Cannot build canonical place: %s", place_id.c_str());
+            return false;
+        }
+        return CompileSpatialStateToScene(spatial_state, scene, error_buffer, error_buffer_size);
+    }
+
+    const GeneratedRoom* room = FindGeneratedRoomById(session_state, place_id);
+    if (!room) {
+        SetError(error_buffer, error_buffer_size, "Unknown generated place: %s", place_id.c_str());
+        return false;
+    }
+
+    return AuditSceneCandidateText(place_id.c_str(), room->scene_text.c_str(), scene, error_buffer, error_buffer_size);
+}
+
+static bool ApplyPlaceToState(
+    const SessionState& session_state,
+    const std::string& place_id,
+    HardState* hard_state,
+    SpatialState* spatial_state,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (!hard_state || !spatial_state) {
+        SetError(error_buffer, error_buffer_size, "Invalid place state target: %s", "(null)");
+        return false;
+    }
+
+    LocationId location_id = kLocationUnknown;
+    if (ParseCanonicalPlaceId(place_id, &location_id)) {
+        if (!BuildCanonicalSpatialState(location_id, spatial_state)) {
+            SetError(error_buffer, error_buffer_size, "Cannot build canonical place: %s", place_id.c_str());
+            return false;
+        }
+        hard_state->current_location_id = location_id;
+        if (spatial_state->alert_level > 0) {
+            hard_state->alert_level = spatial_state->alert_level;
+        }
+        return true;
+    }
+
+    const GeneratedRoom* room = FindGeneratedRoomById(session_state, place_id);
+    if (!room) {
+        SetError(error_buffer, error_buffer_size, "Unknown generated place: %s", place_id.c_str());
+        return false;
+    }
+
+    *spatial_state = room->spatial_state;
+    spatial_state->location_id = kLocationUnknown;
+    spatial_state->canonical_fixture.clear();
+    hard_state->current_location_id = kLocationUnknown;
+    if (spatial_state->alert_level > 0) {
+        hard_state->alert_level = spatial_state->alert_level;
+    }
+    return true;
+}
+
+static std::string DetermineUpdatedPlaceIdAfterStandardTurn(
+    const SessionState& initial_session_state,
+    const SpatialState& updated_spatial_state)
+{
+    if (updated_spatial_state.location_id != kLocationUnknown) {
+        return BuildCanonicalPlaceId(updated_spatial_state.location_id);
+    }
+    if (!initial_session_state.current_place_id.empty()) {
+        return initial_session_state.current_place_id;
+    }
+    if (initial_session_state.hard_state.current_location_id != kLocationUnknown) {
+        return BuildCanonicalPlaceId(initial_session_state.hard_state.current_location_id);
+    }
+    return std::string();
+}
+
 }  // namespace
 
 bool ParseTurnResultJson(
@@ -573,6 +1028,7 @@ bool InitializeSessionState(
     session_state->hard_state = MakeInitialHardState();
     session_state->soft_state = MakeInitialSoftState();
     session_state->hard_state.current_location_id = initial_location_id;
+    session_state->current_place_id = BuildCanonicalPlaceId(initial_location_id);
     if (!BuildCanonicalSpatialState(initial_location_id, &session_state->spatial_state)) {
         SetError(error_buffer, error_buffer_size, "Cannot build canonical spatial state: %s", LocationIdToString(initial_location_id));
         return false;
@@ -626,10 +1082,35 @@ void UpdateSessionStateFromTurn(
     session_state->hard_state = turn_result.updated_hard_state;
     session_state->soft_state = turn_result.updated_soft_state;
     session_state->spatial_state = turn_result.updated_spatial_state;
+    session_state->current_place_id = turn_result.updated_place_id;
+
+    for (size_t index = 0; index < turn_result.generated_rooms_to_add.size(); ++index) {
+        bool existed = false;
+        for (size_t room_index = 0; room_index < session_state->generated_rooms.size(); ++room_index) {
+            if (session_state->generated_rooms[room_index].room_id == turn_result.generated_rooms_to_add[index].room_id) {
+                existed = true;
+                break;
+            }
+        }
+        AddGeneratedRoomUnique(&session_state->generated_rooms, turn_result.generated_rooms_to_add[index]);
+        if (!existed && IsGeneratedPlaceId(turn_result.generated_rooms_to_add[index].room_id)) {
+            ++session_state->next_generated_room_index;
+        }
+    }
+    for (size_t index = 0; index < turn_result.room_links_to_add.size(); ++index) {
+        AddRoomLinkUnique(
+            &session_state->room_links,
+            turn_result.room_links_to_add[index].from_place_id,
+            turn_result.room_links_to_add[index].direction,
+            turn_result.room_links_to_add[index].to_place_id);
+    }
 
     SessionTurnRecord record;
     record.turn_number = turn_result.initial_hard_state.turn_number;
     record.location_id = turn_result.updated_spatial_state.location_id;
+    record.location_label = session_state->current_place_id.empty()
+        ? (record.location_id == kLocationUnknown ? "unknown" : LocationIdToString(record.location_id))
+        : DescribePlaceLabel(*session_state, session_state->current_place_id);
     record.player_command = player_command ? player_command : "";
     record.intent = turn_result.turn_result.intent;
     record.narration = turn_result.turn_result.narration;
@@ -652,9 +1133,248 @@ bool RunHeadlessTurnFromState(
     }
 
     *result = HeadlessTurnResult();
+    result->initial_place_id = initial_session_state.current_place_id.empty()
+        ? BuildCanonicalPlaceId(initial_session_state.hard_state.current_location_id)
+        : initial_session_state.current_place_id;
+    result->updated_place_id = result->initial_place_id;
     result->initial_hard_state = initial_session_state.hard_state;
     result->initial_soft_state = initial_session_state.soft_state;
     result->initial_spatial_state = initial_session_state.spatial_state;
+    result->updated_hard_state = result->initial_hard_state;
+    result->updated_soft_state = result->initial_soft_state;
+    result->updated_spatial_state = result->initial_spatial_state;
+
+    CardinalDirection traversal_direction = kDirectionUnknown;
+    if (TryParseTraversalCommand(player_command, &traversal_direction)) {
+        if (SpatialStateBlocksDirection(result->initial_spatial_state, traversal_direction)) {
+            result->turn_result.intent = std::string("move_") + CardinalDirectionToString(traversal_direction) + "_blocked";
+            result->turn_result.narration = BuildBlockedTraversalNarration(result->initial_spatial_state, traversal_direction);
+            result->turn_result.clarification = "No new room was generated because the current spatial brief marks that exit as blocked.";
+            result->updated_soft_state.rolling_summary = result->turn_result.narration;
+            ++result->updated_hard_state.turn_number;
+            if (!LoadSceneForPlace(initial_session_state, result->updated_place_id, &result->rendered_scene, error_buffer, error_buffer_size)) {
+                return false;
+            }
+            return true;
+        }
+
+        std::string linked_place_id;
+        if (FindRoomLinkTarget(initial_session_state, result->initial_place_id, traversal_direction, &linked_place_id)) {
+            result->turn_result.intent = std::string("move_") + CardinalDirectionToString(traversal_direction) + "_known_room";
+            result->turn_result.narration = BuildTraversalNarrationForKnownPlace(initial_session_state, linked_place_id, traversal_direction);
+            result->updated_place_id = linked_place_id;
+            if (!ApplyPlaceToState(
+                    initial_session_state,
+                    linked_place_id,
+                    &result->updated_hard_state,
+                    &result->updated_spatial_state,
+                    error_buffer,
+                    error_buffer_size)) {
+                return false;
+            }
+            result->updated_soft_state.rolling_summary = result->turn_result.narration;
+            ++result->updated_hard_state.turn_number;
+            if (!LoadSceneForPlace(initial_session_state, linked_place_id, &result->rendered_scene, error_buffer, error_buffer_size)) {
+                return false;
+            }
+            return true;
+        }
+
+        const std::string room_prompt = BuildGeneratedRoomPrompt(
+            result->initial_hard_state,
+            result->initial_soft_state,
+            result->initial_spatial_state,
+            &initial_session_state.history,
+            traversal_direction);
+
+        std::vector<LlmPromptMessage> room_messages;
+        room_messages.push_back(LlmPromptMessage());
+        room_messages.back().role = "system";
+        room_messages.back().content =
+            "You invent one new neighboring room for a local interactive-fiction prototype. "
+            "Return valid JSON only. Do not use markdown fences.";
+        room_messages.push_back(LlmPromptMessage());
+        room_messages.back().role = "user";
+        room_messages.back().content = room_prompt;
+
+        GeneratedRoomDraft draft;
+        bool used_room_metadata_fallback = false;
+        bool used_room_scene_fallback = false;
+
+        LlmGenerationResult room_generation_result;
+        StreamForwarder room_stream_forwarder;
+        room_stream_forwarder.callback = config.stream_callback;
+        room_stream_forwarder.phase = kHeadlessTurnStreamPrimaryResponse;
+        room_stream_forwarder.user_data = config.stream_user_data;
+        if (GenerateChatCompletion(
+                config.generation_config,
+                room_messages,
+                config.stream_callback ? ForwardStreamChunk : 0,
+                config.stream_callback ? &room_stream_forwarder : 0,
+                &room_generation_result)) {
+            result->prompt_text = room_generation_result.prompt_text;
+            result->raw_response_text = room_generation_result.response_text;
+            result->prompt_tokens += room_generation_result.prompt_tokens;
+            result->generated_tokens += room_generation_result.generated_tokens;
+            result->inference_time_ms += room_generation_result.inference_time_ms;
+
+            char metadata_error[512];
+            metadata_error[0] = '\0';
+            if (!ParseGeneratedRoomJson(room_generation_result.response_text.c_str(), &draft, metadata_error, sizeof(metadata_error))) {
+                draft = MakeFallbackGeneratedRoomDraft(initial_session_state, traversal_direction);
+                used_room_metadata_fallback = true;
+                result->used_turn_fallback = true;
+                result->turn_result.clarification = std::string("Generated room metadata fallback was used: ") + metadata_error;
+            }
+        } else {
+            draft = MakeFallbackGeneratedRoomDraft(initial_session_state, traversal_direction);
+            used_room_metadata_fallback = true;
+            result->used_turn_fallback = true;
+            result->turn_result.clarification =
+                std::string("Generated room metadata fallback was used after LLM failure: ") +
+                (room_generation_result.error_message.empty() ? "unknown error" : room_generation_result.error_message);
+        }
+
+        if (draft.spatial_state.alert_level <= 0) {
+            draft.spatial_state.alert_level = result->initial_spatial_state.alert_level > 0
+                ? result->initial_spatial_state.alert_level
+                : result->initial_hard_state.alert_level;
+        }
+        if (draft.spatial_state.time_of_day == kTimeUnknown) {
+            draft.spatial_state.time_of_day = result->initial_spatial_state.time_of_day;
+        }
+        if (draft.spatial_state.visibility_level == kVisibilityUnknown) {
+            draft.spatial_state.visibility_level = result->initial_spatial_state.visibility_level;
+        }
+        if (draft.spatial_state.desert_state == kDesertUnknown) {
+            draft.spatial_state.desert_state = result->initial_spatial_state.desert_state;
+        }
+        if (draft.spatial_state.interior_density == kInteriorUnknown) {
+            draft.spatial_state.interior_density = result->initial_spatial_state.interior_density;
+        }
+        if (draft.spatial_state.room_title.empty()) {
+            draft.spatial_state.room_title = draft.title.empty() ? "Generated Room" : draft.title;
+        }
+        if (draft.spatial_state.room_summary.empty()) {
+            draft.spatial_state.room_summary = draft.summary;
+        }
+        if (draft.arrival_narration.empty()) {
+            draft.arrival_narration = draft.summary.empty()
+                ? std::string("You move ") + CardinalDirectionToString(traversal_direction) + " into " + draft.spatial_state.room_title + "."
+                : draft.summary;
+        }
+
+        std::string generated_scene_text;
+        Scene generated_scene;
+        bool generated_scene_valid = false;
+        char generated_scene_error[512];
+        generated_scene_error[0] = '\0';
+
+        std::vector<LlmPromptMessage> scene_messages;
+        scene_messages.push_back(LlmPromptMessage());
+        scene_messages.back().role = "system";
+        scene_messages.back().content =
+            "You are a deterministic scene compiler. Return only a valid .scene program. "
+            "Do not use markdown fences. Do not write any explanation.";
+        scene_messages.push_back(LlmPromptMessage());
+        scene_messages.back().role = "user";
+        scene_messages.back().content = BuildGeneratedRoomScenePrompt(
+            result->initial_spatial_state,
+            draft.spatial_state,
+            traversal_direction);
+
+        LlmGenerationConfig scene_config = config.generation_config;
+        scene_config.use_json_grammar = false;
+
+        LlmGenerationResult scene_generation_result;
+        StreamForwarder scene_stream_forwarder;
+        scene_stream_forwarder.callback = config.stream_callback;
+        scene_stream_forwarder.phase = kHeadlessTurnStreamSceneProgram;
+        scene_stream_forwarder.user_data = config.stream_user_data;
+        if (GenerateChatCompletion(
+                scene_config,
+                scene_messages,
+                config.stream_callback ? ForwardStreamChunk : 0,
+                config.stream_callback ? &scene_stream_forwarder : 0,
+                &scene_generation_result)) {
+            result->raw_scene_audit_response_text = scene_generation_result.response_text;
+            result->prompt_tokens += scene_generation_result.prompt_tokens;
+            result->generated_tokens += scene_generation_result.generated_tokens;
+            result->inference_time_ms += scene_generation_result.inference_time_ms;
+            generated_scene_text = NormalizeCodeBlockText(scene_generation_result.response_text);
+            generated_scene_valid = AuditSceneCandidateText(
+                "generated.scene",
+                generated_scene_text.c_str(),
+                &generated_scene,
+                generated_scene_error,
+                sizeof(generated_scene_error));
+        }
+
+        if (!generated_scene_valid) {
+            generated_scene_text = BuildFallbackGeneratedRoomSceneText(draft.spatial_state);
+            used_room_scene_fallback = true;
+            result->used_turn_fallback = true;
+            generated_scene_error[0] = '\0';
+            generated_scene_valid = AuditSceneCandidateText(
+                "generated_fallback.scene",
+                generated_scene_text.c_str(),
+                &generated_scene,
+                generated_scene_error,
+                sizeof(generated_scene_error));
+        }
+
+        if (!generated_scene_valid) {
+            SetError(
+                error_buffer,
+                error_buffer_size,
+                "Generated room scene remained invalid: %s",
+                generated_scene_error[0] ? generated_scene_error : "unknown error");
+            return false;
+        }
+
+        GeneratedRoom generated_room;
+        generated_room.room_id = BuildGeneratedPlaceId(initial_session_state.next_generated_room_index);
+        generated_room.spatial_state = draft.spatial_state;
+        generated_room.scene_text = generated_scene_text;
+
+        result->generated_rooms_to_add.push_back(generated_room);
+        AddRoomLinkUnique(&result->room_links_to_add, result->initial_place_id, traversal_direction, generated_room.room_id);
+        AddRoomLinkUnique(
+            &result->room_links_to_add,
+            generated_room.room_id,
+            OppositeCardinalDirection(traversal_direction),
+            result->initial_place_id);
+
+        result->updated_place_id = generated_room.room_id;
+        result->updated_hard_state.current_location_id = kLocationUnknown;
+        result->updated_soft_state.rolling_summary = draft.arrival_narration;
+        result->updated_spatial_state = generated_room.spatial_state;
+        result->updated_spatial_state.location_id = kLocationUnknown;
+        result->updated_spatial_state.canonical_fixture.clear();
+        if (result->updated_spatial_state.alert_level > 0) {
+            result->updated_hard_state.alert_level = result->updated_spatial_state.alert_level;
+        }
+        ++result->updated_hard_state.turn_number;
+
+        result->turn_result.intent = std::string("move_") + CardinalDirectionToString(traversal_direction) + "_generated_room";
+        result->turn_result.narration = draft.arrival_narration;
+        if (used_room_metadata_fallback && result->turn_result.clarification.empty()) {
+            result->turn_result.clarification = "Generated room metadata fallback was used.";
+        }
+        if (used_room_scene_fallback) {
+            if (!result->turn_result.clarification.empty()) {
+                result->turn_result.clarification.append(" ");
+            }
+            result->turn_result.clarification.append("Generated room scene fallback was used.");
+        }
+        result->turn_result.candidate_scene_text = generated_scene_text;
+        result->turn_result.candidate_scene_included = true;
+        result->candidate_scene = generated_scene;
+        result->candidate_scene_valid = true;
+        result->used_candidate_scene_for_render = true;
+        result->rendered_scene = generated_scene;
+        return true;
+    }
 
     const std::string user_prompt = BuildTurnPrompt(
         result->initial_hard_state,
@@ -716,10 +1436,8 @@ bool RunHeadlessTurnFromState(
         }
     }
 
-    result->updated_hard_state = result->initial_hard_state;
-    result->updated_soft_state = result->initial_soft_state;
-    result->updated_spatial_state = result->initial_spatial_state;
     ApplyTurnResult(result->turn_result, &result->updated_hard_state, &result->updated_soft_state, &result->updated_spatial_state);
+    result->updated_place_id = DetermineUpdatedPlaceIdAfterStandardTurn(initial_session_state, result->updated_spatial_state);
 
     if (config.request_candidate_scene) {
         std::vector<LlmPromptMessage> scene_messages;
@@ -772,7 +1490,7 @@ bool RunHeadlessTurnFromState(
         return true;
     }
 
-    if (!CompileSpatialStateToScene(result->updated_spatial_state, &result->rendered_scene, error_buffer, error_buffer_size)) {
+    if (!LoadSceneForPlace(initial_session_state, result->updated_place_id, &result->rendered_scene, error_buffer, error_buffer_size)) {
         return false;
     }
 
