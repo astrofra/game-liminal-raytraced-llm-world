@@ -219,6 +219,11 @@ static bool ParseUnsignedText(const char* text, unsigned int* value)
     return true;
 }
 
+static float LerpScalar(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
+
 static bool ExtractQuotedString(const std::string& line, std::string* value)
 {
     if (!value) {
@@ -552,6 +557,197 @@ static void AddBoxPrimitive(
             corners[face.i3],
             material_index,
             face.expected_normal);
+    }
+}
+
+static std::string PrefabChildName(const std::string& base_name, const char* suffix)
+{
+    return base_name + "_" + suffix;
+}
+
+static void AddPrefabChildBox(
+    Scene* scene,
+    const std::string& base_name,
+    const char* suffix,
+    const Vec3& prefab_center,
+    const Vec3& local_center,
+    const Vec3& size,
+    float gray_value)
+{
+    AddBoxPrimitive(
+        scene,
+        PrefabChildName(base_name, suffix),
+        prefab_center + local_center,
+        size,
+        Vec3(0.0f),
+        gray_value,
+        0.0f);
+}
+
+static void AddGatePrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float frame_gray,
+    float detail_gray,
+    unsigned int bars)
+{
+    const unsigned int bar_count = std::max(1u, bars);
+    const float pillar_width = Clamp(size.x * 0.10f, 0.10f, size.x * 0.22f);
+    const float top_beam_height = Clamp(size.y * 0.10f, 0.10f, size.y * 0.20f);
+    const float bottom_beam_height = Clamp(size.y * 0.08f, 0.08f, size.y * 0.16f);
+    const float frame_depth = std::max(size.z, 0.08f);
+    const float bar_depth = std::max(frame_depth * 0.35f, 0.05f);
+
+    AddPrefabChildBox(
+        scene,
+        name,
+        "frame_left",
+        center,
+        Vec3(-(size.x - pillar_width) * 0.5f, 0.0f, 0.0f),
+        Vec3(pillar_width, size.y, frame_depth),
+        frame_gray);
+    AddPrefabChildBox(
+        scene,
+        name,
+        "frame_right",
+        center,
+        Vec3((size.x - pillar_width) * 0.5f, 0.0f, 0.0f),
+        Vec3(pillar_width, size.y, frame_depth),
+        frame_gray);
+    AddPrefabChildBox(
+        scene,
+        name,
+        "frame_top",
+        center,
+        Vec3(0.0f, (size.y - top_beam_height) * 0.5f, 0.0f),
+        Vec3(size.x, top_beam_height, frame_depth),
+        frame_gray);
+    AddPrefabChildBox(
+        scene,
+        name,
+        "frame_bottom",
+        center,
+        Vec3(0.0f, -(size.y - bottom_beam_height) * 0.5f, 0.0f),
+        Vec3(size.x, bottom_beam_height, frame_depth),
+        frame_gray);
+
+    const float bar_clear_width = std::max(size.x - pillar_width * 2.0f - 0.16f, 0.20f);
+    const float bar_height = std::max(size.y - top_beam_height - bottom_beam_height - 0.16f, 0.20f);
+    const float bar_center_y = (bottom_beam_height - top_beam_height) * 0.5f;
+    const float bar_width = Clamp(bar_clear_width / (static_cast<float>(bar_count) * 4.5f), 0.05f, 0.14f);
+
+    for (unsigned int bar_index = 0; bar_index < bar_count; ++bar_index) {
+        float x = 0.0f;
+        if (bar_count > 1) {
+            const float t = static_cast<float>(bar_index) / static_cast<float>(bar_count - 1);
+            x = LerpScalar(-bar_clear_width * 0.5f, bar_clear_width * 0.5f, t);
+        }
+
+        char suffix[32];
+        snprintf(suffix, sizeof(suffix), "bar_%02u", bar_index + 1u);
+        AddPrefabChildBox(
+            scene,
+            name,
+            suffix,
+            center,
+            Vec3(x, bar_center_y, 0.0f),
+            Vec3(bar_width, bar_height, bar_depth),
+            detail_gray);
+    }
+}
+
+static void AddRackPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray,
+    float detail_gray)
+{
+    const float core_gray = Clamp(body_gray * 0.72f, 0.0f, 0.95f);
+    const float frame_width = Clamp(size.x * 0.11f, 0.05f, size.x * 0.24f);
+    const float frame_height = Clamp(size.y * 0.06f, 0.05f, size.y * 0.16f);
+    const float front_depth = std::max(size.z * 0.12f, 0.05f);
+    const float core_depth = std::max(size.z * 0.88f, 0.12f);
+    const float core_height = std::max(size.y * 0.94f, 0.20f);
+    const float core_width = std::max(size.x * 0.82f, 0.16f);
+    const float front_z = -(size.z - front_depth) * 0.5f;
+
+    AddPrefabChildBox(scene, name, "core", center, Vec3(0.0f, 0.0f, 0.02f * size.z), Vec3(core_width, core_height, core_depth), core_gray);
+    AddPrefabChildBox(scene, name, "frame_left", center, Vec3(-(size.x - frame_width) * 0.5f, 0.0f, front_z), Vec3(frame_width, size.y, front_depth), detail_gray);
+    AddPrefabChildBox(scene, name, "frame_right", center, Vec3((size.x - frame_width) * 0.5f, 0.0f, front_z), Vec3(frame_width, size.y, front_depth), detail_gray);
+    AddPrefabChildBox(scene, name, "frame_top", center, Vec3(0.0f, (size.y - frame_height) * 0.5f, front_z), Vec3(size.x, frame_height, front_depth), detail_gray);
+    AddPrefabChildBox(scene, name, "frame_bottom", center, Vec3(0.0f, -(size.y - frame_height) * 0.5f, front_z), Vec3(size.x, frame_height, front_depth), detail_gray);
+
+    for (int band_index = 0; band_index < 4; ++band_index) {
+        const float t = static_cast<float>(band_index) / 3.0f;
+        const float y = LerpScalar(-size.y * 0.22f, size.y * 0.22f, t);
+        char suffix[32];
+        snprintf(suffix, sizeof(suffix), "slot_%02d", band_index + 1);
+        AddPrefabChildBox(
+            scene,
+            name,
+            suffix,
+            center,
+            Vec3(0.0f, y, front_z),
+            Vec3(std::max(size.x - frame_width * 2.4f, 0.10f), std::max(frame_height * 0.45f, 0.04f), front_depth * 0.65f),
+            body_gray);
+    }
+}
+
+static void AddCratePrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray,
+    float detail_gray)
+{
+    const float brace = Clamp(std::min(size.x, size.z) * 0.12f, 0.04f, 0.18f);
+    const float lid_height = Clamp(size.y * 0.14f, 0.04f, size.y * 0.28f);
+
+    AddPrefabChildBox(scene, name, "body", center, Vec3(0.0f, -lid_height * 0.18f, 0.0f), Vec3(size.x * 0.88f, std::max(size.y - lid_height * 0.55f, 0.10f), size.z * 0.88f), body_gray);
+    AddPrefabChildBox(scene, name, "lid", center, Vec3(0.0f, (size.y - lid_height) * 0.5f, 0.0f), Vec3(size.x, lid_height, size.z), detail_gray);
+
+    AddPrefabChildBox(scene, name, "brace_fl", center, Vec3(-(size.x - brace) * 0.5f, 0.0f, -(size.z - brace) * 0.5f), Vec3(brace, size.y, brace), detail_gray);
+    AddPrefabChildBox(scene, name, "brace_fr", center, Vec3((size.x - brace) * 0.5f, 0.0f, -(size.z - brace) * 0.5f), Vec3(brace, size.y, brace), detail_gray);
+    AddPrefabChildBox(scene, name, "brace_bl", center, Vec3(-(size.x - brace) * 0.5f, 0.0f, (size.z - brace) * 0.5f), Vec3(brace, size.y, brace), detail_gray);
+    AddPrefabChildBox(scene, name, "brace_br", center, Vec3((size.x - brace) * 0.5f, 0.0f, (size.z - brace) * 0.5f), Vec3(brace, size.y, brace), detail_gray);
+}
+
+static void AddCoolingUnitPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray,
+    float detail_gray)
+{
+    const float cap_height = Clamp(size.y * 0.10f, 0.05f, size.y * 0.22f);
+    const float plinth_height = Clamp(size.y * 0.08f, 0.04f, size.y * 0.16f);
+    const float vent_depth = std::max(size.z * 0.12f, 0.05f);
+    const float vent_width = std::max(size.x * 0.68f, 0.10f);
+    const float vent_front_z = -(size.z - vent_depth) * 0.5f;
+
+    AddPrefabChildBox(scene, name, "body", center, Vec3(0.0f, 0.0f, 0.0f), Vec3(size.x * 0.90f, size.y * 0.90f, size.z * 0.92f), body_gray);
+    AddPrefabChildBox(scene, name, "cap", center, Vec3(0.0f, (size.y - cap_height) * 0.5f, 0.0f), Vec3(size.x, cap_height, size.z), detail_gray);
+    AddPrefabChildBox(scene, name, "plinth", center, Vec3(0.0f, -(size.y - plinth_height) * 0.5f, 0.0f), Vec3(size.x * 0.94f, plinth_height, size.z * 0.94f), detail_gray);
+
+    for (int vent_index = 0; vent_index < 4; ++vent_index) {
+        const float t = static_cast<float>(vent_index) / 3.0f;
+        const float y = LerpScalar(-size.y * 0.22f, size.y * 0.22f, t);
+        char suffix[32];
+        snprintf(suffix, sizeof(suffix), "vent_%02d", vent_index + 1);
+        AddPrefabChildBox(
+            scene,
+            name,
+            suffix,
+            center,
+            Vec3(0.0f, y, vent_front_z),
+            Vec3(vent_width, std::max(size.y * 0.06f, 0.04f), vent_depth),
+            detail_gray);
     }
 }
 
@@ -1046,6 +1242,149 @@ bool LoadSceneFromSceneV1(const char* scene_path, Scene* scene, char* error_buff
             scene->sky_background.star_intensity = stars.y;
             scene->sky_background.star_radius = stars.z;
             scene->sky_background.seed = seed;
+            continue;
+        }
+
+        if (StartsWith(line, "prefab_gate ")) {
+            std::string name;
+            Vec3 position;
+            Vec3 size;
+            float gray_value = 0.0f;
+            float detail_value = 0.0f;
+            unsigned int bars = 5u;
+
+            if (!ExtractQuotedString(line, &name) ||
+                !ExtractVec3Property(line, "pos(", &position) ||
+                !ExtractVec3Property(line, "size(", &size) ||
+                !ExtractFloatProperty(line, "gray(", &gray_value)) {
+                fclose(file);
+                SetLineError(
+                    error_buffer,
+                    error_buffer_size,
+                    scene_path,
+                    line_number,
+                    "prefab_gate requires name, pos(), size(), and gray()");
+                return false;
+            }
+
+            if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+                fclose(file);
+                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "prefab_gate has invalid size");
+                return false;
+            }
+
+            if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
+                detail_value = Clamp(gray_value + 0.12f, 0.0f, 0.95f);
+            }
+            ExtractUnsignedProperty(line, "bars(", &bars);
+            AddGatePrefab(scene, name, position, size, gray_value, detail_value, bars);
+            continue;
+        }
+
+        if (StartsWith(line, "prefab_rack ")) {
+            std::string name;
+            Vec3 position;
+            Vec3 size;
+            float gray_value = 0.0f;
+            float detail_value = 0.0f;
+
+            if (!ExtractQuotedString(line, &name) ||
+                !ExtractVec3Property(line, "pos(", &position) ||
+                !ExtractVec3Property(line, "size(", &size) ||
+                !ExtractFloatProperty(line, "gray(", &gray_value)) {
+                fclose(file);
+                SetLineError(
+                    error_buffer,
+                    error_buffer_size,
+                    scene_path,
+                    line_number,
+                    "prefab_rack requires name, pos(), size(), and gray()");
+                return false;
+            }
+
+            if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+                fclose(file);
+                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "prefab_rack has invalid size");
+                return false;
+            }
+
+            if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
+                detail_value = Clamp(gray_value + 0.16f, 0.0f, 0.95f);
+            }
+            AddRackPrefab(scene, name, position, size, gray_value, detail_value);
+            continue;
+        }
+
+        if (StartsWith(line, "prefab_crate ")) {
+            std::string name;
+            Vec3 position;
+            Vec3 size;
+            float gray_value = 0.0f;
+            float detail_value = 0.0f;
+
+            if (!ExtractQuotedString(line, &name) ||
+                !ExtractVec3Property(line, "pos(", &position) ||
+                !ExtractVec3Property(line, "size(", &size) ||
+                !ExtractFloatProperty(line, "gray(", &gray_value)) {
+                fclose(file);
+                SetLineError(
+                    error_buffer,
+                    error_buffer_size,
+                    scene_path,
+                    line_number,
+                    "prefab_crate requires name, pos(), size(), and gray()");
+                return false;
+            }
+
+            if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+                fclose(file);
+                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "prefab_crate has invalid size");
+                return false;
+            }
+
+            if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
+                detail_value = Clamp(gray_value + 0.12f, 0.0f, 0.95f);
+            }
+            AddCratePrefab(scene, name, position, size, gray_value, detail_value);
+            continue;
+        }
+
+        if (StartsWith(line, "prefab_cooling_unit ")) {
+            std::string name;
+            Vec3 position;
+            Vec3 size;
+            float gray_value = 0.0f;
+            float detail_value = 0.0f;
+
+            if (!ExtractQuotedString(line, &name) ||
+                !ExtractVec3Property(line, "pos(", &position) ||
+                !ExtractVec3Property(line, "size(", &size) ||
+                !ExtractFloatProperty(line, "gray(", &gray_value)) {
+                fclose(file);
+                SetLineError(
+                    error_buffer,
+                    error_buffer_size,
+                    scene_path,
+                    line_number,
+                    "prefab_cooling_unit requires name, pos(), size(), and gray()");
+                return false;
+            }
+
+            if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+                fclose(file);
+                SetLineError(
+                    error_buffer,
+                    error_buffer_size,
+                    scene_path,
+                    line_number,
+                    "prefab_cooling_unit has invalid size");
+                return false;
+            }
+
+            if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
+                detail_value = Clamp(gray_value + 0.11f, 0.0f, 0.95f);
+            }
+            AddCoolingUnitPrefab(scene, name, position, size, gray_value, detail_value);
             continue;
         }
 

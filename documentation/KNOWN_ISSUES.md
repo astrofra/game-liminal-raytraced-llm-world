@@ -91,6 +91,26 @@ Piste :
 
 Executer la batterie de tests de `SPATIAL_VALIDATION_PLAN.md`, puis ajouter soit des prefabs stables, soit un petit vocabulaire spatial supplementaire si la composition simple reste insuffisante.
 
+### 2026-07-31 - Les prefabs actuels augmentent trop vite le cout geometrique
+
+Statut :
+
+Ouvert.
+
+Description :
+
+La premiere couche `prefab_*` stabilise bien la lecture semantique du decor, mais chaque objet s'expanse aujourd'hui en plusieurs `box` avec ses propres materiaux. Cela augmente rapidement le nombre de triangles et ralentit fortement certaines scenes, surtout les travees de racks.
+
+Impact :
+
+- temps de rendu en hausse sur les scenes denses
+- inflation du nombre de materiaux
+- risque de perdre l'avantage de contrainte simple si la bibliotheque grossit sans discipline
+
+Piste :
+
+Introduire ensuite soit des materiaux partages, soit une repetition modulaire plus compacte, soit une couche d'instanciation plus sobre.
+
 ### 2026-07-29 - Telemetrie encore insuffisante
 
 Statut :

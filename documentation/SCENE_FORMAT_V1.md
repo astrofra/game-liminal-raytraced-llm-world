@@ -18,6 +18,11 @@ Le format v1 doit rester :
 - defensif a parser
 - plus stable qu'un `.OBJ` genere brut
 
+Le format reste a deux niveaux :
+
+- un niveau bas avec primitives explicites (`plane`, `box`)
+- un niveau intermediaire avec quelques prefabs deterministes expands en primitives simples
+
 ## Directives actuellement supportees
 
 ### `room`
@@ -90,6 +95,79 @@ Exemple :
 sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
 ```
 
+### `prefab_gate`
+
+Prefab de portail axis-aligne, utile pour les seuils, grilles et entrees controlees.
+
+Proprietes supportees :
+
+- nom entre guillemets obligatoire
+- `pos(x,y,z)` obligatoire
+- `size(x,y,z)` obligatoire
+- `gray(value)` obligatoire
+- `detail(value)` optionnel
+- `bars(count)` optionnel
+
+Exemple :
+
+```text
+prefab_gate "entry_gate" pos(0.0,1.55,4.8) size(6.15,3.10,0.40) gray(0.46) detail(0.58) bars(5)
+```
+
+### `prefab_rack`
+
+Prefab de baie ou rack technique axis-aligne, utile pour les allees de serveurs.
+
+Proprietes supportees :
+
+- nom entre guillemets obligatoire
+- `pos(x,y,z)` obligatoire
+- `size(x,y,z)` obligatoire
+- `gray(value)` obligatoire
+- `detail(value)` optionnel
+
+Exemple :
+
+```text
+prefab_rack "rack_left_01" pos(-2.9,1.25,-5.8) size(1.2,2.5,1.5) gray(0.19) detail(0.35)
+```
+
+### `prefab_crate`
+
+Prefab de caisse ou bloc de service axis-aligne.
+
+Proprietes supportees :
+
+- nom entre guillemets obligatoire
+- `pos(x,y,z)` obligatoire
+- `size(x,y,z)` obligatoire
+- `gray(value)` obligatoire
+- `detail(value)` optionnel
+
+Exemple :
+
+```text
+prefab_crate "service_console" pos(0.8,0.65,-6.9) size(1.3,1.3,0.8) gray(0.19) detail(0.31)
+```
+
+### `prefab_cooling_unit`
+
+Prefab de bloc de climatisation ou d'unite technique axis-aligne.
+
+Proprietes supportees :
+
+- nom entre guillemets obligatoire
+- `pos(x,y,z)` obligatoire
+- `size(x,y,z)` obligatoire
+- `gray(value)` obligatoire
+- `detail(value)` optionnel
+
+Exemple :
+
+```text
+prefab_cooling_unit "cooling_block_left" pos(-4.6,1.35,2.4) size(1.2,2.7,3.1) gray(0.25) detail(0.37)
+```
+
 ### `plane`
 
 Primitive plane finie, rendue comme un quad triangule.
@@ -153,6 +231,8 @@ Le format implemente ne supporte pas encore :
 - `cone`
 - `mesh reference`
 - materiaux plus riches que `gray` et `emit`
+- rotation explicite des prefabs
+- prefabs parametriques plus riches que la petite bibliotheque actuelle
 - simplification automatique d'une scene invalide
 - schema contraint pour un futur LLM
 
@@ -164,6 +244,8 @@ Pour la premiere batterie de tests exterieurs autour du datacenter et du desert,
 - le desert ne peut pas encore exister comme type de surface dedie
 - le ciel de fin de journee passe maintenant par un fond proceduriel optionnel, pas par une primitive riche de scene
 - la lisibilite devra venir surtout du cadrage, du parapet, du seuil, des grandes surfaces et de la ligne d'horizon
+- les prefabs actuels sont volontairement simples et axis-alignes
+- chaque prefab s'expanse aujourd'hui en plusieurs `box`, ce qui augmente vite le nombre de triangles
 
 ## Exemple complet
 

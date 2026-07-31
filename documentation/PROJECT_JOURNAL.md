@@ -510,3 +510,54 @@ Ce qui reste fragile :
 Prochaine etape recommandee :
 
 Commencer une petite couche de prefabs stables pour `rack`, `gate`, `crate`, `cooling_unit` et autres objets recurrents du datacenter.
+
+## 2026-07-31 - Iteration 0014 - Premiere couche de prefabs stables
+
+Objectif :
+
+Ajouter un niveau intermediaire plus semantique entre la scene ecrite et les primitives brutes du renderer.
+
+Travail effectue :
+
+- ajout de prefabs expands en `box` dans le parseur `.scene`
+- premiere bibliotheque introduite :
+  - `prefab_gate`
+  - `prefab_rack`
+  - `prefab_crate`
+  - `prefab_cooling_unit`
+- conversion partielle des scenes canoniques pour utiliser ces prefabs
+- validation par build dedie `build_skytest`
+- rerendus des trois scenes de reference
+
+Resultat :
+
+Le projet dispose maintenant d'une premiere couche de stabilisation semantique du decor. Les scenes parlent un peu moins en geometrie brute et un peu plus en objets recurrents.
+
+Observations :
+
+- les travees du datacenter lisent mieux comme rangees de racks
+- le portail beneficie d'une definition plus stable et plus reusable
+- le toit gagne quelques objets techniques recurrents plus convaincants
+- le cout geometrique augmente fortement, surtout sur les travées
+
+Mesures relevees :
+
+- portail d'entree avec prefab gate, `800x400`, `16 spp`, `3 bounces` : environ `8331.42 ms`
+- travees avec prefabs racks / cooling / crate, `800x400`, `16 spp`, `3 bounces` : environ `23903.92 ms`
+- toit avec prefabs crate / cooling, `800x400`, `16 spp`, `3 bounces` : environ `7797.88 ms`
+
+Ce qui a bien marche :
+
+- la semantique spatiale devient plus lisible
+- le decor peut maintenant rester instable sans perdre tous ses repères
+- la couche prefab donne une meilleure base pour un futur LLM que des dizaines de `box` isolement anonymes
+
+Ce qui reste fragile :
+
+- les prefabs sont encore axis-alignes
+- le nombre de triangles et de materiaux grimpe vite
+- il n'existe pas encore de couche de repetition ou d'instanciation compacte
+
+Prochaine etape recommandee :
+
+Factoriser la bibliotheque prefab, puis reduire son cout en introduisant soit des materiaux partages, soit une notion de repetition modulaire plus compacte.
