@@ -658,17 +658,19 @@ static bool WriteImageByExtension(
     return false;
 }
 
-}  // namespace
-
-bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const char* output_path)
+static bool RenderSceneInternal(
+    const Scene& scene,
+    const RenderConfig& config,
+    bool print_progress,
+    std::vector<unsigned char>* pixels)
 {
-    if (!output_path || config.width <= 0 || config.height <= 0) {
+    if (!pixels || config.width <= 0 || config.height <= 0) {
         return false;
     }
 
     const CameraBasis basis = BuildCameraBasis(scene.camera);
     const CameraLightState camera_light = BuildCameraLightState(scene, basis);
-    std::vector<unsigned char> pixels(static_cast<size_t>(config.width * config.height));
+    pixels->assign(static_cast<size_t>(config.width * config.height), 0u);
     bool parallel_enabled = false;
     int openmp_threads = 1;
 
@@ -677,16 +679,18 @@ bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const ch
     openmp_threads = omp_get_max_threads();
 #endif
 
-    printf(
-        "Rendering %dx%d, spp=%d, bounces=%d, emissive=%d, camera_spot=%s, openmp=%s, threads=%d\n",
-        config.width,
-        config.height,
-        config.samples_per_pixel,
-        config.max_bounces,
-        static_cast<int>(scene.emissive_triangles.size()),
-        camera_light.enabled ? "on" : "off",
-        parallel_enabled ? "on" : "off",
-        openmp_threads);
+    if (print_progress) {
+        printf(
+            "Rendering %dx%d, spp=%d, bounces=%d, emissive=%d, camera_spot=%s, openmp=%s, threads=%d\n",
+            config.width,
+            config.height,
+            config.samples_per_pixel,
+            config.max_bounces,
+            static_cast<int>(scene.emissive_triangles.size()),
+            camera_light.enabled ? "on" : "off",
+            parallel_enabled ? "on" : "off",
+            openmp_threads);
+    }
 
     LIMINAL_OMP_PARALLEL_FOR
     for (int y = 0; y < config.height; ++y) {
@@ -702,16 +706,37 @@ bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const ch
             }
 
             const float average = accumulated / static_cast<float>(config.samples_per_pixel);
-            pixels[static_cast<size_t>(x + y * config.width)] = ToneMapToByte(average, config.exposure);
+            (*pixels)[static_cast<size_t>(x + y * config.width)] = ToneMapToByte(average, config.exposure);
         }
 
-        if (!parallel_enabled && ((y % 16) == 0 || y + 1 == config.height)) {
+        if (print_progress && !parallel_enabled && ((y % 16) == 0 || y + 1 == config.height)) {
             printf("  line %d / %d\n", y + 1, config.height);
         }
     }
 
-    if (parallel_enabled) {
+    if (print_progress && parallel_enabled) {
         printf("  lines %d / %d\n", config.height, config.height);
+    }
+
+    return true;
+}
+
+}  // namespace
+
+bool RenderSceneToPixels(const Scene& scene, const RenderConfig& config, std::vector<unsigned char>* pixels)
+{
+    return RenderSceneInternal(scene, config, false, pixels);
+}
+
+bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const char* output_path)
+{
+    if (!output_path) {
+        return false;
+    }
+
+    std::vector<unsigned char> pixels;
+    if (!RenderSceneInternal(scene, config, true, &pixels)) {
+        return false;
     }
 
     return WriteImageByExtension(output_path, pixels, config.width, config.height);

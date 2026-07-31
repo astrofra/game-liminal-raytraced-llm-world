@@ -251,6 +251,8 @@ bool QueryLlmRuntimeInfo(LlmRuntimeInfo* info)
 bool GenerateChatCompletion(
     const LlmGenerationConfig& config,
     const std::vector<LlmPromptMessage>& messages,
+    LlmStreamCallback stream_callback,
+    void* stream_user_data,
     LlmGenerationResult* result)
 {
     if (!result) {
@@ -364,8 +366,16 @@ bool GenerateChatCompletion(
             break;
         }
 
+        const size_t previous_size = response_text.size();
         if (!AppendTokenPiece(vocab, token, &response_text, &error_message)) {
             result->error_message = error_message;
+            return false;
+        }
+
+        const std::string delta_text = response_text.substr(previous_size);
+        if (stream_callback && !stream_callback(response_text.c_str(), delta_text.c_str(), stream_user_data)) {
+            result->error_message = "Generation aborted by stream callback.";
+            result->response_text = response_text;
             return false;
         }
 
@@ -387,9 +397,19 @@ bool GenerateChatCompletion(
 #else
     (void) config;
     (void) messages;
+    (void) stream_callback;
+    (void) stream_user_data;
     result->error_message = "llama.cpp support is not compiled into this binary.";
     return false;
 #endif
+}
+
+bool GenerateChatCompletion(
+    const LlmGenerationConfig& config,
+    const std::vector<LlmPromptMessage>& messages,
+    LlmGenerationResult* result)
+{
+    return GenerateChatCompletion(config, messages, 0, 0, result);
 }
 
 void PrintLlmRuntimeInfo(FILE* stream)

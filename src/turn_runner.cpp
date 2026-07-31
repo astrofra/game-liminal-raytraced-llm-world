@@ -12,6 +12,19 @@ namespace {
 
 using json = nlohmann::json;
 
+struct StreamForwarder {
+    HeadlessTurnStreamCallback callback;
+    HeadlessTurnStreamPhase phase;
+    void* user_data;
+
+    StreamForwarder()
+        : callback(0)
+        , phase(kHeadlessTurnStreamPrimaryResponse)
+        , user_data(0)
+    {
+    }
+};
+
 static void SetError(char* buffer, size_t buffer_size, const char* format, const char* argument)
 {
     if (!buffer || buffer_size == 0) {
@@ -283,6 +296,20 @@ static bool ExtractFirstJsonObject(const char* text, std::string* object_text)
     return false;
 }
 
+static bool ForwardStreamChunk(const char* accumulated_text, const char* delta_text, void* user_data)
+{
+    StreamForwarder* forwarder = static_cast<StreamForwarder*>(user_data);
+    if (!forwarder || !forwarder->callback) {
+        return true;
+    }
+
+    return forwarder->callback(
+        forwarder->phase,
+        accumulated_text ? accumulated_text : "",
+        delta_text ? delta_text : "",
+        forwarder->user_data);
+}
+
 static bool RepairTurnResultJson(
     const HeadlessTurnConfig& config,
     const std::string& raw_response_text,
@@ -310,7 +337,16 @@ static bool RepairTurnResultJson(
     repair_config.use_json_grammar = false;
 
     LlmGenerationResult repair_generation_result;
-    if (!GenerateChatCompletion(repair_config, repair_messages, &repair_generation_result)) {
+    StreamForwarder stream_forwarder;
+    stream_forwarder.callback = config.stream_callback;
+    stream_forwarder.phase = kHeadlessTurnStreamRepairResponse;
+    stream_forwarder.user_data = config.stream_user_data;
+    if (!GenerateChatCompletion(
+            repair_config,
+            repair_messages,
+            config.stream_callback ? ForwardStreamChunk : 0,
+            config.stream_callback ? &stream_forwarder : 0,
+            &repair_generation_result)) {
         SetError(
             error_buffer,
             error_buffer_size,
@@ -639,7 +675,16 @@ bool RunHeadlessTurnFromState(
     messages.back().content = user_prompt;
 
     LlmGenerationResult generation_result;
-    if (!GenerateChatCompletion(config.generation_config, messages, &generation_result)) {
+    StreamForwarder turn_stream_forwarder;
+    turn_stream_forwarder.callback = config.stream_callback;
+    turn_stream_forwarder.phase = kHeadlessTurnStreamPrimaryResponse;
+    turn_stream_forwarder.user_data = config.stream_user_data;
+    if (!GenerateChatCompletion(
+            config.generation_config,
+            messages,
+            config.stream_callback ? ForwardStreamChunk : 0,
+            config.stream_callback ? &turn_stream_forwarder : 0,
+            &generation_result)) {
         SetError(
             error_buffer,
             error_buffer_size,
@@ -691,7 +736,16 @@ bool RunHeadlessTurnFromState(
         scene_config.use_json_grammar = false;
 
         LlmGenerationResult scene_generation_result;
-        if (GenerateChatCompletion(scene_config, scene_messages, &scene_generation_result)) {
+        StreamForwarder scene_stream_forwarder;
+        scene_stream_forwarder.callback = config.stream_callback;
+        scene_stream_forwarder.phase = kHeadlessTurnStreamSceneProgram;
+        scene_stream_forwarder.user_data = config.stream_user_data;
+        if (GenerateChatCompletion(
+                scene_config,
+                scene_messages,
+                config.stream_callback ? ForwardStreamChunk : 0,
+                config.stream_callback ? &scene_stream_forwarder : 0,
+                &scene_generation_result)) {
             result->raw_scene_audit_response_text = scene_generation_result.response_text;
             result->turn_result.candidate_scene_text = NormalizeCodeBlockText(scene_generation_result.response_text);
             result->turn_result.candidate_scene_included = !result->turn_result.candidate_scene_text.empty();

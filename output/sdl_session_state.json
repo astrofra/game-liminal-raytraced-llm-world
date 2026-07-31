@@ -1,0 +1,89 @@
+{
+  "hard_state": {
+    "alert_level": 3,
+    "cooling_state": "stable",
+    "current_location_id": "server_aisles",
+    "inventory_items": [],
+    "named_entities": [
+      "duty_officer"
+    ],
+    "power_state": "stable",
+    "turn_number": 5,
+    "unresolved_threats": [
+      "possible_external_attack"
+    ],
+    "water_state": "stable"
+  },
+  "history": [
+    {
+      "clarification": "",
+      "intent": "observe_environment",
+      "location_id": "gate",
+      "narration": "The reinforced gate looms ahead, its metal surface etched with faded warning signs. A single flickering lamp casts long shadows over the cracked concrete. To your left, a chain-link fence stretches into the desert, its top barbed. A narrow service road cuts through the dust toward the facility’s interior. A checkpoint stands empty, its booth’s interior dimly visible through the glass. The air smells of ozone and dry metal. A distant hum suggests machinery beyond the gate, but nothing else moves.",
+      "player_command": "look around",
+      "turn_number": 1
+    },
+    {
+      "clarification": "",
+      "intent": "navigate",
+      "location_id": "server_aisles",
+      "narration": "The service road ascends slightly, leading toward the facility’s interior. The checkpoint booth’s glass reflects the flickering lamp’s dim glow as you step past. The hum of machinery grows louder, now a rhythmic thrum beneath the distant wind. The gate’s reinforced bars loom behind you, but the road ahead curves into shadowed server_aisles.",
+      "player_command": "north",
+      "turn_number": 2
+    },
+    {
+      "clarification": "",
+      "intent": "navigate",
+      "location_id": "server_aisles",
+      "narration": "The service road twists upward, the flickering ceiling lights casting jagged shadows over towering server racks. The hum of cooling fans fills the air as you step past ventilation grates, their metal lattices rusted in places. A security camera mounted near the corridor’s junction tilts slightly, its red light blinking. The scent of warm electronics thickens.",
+      "player_command": "north",
+      "turn_number": 3
+    },
+    {
+      "clarification": "",
+      "intent": "navigate",
+      "location_id": "server_aisles",
+      "narration": "The service road narrows as it curves east, the flickering ceiling lights now casting a sickly green hue over the server racks. A utility corridor branches off ahead, its metal door slightly ajar, revealing a faint blue glow from within. The hum of cooling fans shifts pitch as you pass a cluster of rusted ventilation grates. The security camera’s red light flickers faster, its lens now trained directly on you. The scent of ozone sharpens, mixed with something metallic—like overheating copper.",
+      "player_command": "east",
+      "turn_number": 4
+    }
+  ],
+  "soft_state": {
+    "active_hypotheses": [
+      "the threat may be real",
+      "the institution may be manufacturing the threat"
+    ],
+    "atmosphere": "administrative, dry, watchful",
+    "rolling_summary": "The service road narrows as it curves east, the flickering ceiling lights now casting a sickly green hue over the server racks. A utility corridor branches off ahead, its metal door slightly ajar, revealing a faint blue glow from within. The hum of cooling fans shifts pitch as you pass a cluster of rusted ventilation grates. The security camera’s red light flickers faster, its lens now trained directly on you. The scent of ozone sharpens, mixed with something metallic—like overheating copper.",
+    "tolerated_incoherences": [
+      "Camera’s behavior escalates alert level to 3 (unusual focus).",
+      "Blue glow in utility corridor suggests restricted access or active systems."
+    ]
+  },
+  "spatial_state": {
+    "alert_level": 3,
+    "anchors": [
+      "server_racks",
+      "ventilation_grates",
+      "utility_corridor"
+    ],
+    "blocked_exits": [],
+    "canonical_fixture": "assets/scenes/datacenter_server_aisles.scene",
+    "desert_state": "still",
+    "interior_density": "dense",
+    "location_archetype": "dense_server_interior",
+    "location_id": "server_aisles",
+    "spatial_anomalies": [
+      "faster_flickering_camera",
+      "metallic_odor"
+    ],
+    "time_of_day": "night",
+    "visibility_level": "low",
+    "visible_objects": [
+      "flickering_ceiling_lights",
+      "cable_trays",
+      "security_camera",
+      "blue_glow_from_corridor"
+    ]
+  }
+}

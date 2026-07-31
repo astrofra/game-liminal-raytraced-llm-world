@@ -7,6 +7,7 @@
 #include "game_state.h"
 #include "llm_runtime.h"
 #include "renderer.h"
+#include "sdl_frontend.h"
 #include "scene_compiler.h"
 #include "turn_contract.h"
 #include "turn_runner.h"
@@ -33,6 +34,7 @@ static void PrintUsage()
     printf("  --audit-scene-text <path> Load a .scene as text in memory, validate it, then render it\n");
     printf("  --run-turn               Run one real headless turn through Ministral and render the resulting place\n");
     printf("  --run-session            Run a multi-turn headless session through Ministral and render the last place\n");
+    printf("  --sdl                    Launch the SDL3 interactive frontend with streaming LLM output\n");
     printf("  --model <path>           GGUF model path for --run-turn\n");
     printf("  --llm-temperature <f>    Sampling temperature for --run-turn\n");
     printf("  --llm-predict <n>        Maximum generated tokens for --run-turn\n");
@@ -267,6 +269,7 @@ int main(int argc, char** argv)
     const char* audit_scene_text_path = 0;
     bool run_turn = false;
     bool run_session = false;
+    bool run_sdl = false;
     bool prefer_candidate_scene = false;
     bool dump_raw_turn = false;
     bool dump_session_state = false;
@@ -365,6 +368,10 @@ int main(int argc, char** argv)
             run_session = true;
             continue;
         }
+        if (strcmp(argv[index], "--sdl") == 0) {
+            run_sdl = true;
+            continue;
+        }
         if (strcmp(argv[index], "--model") == 0 && index + 1 < argc) {
             headless_turn_config.generation_config.model_path = argv[++index];
             continue;
@@ -450,8 +457,8 @@ int main(int argc, char** argv)
     char error_buffer[512];
     memset(error_buffer, 0, sizeof(error_buffer));
 
-    if (run_turn && run_session) {
-        fprintf(stderr, "Choose either --run-turn or --run-session, not both.\n");
+    if ((run_turn && run_session) || (run_sdl && (run_turn || run_session))) {
+        fprintf(stderr, "Choose either --run-turn, --run-session or --sdl.\n");
         return 1;
     }
 
@@ -502,6 +509,55 @@ int main(int argc, char** argv)
             printf("%s\n", liminal::BuildSceneAuditPrompt(session_state.spatial_state).c_str());
         }
         return 0;
+    }
+
+    if (run_sdl) {
+        liminal::SessionState session_state;
+        if (load_state_path) {
+            if (!LoadSessionStateFromPath(load_state_path, &session_state, error_buffer, sizeof(error_buffer))) {
+                fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot load session state.");
+                return 1;
+            }
+        } else if (!liminal::InitializeSessionState(selected_location, &session_state, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot initialize session state.");
+            return 1;
+        }
+
+#if defined(LIMINAL_HAVE_SDL3)
+        liminal::SdlFrontendConfig sdl_config;
+        sdl_config.render_config = config;
+        sdl_config.turn_config = headless_turn_config;
+        sdl_config.turn_config.prefer_candidate_scene = prefer_candidate_scene;
+
+        liminal::SessionState final_session_state;
+        if (!liminal::RunSdlFrontend(sdl_config, session_state, &final_session_state, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "SDL frontend failed.");
+            liminal::ShutdownLlmRuntime();
+            return 1;
+        }
+
+        if (save_state_path && !SaveSessionStateToPath(save_state_path, final_session_state, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot save session state.");
+            liminal::ShutdownLlmRuntime();
+            return 1;
+        }
+
+        if (dump_session_state) {
+            liminal::PrintSessionStateSummary(final_session_state, stdout);
+        }
+        if (dump_session_history) {
+            if (dump_session_state) {
+                printf("\n");
+            }
+            liminal::PrintSessionHistory(final_session_state, stdout);
+        }
+
+        liminal::ShutdownLlmRuntime();
+        return 0;
+#else
+        fprintf(stderr, "This binary was built without SDL3 support.\n");
+        return 1;
+#endif
     }
 
     const std::chrono::steady_clock::time_point load_start = std::chrono::steady_clock::now();

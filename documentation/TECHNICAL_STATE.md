@@ -10,7 +10,7 @@ Ce module constitue un bootstrap du futur sous-systeme de rendu. Il ne s'agit pa
 
 Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cpp` avec acceleration CUDA autour de `Ministral 3 8B`.
 
-Le depot contient maintenant une premiere boucle headless reelle `commande -> LLM -> etat -> scene -> rendu`, encore sans HMI `SDL3`.
+Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat -> scene -> rendu`, disponible en mode headless et dans une premiere HMI `SDL3`.
 
 ## Verrous d'architecture actes
 
@@ -22,13 +22,16 @@ Le depot contient maintenant une premiere boucle headless reelle `commande -> LL
 ## Fonctionnalites presentes
 
 - Build natif via CMake et Visual Studio 2022.
-- Options CMake `LIMINAL_ENABLE_LLAMA_CPP`, `LIMINAL_ENABLE_LLAMA_CUDA` et `LIMINAL_ENABLE_OPENMP` pour raccorder un `llama.cpp` vendorise et activer le parallelisme CPU si disponible.
+- Options CMake `LIMINAL_ENABLE_LLAMA_CPP`, `LIMINAL_ENABLE_LLAMA_CUDA`, `LIMINAL_ENABLE_OPENMP` et `LIMINAL_ENABLE_SDL3_FRONTEND` pour raccorder un `llama.cpp` vendorise, activer le parallelisme CPU si disponible et construire la boucle desktop interactive.
+- Fallback `find_package(SDL3)` puis `FetchContent` automatique sur `SDL 3.4.12` si la bibliotheque n'est pas deja installee localement.
 - Helper Windows `build_release.bat` a la racine pour configurer et compiler la version `Release`.
 - Helper Windows `run_cornell_test.bat` a la racine pour compiler puis lancer le rendu de verification Cornell Box.
 - Helper Windows `download_ministral.bat` pour telecharger le modele cible.
 - Helper Windows `ask_ministral.bat` pour lancer une question libre contre le modele local via `llama-cli`.
+- Helper Windows `play_desert_des_tokens.bat` pour lancer directement la premiere boucle SDL3.
 - Executable CLI `liminal_cornell_renderer`.
 - Option CLI `--llama-info` pour verifier la presence du runtime `llama.cpp`, le commit vendorise et la disponibilite de l'offload GPU.
+- Option CLI `--sdl` pour lancer la premiere boucle desktop `SDL3`.
 - Options CLI pour le noyau fonctionnel en preparation :
   - `--dump-turn-contract`
   - `--dump-scene-audit-prompt`
@@ -81,15 +84,25 @@ Le depot contient maintenant une premiere boucle headless reelle `commande -> LL
   - compilateur deterministe des trois lieux canoniques depuis `SpatialState`
 - Premier runtime headless `Ministral` branche au moteur :
   - `GenerateChatCompletion()` via `llama.cpp`
+  - callback de streaming token par token exploitable par l'HMI
   - parsing JSON tolerant aux fences Markdown
   - mode repair d'une sortie JSON mal formee
   - fallback no-op si la sortie reste inexploitable apres repair
   - application des deltas sur `HardState`, `SoftState` et `SpatialState`
   - deuxieme appel LLM separe pour l'audit `.scene`
   - rendu final depuis la voie deterministe `SpatialState -> Scene`
+- Premiere HMI `SDL3` desktop :
+  - event loop non bloquante
+  - worker thread dedie a l'inference et au raytracing
+  - affichage du flux brut du modele pendant la generation du JSON
+  - panneau de transcript
+  - ligne de commande avec edition clavier et historique haut/bas
+  - annulation best-effort via `Escape`
+- Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`.
 - Options CLI de boucle fonctionnelle :
   - `--run-turn`
   - `--run-session`
+  - `--sdl`
   - `--model`
   - `--llm-temperature`
   - `--llm-predict`
@@ -110,6 +123,8 @@ Le depot contient maintenant une premiere boucle headless reelle `commande -> LL
 - [../src/scene.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.h:1) : structures de scene et BVH.
 - [../src/scene.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.cpp:1) : chargement `.scene` et `.obj`, parseur scene v1 fichier ou memoire, conversion des primitives, materiaux, lumiere Cornell, construction BVH.
 - [../src/renderer.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/renderer.cpp:1) : camera, spotlight analytique, intersections, visibilite, integrateur, export PNG/PGM.
+- [../src/sdl_frontend.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/sdl_frontend.h:1) : interface de la premiere boucle interactive `SDL3`.
+- [../src/sdl_frontend.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/sdl_frontend.cpp:1) : fenetre, transcript, saisie texte, worker thread et presentation streaming.
 - [../src/main.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/main.cpp:76) : point d'entree CLI, parsing des options, telemetrie basique et premieres commandes de debug fonctionnel.
 - [../src/game_state.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/game_state.h:1) : structures du monde, des deltas et du contrat de tour.
 - [../src/game_state.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/game_state.cpp:1) : enums, etats initiaux et resumes de debug.
@@ -152,6 +167,8 @@ cmake --build build --config Release
 .\build\Release\liminal_cornell_renderer.exe --llama-info
 ```
 
+Le vendredi 31 juillet 2026, une recompilation locale avec ces options a confirme de nouveau la presence du toolkit CUDA pendant la configuration CMake (`CUDA Toolkit found`).
+
 Avec OpenMP desactive explicitement :
 
 ```powershell
@@ -173,6 +190,7 @@ Exemples du noyau fonctionnel :
 .\build\Release\liminal_cornell_renderer.exe --dump-scene-audit-prompt --location server_aisles
 .\build\Release\liminal_cornell_renderer.exe --compile-location gate --output output\compiled_gate.png
 .\build\Release\liminal_cornell_renderer.exe --audit-scene-text assets\scenes\datacenter_roof_watch.scene --output output\audited_roof_watch.png
+.\build\Release\liminal_cornell_renderer.exe --sdl --location gate --save-state output\sdl_session_state.json
 .\build\Release\liminal_cornell_renderer.exe --run-turn --location roof_watch --command "observe the horizon" --dump-raw-turn --output output\turn_roof_watch.png
 .\build\Release\liminal_cornell_renderer.exe --run-session --location roof_watch --command "observe the horizon" --command "inspect the cooling unit" --save-state output\session_state.json --output output\session.png
 .\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\session_state.json --command "check the crate" --save-state output\session_state_2.json --output output\session_2.png
@@ -185,6 +203,7 @@ build_release.bat
 run_cornell_test.bat
 download_ministral.bat
 ask_ministral.bat
+play_desert_des_tokens.bat
 ```
 
 Exemple de rendu :
@@ -279,15 +298,16 @@ Observation importante :
 
 - pas de scene v1 complete : seulement un sous-ensemble centre sur `room`, `camera`, `spotlight`, `sky`, `plane`, `box` et les premiers `prefab_*` est supporte
 - pas encore de validation semantique riche ou de simplification automatique d'une scene generee par LLM
-- pas encore de boucle multi-tour persistante
 - pas d'API integrable propre pour un futur runtime de jeu
-- pas d'accumulation progressive pendant l'inference
-- pas encore de couche `SDL3` pour fenetre, transcript, ligne de commande parser et presentation temps reel du bitmap
-- pas d'UI jouable, pas de transcript integre, pas de boucle narrative
+- pas d'accumulation progressive du raytracing pendant qu'un tour s'execute
+- le frontend `SDL3` reste minimaliste :
+  - texte via `SDL_RenderDebugText`
+  - pas encore de police bitmap custom
+  - pas encore de layout plus riche ou de widgets dedies
+- le streaming actuel expose le flux brut du modele pendant la fabrication du JSON, pas encore une narration incrementalement parsee
 - la grammaire JSON `llama.cpp` n'est pas activee par defaut car l'appel bas niveau s'est montre instable sur ce build Windows/CUDA
 - pas encore de couche compacte d'instanciation ou de repetition pour les prefabs
 - les prefabs actuels augmentent fortement le nombre de triangles et de materiaux
-- pas de sauvegarde/chargement
 - pas de telemetrie CPU/GPU/memoire
 - pas de tests automatises
 

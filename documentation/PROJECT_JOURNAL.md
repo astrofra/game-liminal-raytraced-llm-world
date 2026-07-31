@@ -845,3 +845,56 @@ Ce qui reste fragile :
 Prochaine etape recommandee :
 
 Attaquer une vraie boucle de jeu interactive locale, d'abord en terminal enrichi ou directement via SDL3, en reutilisant la session persistante comme noyau.
+
+## 2026-07-31 - Iteration 0020 - Premiere boucle SDL3 avec streaming LLM
+
+Objectif :
+
+Passer de la session headless persistante a une premiere boucle desktop jouable, sans perdre le streaming de sortie du modele pendant l'attente.
+
+Travail effectue :
+
+- ajout de `src/sdl_frontend.h/.cpp`
+- ajout de l'option CLI `--sdl`
+- ajout d'un callback de streaming dans `src/llm_runtime.h/.cpp`
+- propagation de ce streaming a travers `HeadlessTurnConfig` et `RunHeadlessTurnFromState()`
+- ajout d'un chemin `RenderSceneToPixels()` pour produire directement un buffer memoire au lieu d'un fichier image
+- integration `SDL3` dans `CMakeLists.txt` :
+  - `find_package(SDL3)` si disponible
+  - sinon `FetchContent` automatique sur `SDL 3.4.12`
+- validation de build locale `Release`
+
+Resultat :
+
+Le projet dispose maintenant d'une premiere HMI desktop. Le haut de la fenetre affiche le rendu raytrace courant, le bas affiche le transcript de session et une ligne de commande, et le flux brut du modele reste visible pendant la generation du JSON de tour.
+
+Observations :
+
+- le streaming reduit bien l'impression d'attente des que la generation commence
+- le cout principal restant est le chargement du modele et le raytracing CPU, pas le parse des scenes
+- la premiere couche texte repose sur `SDL_RenderDebugText`, suffisante pour valider la boucle mais pas encore pour une finition esthetique
+
+Mesures relevees :
+
+- recompilation locale du vendredi 31 juillet 2026 :
+  - detection explicite du toolkit CUDA pendant la configuration CMake (`CUDA Toolkit found`)
+  - build `Release` complet avec `SDL3`, `llama.cpp`, `CUDA` et `OpenMP` valide
+
+Ce qui a bien marche :
+
+- la boucle UI reste responsive pendant l'inference et pendant le raytracing
+- la session persistante existante a pu etre reutilisee comme noyau sans refonte lourde
+- l'interface memoire `SpatialState -> Scene -> pixels -> texture SDL3` est maintenant concrete
+
+Ce qui reste fragile :
+
+- le streaming montre encore le JSON brut du modele, pas une narration deja interpretee
+- l'UI est volontairement spartiate
+- il n'y a pas encore d'accumulation progressive du rendu ni de cache modele resident entre les tours
+
+Prochaine etape recommandee :
+
+Stabiliser le frontend SDL3 autour d'un protocole de sortie a deux canaux :
+
+- canal live pour l'attente perceptive
+- canal structure pour l'etat du monde et le rendu final

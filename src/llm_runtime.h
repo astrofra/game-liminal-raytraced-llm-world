@@ -77,9 +77,17 @@ struct LlmRuntimeInfo {
     }
 };
 
+typedef bool (*LlmStreamCallback)(const char* accumulated_text, const char* delta_text, void* user_data);
+
 bool InitializeLlmRuntime();
 void ShutdownLlmRuntime();
 bool QueryLlmRuntimeInfo(LlmRuntimeInfo* info);
+bool GenerateChatCompletion(
+    const LlmGenerationConfig& config,
+    const std::vector<LlmPromptMessage>& messages,
+    LlmStreamCallback stream_callback,
+    void* stream_user_data,
+    LlmGenerationResult* result);
 bool GenerateChatCompletion(
     const LlmGenerationConfig& config,
     const std::vector<LlmPromptMessage>& messages,

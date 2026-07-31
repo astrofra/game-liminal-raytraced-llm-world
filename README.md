@@ -18,6 +18,7 @@ Current state:
 - native PNG output via vendored `stb_image_write.h`
 - optional `llama.cpp` runtime wiring in CMake
 - optional OpenMP line-parallel rendering in CMake
+- first SDL3 interactive frontend with streaming LLM output
 - Python helper to download `Ministral 3 8B Instruct 2512` GGUF
 - first headless `Ministral` turn pipeline wired to the renderer
 - explicit provenance for the reused 2003 raytracer ideas
@@ -40,6 +41,7 @@ build_release.bat
 run_cornell_test.bat
 download_ministral.bat
 ask_ministral.bat
+play_desert_des_tokens.bat
 ```
 
 If you want the vendorized `llama.cpp` build with CUDA enabled, keep the default CMake options:
@@ -48,6 +50,8 @@ If you want the vendorized `llama.cpp` build with CUDA enabled, keep the default
 cmake -S . -B build -G "Visual Studio 17 2022" -DLIMINAL_ENABLE_LLAMA_CPP=ON -DLIMINAL_ENABLE_LLAMA_CUDA=ON
 cmake --build build --config Release
 ```
+
+SDL3 is now enabled by default too. If the library is not already installed on the machine, CMake fetches SDL `3.4.12` automatically and links it statically for the interactive frontend.
 
 OpenMP is enabled by default when the local compiler supports it. To force a mono-thread build:
 
@@ -77,6 +81,14 @@ ask_ministral.bat "Quel est le sens de la vie ?"
 ask_ministral.bat "Resume-moi ce projet en 3 phrases."
 ```
 
+Launch the SDL3 frontend:
+
+```bat
+play_desert_des_tokens.bat
+play_desert_des_tokens.bat --location roof_watch
+play_desert_des_tokens.bat --load-state output\sdl_session_state.json
+```
+
 ## Run
 
 ```powershell
@@ -100,12 +112,20 @@ Useful overrides:
 ```powershell
 .\build\Release\liminal_cornell_renderer.exe --scene assets\scenes\liminal_service_corridor.scene --samples 16 --width 256 --height 256
 .\build\Release\liminal_cornell_renderer.exe --scene assets\cornell\cornell_box.obj --output output\cornell_box_512.png --samples 64 --width 512 --height 512
+.\build\Release\liminal_cornell_renderer.exe --sdl --location gate --save-state output\sdl_session_state.json
 .\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location roof_watch --command "observe the horizon"
 .\build\Release\liminal_cornell_renderer.exe --compile-location gate --output output\compiled_gate.png
 .\build\Release\liminal_cornell_renderer.exe --run-turn --location roof_watch --command "observe the horizon" --dump-raw-turn --output output\turn_roof_watch.png
 .\build\Release\liminal_cornell_renderer.exe --run-session --location roof_watch --command "observe the horizon" --command "inspect the cooling unit" --save-state output\session_state.json --output output\session.png
 .\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\session_state.json --command "check the crate" --dump-session-history --output output\session_2.png
 ``` 
+
+`--sdl` opens the first desktop loop:
+
+- top panel: raytraced scene
+- lower panel: transcript and live raw model stream while the turn JSON is still being generated
+- input line: text entry with edition, history on arrow up/down, submit on Enter
+- `Escape` while busy: cancellation request
 
 Default output: `output/liminal_service_corridor.png`
 

@@ -5,6 +5,7 @@ project(liminal_raytraced_renderer LANGUAGES CXX)
 option(LIMINAL_ENABLE_LLAMA_CPP "Build with vendorized llama.cpp runtime support" ON)
 option(LIMINAL_ENABLE_LLAMA_CUDA "Enable CUDA backend in vendorized llama.cpp build" ON)
 option(LIMINAL_ENABLE_OPENMP "Enable OpenMP render parallelism when available" ON)
+option(LIMINAL_ENABLE_SDL3_FRONTEND "Build the SDL3 interactive frontend" ON)
 
 set(LIMINAL_LLAMA_CPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp" CACHE PATH "Path to the vendorized llama.cpp tree")
 
@@ -12,7 +13,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(liminal_cornell_renderer
+set(LIMINAL_SOURCES
     src/main.cpp
     src/game_state.cpp
     src/llm_runtime.cpp
@@ -20,8 +21,13 @@ add_executable(liminal_cornell_renderer
     src/scene_compiler.cpp
     src/renderer.cpp
     src/turn_contract.cpp
-    src/turn_runner.cpp
-)
+    src/turn_runner.cpp)
+
+if (LIMINAL_ENABLE_SDL3_FRONTEND)
+    list(APPEND LIMINAL_SOURCES src/sdl_frontend.cpp)
+endif()
+
+add_executable(liminal_cornell_renderer ${LIMINAL_SOURCES})
 
 target_include_directories(liminal_cornell_renderer PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor")
 
@@ -32,6 +38,30 @@ if (LIMINAL_ENABLE_OPENMP)
         target_compile_definitions(liminal_cornell_renderer PRIVATE LIMINAL_ENABLE_OPENMP=1)
     else()
         message(STATUS "OpenMP requested but not found; building renderer without OpenMP")
+    endif()
+endif()
+
+if (LIMINAL_ENABLE_SDL3_FRONTEND)
+    find_package(SDL3 CONFIG QUIET)
+    if (NOT SDL3_FOUND)
+        include(FetchContent)
+        set(SDL_SHARED OFF CACHE BOOL "Build a shared version of SDL3" FORCE)
+        set(SDL_STATIC ON CACHE BOOL "Build a static version of SDL3" FORCE)
+        set(SDL_TEST_LIBRARY OFF CACHE BOOL "Build the SDL3 test helper library" FORCE)
+        set(SDL_TESTS OFF CACHE BOOL "Build the SDL3 test programs" FORCE)
+        set(SDL_EXAMPLES OFF CACHE BOOL "Build the SDL3 example programs" FORCE)
+        FetchContent_Declare(
+            SDL3
+            URL "https://github.com/libsdl-org/SDL/archive/refs/tags/release-3.4.12.zip"
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+        FetchContent_MakeAvailable(SDL3)
+    endif()
+
+    if (TARGET SDL3::SDL3)
+        target_link_libraries(liminal_cornell_renderer PRIVATE SDL3::SDL3)
+        target_compile_definitions(liminal_cornell_renderer PRIVATE LIMINAL_HAVE_SDL3=1)
+    else()
+        message(FATAL_ERROR "SDL3 frontend requested but SDL3::SDL3 target is not available")
     endif()
 endif()
 

@@ -10,14 +10,30 @@
 
 namespace liminal {
 
+enum HeadlessTurnStreamPhase {
+    kHeadlessTurnStreamPrimaryResponse = 0,
+    kHeadlessTurnStreamRepairResponse,
+    kHeadlessTurnStreamSceneProgram,
+};
+
+typedef bool (*HeadlessTurnStreamCallback)(
+    HeadlessTurnStreamPhase phase,
+    const char* accumulated_text,
+    const char* delta_text,
+    void* user_data);
+
 struct HeadlessTurnConfig {
     LlmGenerationConfig generation_config;
     bool request_candidate_scene;
     bool prefer_candidate_scene;
+    HeadlessTurnStreamCallback stream_callback;
+    void* stream_user_data;
 
     HeadlessTurnConfig()
         : request_candidate_scene(true)
         , prefer_candidate_scene(false)
+        , stream_callback(0)
+        , stream_user_data(0)
     {
     }
 };
