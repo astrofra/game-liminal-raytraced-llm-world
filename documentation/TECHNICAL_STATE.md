@@ -8,9 +8,9 @@ Le depot contient actuellement un premier module de rendu natif en C++11 centre 
 
 Ce module constitue un bootstrap du futur sous-systeme de rendu. Il ne s'agit pas encore du renderer final du jeu, mais d'une premiere base executable, compilable et documentee.
 
-Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cpp` avec acceleration CUDA autour de `Ministral 3 8B`, et le depot contient deja une couche minimale d'introspection runtime.
+Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cpp` avec acceleration CUDA autour de `Ministral 3 8B`.
 
-En revanche, la boucle de jeu, l'inference de tour et la future couche multimedia `SDL3` ne sont pas encore branchees.
+Le depot contient maintenant une premiere boucle headless reelle `commande -> LLM -> etat -> scene -> rendu`, encore sans HMI `SDL3`.
 
 ## Verrous d'architecture actes
 
@@ -79,6 +79,21 @@ En revanche, la boucle de jeu, l'inference de tour et la future couche multimedi
   - contrat de tour structure et prompt builder v1
   - prompt d'audit direct pour une sortie `.scene`
   - compilateur deterministe des trois lieux canoniques depuis `SpatialState`
+- Premier runtime headless `Ministral` branche au moteur :
+  - `GenerateChatCompletion()` via `llama.cpp`
+  - parsing JSON tolerant aux fences Markdown
+  - application des deltas sur `HardState`, `SoftState` et `SpatialState`
+  - deuxieme appel LLM separe pour l'audit `.scene`
+  - rendu final depuis la voie deterministe `SpatialState -> Scene`
+- Options CLI de boucle fonctionnelle :
+  - `--run-turn`
+  - `--model`
+  - `--llm-temperature`
+  - `--llm-predict`
+  - `--use-json-grammar`
+  - `--no-json-grammar`
+  - `--prefer-candidate-scene`
+  - `--dump-raw-turn`
 
 ## Fichiers importants
 
@@ -95,7 +110,9 @@ En revanche, la boucle de jeu, l'inference de tour et la future couche multimedi
 - [../src/scene_compiler.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene_compiler.h:1) : interface de compilation d'un `SpatialState` vers une scene rendable.
 - [../src/scene_compiler.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene_compiler.cpp:1) : mapping des lieux canoniques et audit memoire d'une scene candidate.
 - [../src/llm_runtime.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/llm_runtime.h:1) : interface minimale du runtime `llama.cpp`.
-- [../src/llm_runtime.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/llm_runtime.cpp:1) : initialisation backend, introspection GPU et impression de l'etat `llama.cpp`.
+- [../src/llm_runtime.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/llm_runtime.cpp:1) : initialisation backend, generation texte `llama.cpp`, introspection GPU et configuration de l'inference.
+- [../src/turn_runner.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/turn_runner.h:1) : interface de la boucle headless d'un tour.
+- [../src/turn_runner.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/turn_runner.cpp:1) : parsing de la sortie LLM, application des deltas et audit scene separe.
 - [../assets/cornell/cornell_box.obj](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.obj:1) : scene de reference vendorisee.
 - [../assets/cornell/cornell_box.mtl](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.mtl:1) : materiaux de reference.
 - [../assets/scenes/liminal_service_corridor.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/liminal_service_corridor.scene:1) : premiere scene proprietaire liminale.
@@ -148,6 +165,7 @@ Exemples du noyau fonctionnel :
 .\build\Release\liminal_cornell_renderer.exe --dump-scene-audit-prompt --location server_aisles
 .\build\Release\liminal_cornell_renderer.exe --compile-location gate --output output\compiled_gate.png
 .\build\Release\liminal_cornell_renderer.exe --audit-scene-text assets\scenes\datacenter_roof_watch.scene --output output\audited_roof_watch.png
+.\build\Release\liminal_cornell_renderer.exe --run-turn --location roof_watch --command "observe the horizon" --dump-raw-turn --output output\turn_roof_watch.png
 ```
 
 Helper Windows :
@@ -211,17 +229,34 @@ Contexte : scene `datacenter_server_aisles.scene`, `800x400`, `16 spp`, `3 bounc
 
 Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encore un benchmark stable.
 
+### 2026-07-31 - Validation boucle headless LLM
+
+Contexte : build `Release` local avec `llama.cpp` et CUDA, `Ministral 3 8B Instruct 2512`, scene finale compilee depuis `SpatialState`.
+
+- `--run-turn --location roof_watch --command "observe the horizon"` :
+  - prompt structure : `828` tokens
+  - generation JSON : `365` tokens
+  - inference JSON : environ `8797.61 ms`
+  - audit `.scene` separe : scene candidate validee (`338` triangles, `29` materiaux)
+  - rendu final compile depuis `SpatialState` : environ `829.42 ms`
+
+Observation importante :
+
+- l'encapsulation d'une scene multi-ligne dans le JSON de tour s'est revelee fragile
+- un deuxieme appel LLM dedie a l'audit `.scene` s'est montre nettement plus stable
+- la voie principale recommandee reste donc `JSON structure -> etat -> compilateur deterministe`
+
 ## Ce que ce module ne fait pas encore
 
 - pas de scene v1 complete : seulement un sous-ensemble centre sur `room`, `camera`, `spotlight`, `sky`, `plane`, `box` et les premiers `prefab_*` est supporte
 - pas encore de validation semantique riche ou de simplification automatique d'une scene generee par LLM
-- pas encore de chargement effectif du modele `Ministral 3 8B` dans la boucle du jeu
-- pas encore d'inference de tour effective, ni de parsing de la sortie structuree de `Ministral`
-- pas encore d'application automatique des deltas de tour sur les etats du monde
+- pas encore de boucle multi-tour persistante
+- pas encore de sauvegarde/restauration du `HardState` / `SoftState` / `SpatialState`
 - pas d'API integrable propre pour un futur runtime de jeu
 - pas d'accumulation progressive pendant l'inference
 - pas encore de couche `SDL3` pour fenetre, transcript, ligne de commande parser et presentation temps reel du bitmap
 - pas d'UI jouable, pas de transcript integre, pas de boucle narrative
+- la grammaire JSON `llama.cpp` n'est pas activee par defaut car l'appel bas niveau s'est montre instable sur ce build Windows/CUDA
 - pas encore de couche compacte d'instanciation ou de repetition pour les prefabs
 - les prefabs actuels augmentent fortement le nombre de triangles et de materiaux
 - pas de sauvegarde/chargement

@@ -84,6 +84,8 @@ std::string BuildSceneFormatRuleText()
     text += "Scene v1 authoring rules for audit mode:\n";
     text += "- output ASCII only\n";
     text += "- one directive per line\n";
+    text += "- do not use indented property blocks; every directive must be complete on one line\n";
+    text += "- names must be quoted like \"roof\" or \"service_crate\"\n";
     text += "- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit\n";
     text += "- every scene must declare one room and one camera\n";
     text += "- keep geometry sparse and legible\n";
@@ -91,6 +93,16 @@ std::string BuildSceneFormatRuleText()
     text += "- avoid long decorative lists of tiny objects\n";
     text += "- keep the place readable at 800x400 grayscale noisy rendering\n";
     text += "- stay inside the datacenter fiction and the three canonical lieux\n";
+    text += "- use gray(), not color() or opacity()\n";
+    text += "- valid examples:\n";
+    text += "  room \"datacenter roof watch\"\n";
+    text += "  camera eye(0.0,1.75,-7.9) target(0.0,1.18,8.8) up(0.0,1.0,0.0) fov(46.0)\n";
+    text += "  spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(70.0)\n";
+    text += "  sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)\n";
+    text += "  plane \"roof\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(16.0,24.0) gray(0.14)\n";
+    text += "  box \"parapet_front\" pos(0.0,0.55,1.6) size(14.0,1.1,0.7) gray(0.26)\n";
+    text += "  prefab_crate \"service_crate\" pos(2.4,0.55,-1.8) size(1.7,1.1,1.4) gray(0.20) detail(0.31)\n";
+    text += "  prefab_cooling_unit \"vent_stack_left\" pos(-4.3,1.0,-3.2) size(1.0,2.0,1.0) gray(0.30) detail(0.39)\n";
     return text;
 }
 
@@ -161,9 +173,11 @@ std::string BuildTurnPrompt(
     text += BuildTurnResultSchemaText();
 
     if (include_candidate_scene_text) {
-        text += "\n\nOptional debug field\n";
-        text += "You may append one extra key named \"candidate_scene_text\" containing a full .scene candidate as a string.\n";
-        text += "Only include it if you can keep it consistent with the spatial delta.\n";
+        text += "\n\nRequired debug field\n";
+        text += "For this turn, include one extra top-level key named \"candidate_scene_text\" containing a full .scene candidate as a string.\n";
+        text += "Keep it consistent with the spatial delta.\n";
+        text += "Do not omit this field.\n";
+        text += "Encode the full multi-line .scene program inside one JSON string using escaped newlines.\n";
         text += BuildSceneFormatRuleText();
     }
 

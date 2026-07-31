@@ -20,9 +20,10 @@ add_executable(liminal_cornell_renderer
     src/scene_compiler.cpp
     src/renderer.cpp
     src/turn_contract.cpp
+    src/turn_runner.cpp
 )
 
-target_include_directories(liminal_cornell_renderer PRIVATE src vendor/stb)
+target_include_directories(liminal_cornell_renderer PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor")
 
 if (LIMINAL_ENABLE_OPENMP)
     find_package(OpenMP)

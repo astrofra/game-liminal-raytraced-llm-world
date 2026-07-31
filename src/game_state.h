@@ -190,6 +190,11 @@ const char* InteriorDensityToString(InteriorDensity value);
 const char* ResourceStateToString(ResourceState value);
 
 bool ParseLocationId(const char* text, LocationId* value);
+bool ParseTimeOfDay(const char* text, TimeOfDay* value);
+bool ParseVisibilityLevel(const char* text, VisibilityLevel* value);
+bool ParseDesertState(const char* text, DesertState* value);
+bool ParseInteriorDensity(const char* text, InteriorDensity* value);
+bool ParseResourceState(const char* text, ResourceState* value);
 
 HardState MakeInitialHardState();
 SoftState MakeInitialSoftState();

@@ -57,6 +57,7 @@ La voie recommandee pour le v1 est donc :
 2. demander au LLM un resultat structure tres contraint
 3. maintenir un **etat spatial intermediaire** distinct de la geometrie finale
 4. compiler cet etat spatial vers une scene `v1` de facon deterministe
+5. garder la generation libre de `.scene` comme **canal d'audit separe**, pas comme sortie principale du tour
 
 ## Trois niveaux d'etat
 
@@ -203,6 +204,17 @@ La generation directe de scene complete peut rester :
 - un outil de recherche
 - un test de stress
 
+Dans la pratique, le v1 peut utilement separer deux appels :
+
+1. un appel `JSON` pour le tour narratif et les deltas de monde
+2. un appel `.scene` independant pour auditer ce que le modele ferait s'il devait spatialiser librement le lieu
+
+Cette separation est plus robuste qu'un JSON contenant une scene multi-ligne echappee, car elle evite :
+
+- les fences Markdown autour du JSON
+- les erreurs d'echappement
+- la confusion entre schema de donnees et mini-langage `.scene`
+
 Mais elle ne devrait pas etre la voie de production du v1.
 
 ## Role recommande de `Ministral` a temperature zero
@@ -274,7 +286,8 @@ Le but n'est pas de prouver une omnipotence du modele, mais de garder la machine
 3. Ecrire un validateur / reparateur minimal du `turn_result`.
 4. Ecrire un compilateur de scene deterministe a partir du `spatial_state`.
 5. Brancher une boucle headless `commande -> tour -> scene -> rendu`.
-6. Seulement ensuite ouvrir la generation assistee de nouveaux lieux au-dela des trois fixtures canoniques.
+6. Ajouter un deuxieme appel headless `spatial_state -> prompt d'audit -> .scene candidate -> audit memoire`.
+7. Seulement ensuite ouvrir la generation assistee de nouveaux lieux au-dela des trois fixtures canoniques.
 
 ## Critere de reussite du v1
 

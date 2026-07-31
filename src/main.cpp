@@ -8,6 +8,7 @@
 #include "renderer.h"
 #include "scene_compiler.h"
 #include "turn_contract.h"
+#include "turn_runner.h"
 
 namespace {
 
@@ -29,6 +30,14 @@ static void PrintUsage()
     printf("  --location <id>          Canonical location id (gate, server_aisles, roof_watch)\n");
     printf("  --compile-location <id>  Compile a canonical spatial state and render it\n");
     printf("  --audit-scene-text <path> Load a .scene as text in memory, validate it, then render it\n");
+    printf("  --run-turn               Run one real headless turn through Ministral and render the resulting place\n");
+    printf("  --model <path>           GGUF model path for --run-turn\n");
+    printf("  --llm-temperature <f>    Sampling temperature for --run-turn\n");
+    printf("  --llm-predict <n>        Maximum generated tokens for --run-turn\n");
+    printf("  --use-json-grammar       Enable llama.cpp JSON grammar for --run-turn\n");
+    printf("  --no-json-grammar        Disable llama.cpp JSON grammar for --run-turn\n");
+    printf("  --prefer-candidate-scene Render a valid candidate_scene_text instead of the deterministic compiled scene\n");
+    printf("  --dump-raw-turn          Print the raw structured model response after --run-turn\n");
     printf("  --dump-turn-contract     Print the structured turn prompt and exit\n");
     printf("  --dump-scene-audit-prompt Print the direct .scene audit prompt and exit\n");
     printf("  --llama-info             Print llama.cpp runtime information and exit\n");
@@ -115,7 +124,11 @@ int main(int argc, char** argv)
     bool dump_scene_audit_prompt = false;
     bool compile_canonical_location = false;
     const char* audit_scene_text_path = 0;
+    bool run_turn = false;
+    bool prefer_candidate_scene = false;
+    bool dump_raw_turn = false;
     liminal::LocationId selected_location = liminal::kLocationGate;
+    liminal::HeadlessTurnConfig headless_turn_config;
 
     for (int index = 1; index < argc; ++index) {
         if ((strcmp(argv[index], "--scene") == 0 || strcmp(argv[index], "--obj") == 0) && index + 1 < argc) {
@@ -196,6 +209,44 @@ int main(int argc, char** argv)
             audit_scene_text_path = argv[++index];
             continue;
         }
+        if (strcmp(argv[index], "--run-turn") == 0) {
+            run_turn = true;
+            continue;
+        }
+        if (strcmp(argv[index], "--model") == 0 && index + 1 < argc) {
+            headless_turn_config.generation_config.model_path = argv[++index];
+            continue;
+        }
+        if (strcmp(argv[index], "--llm-temperature") == 0 && index + 1 < argc) {
+            if (!ReadFloat(argv[++index], &headless_turn_config.generation_config.temperature)) {
+                fprintf(stderr, "Invalid LLM temperature value.\n");
+                return 1;
+            }
+            continue;
+        }
+        if (strcmp(argv[index], "--llm-predict") == 0 && index + 1 < argc) {
+            if (!ReadInt(argv[++index], &headless_turn_config.generation_config.n_predict)) {
+                fprintf(stderr, "Invalid LLM predict value.\n");
+                return 1;
+            }
+            continue;
+        }
+        if (strcmp(argv[index], "--use-json-grammar") == 0) {
+            headless_turn_config.generation_config.use_json_grammar = true;
+            continue;
+        }
+        if (strcmp(argv[index], "--no-json-grammar") == 0) {
+            headless_turn_config.generation_config.use_json_grammar = false;
+            continue;
+        }
+        if (strcmp(argv[index], "--prefer-candidate-scene") == 0) {
+            prefer_candidate_scene = true;
+            continue;
+        }
+        if (strcmp(argv[index], "--dump-raw-turn") == 0) {
+            dump_raw_turn = true;
+            continue;
+        }
         if (strcmp(argv[index], "--dump-turn-contract") == 0) {
             dump_turn_contract = true;
             continue;
@@ -269,6 +320,49 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Scene compilation failed.");
             return 1;
         }
+    } else if (run_turn) {
+        headless_turn_config.prefer_candidate_scene = prefer_candidate_scene;
+        liminal::HeadlessTurnResult turn_result;
+        if (!liminal::RunHeadlessTurn(selected_location, player_command, headless_turn_config, &turn_result, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Headless turn failed.");
+            return 1;
+        }
+
+        scene = turn_result.rendered_scene;
+
+        printf("Headless turn completed.\n");
+        printf("Prompt tokens: %d\n", turn_result.prompt_tokens);
+        printf("Generated tokens: %d\n", turn_result.generated_tokens);
+        printf("Inference time: %.2f ms\n", turn_result.inference_time_ms);
+        printf("Intent: %s\n", turn_result.turn_result.intent.empty() ? "(empty)" : turn_result.turn_result.intent.c_str());
+        printf("Narration: %s\n", turn_result.turn_result.narration.empty() ? "(empty)" : turn_result.turn_result.narration.c_str());
+        if (!turn_result.turn_result.clarification.empty()) {
+            printf("Clarification: %s\n", turn_result.turn_result.clarification.c_str());
+        }
+        printf("Initial location: %s\n", liminal::LocationIdToString(turn_result.initial_spatial_state.location_id));
+        printf("Updated location: %s\n", liminal::LocationIdToString(turn_result.updated_spatial_state.location_id));
+        printf(
+            "Candidate scene audit: %s\n",
+            turn_result.turn_result.candidate_scene_included
+                ? (turn_result.candidate_scene_valid ? "valid" : "invalid")
+                : "not provided");
+        if (turn_result.turn_result.candidate_scene_included && turn_result.candidate_scene_valid) {
+            printf(
+                "Candidate scene stats: %zu triangles, %zu materials\n",
+                turn_result.candidate_scene.triangles.size(),
+                turn_result.candidate_scene.materials.size());
+        } else if (turn_result.turn_result.candidate_scene_included && !turn_result.candidate_scene_error.empty()) {
+            printf("Candidate scene error: %s\n", turn_result.candidate_scene_error.c_str());
+        }
+        printf(
+            "Rendered scene source: %s\n",
+            turn_result.used_candidate_scene_for_render ? "candidate_scene_text" : "compiled_spatial_state");
+        if (dump_raw_turn) {
+            printf("\n=== Raw Turn Response ===\n%s\n", turn_result.raw_response_text.c_str());
+            if (!turn_result.raw_scene_audit_response_text.empty()) {
+                printf("\n=== Raw Scene Audit Response ===\n%s\n", turn_result.raw_scene_audit_response_text.c_str());
+            }
+        }
     } else {
         if (!liminal::LoadSceneFromPath(scene_path, &scene, error_buffer, sizeof(error_buffer))) {
             fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Scene loading failed.");
@@ -286,7 +380,8 @@ int main(int argc, char** argv)
         scene.materials.size(),
         scene.emissive_triangles.size());
     printf(
-        "Load time: %.2f ms\n",
+        "%s: %.2f ms\n",
+        run_turn ? "Preparation time" : "Load time",
         std::chrono::duration<double, std::milli>(load_end - load_start).count());
 
     const std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();

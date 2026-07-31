@@ -720,3 +720,67 @@ Ce qui reste fragile :
 Prochaine etape recommandee :
 
 Brancher un premier tour headless reel avec `Ministral`, parser la sortie structuree, puis appliquer les deltas sur `HardState` et `SpatialState`.
+
+## 2026-07-31 - Iteration 0018 - Premier tour headless `Ministral` et audit `.scene` separe
+
+Objectif :
+
+Fermer la premiere boucle verticale reelle entre commande texte, inference locale, etat du monde, compilation de scene et rendu.
+
+Travail effectue :
+
+- extension de `src/llm_runtime.h/.cpp` pour charger le modele GGUF et generer une completion locale via `llama.cpp`
+- ajout de `src/turn_runner.h/.cpp`
+- parsing JSON de `TurnResult` avec extraction tolerante d'un objet meme si le modele ajoute des fences Markdown
+- application des deltas sur `HardState`, `SoftState` et `SpatialState`
+- ajout des options CLI :
+  - `--run-turn`
+  - `--model`
+  - `--llm-temperature`
+  - `--llm-predict`
+  - `--use-json-grammar`
+  - `--no-json-grammar`
+  - `--prefer-candidate-scene`
+  - `--dump-raw-turn`
+- premier essai d'inclusion d'une `.scene` candidate directement dans le JSON de tour
+- constat que cette voie etait trop fragile
+- refonte immediate vers une strategie a deux appels :
+  - appel 1 : JSON structure du tour
+  - appel 2 : `.scene` candidate pour audit seulement
+- validation complete locale sur `roof_watch`
+
+Resultat :
+
+Le projet sait maintenant executer un vrai tour headless avec `Ministral`, produire une narration structuree, mettre a jour l'etat spatial, compiler une scene canonique et rendre l'image correspondante. Il sait aussi demander au modele une `.scene` candidate separee puis l'auditer en memoire.
+
+Observations :
+
+- la voie `JSON` seule est relativement stable a `temperature 0`
+- l'encapsulation d'un mini-programme `.scene` dans ce meme JSON degradait fortement la robustesse
+- un deuxieme appel scene-audit dedie est beaucoup plus defendable pour le v1
+- la scene candidate n'est pas encore la source d'autorite du rendu final
+
+Mesures relevees :
+
+- `--run-turn --location roof_watch --command "observe the horizon"` :
+  - `828` tokens de prompt
+  - `365` tokens generes pour le JSON
+  - environ `8797.61 ms` d'inference pour le tour structure
+  - `.scene` candidate validee a part : `338` triangles, `29` materiaux
+  - rendu final compile depuis `SpatialState` : environ `829.42 ms`
+
+Ce qui a bien marche :
+
+- la chaine memoire `LLM -> etat -> scene -> rendu` fonctionne reellement
+- l'audit `.scene` separe donne un bon point de controle pour juger la qualite spatiale du modele
+- la distinction entre voie principale deterministe et voie experimentale libre devient concrete
+
+Ce qui reste fragile :
+
+- le runtime reste mono-tour et sans persistance
+- le modele continue parfois a renvoyer des fences Markdown autour du JSON
+- la grammaire JSON `llama.cpp` n'est pas encore exploitee de facon fiable dans cette integration Windows/CUDA
+
+Prochaine etape recommandee :
+
+Enchainer sur une vraie boucle multi-tour avec historique, et introduire un validateur / reparateur plus riche pour les deltas spatiaux et les scenes candidates.

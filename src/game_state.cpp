@@ -153,6 +153,117 @@ bool ParseLocationId(const char* text, LocationId* value)
     return false;
 }
 
+bool ParseTimeOfDay(const char* text, TimeOfDay* value)
+{
+    if (!text || !value) {
+        return false;
+    }
+
+    if (EqualsAsciiNoCase(text, "day")) {
+        *value = kTimeDay;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "dusk")) {
+        *value = kTimeDusk;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "night")) {
+        *value = kTimeNight;
+        return true;
+    }
+
+    *value = kTimeUnknown;
+    return false;
+}
+
+bool ParseVisibilityLevel(const char* text, VisibilityLevel* value)
+{
+    if (!text || !value) {
+        return false;
+    }
+
+    if (EqualsAsciiNoCase(text, "clear")) {
+        *value = kVisibilityClear;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "dusty")) {
+        *value = kVisibilityDusty;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "low")) {
+        *value = kVisibilityLow;
+        return true;
+    }
+
+    *value = kVisibilityUnknown;
+    return false;
+}
+
+bool ParseDesertState(const char* text, DesertState* value)
+{
+    if (!text || !value) {
+        return false;
+    }
+
+    if (EqualsAsciiNoCase(text, "still")) {
+        *value = kDesertStill;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "windy")) {
+        *value = kDesertWindy;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "dusty")) {
+        *value = kDesertDusty;
+        return true;
+    }
+
+    *value = kDesertUnknown;
+    return false;
+}
+
+bool ParseInteriorDensity(const char* text, InteriorDensity* value)
+{
+    if (!text || !value) {
+        return false;
+    }
+
+    if (EqualsAsciiNoCase(text, "sparse")) {
+        *value = kInteriorSparse;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "dense")) {
+        *value = kInteriorDense;
+        return true;
+    }
+
+    *value = kInteriorUnknown;
+    return false;
+}
+
+bool ParseResourceState(const char* text, ResourceState* value)
+{
+    if (!text || !value) {
+        return false;
+    }
+
+    if (EqualsAsciiNoCase(text, "stable")) {
+        *value = kResourceStable;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "strained")) {
+        *value = kResourceStrained;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "critical")) {
+        *value = kResourceCritical;
+        return true;
+    }
+
+    *value = kResourceUnknown;
+    return false;
+}
+
 HardState MakeInitialHardState()
 {
     HardState state;

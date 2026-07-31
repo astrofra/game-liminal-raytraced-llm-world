@@ -19,6 +19,7 @@ Current state:
 - optional `llama.cpp` runtime wiring in CMake
 - optional OpenMP line-parallel rendering in CMake
 - Python helper to download `Ministral 3 8B Instruct 2512` GGUF
+- first headless `Ministral` turn pipeline wired to the renderer
 - explicit provenance for the reused 2003 raytracer ideas
 
 Documentation index:
@@ -101,6 +102,7 @@ Useful overrides:
 .\build\Release\liminal_cornell_renderer.exe --scene assets\cornell\cornell_box.obj --output output\cornell_box_512.png --samples 64 --width 512 --height 512
 .\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location roof_watch --command "observe the horizon"
 .\build\Release\liminal_cornell_renderer.exe --compile-location gate --output output\compiled_gate.png
+.\build\Release\liminal_cornell_renderer.exe --run-turn --location roof_watch --command "observe the horizon" --dump-raw-turn --output output\turn_roof_watch.png
 ``` 
 
 Default output: `output/liminal_service_corridor.png`
