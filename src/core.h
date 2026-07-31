@@ -219,6 +219,35 @@ struct CameraSpotlight {
     }
 };
 
+struct SkyBackground {
+    bool enabled;
+    float zenith_luminance;
+    float horizon_luminance;
+    float nadir_luminance;
+    float horizon_band;
+    float horizon_curve;
+    float noise_amount;
+    float star_density;
+    float star_intensity;
+    float star_radius;
+    uint32_t seed;
+
+    SkyBackground()
+        : enabled(false)
+        , zenith_luminance(0.02f)
+        , horizon_luminance(0.18f)
+        , nadir_luminance(0.01f)
+        , horizon_band(0.22f)
+        , horizon_curve(1.65f)
+        , noise_amount(0.10f)
+        , star_density(0.0018f)
+        , star_intensity(0.90f)
+        , star_radius(0.075f)
+        , seed(1u)
+    {
+    }
+};
+
 struct RenderConfig {
     int width;
     int height;

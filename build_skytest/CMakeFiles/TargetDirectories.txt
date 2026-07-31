@@ -1,0 +1,3 @@
+C:/works/projects/game-liminal-raytraced-llm-world/build_skytest/CMakeFiles/liminal_cornell_renderer.dir
+C:/works/projects/game-liminal-raytraced-llm-world/build_skytest/CMakeFiles/ALL_BUILD.dir
+C:/works/projects/game-liminal-raytraced-llm-world/build_skytest/CMakeFiles/ZERO_CHECK.dir

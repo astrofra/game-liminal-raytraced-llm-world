@@ -26,6 +26,7 @@ struct BvhNode {
 struct Scene {
     std::string name;
     CameraSpotlight camera_spotlight;
+    SkyBackground sky_background;
     std::vector<Material> materials;
     std::vector<Triangle> triangles;
     std::vector<int> emissive_triangles;

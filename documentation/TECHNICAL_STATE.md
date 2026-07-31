@@ -32,8 +32,14 @@ En revanche, la boucle de jeu, l'inference de tour et la future couche multimedi
 - Preset de rendu par defaut en `800x400` pour la scene liminale, avec cadrage panorama.
 - Chargement de scene generique via `--scene <path>` pour `.scene` ou `.obj`.
 - Parseur de format de scene proprietaire v1.
-- Validation syntaxique de base pour `room`, `camera`, `spotlight`, `plane` et `box`.
+- Validation syntaxique de base pour `room`, `camera`, `spotlight`, `sky`, `plane` et `box`.
 - Spot analytique attache a la camera, avec panneau parametrique, portee limitee et cone progressif.
+- Fond proceduriel `sky` optionnel pour les rayons sans intersection :
+  - zenith sombre
+  - horizon plus clair
+  - nadir sombre
+  - grain fort
+  - etoiles deterministes
 - Conversion des primitives `plane` et `box` vers le backend triangle/BVH existant.
 - Premiere scene liminale handcraftee dans `assets/scenes/liminal_service_corridor.scene`.
 - Trois scenes canoniques de validation spatiale handcraftees :
@@ -151,9 +157,9 @@ Contexte : build `Release` local sur la machine de travail actuelle, apres ajout
 
 Contexte : build `Release` local sur la machine de travail actuelle, scenes canoniques de validation spatiale, `800x400`, `16 spp`, `3 bounces`.
 
-- portail d'entree du datacenter : environ `16207.52 ms`
+- portail d'entree du datacenter : environ `8295.89 ms`
 - travees de serveurs : environ `11063.99 ms`
-- toit / tour de ronde : environ `9253.65 ms`
+- toit / tour de ronde : environ `6325.08 ms`
 
 Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encore un benchmark stable.
 
@@ -167,7 +173,7 @@ Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encor
 - pas d'accumulation progressive pendant l'inference
 - pas encore de couche `SDL3` pour fenetre, transcript, ligne de commande parser et presentation temps reel du bitmap
 - pas d'UI jouable, pas de transcript integre, pas de boucle narrative
-- pas de ciel natif ni de degrade de fond dans le format `scene v1`
+- pas encore de bibliotheque de prefabs stables pour rack, portail, caisse, bloc de climatisation, etc.
 - pas de sauvegarde/chargement
 - pas de telemetrie CPU/GPU/memoire
 - pas de tests automatises

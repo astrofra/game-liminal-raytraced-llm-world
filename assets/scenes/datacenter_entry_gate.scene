@@ -5,14 +5,11 @@ room "datacenter entry gate"
 
 camera eye(0.0,1.70,-13.8) target(0.0,1.85,7.2) up(0.0,1.0,0.0) fov(44.0)
 spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(26.0) cone(12.0,30.0) intensity(95.0)
+sky zenith(0.02) horizon(0.22) nadir(0.00) band(0.30) curve(1.80) noise(0.11) stars(0.0028,1.35,0.090) seed(77)
 
 plane "forecourt" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(22.0,46.0) gray(0.18)
 plane "desert_left" pos(-11.2,0.02,8.0) normal(0.0,1.0,0.0) size(15.0,24.0) gray(0.22)
 plane "desert_right" pos(11.2,0.02,8.0) normal(0.0,1.0,0.0) size(15.0,24.0) gray(0.21)
-
-plane "sky_upper" pos(0.0,10.5,26.5) normal(0.0,0.0,-1.0) size(84.0,20.0) gray(0.05) emit(0.04)
-plane "sky_mid" pos(0.0,6.0,26.1) normal(0.0,0.0,-1.0) size(84.0,9.0) gray(0.10) emit(0.06)
-plane "sky_low" pos(0.0,2.5,25.7) normal(0.0,0.0,-1.0) size(84.0,4.5) gray(0.18) emit(0.08)
 
 box "left_boundary_wall" pos(-8.8,1.25,1.0) size(0.6,2.5,20.0) gray(0.25)
 box "right_boundary_wall" pos(8.8,1.25,1.0) size(0.6,2.5,20.0) gray(0.26)

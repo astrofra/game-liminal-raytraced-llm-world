@@ -71,7 +71,7 @@ Piste :
 
 Etendre progressivement le support a d'autres primitives et renforcer la validation.
 
-### 2026-07-31 - Les exterieurs vastes et le ciel sombre sont mal representes par `scene v1`
+### 2026-07-31 - Les exterieurs vastes restent fragiles malgre le nouveau fond `sky`
 
 Statut :
 
@@ -79,17 +79,17 @@ Ouvert.
 
 Description :
 
-Le format `scene v1` actuel sait bien decrire des interieurs simples a base de `plane` et `box`, mais il n'offre pas encore de mecanisme propre pour representer un ciel, un degrade de fond, un horizon stable ou un exterieur desertique vaste.
+Le fond proceduriel `sky` ameliore nettement le ciel, l'horizon et la lecture des scenes exterieures. En revanche, le format `scene v1` reste encore pauvre pour decrire un exterieur desertique vaste avec peu de primitives semantiques.
 
 Impact :
 
-- risque de rendre le portail d'entree trop interieur ou trop abstrait
-- risque de rendre le toit du datacenter peu lisible comme poste d'observation
-- difficulte a faire exister la reference au desert sans bricolages de composition
+- le ciel lit mieux qu'avant, mais le desert repose encore sur peu de masses
+- le toit reste credible comme poste d'observation, mais le dehors est encore tres abstrait
+- l'absence de prefabs ou d'objets stables limite la reconnaissance immediate de certains lieux
 
 Piste :
 
-Executer d'abord la batterie de tests de `SPATIAL_VALIDATION_PLAN.md`, puis decider si une extension minimale du format est necessaire.
+Executer la batterie de tests de `SPATIAL_VALIDATION_PLAN.md`, puis ajouter soit des prefabs stables, soit un petit vocabulaire spatial supplementaire si la composition simple reste insuffisante.
 
 ### 2026-07-29 - Telemetrie encore insuffisante
 

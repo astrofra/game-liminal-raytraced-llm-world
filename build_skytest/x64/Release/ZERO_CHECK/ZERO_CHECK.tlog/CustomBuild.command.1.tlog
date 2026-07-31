@@ -1,0 +1,10 @@
+^C:\WORKS\PROJECTS\GAME-LIMINAL-RAYTRACED-LLM-WORLD\BUILD_SKYTEST\CMAKEFILES\DDCA41E8D88264E759BE440FABFA7F58\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/works/projects/game-liminal-raytraced-llm-world -BC:/works/projects/game-liminal-raytraced-llm-world/build_skytest --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/works/projects/game-liminal-raytraced-llm-world/build_skytest/liminal_raytraced_renderer.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

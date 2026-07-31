@@ -67,6 +67,29 @@ Exemple :
 spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(16.0,38.0) intensity(180.0)
 ```
 
+### `sky`
+
+Active un fond proceduriel grayscale pour les rayons qui ne rencontrent aucune geometrie.
+
+Proprietes supportees :
+
+- `zenith(value)` obligatoire
+- `horizon(value)` obligatoire
+- `nadir(value)` obligatoire
+- `band(value)` obligatoire
+- `curve(value)` obligatoire
+- `noise(value)` obligatoire
+- `stars(density,intensity,radius)` optionnel
+- `seed(value)` optionnel
+
+Le ciel est pense pour les exterieurs pauvres du projet : zenith sombre, horizon plus clair, nadir sombre, grain fort et etoiles deterministes possibles.
+
+Exemple :
+
+```text
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+```
+
 ### `plane`
 
 Primitive plane finie, rendue comme un quad triangule.
@@ -130,8 +153,6 @@ Le format implemente ne supporte pas encore :
 - `cone`
 - `mesh reference`
 - materiaux plus riches que `gray` et `emit`
-- ciel, fond ou horizon explicite
-- degrade vertical natif pour un ciel ou un arriere-plan
 - simplification automatique d'une scene invalide
 - schema contraint pour un futur LLM
 
@@ -141,7 +162,7 @@ Pour la premiere batterie de tests exterieurs autour du datacenter et du desert,
 
 - un exterieur vaste devra etre suggere avec tres peu de masses
 - le desert ne peut pas encore exister comme type de surface dedie
-- le ciel de fin de journee devra etre simule pauvrement ou servira de preuve qu'une extension du format est necessaire
+- le ciel de fin de journee passe maintenant par un fond proceduriel optionnel, pas par une primitive riche de scene
 - la lisibilite devra venir surtout du cadrage, du parapet, du seuil, des grandes surfaces et de la ligne d'horizon
 
 ## Exemple complet

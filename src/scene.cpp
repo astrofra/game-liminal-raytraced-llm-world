@@ -32,6 +32,7 @@ static void ResetScene(Scene* scene)
 {
     scene->name.clear();
     scene->camera_spotlight = CameraSpotlight();
+    scene->sky_background = SkyBackground();
     scene->materials.clear();
     scene->triangles.clear();
     scene->emissive_triangles.clear();
@@ -202,6 +203,22 @@ static bool ParseFloatText(const char* text, float* value)
     return true;
 }
 
+static bool ParseUnsignedText(const char* text, unsigned int* value)
+{
+    if (!text || !value) {
+        return false;
+    }
+
+    char* end = 0;
+    const unsigned long parsed = strtoul(text, &end, 10);
+    if (end == text) {
+        return false;
+    }
+
+    *value = static_cast<unsigned int>(parsed);
+    return true;
+}
+
 static bool ExtractQuotedString(const std::string& line, std::string* value)
 {
     if (!value) {
@@ -259,6 +276,12 @@ static bool ExtractFloatProperty(const std::string& line, const char* key, float
 {
     std::string text;
     return ExtractPropertyText(line, key, &text) && ParseFloatText(text.c_str(), value);
+}
+
+static bool ExtractUnsignedProperty(const std::string& line, const char* key, unsigned int* value)
+{
+    std::string text;
+    return ExtractPropertyText(line, key, &text) && ParseUnsignedText(text.c_str(), value);
 }
 
 static Material FinalizeMaterial(const MaterialDraft& draft)
@@ -969,6 +992,60 @@ bool LoadSceneFromSceneV1(const char* scene_path, Scene* scene, char* error_buff
             scene->camera_spotlight.cone_inner_degrees = cone_inner;
             scene->camera_spotlight.cone_outer_degrees = cone_outer;
             scene->camera_spotlight.intensity = intensity_value;
+            continue;
+        }
+
+        if (StartsWith(line, "sky ")) {
+            float zenith_luminance = scene->sky_background.zenith_luminance;
+            float horizon_luminance = scene->sky_background.horizon_luminance;
+            float nadir_luminance = scene->sky_background.nadir_luminance;
+            float horizon_band = scene->sky_background.horizon_band;
+            float horizon_curve = scene->sky_background.horizon_curve;
+            float noise_amount = scene->sky_background.noise_amount;
+            Vec3 stars(
+                scene->sky_background.star_density,
+                scene->sky_background.star_intensity,
+                scene->sky_background.star_radius);
+            unsigned int seed = scene->sky_background.seed;
+
+            if (!ExtractFloatProperty(line, "zenith(", &zenith_luminance) ||
+                !ExtractFloatProperty(line, "horizon(", &horizon_luminance) ||
+                !ExtractFloatProperty(line, "nadir(", &nadir_luminance) ||
+                !ExtractFloatProperty(line, "band(", &horizon_band) ||
+                !ExtractFloatProperty(line, "curve(", &horizon_curve) ||
+                !ExtractFloatProperty(line, "noise(", &noise_amount)) {
+                fclose(file);
+                SetLineError(
+                    error_buffer,
+                    error_buffer_size,
+                    scene_path,
+                    line_number,
+                    "Sky requires zenith(), horizon(), nadir(), band(), curve(), and noise()");
+                return false;
+            }
+
+            ExtractVec3Property(line, "stars(", &stars);
+            ExtractUnsignedProperty(line, "seed(", &seed);
+
+            if (zenith_luminance < 0.0f || horizon_luminance < 0.0f || nadir_luminance < 0.0f ||
+                horizon_band <= 0.0f || horizon_band > 1.0f || horizon_curve <= 0.0f || noise_amount < 0.0f ||
+                stars.x < 0.0f || stars.y < 0.0f || stars.z < 0.0f) {
+                fclose(file);
+                SetLineError(error_buffer, error_buffer_size, scene_path, line_number, "Sky has invalid parameters");
+                return false;
+            }
+
+            scene->sky_background.enabled = true;
+            scene->sky_background.zenith_luminance = zenith_luminance;
+            scene->sky_background.horizon_luminance = horizon_luminance;
+            scene->sky_background.nadir_luminance = nadir_luminance;
+            scene->sky_background.horizon_band = horizon_band;
+            scene->sky_background.horizon_curve = horizon_curve;
+            scene->sky_background.noise_amount = noise_amount;
+            scene->sky_background.star_density = stars.x;
+            scene->sky_background.star_intensity = stars.y;
+            scene->sky_background.star_radius = stars.z;
+            scene->sky_background.seed = seed;
             continue;
         }
 

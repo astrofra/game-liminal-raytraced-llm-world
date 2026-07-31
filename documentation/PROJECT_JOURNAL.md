@@ -462,3 +462,51 @@ Ce qui reste fragile :
 Prochaine etape recommandee :
 
 Comparer chaque fixture a un brief narratif court, documenter les pertes de traduction, puis decider des extensions minimales du format `scene v1`.
+
+## 2026-07-31 - Iteration 0013 - Fond proceduriel de ciel pour les exterieurs
+
+Objectif :
+
+Remplacer les faux plans de ciel des scenes exterieures par un vrai fond proceduriel mieux adapte au toit du datacenter et a l'entree.
+
+Travail effectue :
+
+- ajout d'une structure `SkyBackground` au runtime
+- ajout d'une directive `sky` dans le parseur `.scene`
+- ajout d'un fond procedural grayscale dans le renderer pour les rayons sans intersection
+- support d'un horizon plus clair entre un zenith et un nadir sombres
+- ajout de grain fort et d'etoiles deterministes
+- adaptation de `datacenter_entry_gate.scene` et `datacenter_roof_watch.scene` pour utiliser `sky` au lieu de panneaux emissifs de fond
+- validation renderer via un build dedie `build_skytest` avec `LIMINAL_ENABLE_LLAMA_CPP=OFF`
+
+Resultat :
+
+Le ciel n'est plus simule par empilement de plans geometriques. Les scenes exterieures disposent maintenant d'un fond procedural plus souple, plus doux dans son degrade, et mieux raccorde au grain general du renderer.
+
+Observations :
+
+- la lecture du toit s'ameliore nettement grace a un horizon plus plausible
+- le portail gagne en ambiance exterieure avec un ciel plus vivant
+- les etoiles restent discretes, ce qui est preferable a ce stade a un effet demonstratif trop visible
+- l'interieur des travees n'est pas affecte, ce qui confirme que la directive reste bien optionnelle
+
+Mesures relevees :
+
+- portail d'entree, `800x400`, `16 spp`, `3 bounces` : environ `8295.89 ms`
+- toit / tour de ronde, `800x400`, `16 spp`, `3 bounces` : environ `6325.08 ms`
+
+Ce qui a bien marche :
+
+- le renderer gere mieux les scenes ouvertes sans geometie de fond artificielle
+- le degrade du ciel est plus proche de l'intention de fin de journee
+- la stabilite visuelle des exterieurs augmente
+
+Ce qui reste fragile :
+
+- le desert lui-meme reste peu semantique
+- les etoiles pourraient encore etre affinees artistiquement
+- le projet ne dispose pas encore d'une bibliotheque de prefabs stables pour les objets recurrents
+
+Prochaine etape recommandee :
+
+Commencer une petite couche de prefabs stables pour `rack`, `gate`, `crate`, `cooling_unit` et autres objets recurrents du datacenter.

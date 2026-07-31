@@ -5,12 +5,10 @@ room "datacenter roof watch"
 
 camera eye(0.0,1.75,-7.9) target(0.0,1.18,8.8) up(0.0,1.0,0.0) fov(46.0)
 spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(70.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
 
 plane "roof" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(16.0,24.0) gray(0.14)
 plane "desert_far" pos(0.0,-0.18,33.0) normal(0.0,1.0,0.0) size(120.0,72.0) gray(0.17)
-plane "sky_upper" pos(0.0,15.0,64.0) normal(0.0,0.0,-1.0) size(140.0,28.0) gray(0.03) emit(0.03)
-plane "sky_mid" pos(0.0,8.6,63.6) normal(0.0,0.0,-1.0) size(140.0,12.0) gray(0.07) emit(0.05)
-plane "sky_low" pos(0.0,3.6,63.2) normal(0.0,0.0,-1.0) size(140.0,5.0) gray(0.14) emit(0.08)
 
 box "parapet_front" pos(0.0,0.55,1.6) size(14.0,1.1,0.7) gray(0.26)
 box "parapet_left" pos(-6.6,0.65,-2.2) size(0.8,1.3,9.2) gray(0.24)

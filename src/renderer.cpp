@@ -64,6 +64,37 @@ static float Smoothstep(float edge0, float edge1, float value)
     return t * t * (3.0f - 2.0f * t);
 }
 
+static float Lerp(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
+
+static float Fract(float value)
+{
+    return value - floorf(value);
+}
+
+static uint32_t HashU32(uint32_t value)
+{
+    value ^= value >> 16;
+    value *= 0x7feb352du;
+    value ^= value >> 15;
+    value *= 0x846ca68bu;
+    value ^= value >> 16;
+    return value;
+}
+
+static uint32_t HashCombine3(uint32_t a, uint32_t b, uint32_t c)
+{
+    return HashU32(a ^ (HashU32(b) << 1) ^ (HashU32(c) << 7));
+}
+
+static float HashToUnitFloat(uint32_t value)
+{
+    const uint32_t bits = value >> 8;
+    return static_cast<float>(bits) / static_cast<float>(0x01000000u);
+}
+
 static std::string ToLowerCopy(const char* text)
 {
     std::string lower = text ? text : "";
@@ -122,6 +153,80 @@ static CameraLightState BuildCameraLightState(
     state.cone_inner_cos = cosf(scene.camera_spotlight.cone_inner_degrees * to_radians);
     state.cone_outer_cos = cosf(scene.camera_spotlight.cone_outer_degrees * to_radians);
     return state;
+}
+
+static float EvaluateSkyStars(const SkyBackground& sky, const Vec3& direction)
+{
+    if (sky.star_density <= 0.0f || sky.star_intensity <= 0.0f || sky.star_radius <= 0.0f || direction.y <= 0.0f) {
+        return 0.0f;
+    }
+
+    const float phi = atan2f(direction.z, direction.x);
+    const float wrapped_phi = phi < 0.0f ? phi + 2.0f * kPi : phi;
+    const float theta = acosf(Clamp(direction.y, -1.0f, 1.0f));
+    const float u = wrapped_phi / (2.0f * kPi);
+    const float v = theta / kPi;
+
+    const float grid_x = u * 768.0f;
+    const float grid_y = v * 384.0f;
+    const uint32_t cell_x = static_cast<uint32_t>(floorf(grid_x));
+    const uint32_t cell_y = static_cast<uint32_t>(floorf(grid_y));
+
+    const uint32_t cell_hash = HashCombine3(cell_x, cell_y, sky.seed);
+    if (HashToUnitFloat(cell_hash) > sky.star_density) {
+        return 0.0f;
+    }
+
+    const float local_x = Fract(grid_x);
+    const float local_y = Fract(grid_y);
+    const float star_x = HashToUnitFloat(HashCombine3(cell_x, cell_y, sky.seed + 1u));
+    const float star_y = HashToUnitFloat(HashCombine3(cell_x, cell_y, sky.seed + 2u));
+    const float dx = local_x - star_x;
+    const float dy = local_y - star_y;
+    const float radius = std::max(sky.star_radius, 0.0001f);
+    const float distance = sqrtf(dx * dx + dy * dy);
+    if (distance >= radius) {
+        return 0.0f;
+    }
+
+    const float shape = 1.0f - distance / radius;
+    const float sparkle = HashToUnitFloat(HashCombine3(cell_x, cell_y, sky.seed + 3u));
+    const float intensity = sky.star_intensity * (0.75f + 0.5f * sparkle);
+    const float altitude_visibility = Smoothstep(0.02f, 0.24f, direction.y);
+    const float core = powf(shape, 12.0f);
+    const float halo = powf(shape, 4.0f) * 0.28f;
+    return intensity * altitude_visibility * (core + halo);
+}
+
+static float SampleSkyBackground(const SkyBackground& sky, const Vec3& direction, Rng* rng)
+{
+    if (!sky.enabled) {
+        return 0.0f;
+    }
+
+    const float abs_y = fabsf(direction.y);
+    const float horizon_t = 1.0f - Saturate(abs_y / std::max(sky.horizon_band, 0.0001f));
+    const float curved_horizon = powf(horizon_t, sky.horizon_curve);
+    const float base_luminance = direction.y >= 0.0f ? sky.zenith_luminance : sky.nadir_luminance;
+
+    float luminance = Lerp(base_luminance, sky.horizon_luminance, curved_horizon);
+    luminance += EvaluateSkyStars(sky, direction);
+
+    if (sky.noise_amount > 0.0f && rng) {
+        const float phi = atan2f(direction.z, direction.x);
+        const float wrapped_phi = phi < 0.0f ? phi + 2.0f * kPi : phi;
+        const float theta = acosf(Clamp(direction.y, -1.0f, 1.0f));
+        const uint32_t noise_x = static_cast<uint32_t>(floorf((wrapped_phi / (2.0f * kPi)) * 4096.0f));
+        const uint32_t noise_y = static_cast<uint32_t>(floorf((theta / kPi) * 2048.0f));
+        const float directional_noise =
+            HashToUnitFloat(HashCombine3(noise_x, noise_y, sky.seed + 11u)) * 2.0f - 1.0f;
+        const float sample_noise = rng->NextFloat() * 2.0f - 1.0f;
+        const float noise_weight = 0.35f + 0.65f * curved_horizon;
+        const float combined_noise = directional_noise * 0.20f + sample_noise * 0.80f;
+        luminance += combined_noise * sky.noise_amount * noise_weight;
+    }
+
+    return std::max(0.0f, luminance);
 }
 
 // Rewritten from the slab-style rejection logic in the 2003 raytracer.
@@ -430,6 +535,7 @@ static float TracePath(
     for (int bounce = 0; bounce < config.max_bounces; ++bounce) {
         Hit hit;
         if (!IntersectScene(scene, ray, kHuge, &hit)) {
+            radiance += throughput * SampleSkyBackground(scene.sky_background, ray.direction, rng);
             break;
         }
 
