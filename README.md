@@ -103,6 +103,8 @@ Useful overrides:
 .\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location roof_watch --command "observe the horizon"
 .\build\Release\liminal_cornell_renderer.exe --compile-location gate --output output\compiled_gate.png
 .\build\Release\liminal_cornell_renderer.exe --run-turn --location roof_watch --command "observe the horizon" --dump-raw-turn --output output\turn_roof_watch.png
+.\build\Release\liminal_cornell_renderer.exe --run-session --location roof_watch --command "observe the horizon" --command "inspect the cooling unit" --save-state output\session_state.json --output output\session.png
+.\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\session_state.json --command "check the crate" --dump-session-history --output output\session_2.png
 ``` 
 
 Default output: `output/liminal_service_corridor.png`

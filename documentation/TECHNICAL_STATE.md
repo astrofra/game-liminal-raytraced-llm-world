@@ -82,16 +82,24 @@ Le depot contient maintenant une premiere boucle headless reelle `commande -> LL
 - Premier runtime headless `Ministral` branche au moteur :
   - `GenerateChatCompletion()` via `llama.cpp`
   - parsing JSON tolerant aux fences Markdown
+  - mode repair d'une sortie JSON mal formee
+  - fallback no-op si la sortie reste inexploitable apres repair
   - application des deltas sur `HardState`, `SoftState` et `SpatialState`
   - deuxieme appel LLM separe pour l'audit `.scene`
   - rendu final depuis la voie deterministe `SpatialState -> Scene`
 - Options CLI de boucle fonctionnelle :
   - `--run-turn`
+  - `--run-session`
   - `--model`
   - `--llm-temperature`
   - `--llm-predict`
   - `--use-json-grammar`
   - `--no-json-grammar`
+  - `--command-file`
+  - `--load-state`
+  - `--save-state`
+  - `--dump-session-state`
+  - `--dump-session-history`
   - `--prefer-candidate-scene`
   - `--dump-raw-turn`
 
@@ -166,6 +174,8 @@ Exemples du noyau fonctionnel :
 .\build\Release\liminal_cornell_renderer.exe --compile-location gate --output output\compiled_gate.png
 .\build\Release\liminal_cornell_renderer.exe --audit-scene-text assets\scenes\datacenter_roof_watch.scene --output output\audited_roof_watch.png
 .\build\Release\liminal_cornell_renderer.exe --run-turn --location roof_watch --command "observe the horizon" --dump-raw-turn --output output\turn_roof_watch.png
+.\build\Release\liminal_cornell_renderer.exe --run-session --location roof_watch --command "observe the horizon" --command "inspect the cooling unit" --save-state output\session_state.json --output output\session.png
+.\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\session_state.json --command "check the crate" --save-state output\session_state_2.json --output output\session_2.png
 ```
 
 Helper Windows :
@@ -246,12 +256,30 @@ Observation importante :
 - un deuxieme appel LLM dedie a l'audit `.scene` s'est montre nettement plus stable
 - la voie principale recommandee reste donc `JSON structure -> etat -> compilateur deterministe`
 
+### 2026-07-31 - Validation session multi-tour et persistance
+
+Contexte : build `Release` local avec `llama.cpp` et CUDA, session `roof_watch`, deux commandes successives puis reprise depuis JSON sauvegarde.
+
+- `--run-session --command "observe the horizon" --command "inspect the cooling unit"` :
+  - `2` tours executes
+  - JSON du second tour degrade, fallback no-op applique
+  - etat final sauvegarde dans `output\session_state_smoke.json`
+- `--run-turn --load-state output\session_state_smoke.json --command "check the crate"` :
+  - reprise de session effective
+  - historique conserve
+  - nouvel etat sauvegarde dans `output\session_state_smoke_2.json`
+
+Observation importante :
+
+- la session survit maintenant a une sortie LLM mal formee sans perdre l'etat
+- le fallback conserve la jouabilite, mais il reste un mode degrade
+- la generation `.scene` libre reste plus fragile que la voie compilee deterministe
+
 ## Ce que ce module ne fait pas encore
 
 - pas de scene v1 complete : seulement un sous-ensemble centre sur `room`, `camera`, `spotlight`, `sky`, `plane`, `box` et les premiers `prefab_*` est supporte
 - pas encore de validation semantique riche ou de simplification automatique d'une scene generee par LLM
 - pas encore de boucle multi-tour persistante
-- pas encore de sauvegarde/restauration du `HardState` / `SoftState` / `SpatialState`
 - pas d'API integrable propre pour un futur runtime de jeu
 - pas d'accumulation progressive pendant l'inference
 - pas encore de couche `SDL3` pour fenetre, transcript, ligne de commande parser et presentation temps reel du bitmap

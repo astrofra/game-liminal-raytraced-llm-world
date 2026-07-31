@@ -1,6 +1,7 @@
 #ifndef LIMINAL_RENDERER_GAME_STATE_H
 #define LIMINAL_RENDERER_GAME_STATE_H
 
+#include <stddef.h>
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -182,6 +183,28 @@ struct TurnResult {
     TurnResult() : candidate_scene_included(false) {}
 };
 
+struct SessionTurnRecord {
+    int turn_number;
+    LocationId location_id;
+    std::string player_command;
+    std::string intent;
+    std::string narration;
+    std::string clarification;
+
+    SessionTurnRecord()
+        : turn_number(0)
+        , location_id(kLocationUnknown)
+    {
+    }
+};
+
+struct SessionState {
+    HardState hard_state;
+    SoftState soft_state;
+    SpatialState spatial_state;
+    std::vector<SessionTurnRecord> history;
+};
+
 const char* LocationIdToString(LocationId value);
 const char* TimeOfDayToString(TimeOfDay value);
 const char* VisibilityLevelToString(VisibilityLevel value);
@@ -198,10 +221,19 @@ bool ParseResourceState(const char* text, ResourceState* value);
 
 HardState MakeInitialHardState();
 SoftState MakeInitialSoftState();
+void NormalizeSessionState(SessionState* state);
+bool SerializeSessionStateToJsonString(const SessionState& state, std::string* json_text);
+bool ParseSessionStateFromJson(
+    const char* json_text,
+    SessionState* state,
+    char* error_buffer,
+    size_t error_buffer_size);
 
 void PrintHardStateSummary(const HardState& state, FILE* stream);
 void PrintSoftStateSummary(const SoftState& state, FILE* stream);
 void PrintSpatialStateSummary(const SpatialState& state, FILE* stream);
+void PrintSessionStateSummary(const SessionState& state, FILE* stream);
+void PrintSessionHistory(const SessionState& state, FILE* stream);
 
 }  // namespace liminal
 

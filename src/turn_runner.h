@@ -25,6 +25,7 @@ struct HeadlessTurnConfig {
 struct HeadlessTurnResult {
     std::string prompt_text;
     std::string raw_response_text;
+    std::string repair_response_text;
     std::string raw_scene_audit_response_text;
     TurnResult turn_result;
     HardState initial_hard_state;
@@ -37,6 +38,8 @@ struct HeadlessTurnResult {
     Scene candidate_scene;
     bool candidate_scene_valid;
     bool used_candidate_scene_for_render;
+    bool used_turn_repair;
+    bool used_turn_fallback;
     std::string candidate_scene_error;
     int prompt_tokens;
     int generated_tokens;
@@ -45,6 +48,8 @@ struct HeadlessTurnResult {
     HeadlessTurnResult()
         : candidate_scene_valid(false)
         , used_candidate_scene_for_render(false)
+        , used_turn_repair(false)
+        , used_turn_fallback(false)
         , prompt_tokens(0)
         , generated_tokens(0)
         , inference_time_ms(0.0)
@@ -57,11 +62,27 @@ bool ParseTurnResultJson(
     TurnResult* turn_result,
     char* error_buffer,
     size_t error_buffer_size);
+bool InitializeSessionState(
+    LocationId initial_location_id,
+    SessionState* session_state,
+    char* error_buffer,
+    size_t error_buffer_size);
 void ApplyTurnResult(
     const TurnResult& turn_result,
     HardState* hard_state,
     SoftState* soft_state,
     SpatialState* spatial_state);
+void UpdateSessionStateFromTurn(
+    const char* player_command,
+    const HeadlessTurnResult& turn_result,
+    SessionState* session_state);
+bool RunHeadlessTurnFromState(
+    const SessionState& initial_session_state,
+    const char* player_command,
+    const HeadlessTurnConfig& config,
+    HeadlessTurnResult* result,
+    char* error_buffer,
+    size_t error_buffer_size);
 bool RunHeadlessTurn(
     LocationId initial_location_id,
     const char* player_command,

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 
 #include "game_state.h"
 #include "llm_runtime.h"
@@ -31,11 +32,18 @@ static void PrintUsage()
     printf("  --compile-location <id>  Compile a canonical spatial state and render it\n");
     printf("  --audit-scene-text <path> Load a .scene as text in memory, validate it, then render it\n");
     printf("  --run-turn               Run one real headless turn through Ministral and render the resulting place\n");
+    printf("  --run-session            Run a multi-turn headless session through Ministral and render the last place\n");
     printf("  --model <path>           GGUF model path for --run-turn\n");
     printf("  --llm-temperature <f>    Sampling temperature for --run-turn\n");
     printf("  --llm-predict <n>        Maximum generated tokens for --run-turn\n");
     printf("  --use-json-grammar       Enable llama.cpp JSON grammar for --run-turn\n");
     printf("  --no-json-grammar        Disable llama.cpp JSON grammar for --run-turn\n");
+    printf("  --command <text>         Player command; may be repeated for --run-session\n");
+    printf("  --command-file <path>    Read one player command per non-empty line\n");
+    printf("  --load-state <path>      Load session state JSON before --run-turn or --run-session\n");
+    printf("  --save-state <path>      Save resulting session state JSON after --run-turn or --run-session\n");
+    printf("  --dump-session-state     Print the final session state summary\n");
+    printf("  --dump-session-history   Print the final session transcript summary\n");
     printf("  --prefer-candidate-scene Render a valid candidate_scene_text instead of the deterministic compiled scene\n");
     printf("  --dump-raw-turn          Print the raw structured model response after --run-turn\n");
     printf("  --dump-turn-contract     Print the structured turn prompt and exit\n");
@@ -111,6 +119,139 @@ static bool ReadFileText(const char* path, std::string* text)
     return true;
 }
 
+static bool WriteFileText(const char* path, const std::string& text)
+{
+    if (!path) {
+        return false;
+    }
+
+    FILE* file = fopen(path, "wb");
+    if (!file) {
+        return false;
+    }
+
+    const size_t written = fwrite(text.data(), 1, text.size(), file);
+    fclose(file);
+    return written == text.size();
+}
+
+static std::string TrimWhitespaceCopy(const std::string& text)
+{
+    size_t start = 0;
+    while (start < text.size()) {
+        const char value = text[start];
+        if (value != ' ' && value != '\t' && value != '\r' && value != '\n') {
+            break;
+        }
+        ++start;
+    }
+
+    size_t end = text.size();
+    while (end > start) {
+        const char value = text[end - 1];
+        if (value != ' ' && value != '\t' && value != '\r' && value != '\n') {
+            break;
+        }
+        --end;
+    }
+
+    return text.substr(start, end - start);
+}
+
+static bool ReadCommandFile(const char* path, std::vector<std::string>* commands)
+{
+    if (!path || !commands) {
+        return false;
+    }
+
+    std::string text;
+    if (!ReadFileText(path, &text)) {
+        return false;
+    }
+
+    size_t start = 0;
+    while (start <= text.size()) {
+        const size_t end = text.find('\n', start);
+        const size_t length = end == std::string::npos ? text.size() - start : end - start;
+        std::string line = TrimWhitespaceCopy(text.substr(start, length));
+        if (!line.empty() && line[0] != '#') {
+            commands->push_back(line);
+        }
+        if (end == std::string::npos) {
+            break;
+        }
+        start = end + 1;
+    }
+
+    return true;
+}
+
+static bool LoadSessionStateFromPath(const char* path, liminal::SessionState* session_state, char* error_buffer, size_t error_buffer_size)
+{
+    std::string text;
+    if (!ReadFileText(path, &text)) {
+        snprintf(error_buffer, error_buffer_size, "Cannot read session state file: %s", path ? path : "(null)");
+        return false;
+    }
+    return liminal::ParseSessionStateFromJson(text.c_str(), session_state, error_buffer, error_buffer_size);
+}
+
+static bool SaveSessionStateToPath(const char* path, const liminal::SessionState& session_state, char* error_buffer, size_t error_buffer_size)
+{
+    std::string json_text;
+    if (!liminal::SerializeSessionStateToJsonString(session_state, &json_text)) {
+        snprintf(error_buffer, error_buffer_size, "Cannot serialize session state.");
+        return false;
+    }
+    if (!WriteFileText(path, json_text)) {
+        snprintf(error_buffer, error_buffer_size, "Cannot write session state file: %s", path ? path : "(null)");
+        return false;
+    }
+    return true;
+}
+
+static void PrintTurnSummary(const liminal::HeadlessTurnResult& turn_result, bool dump_raw_turn)
+{
+    printf("Turn %d completed.\n", turn_result.initial_hard_state.turn_number);
+    printf("Prompt tokens: %d\n", turn_result.prompt_tokens);
+    printf("Generated tokens: %d\n", turn_result.generated_tokens);
+    printf("Inference time: %.2f ms\n", turn_result.inference_time_ms);
+    printf("Turn JSON repair: %s\n", turn_result.used_turn_repair ? "applied" : "not needed");
+    printf("Turn fallback: %s\n", turn_result.used_turn_fallback ? "applied" : "not needed");
+    printf("Intent: %s\n", turn_result.turn_result.intent.empty() ? "(empty)" : turn_result.turn_result.intent.c_str());
+    printf("Narration: %s\n", turn_result.turn_result.narration.empty() ? "(empty)" : turn_result.turn_result.narration.c_str());
+    if (!turn_result.turn_result.clarification.empty()) {
+        printf("Clarification: %s\n", turn_result.turn_result.clarification.c_str());
+    }
+    printf("Initial location: %s\n", liminal::LocationIdToString(turn_result.initial_spatial_state.location_id));
+    printf("Updated location: %s\n", liminal::LocationIdToString(turn_result.updated_spatial_state.location_id));
+    printf(
+        "Candidate scene audit: %s\n",
+        turn_result.turn_result.candidate_scene_included
+            ? (turn_result.candidate_scene_valid ? "valid" : "invalid")
+            : "not provided");
+    if (turn_result.turn_result.candidate_scene_included && turn_result.candidate_scene_valid) {
+        printf(
+            "Candidate scene stats: %zu triangles, %zu materials\n",
+            turn_result.candidate_scene.triangles.size(),
+            turn_result.candidate_scene.materials.size());
+    } else if (turn_result.turn_result.candidate_scene_included && !turn_result.candidate_scene_error.empty()) {
+        printf("Candidate scene error: %s\n", turn_result.candidate_scene_error.c_str());
+    }
+    printf(
+        "Rendered scene source: %s\n",
+        turn_result.used_candidate_scene_for_render ? "candidate_scene_text" : "compiled_spatial_state");
+    if (dump_raw_turn) {
+        printf("\n=== Raw Turn Response ===\n%s\n", turn_result.raw_response_text.c_str());
+        if (!turn_result.repair_response_text.empty()) {
+            printf("\n=== Repair Turn Response ===\n%s\n", turn_result.repair_response_text.c_str());
+        }
+        if (!turn_result.raw_scene_audit_response_text.empty()) {
+            printf("\n=== Raw Scene Audit Response ===\n%s\n", turn_result.raw_scene_audit_response_text.c_str());
+        }
+    }
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
@@ -125,10 +266,17 @@ int main(int argc, char** argv)
     bool compile_canonical_location = false;
     const char* audit_scene_text_path = 0;
     bool run_turn = false;
+    bool run_session = false;
     bool prefer_candidate_scene = false;
     bool dump_raw_turn = false;
+    bool dump_session_state = false;
+    bool dump_session_history = false;
+    const char* command_file_path = 0;
+    const char* load_state_path = 0;
+    const char* save_state_path = 0;
     liminal::LocationId selected_location = liminal::kLocationGate;
     liminal::HeadlessTurnConfig headless_turn_config;
+    std::vector<std::string> session_commands;
 
     for (int index = 1; index < argc; ++index) {
         if ((strcmp(argv[index], "--scene") == 0 || strcmp(argv[index], "--obj") == 0) && index + 1 < argc) {
@@ -213,6 +361,10 @@ int main(int argc, char** argv)
             run_turn = true;
             continue;
         }
+        if (strcmp(argv[index], "--run-session") == 0) {
+            run_session = true;
+            continue;
+        }
         if (strcmp(argv[index], "--model") == 0 && index + 1 < argc) {
             headless_turn_config.generation_config.model_path = argv[++index];
             continue;
@@ -247,6 +399,14 @@ int main(int argc, char** argv)
             dump_raw_turn = true;
             continue;
         }
+        if (strcmp(argv[index], "--dump-session-state") == 0) {
+            dump_session_state = true;
+            continue;
+        }
+        if (strcmp(argv[index], "--dump-session-history") == 0) {
+            dump_session_history = true;
+            continue;
+        }
         if (strcmp(argv[index], "--dump-turn-contract") == 0) {
             dump_turn_contract = true;
             continue;
@@ -257,6 +417,19 @@ int main(int argc, char** argv)
         }
         if (strcmp(argv[index], "--command") == 0 && index + 1 < argc) {
             player_command = argv[++index];
+            session_commands.push_back(player_command);
+            continue;
+        }
+        if (strcmp(argv[index], "--command-file") == 0 && index + 1 < argc) {
+            command_file_path = argv[++index];
+            continue;
+        }
+        if (strcmp(argv[index], "--load-state") == 0 && index + 1 < argc) {
+            load_state_path = argv[++index];
+            continue;
+        }
+        if (strcmp(argv[index], "--save-state") == 0 && index + 1 < argc) {
+            save_state_path = argv[++index];
             continue;
         }
         if (strcmp(argv[index], "--llama-info") == 0) {
@@ -273,6 +446,29 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    liminal::Scene scene;
+    char error_buffer[512];
+    memset(error_buffer, 0, sizeof(error_buffer));
+
+    if (run_turn && run_session) {
+        fprintf(stderr, "Choose either --run-turn or --run-session, not both.\n");
+        return 1;
+    }
+
+    if (command_file_path && !ReadCommandFile(command_file_path, &session_commands)) {
+        fprintf(stderr, "Cannot read command file: %s\n", command_file_path);
+        return 1;
+    }
+
+    if (run_turn && session_commands.size() > 1) {
+        fprintf(stderr, "--run-turn accepts only one command. Use --run-session for multiple commands.\n");
+        return 1;
+    }
+
+    if (run_turn && !session_commands.empty()) {
+        player_command = session_commands.back().c_str();
+    }
+
     if (print_llama_info_only) {
         liminal::PrintLlmRuntimeInfo(stdout);
         liminal::ShutdownLlmRuntime();
@@ -280,27 +476,33 @@ int main(int argc, char** argv)
     }
 
     if (dump_turn_contract || dump_scene_audit_prompt) {
-        liminal::HardState hard_state = liminal::MakeInitialHardState();
-        liminal::SoftState soft_state = liminal::MakeInitialSoftState();
-        liminal::SpatialState spatial_state;
-        if (!liminal::BuildCanonicalSpatialState(selected_location, &spatial_state)) {
-            fprintf(stderr, "Cannot build canonical spatial state for location.\n");
+        liminal::SessionState session_state;
+        if (load_state_path) {
+            if (!LoadSessionStateFromPath(load_state_path, &session_state, error_buffer, sizeof(error_buffer))) {
+                fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot load session state.");
+                return 1;
+            }
+        } else if (!liminal::InitializeSessionState(selected_location, &session_state, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot initialize session state.");
             return 1;
         }
-        hard_state.current_location_id = selected_location;
-        hard_state.alert_level = spatial_state.alert_level;
 
         if (dump_turn_contract) {
-            printf("%s\n", liminal::BuildTurnPrompt(hard_state, soft_state, spatial_state, player_command, true).c_str());
+            printf(
+                "%s\n",
+                liminal::BuildTurnPrompt(
+                    session_state.hard_state,
+                    session_state.soft_state,
+                    session_state.spatial_state,
+                    &session_state.history,
+                    player_command,
+                    true)
+                    .c_str());
         } else {
-            printf("%s\n", liminal::BuildSceneAuditPrompt(spatial_state).c_str());
+            printf("%s\n", liminal::BuildSceneAuditPrompt(session_state.spatial_state).c_str());
         }
         return 0;
     }
-
-    liminal::Scene scene;
-    char error_buffer[512];
-    memset(error_buffer, 0, sizeof(error_buffer));
 
     const std::chrono::steady_clock::time_point load_start = std::chrono::steady_clock::now();
     if (audit_scene_text_path) {
@@ -321,47 +523,113 @@ int main(int argc, char** argv)
             return 1;
         }
     } else if (run_turn) {
-        headless_turn_config.prefer_candidate_scene = prefer_candidate_scene;
-        liminal::HeadlessTurnResult turn_result;
-        if (!liminal::RunHeadlessTurn(selected_location, player_command, headless_turn_config, &turn_result, error_buffer, sizeof(error_buffer))) {
-            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Headless turn failed.");
+        liminal::SessionState session_state;
+        if (load_state_path) {
+            if (!LoadSessionStateFromPath(load_state_path, &session_state, error_buffer, sizeof(error_buffer))) {
+                fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot load session state.");
+                return 1;
+            }
+        } else if (!liminal::InitializeSessionState(selected_location, &session_state, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot initialize session state.");
             return 1;
         }
 
+        headless_turn_config.prefer_candidate_scene = prefer_candidate_scene;
+        liminal::HeadlessTurnResult turn_result;
+        if (!liminal::RunHeadlessTurnFromState(session_state, player_command, headless_turn_config, &turn_result, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Headless turn failed.");
+            return 1;
+        }
+        liminal::UpdateSessionStateFromTurn(player_command, turn_result, &session_state);
+        if (save_state_path && !SaveSessionStateToPath(save_state_path, session_state, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot save session state.");
+            return 1;
+        }
         scene = turn_result.rendered_scene;
 
         printf("Headless turn completed.\n");
-        printf("Prompt tokens: %d\n", turn_result.prompt_tokens);
-        printf("Generated tokens: %d\n", turn_result.generated_tokens);
-        printf("Inference time: %.2f ms\n", turn_result.inference_time_ms);
-        printf("Intent: %s\n", turn_result.turn_result.intent.empty() ? "(empty)" : turn_result.turn_result.intent.c_str());
-        printf("Narration: %s\n", turn_result.turn_result.narration.empty() ? "(empty)" : turn_result.turn_result.narration.c_str());
-        if (!turn_result.turn_result.clarification.empty()) {
-            printf("Clarification: %s\n", turn_result.turn_result.clarification.c_str());
+        PrintTurnSummary(turn_result, dump_raw_turn);
+        if (dump_session_state) {
+            printf("\n");
+            liminal::PrintSessionStateSummary(session_state, stdout);
         }
-        printf("Initial location: %s\n", liminal::LocationIdToString(turn_result.initial_spatial_state.location_id));
-        printf("Updated location: %s\n", liminal::LocationIdToString(turn_result.updated_spatial_state.location_id));
-        printf(
-            "Candidate scene audit: %s\n",
-            turn_result.turn_result.candidate_scene_included
-                ? (turn_result.candidate_scene_valid ? "valid" : "invalid")
-                : "not provided");
-        if (turn_result.turn_result.candidate_scene_included && turn_result.candidate_scene_valid) {
-            printf(
-                "Candidate scene stats: %zu triangles, %zu materials\n",
-                turn_result.candidate_scene.triangles.size(),
-                turn_result.candidate_scene.materials.size());
-        } else if (turn_result.turn_result.candidate_scene_included && !turn_result.candidate_scene_error.empty()) {
-            printf("Candidate scene error: %s\n", turn_result.candidate_scene_error.c_str());
+        if (dump_session_history) {
+            printf("\n");
+            liminal::PrintSessionHistory(session_state, stdout);
         }
-        printf(
-            "Rendered scene source: %s\n",
-            turn_result.used_candidate_scene_for_render ? "candidate_scene_text" : "compiled_spatial_state");
-        if (dump_raw_turn) {
-            printf("\n=== Raw Turn Response ===\n%s\n", turn_result.raw_response_text.c_str());
-            if (!turn_result.raw_scene_audit_response_text.empty()) {
-                printf("\n=== Raw Scene Audit Response ===\n%s\n", turn_result.raw_scene_audit_response_text.c_str());
+    } else if (run_session) {
+        liminal::SessionState session_state;
+        if (load_state_path) {
+            if (!LoadSessionStateFromPath(load_state_path, &session_state, error_buffer, sizeof(error_buffer))) {
+                fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot load session state.");
+                return 1;
             }
+        } else if (!liminal::InitializeSessionState(selected_location, &session_state, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot initialize session state.");
+            return 1;
+        }
+
+        if (session_commands.empty()) {
+            session_commands.push_back(player_command);
+        }
+
+        headless_turn_config.prefer_candidate_scene = prefer_candidate_scene;
+        int total_prompt_tokens = 0;
+        int total_generated_tokens = 0;
+        double total_inference_time_ms = 0.0;
+        bool have_last_turn = false;
+        liminal::HeadlessTurnResult last_turn_result;
+
+        for (size_t index = 0; index < session_commands.size(); ++index) {
+            liminal::HeadlessTurnResult turn_result;
+            if (!liminal::RunHeadlessTurnFromState(
+                    session_state,
+                    session_commands[index].c_str(),
+                    headless_turn_config,
+                    &turn_result,
+                    error_buffer,
+                    sizeof(error_buffer))) {
+                fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Headless session turn failed.");
+                return 1;
+            }
+
+            printf("\n=== Session Turn %zu / %zu ===\n", index + 1, session_commands.size());
+            PrintTurnSummary(turn_result, dump_raw_turn);
+
+            total_prompt_tokens += turn_result.prompt_tokens;
+            total_generated_tokens += turn_result.generated_tokens;
+            total_inference_time_ms += turn_result.inference_time_ms;
+            scene = turn_result.rendered_scene;
+            last_turn_result = turn_result;
+            have_last_turn = true;
+            liminal::UpdateSessionStateFromTurn(session_commands[index].c_str(), turn_result, &session_state);
+        }
+
+        if (!have_last_turn) {
+            fprintf(stderr, "No session turn was executed.\n");
+            return 1;
+        }
+        if (save_state_path && !SaveSessionStateToPath(save_state_path, session_state, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot save session state.");
+            return 1;
+        }
+
+        printf("\nHeadless session completed.\n");
+        printf("Turns: %zu\n", session_commands.size());
+        printf("Total prompt tokens: %d\n", total_prompt_tokens);
+        printf("Total generated tokens: %d\n", total_generated_tokens);
+        printf("Total inference time: %.2f ms\n", total_inference_time_ms);
+        printf("Final location: %s\n", liminal::LocationIdToString(session_state.spatial_state.location_id));
+        printf(
+            "Last rendered scene source: %s\n",
+            last_turn_result.used_candidate_scene_for_render ? "candidate_scene_text" : "compiled_spatial_state");
+        if (dump_session_state) {
+            printf("\n");
+            liminal::PrintSessionStateSummary(session_state, stdout);
+        }
+        if (dump_session_history) {
+            printf("\n");
+            liminal::PrintSessionHistory(session_state, stdout);
         }
     } else {
         if (!liminal::LoadSceneFromPath(scene_path, &scene, error_buffer, sizeof(error_buffer))) {
@@ -381,7 +649,7 @@ int main(int argc, char** argv)
         scene.emissive_triangles.size());
     printf(
         "%s: %.2f ms\n",
-        run_turn ? "Preparation time" : "Load time",
+        (run_turn || run_session) ? "Preparation time" : "Load time",
         std::chrono::duration<double, std::milli>(load_end - load_start).count());
 
     const std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();

@@ -114,6 +114,123 @@ static std::string NormalizeCodeBlockText(const std::string& text)
     return TrimWhitespaceCopy(trimmed.substr(first_newline + 1, closing_fence - first_newline - 1));
 }
 
+static std::string CollapseWhitespaceCopy(const std::string& text)
+{
+    std::string output;
+    output.reserve(text.size());
+
+    bool previous_was_space = false;
+    for (size_t index = 0; index < text.size(); ++index) {
+        const char value = text[index];
+        const bool is_space = value == ' ' || value == '\t' || value == '\r' || value == '\n';
+        if (is_space) {
+            if (!previous_was_space && !output.empty()) {
+                output.push_back(' ');
+            }
+            previous_was_space = true;
+            continue;
+        }
+
+        output.push_back(value);
+        previous_was_space = false;
+    }
+
+    return TrimWhitespaceCopy(output);
+}
+
+static bool ExtractQuotedJsonField(const std::string& text, const char* key, std::string* value)
+{
+    if (!key || !value) {
+        return false;
+    }
+
+    const std::string pattern = std::string("\"") + key + "\"";
+    const size_t key_pos = text.find(pattern);
+    if (key_pos == std::string::npos) {
+        return false;
+    }
+
+    const size_t colon_pos = text.find(':', key_pos + pattern.size());
+    if (colon_pos == std::string::npos) {
+        return false;
+    }
+
+    size_t quote_pos = text.find('"', colon_pos + 1);
+    if (quote_pos == std::string::npos) {
+        return false;
+    }
+    ++quote_pos;
+
+    std::string output;
+    bool escaping = false;
+    for (size_t index = quote_pos; index < text.size(); ++index) {
+        const char current = text[index];
+        if (escaping) {
+            if (current == 'n' || current == 'r' || current == 't') {
+                output.push_back(' ');
+            } else {
+                output.push_back(current);
+            }
+            escaping = false;
+            continue;
+        }
+        if (current == '\\') {
+            escaping = true;
+            continue;
+        }
+        if (current == '"') {
+            *value = output;
+            return true;
+        }
+        output.push_back(current);
+    }
+
+    if (!output.empty()) {
+        *value = output;
+        return true;
+    }
+
+    return false;
+}
+
+static std::string BuildFallbackNarration(const std::string& raw_response_text)
+{
+    std::string extracted_narration;
+    if (ExtractQuotedJsonField(raw_response_text, "narration", &extracted_narration)) {
+        const std::string collapsed = CollapseWhitespaceCopy(extracted_narration);
+        if (!collapsed.empty()) {
+            return collapsed;
+        }
+    }
+
+    std::string text = CollapseWhitespaceCopy(NormalizeCodeBlockText(raw_response_text));
+    if (text.empty()) {
+        return "The system hesitates for a moment. The place remains unchanged.";
+    }
+
+    if (text.size() > 280) {
+        text.resize(280);
+        text.append("...");
+    }
+
+    if (text == "`" || text == "```" || text == "json") {
+        return "The system hesitates for a moment. The place remains unchanged.";
+    }
+
+    return text;
+}
+
+static TurnResult MakeFallbackTurnResult(const std::string& raw_response_text)
+{
+    TurnResult turn_result;
+    turn_result.intent = "fallback_noop";
+    ExtractQuotedJsonField(raw_response_text, "intent", &turn_result.intent);
+    turn_result.narration = BuildFallbackNarration(raw_response_text);
+    turn_result.clarification = "The world state was kept unchanged after a malformed model response.";
+    turn_result.continuity_notes.push_back("Malformed model response was ignored; hard state and spatial state were kept stable.");
+    return turn_result;
+}
+
 static bool ExtractFirstJsonObject(const char* text, std::string* object_text)
 {
     if (!text || !object_text) {
@@ -164,6 +281,53 @@ static bool ExtractFirstJsonObject(const char* text, std::string* object_text)
     }
 
     return false;
+}
+
+static bool RepairTurnResultJson(
+    const HeadlessTurnConfig& config,
+    const std::string& raw_response_text,
+    TurnResult* turn_result,
+    std::string* repair_response_text,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    std::vector<LlmPromptMessage> repair_messages;
+    repair_messages.push_back(LlmPromptMessage());
+    repair_messages.back().role = "system";
+    repair_messages.back().content =
+        "You repair malformed structured interactive-fiction turn outputs. "
+        "Return valid JSON only. Do not use markdown fences. "
+        "If a field is missing, keep it empty or use no-op deltas.";
+    repair_messages.push_back(LlmPromptMessage());
+    repair_messages.back().role = "user";
+    repair_messages.back().content =
+        std::string("Rewrite the following malformed output into exactly one JSON object matching this schema.\n\n") +
+        BuildTurnResultSchemaText() +
+        "\n\nMalformed output to repair\n" +
+        raw_response_text;
+
+    LlmGenerationConfig repair_config = config.generation_config;
+    repair_config.use_json_grammar = false;
+
+    LlmGenerationResult repair_generation_result;
+    if (!GenerateChatCompletion(repair_config, repair_messages, &repair_generation_result)) {
+        SetError(
+            error_buffer,
+            error_buffer_size,
+            "LLM JSON repair failed: %s",
+            repair_generation_result.error_message.empty() ? "unknown error" : repair_generation_result.error_message.c_str());
+        return false;
+    }
+
+    if (repair_response_text) {
+        *repair_response_text = repair_generation_result.response_text;
+    }
+
+    if (!ParseTurnResultJson(repair_generation_result.response_text.c_str(), turn_result, error_buffer, error_buffer_size)) {
+        return false;
+    }
+
+    return true;
 }
 
 static bool ReadBoolValue(const json& object, const char* key, bool default_value)
@@ -358,6 +522,30 @@ bool ParseTurnResultJson(
     }
 }
 
+bool InitializeSessionState(
+    LocationId initial_location_id,
+    SessionState* session_state,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (!session_state) {
+        SetError(error_buffer, error_buffer_size, "Invalid session state: %s", "(null)");
+        return false;
+    }
+
+    *session_state = SessionState();
+    session_state->hard_state = MakeInitialHardState();
+    session_state->soft_state = MakeInitialSoftState();
+    session_state->hard_state.current_location_id = initial_location_id;
+    if (!BuildCanonicalSpatialState(initial_location_id, &session_state->spatial_state)) {
+        SetError(error_buffer, error_buffer_size, "Cannot build canonical spatial state: %s", LocationIdToString(initial_location_id));
+        return false;
+    }
+    session_state->hard_state.alert_level = session_state->spatial_state.alert_level;
+    NormalizeSessionState(session_state);
+    return true;
+}
+
 void ApplyTurnResult(
     const TurnResult& turn_result,
     HardState* hard_state,
@@ -390,8 +578,32 @@ void ApplyTurnResult(
     }
 }
 
-bool RunHeadlessTurn(
-    LocationId initial_location_id,
+void UpdateSessionStateFromTurn(
+    const char* player_command,
+    const HeadlessTurnResult& turn_result,
+    SessionState* session_state)
+{
+    if (!session_state) {
+        return;
+    }
+
+    session_state->hard_state = turn_result.updated_hard_state;
+    session_state->soft_state = turn_result.updated_soft_state;
+    session_state->spatial_state = turn_result.updated_spatial_state;
+
+    SessionTurnRecord record;
+    record.turn_number = turn_result.initial_hard_state.turn_number;
+    record.location_id = turn_result.updated_spatial_state.location_id;
+    record.player_command = player_command ? player_command : "";
+    record.intent = turn_result.turn_result.intent;
+    record.narration = turn_result.turn_result.narration;
+    record.clarification = turn_result.turn_result.clarification;
+    session_state->history.push_back(record);
+    NormalizeSessionState(session_state);
+}
+
+bool RunHeadlessTurnFromState(
+    const SessionState& initial_session_state,
     const char* player_command,
     const HeadlessTurnConfig& config,
     HeadlessTurnResult* result,
@@ -404,19 +616,15 @@ bool RunHeadlessTurn(
     }
 
     *result = HeadlessTurnResult();
-    result->initial_hard_state = MakeInitialHardState();
-    result->initial_hard_state.current_location_id = initial_location_id;
-    result->initial_soft_state = MakeInitialSoftState();
-    if (!BuildCanonicalSpatialState(initial_location_id, &result->initial_spatial_state)) {
-        SetError(error_buffer, error_buffer_size, "Cannot build canonical spatial state: %s", LocationIdToString(initial_location_id));
-        return false;
-    }
-    result->initial_hard_state.alert_level = result->initial_spatial_state.alert_level;
+    result->initial_hard_state = initial_session_state.hard_state;
+    result->initial_soft_state = initial_session_state.soft_state;
+    result->initial_spatial_state = initial_session_state.spatial_state;
 
     const std::string user_prompt = BuildTurnPrompt(
         result->initial_hard_state,
         result->initial_soft_state,
         result->initial_spatial_state,
+        &initial_session_state.history,
         player_command,
         false);
 
@@ -447,7 +655,20 @@ bool RunHeadlessTurn(
     result->inference_time_ms = generation_result.inference_time_ms;
 
     if (!ParseTurnResultJson(generation_result.response_text.c_str(), &result->turn_result, error_buffer, error_buffer_size)) {
-        return false;
+        char parse_error[512];
+        memset(parse_error, 0, sizeof(parse_error));
+        if (!RepairTurnResultJson(
+                config,
+                generation_result.response_text,
+                &result->turn_result,
+                &result->repair_response_text,
+                parse_error,
+                sizeof(parse_error))) {
+            result->turn_result = MakeFallbackTurnResult(generation_result.response_text);
+            result->used_turn_fallback = true;
+        } else {
+            result->used_turn_repair = true;
+        }
     }
 
     result->updated_hard_state = result->initial_hard_state;
@@ -502,6 +723,21 @@ bool RunHeadlessTurn(
     }
 
     return true;
+}
+
+bool RunHeadlessTurn(
+    LocationId initial_location_id,
+    const char* player_command,
+    const HeadlessTurnConfig& config,
+    HeadlessTurnResult* result,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    SessionState session_state;
+    if (!InitializeSessionState(initial_location_id, &session_state, error_buffer, error_buffer_size)) {
+        return false;
+    }
+    return RunHeadlessTurnFromState(session_state, player_command, config, result, error_buffer, error_buffer_size);
 }
 
 }  // namespace liminal

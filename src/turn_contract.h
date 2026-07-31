@@ -14,6 +14,7 @@ std::string BuildTurnPrompt(
     const HardState& hard_state,
     const SoftState& soft_state,
     const SpatialState& spatial_state,
+    const std::vector<SessionTurnRecord>* recent_history,
     const char* player_command,
     bool include_candidate_scene_text);
 std::string BuildSceneAuditPrompt(const SpatialState& spatial_state);

@@ -1,0 +1,60 @@
+{
+  "hard_state": {
+    "alert_level": 2,
+    "cooling_state": "stable",
+    "current_location_id": "roof_watch",
+    "inventory_items": [],
+    "named_entities": [
+      "duty_officer"
+    ],
+    "power_state": "stable",
+    "turn_number": 3,
+    "unresolved_threats": [
+      "possible_external_attack"
+    ],
+    "water_state": "stable"
+  },
+  "history": [
+    {
+      "clarification": "Do you want to investigate the light, check the crate, or return to the parapet for a better view?",
+      "intent": "observe_horizon",
+      "location_id": "roof_watch",
+      "narration": "The dusk haze obscures the desert horizon, but you spot a faint, flickering light—possibly a distant vehicle or signal. The cooling unit hums steadily, though the crate near the parapet casts an ominous shadow.",
+      "player_command": "observe the horizon",
+      "turn_number": 1
+    },
+    {
+      "clarification": "The world state was kept unchanged after a malformed model response.",
+      "intent": "fallback_noop",
+      "location_id": "roof_watch",
+      "narration": "```json { \"intent\": \"inspect_cooling_unit\", \"narration\": \"The cooling unit’s exterior is cracked along its seams, but the fan spins smoothly despite the strain. A faint hissing suggests internal pressure—likely refrigerant—but the casing is too hot to touch. The humming is ...",
+      "player_command": "inspect the cooling unit",
+      "turn_number": 2
+    }
+  ],
+  "soft_state": {
+    "active_hypotheses": [
+      "the threat may be real",
+      "the institution may be manufacturing the threat"
+    ],
+    "atmosphere": "administrative, dry, watchful",
+    "rolling_summary": "```json { \"intent\": \"inspect_cooling_unit\", \"narration\": \"The cooling unit’s exterior is cracked along its seams, but the fan spins smoothly despite the strain. A faint hissing suggests internal pressure—likely refrigerant—but the casing is too hot to touch. The humming is ...",
+    "tolerated_incoherences": [
+      "Malformed model response was ignored; hard state and spatial state were kept stable."
+    ]
+  },
+  "spatial_state": {
+    "alert_level": 2,
+    "anchors": [],
+    "blocked_exits": [],
+    "canonical_fixture": "assets/scenes/datacenter_roof_watch.scene",
+    "desert_state": "dusty",
+    "interior_density": "sparse",
+    "location_archetype": "watch_post_exterior",
+    "location_id": "roof_watch",
+    "spatial_anomalies": [],
+    "time_of_day": "dusk",
+    "visibility_level": "low",
+    "visible_objects": []
+  }
+}

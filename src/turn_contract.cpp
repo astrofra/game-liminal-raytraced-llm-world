@@ -28,6 +28,32 @@ static void AppendStringList(std::string* text, const char* label, const std::ve
     text->append("\n");
 }
 
+static void AppendRecentHistory(std::string* text, const std::vector<SessionTurnRecord>* history)
+{
+    text->append("\nRecent session history\n");
+    if (!history || history->empty()) {
+        text->append("(none)\n");
+        return;
+    }
+
+    const size_t max_entries = 4;
+    const size_t start_index = history->size() > max_entries ? history->size() - max_entries : 0;
+    for (size_t index = start_index; index < history->size(); ++index) {
+        const SessionTurnRecord& record = (*history)[index];
+        text->append("turn ");
+        text->append(std::to_string(record.turn_number));
+        text->append(" @ ");
+        text->append(LocationIdToString(record.location_id));
+        text->append("\n");
+        AppendLabelValue(text, "command: ", record.player_command.c_str());
+        AppendLabelValue(text, "intent: ", record.intent.c_str());
+        AppendLabelValue(text, "narration: ", record.narration.c_str());
+        if (!record.clarification.empty()) {
+            AppendLabelValue(text, "clarification: ", record.clarification.c_str());
+        }
+    }
+}
+
 }  // namespace
 
 std::string BuildTurnResultSchemaText()
@@ -138,6 +164,7 @@ std::string BuildTurnPrompt(
     const HardState& hard_state,
     const SoftState& soft_state,
     const SpatialState& spatial_state,
+    const std::vector<SessionTurnRecord>* recent_history,
     const char* player_command,
     bool include_candidate_scene_text)
 {
@@ -162,6 +189,7 @@ std::string BuildTurnPrompt(
     AppendLabelValue(&text, "atmosphere: ", soft_state.atmosphere.c_str());
     AppendStringList(&text, "active_hypotheses: ", soft_state.active_hypotheses);
     AppendStringList(&text, "tolerated_incoherences: ", soft_state.tolerated_incoherences);
+    AppendRecentHistory(&text, recent_history);
 
     text += "\nCurrent spatial brief\n";
     text += BuildSpatialBriefText(spatial_state);

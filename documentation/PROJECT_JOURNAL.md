@@ -784,3 +784,64 @@ Ce qui reste fragile :
 Prochaine etape recommandee :
 
 Enchainer sur une vraie boucle multi-tour avec historique, et introduire un validateur / reparateur plus riche pour les deltas spatiaux et les scenes candidates.
+
+## 2026-07-31 - Iteration 0019 - Session multi-tour persistante et fallback no-op
+
+Objectif :
+
+Passer du simple tour headless a une vraie session chargeable/sauvegardable, capable de survivre a une sortie LLM mal formee.
+
+Travail effectue :
+
+- ajout de `SessionState` et `SessionTurnRecord`
+- serialisation / deserialisation JSON de la session
+- chargement / sauvegarde via CLI
+- historique recent injecte dans le prompt de tour
+- ajout de `RunHeadlessTurnFromState()` et `UpdateSessionStateFromTurn()`
+- ajout des options CLI :
+  - `--run-session`
+  - `--command-file`
+  - `--load-state`
+  - `--save-state`
+  - `--dump-session-state`
+  - `--dump-session-history`
+- ajout d'un repair LLM pour tenter de recuperer un JSON de tour mal forme
+- ajout d'un fallback no-op si parse initial + repair echouent
+- validation pratique d'une session a deux tours puis d'une reprise depuis JSON
+
+Resultat :
+
+Le projet sait maintenant enchaîner plusieurs commandes sur un meme etat de monde, sauvegarder cet etat, le recharger plus tard, et continuer sans repartir du lieu canonique initial.
+
+Observations :
+
+- le repair ne suffit pas toujours
+- le fallback no-op remplit bien son role de garde-fou de jouabilite
+- l'historique recent dans le prompt augmente le contexte disponible pour le modele
+
+Mesures relevees :
+
+- session `observe the horizon` puis `inspect the cooling unit` :
+  - `2` tours executes
+  - `19669.71 ms` d'inference totale
+  - fallback no-op declenche au second tour
+- reprise `check the crate` depuis le JSON sauvegarde :
+  - prompt `1079` tokens
+  - generation `448` tokens
+  - environ `10942.42 ms` d'inference
+
+Ce qui a bien marche :
+
+- la persistance JSON est suffisante pour un v1 headless
+- le moteur ne crash plus sur une sortie de tour inexploitable
+- le dernier rendu reste bien derive de la voie compilee deterministe
+
+Ce qui reste fragile :
+
+- le fallback no-op reste esthetiquement brut
+- la scene candidate libre du modele reste souvent invalide
+- la session ne gere pas encore de boucle temps reel, d'entree interactive ou de presentation SDL3
+
+Prochaine etape recommandee :
+
+Attaquer une vraie boucle de jeu interactive locale, d'abord en terminal enrichi ou directement via SDL3, en reutilisant la session persistante comme noyau.
