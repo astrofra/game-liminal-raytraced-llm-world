@@ -1,6 +1,6 @@
 # Technical State
 
-Derniere mise a jour : 2026-07-30
+Derniere mise a jour : 2026-07-31
 
 ## Resume
 
@@ -8,7 +8,16 @@ Le depot contient actuellement un premier module de rendu natif en C++11 centre 
 
 Ce module constitue un bootstrap du futur sous-systeme de rendu. Il ne s'agit pas encore du renderer final du jeu, mais d'une premiere base executable, compilable et documentee.
 
-Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cpp` avec acceleration CUDA autour de `Ministral 3 8B`, mais cette partie n'est pas encore integree dans le code du depot.
+Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cpp` avec acceleration CUDA autour de `Ministral 3 8B`, et le depot contient deja une couche minimale d'introspection runtime.
+
+En revanche, la boucle de jeu, l'inference de tour et la future couche multimedia `SDL3` ne sont pas encore branchees.
+
+## Verrous d'architecture actes
+
+- runtime narratif local : `llama.cpp`
+- acceleration principale de developpement : `CUDA`
+- modele cible v1 : `Ministral 3 8B Instruct 2512`
+- future couche multimedia multi-OS : `SDL3`
 
 ## Fonctionnalites presentes
 
@@ -140,7 +149,8 @@ Ces chiffres sont seulement des reperes de travail. Ils ne constituent pas encor
 - pas encore d'inference de tour, ni de prompt assembly, ni de schema de sortie structuree
 - pas d'API integrable propre pour un futur runtime de jeu
 - pas d'accumulation progressive pendant l'inference
-- pas d'UI, pas de transcript, pas de boucle narrative
+- pas encore de couche `SDL3` pour fenetre, transcript, ligne de commande parser et presentation temps reel du bitmap
+- pas d'UI jouable, pas de transcript integre, pas de boucle narrative
 - pas de sauvegarde/chargement
 - pas de telemetrie CPU/GPU/memoire
 - pas de tests automatises

@@ -228,6 +228,7 @@ Preferred direction:
 - native desktop executable
 - `llama.cpp` embedded or linked directly
 - renderer implemented in the same native runtime
+- `SDL3` as the preferred cross-platform media layer for window creation, input, audio, and framebuffer presentation
 - simple UI layer for text input, transcript view, image display, and debug access
 
 Pragmatic implementation preference:
@@ -480,6 +481,8 @@ A strong optional direction is to let the renderer accumulate samples while the 
 
 The UI should remain minimal.
 
+The preferred implementation path for the native UI layer is `SDL3`, with a project-specific interface drawn directly on top rather than a heavyweight generic application framework.
+
 Required elements:
 
 - text transcript
@@ -497,6 +500,8 @@ Optional but strongly recommended elements:
 - raw structured turn output view
 
 The interface should feel closer to a tool, terminal, or surveillance device than to a glossy game HUD.
+
+A pragmatic v1 layout is an upper viewport for the grayscale rendered image and a lower textual area for transcript plus parser-style command input.
 
 ## 14. Save, Load, and Session Logging
 

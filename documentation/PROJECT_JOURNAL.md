@@ -344,3 +344,36 @@ Le depot dispose maintenant d'un helper minimal pour faire un smoke test du LLM 
 Observation :
 
 Le chemin `ask_ministral.bat "Quel est le sens de la vie ?"` suffit maintenant a valider rapidement que le modele, `llama-cli` et le backend CUDA cooperent bien.
+
+## 2026-07-31 - Iteration 0010 - Verrouillage de la couche multimedia cible
+
+Objectif :
+
+Fermer le dernier grand choix d'infrastructure cote I/O et HMI avant d'attaquer la boucle de jeu interactive.
+
+Travail effectue :
+
+- comparaison des options `SDL3`, `libretro`, `GLFW` et `sokol`
+- evaluation du besoin reel du projet :
+  - fenetre native multi-OS
+  - saisie texte clavier de type parser
+  - historique de commandes
+  - affichage d'un bitmap produit par le renderer CPU
+  - audio simple possible plus tard
+- validation de `SDL3` comme couche multimedia principale
+- rejet de `libretro` comme architecture primaire, tout en le laissant comme piste de port secondaire eventuelle
+- mise a jour de la documentation d'architecture et d'etat technique
+
+Resultat :
+
+Le projet dispose maintenant d'un choix explicite et stable pour la future couche de fenetre, d'evenements, de texte et de presentation : `SDL3`.
+
+Observations :
+
+- `SDL3` colle bien a une fiction interactive desktop avec viewport image + transcript + ligne de commande
+- `libretro` reste interessant pour une diffusion ecosystemique, mais pas comme coeur d'application a ce stade
+- ce verrou retire une ambiguite importante avant l'implementation de la premiere tranche verticale jouable
+
+Prochaine etape recommandee :
+
+Commencer la boucle verticale `GameState -> input texte -> appel LLM -> resultat structure -> scene -> rendu -> presentation SDL3`.

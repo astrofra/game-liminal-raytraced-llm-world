@@ -1,6 +1,6 @@
 # Decisions
 
-Derniere mise a jour : 2026-07-30
+Derniere mise a jour : 2026-07-31
 
 ## 2026-07-29 - Base du renderer en C++11
 
@@ -214,3 +214,20 @@ Raison :
 Consequence :
 
 Le projet peut maintenant compiler un binaire `Release` qui linke `llama.cpp`, detecte le backend CUDA et expose un point de verification minimal via `--llama-info`.
+
+## 2026-07-31 - Retenir `SDL3` comme couche multimedia multi-OS
+
+Decision :
+
+La future couche fenetre, evenements, saisie texte, presentation bitmap et audio simple du projet reposera sur `SDL3`.
+
+Raison :
+
+- couvre nativement la creation de fenetre, les evenements clavier, la saisie texte Unicode, la presentation d'une image CPU dans une texture GPU et l'audio basique
+- reste portable entre Windows, macOS et Linux sans exiger de frontend externe
+- correspond mieux a une fiction interactive desktop a interface parser qu'une cible `libretro` prise comme architecture principale
+- laisse ouverte la possibilite d'un port ou backend secondaire plus tard, sans imposer cette contrainte maintenant
+
+Consequence :
+
+Les prochaines iterations de la boucle verticale devront viser un runtime natif avec `SDL3` pour la HMI, le transcript, la ligne de commande parser et l'affichage temps reel du viewport.
