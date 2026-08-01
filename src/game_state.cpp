@@ -81,6 +81,14 @@ static int ReadIntNode(const json& object, const char* key, int default_value)
     return object[key].get<int>();
 }
 
+static bool ReadBoolNode(const json& object, const char* key, bool default_value)
+{
+    if (!object.is_object() || !object.contains(key) || !object[key].is_boolean()) {
+        return default_value;
+    }
+    return object[key].get<bool>();
+}
+
 static void SetError(char* buffer, size_t buffer_size, const char* format, const char* argument)
 {
     if (!buffer || buffer_size == 0) {
@@ -176,6 +184,8 @@ static json MakeGeneratedRoomsJson(const std::vector<GeneratedRoom>& rooms)
         item["room_id"] = rooms[index].room_id;
         item["spatial_state"] = MakeSpatialStateJson(rooms[index].spatial_state);
         item["scene_text"] = rooms[index].scene_text;
+        item["metadata_fallback_used"] = rooms[index].metadata_fallback_used;
+        item["scene_fallback_used"] = rooms[index].scene_fallback_used;
         node.push_back(item);
     }
     return node;
@@ -307,6 +317,8 @@ static void ParseGeneratedRoomsNode(const json& node, std::vector<GeneratedRoom>
             ParseSpatialStateNode(node[index]["spatial_state"], &room.spatial_state);
         }
         room.scene_text = ReadStringNode(node[index], "scene_text");
+        room.metadata_fallback_used = ReadBoolNode(node[index], "metadata_fallback_used", false);
+        room.scene_fallback_used = ReadBoolNode(node[index], "scene_fallback_used", false);
         if (!room.room_id.empty()) {
             rooms->push_back(room);
         }

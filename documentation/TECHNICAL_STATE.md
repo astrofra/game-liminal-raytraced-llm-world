@@ -106,12 +106,14 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - event loop non bloquante
   - worker thread dedie a l'inference et au raytracing
   - flux brut du modele et `.scene` dans le terminal
+  - ligne terminal de provenance apres chaque tour pour distinguer scene canonique, salle generee, fallback metadata et fallback scene
   - panneau de transcript joueur avec narration finale seulement
   - rendu TTF joueur via `SDL3_ttf` et fontes `Zilla Slab`
   - segments `*highlightes*` rendus avec `Zilla Slab Highlight`
   - ligne de commande avec edition clavier et historique haut/bas
   - ligne de statut avec spinner ASCII pour distinguer `llm` et `cpu`
   - annulation best-effort via `Escape`
+- Script Python `scripts/generate_prefab_catalog.py` pour rendre chaque prefab supporte, stocker les `.scene`/`.png` d'audit et assembler un unique `documentation/PREFAB_CATALOG.md`.
 - Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`, desormais en buffer RGB.
 - Options CLI de boucle fonctionnelle :
   - `--run-turn`

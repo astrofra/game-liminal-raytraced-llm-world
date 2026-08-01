@@ -1,0 +1,9 @@
+room "prefab_cooling_unit catalog"
+camera eye(-5.50,2.50,-6.40) target(0.00,1.40,0.00) up(0.00,1.00,0.00) fov(42.0)
+spotlight panel(1.00,1.00) offset(0.00,0.10,0.35) range(18.0) cone(16.0,34.0) intensity(220.0)
+plane "catalog_floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(18.0,18.0) gray(0.20)
+box "catalog_backdrop" pos(0.0,5.6,7.2) size(20.0,11.2,0.4) gray(0.30)
+box "catalog_left_wall" pos(-9.8,4.0,0.0) size(0.4,8.0,18.0) gray(0.26)
+box "catalog_right_wall" pos(9.8,4.0,0.0) size(0.4,8.0,18.0) gray(0.26)
+box "catalog_ceiling" pos(0.0,8.0,0.0) size(20.0,0.4,18.0) gray(0.24)
+prefab_cooling_unit "catalog_cooling_unit" pos(0.0,1.35,0.0) size(1.20,2.70,3.10) gray(0.25) detail(0.37)

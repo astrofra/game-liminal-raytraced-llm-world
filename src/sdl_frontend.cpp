@@ -956,6 +956,83 @@ static bool LoadSceneForSessionPlace(
     return CompileSpatialStateToScene(session_state.spatial_state, scene, error_buffer, error_buffer_size);
 }
 
+static const GeneratedRoom* FindGeneratedRoomForPlace(
+    const SessionState& session_state,
+    const std::string& place_id)
+{
+    if (!IsGeneratedPlaceId(place_id)) {
+        return 0;
+    }
+
+    for (size_t index = 0; index < session_state.generated_rooms.size(); ++index) {
+        if (session_state.generated_rooms[index].room_id == place_id) {
+            return &session_state.generated_rooms[index];
+        }
+    }
+
+    return 0;
+}
+
+static bool TurnCreatesCurrentGeneratedRoom(
+    const HeadlessTurnResult& turn_result,
+    const std::string& place_id)
+{
+    for (size_t index = 0; index < turn_result.generated_rooms_to_add.size(); ++index) {
+        if (turn_result.generated_rooms_to_add[index].room_id == place_id) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static const char* BoolSourceLabel(bool fallback_used)
+{
+    return fallback_used ? "fallback" : "llm";
+}
+
+static const char* RenderSourceLabel(
+    const SessionState& session_state,
+    const HeadlessTurnResult& turn_result)
+{
+    if (turn_result.used_candidate_scene_for_render) {
+        return "candidate-scene";
+    }
+    if (IsGeneratedPlaceId(session_state.current_place_id)) {
+        return "generated-room-cache";
+    }
+    return "compiled-spatial-state";
+}
+
+static void PrintTurnProvenance(
+    const SessionState& session_state,
+    const HeadlessTurnResult& turn_result)
+{
+    const std::string place_label = DescribeCurrentPlaceLabel(session_state);
+    if (!IsGeneratedPlaceId(session_state.current_place_id)) {
+        fprintf(
+            stdout,
+            "[turn-info] place=%s kind=canonical render=%s turn_fallback=%s\n",
+            place_label.c_str(),
+            RenderSourceLabel(session_state, turn_result),
+            turn_result.used_turn_fallback ? "yes" : "no");
+        fflush(stdout);
+        return;
+    }
+
+    const GeneratedRoom* room = FindGeneratedRoomForPlace(session_state, session_state.current_place_id);
+    fprintf(
+        stdout,
+        "[turn-info] place=%s kind=generated room=%s render=%s metadata=%s scene=%s turn_fallback=%s\n",
+        place_label.c_str(),
+        TurnCreatesCurrentGeneratedRoom(turn_result, session_state.current_place_id) ? "new" : "cached",
+        RenderSourceLabel(session_state, turn_result),
+        room ? BoolSourceLabel(room->metadata_fallback_used) : "unknown",
+        room ? BoolSourceLabel(room->scene_fallback_used) : "unknown",
+        turn_result.used_turn_fallback ? "yes" : "no");
+    fflush(stdout);
+}
+
 static bool OnHeadlessTurnStream(
     HeadlessTurnStreamPhase phase,
     const char*,
@@ -1047,6 +1124,7 @@ static void RunTurnWorker(
     {
         std::lock_guard<std::mutex> lock(shared_state->mutex);
         CloseTerminalStreamLocked(shared_state);
+        PrintTurnProvenance(updated_session_state, turn_result);
         shared_state->activity = kWorkerActivityRenderer;
         shared_state->status_text = "Raytracing scene...";
     }

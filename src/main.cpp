@@ -229,6 +229,10 @@ static void PrintTurnSummary(const liminal::HeadlessTurnResult& turn_result, boo
         turn_result.used_candidate_scene_for_render
             ? "candidate_scene_text"
             : (liminal::IsGeneratedPlaceId(turn_result.updated_place_id) ? "generated_room_cache" : "compiled_spatial_state");
+    const char* generated_room_metadata_source =
+        turn_result.generated_room_metadata_fallback_used ? "fallback" : "llm";
+    const char* generated_room_scene_source =
+        turn_result.generated_room_scene_fallback_used ? "fallback" : "llm";
 
     printf("Turn %d completed.\n", turn_result.initial_hard_state.turn_number);
     printf("Prompt tokens: %d\n", turn_result.prompt_tokens);
@@ -261,6 +265,10 @@ static void PrintTurnSummary(const liminal::HeadlessTurnResult& turn_result, boo
     printf(
         "Rendered scene source: %s\n",
         rendered_scene_source);
+    if (!turn_result.generated_rooms_to_add.empty()) {
+        printf("Generated room metadata source: %s\n", generated_room_metadata_source);
+        printf("Generated room scene source: %s\n", generated_room_scene_source);
+    }
     if (dump_raw_turn) {
         printf("\n=== Raw Turn Response ===\n%s\n", turn_result.raw_response_text.c_str());
         if (!turn_result.repair_response_text.empty()) {

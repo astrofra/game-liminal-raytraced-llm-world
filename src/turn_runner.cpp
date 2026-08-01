@@ -1517,8 +1517,12 @@ bool RunHeadlessTurnFromState(
         generated_room.room_id = BuildGeneratedPlaceId(initial_session_state.next_generated_room_index);
         generated_room.spatial_state = draft.spatial_state;
         generated_room.scene_text = generated_scene_text;
+        generated_room.metadata_fallback_used = used_room_metadata_fallback;
+        generated_room.scene_fallback_used = used_room_scene_fallback;
 
         result->generated_rooms_to_add.push_back(generated_room);
+        result->generated_room_metadata_fallback_used = used_room_metadata_fallback;
+        result->generated_room_scene_fallback_used = used_room_scene_fallback;
         AddRoomLinkUnique(&result->room_links_to_add, result->initial_place_id, traversal_direction, generated_room.room_id);
         AddRoomLinkUnique(
             &result->room_links_to_add,

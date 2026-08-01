@@ -233,6 +233,14 @@ struct GeneratedRoom {
     std::string room_id;
     SpatialState spatial_state;
     std::string scene_text;
+    bool metadata_fallback_used;
+    bool scene_fallback_used;
+
+    GeneratedRoom()
+        : metadata_fallback_used(false)
+        , scene_fallback_used(false)
+    {
+    }
 };
 
 struct RoomLink {
