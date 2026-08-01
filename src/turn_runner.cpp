@@ -33,6 +33,8 @@ struct GeneratedRoomDraft {
     SpatialState spatial_state;
 };
 
+static void FinalizeGeneratedRoomDraft(GeneratedRoomDraft* draft, CardinalDirection direction);
+
 static void SetError(char* buffer, size_t buffer_size, const char* format, const char* argument)
 {
     if (!buffer || buffer_size == 0) {
@@ -159,6 +161,57 @@ static std::string CollapseWhitespaceCopy(const std::string& text)
     return TrimWhitespaceCopy(output);
 }
 
+static std::string ConstrainNarrationText(const std::string& text, size_t max_chars, int max_sentences)
+{
+    std::string constrained = CollapseWhitespaceCopy(text);
+    if (constrained.empty()) {
+        return constrained;
+    }
+
+    if (max_sentences > 0) {
+        int sentence_count = 0;
+        for (size_t index = 0; index < constrained.size(); ++index) {
+            const char value = constrained[index];
+            if (value == '.' || value == '!' || value == '?') {
+                ++sentence_count;
+                if (sentence_count >= max_sentences) {
+                    constrained = TrimWhitespaceCopy(constrained.substr(0, index + 1));
+                    break;
+                }
+            }
+        }
+    }
+
+    if (constrained.size() > max_chars) {
+        size_t split = constrained.rfind(' ', max_chars);
+        if (split == std::string::npos || split < max_chars / 2) {
+            split = max_chars;
+        }
+        constrained = TrimWhitespaceCopy(constrained.substr(0, split));
+        if (!constrained.empty()) {
+            constrained.append("...");
+        }
+    }
+
+    return constrained;
+}
+
+static void RemoveBlockedDirection(std::vector<std::string>* blocked_exits, CardinalDirection direction)
+{
+    if (!blocked_exits || direction == kDirectionUnknown) {
+        return;
+    }
+
+    for (size_t index = 0; index < blocked_exits->size();) {
+        CardinalDirection blocked_direction = kDirectionUnknown;
+        if (ParseCardinalDirection((*blocked_exits)[index].c_str(), &blocked_direction) && blocked_direction == direction) {
+            blocked_exits->erase(blocked_exits->begin() + index);
+            continue;
+        }
+        ++index;
+    }
+}
+
 static bool ExtractQuotedJsonField(const std::string& text, const char* key, std::string* value)
 {
     if (!key || !value) {
@@ -238,7 +291,7 @@ static std::string BuildFallbackNarration(const std::string& raw_response_text)
         return "The system hesitates for a moment. The place remains unchanged.";
     }
 
-    return text;
+    return ConstrainNarrationText(text, 280, 3);
 }
 
 static TurnResult MakeFallbackTurnResult(const std::string& raw_response_text)
@@ -430,6 +483,10 @@ static void ParseSpatialStateDeltaNode(const json& node, SpatialStateDelta* delt
     ParseInteriorDensity(ReadStringValue(node, "next_interior_density").c_str(), &delta->next_interior_density);
     delta->alert_level_changed = ReadBoolValue(node, "alert_level_changed", false);
     delta->next_alert_level = ReadIntValue(node, "next_alert_level", 0);
+    delta->anchors_present_changed = node.contains("anchors_present");
+    delta->visible_objects_changed = node.contains("visible_objects");
+    delta->blocked_exits_changed = node.contains("blocked_exits");
+    delta->spatial_anomalies_changed = node.contains("spatial_anomalies");
     delta->anchors_present = ReadStringArray(node.contains("anchors_present") ? node["anchors_present"] : json());
     delta->visible_objects = ReadStringArray(node.contains("visible_objects") ? node["visible_objects"] : json());
     delta->blocked_exits = ReadStringArray(node.contains("blocked_exits") ? node["blocked_exits"] : json());
@@ -504,10 +561,18 @@ static void ApplySpatialDelta(SpatialState* state, const SpatialStateDelta& delt
         state->alert_level = delta.next_alert_level;
     }
 
-    state->anchors = delta.anchors_present;
-    state->visible_objects = delta.visible_objects;
-    state->blocked_exits = delta.blocked_exits;
-    state->spatial_anomalies = delta.spatial_anomalies;
+    if (delta.anchors_present_changed) {
+        state->anchors = delta.anchors_present;
+    }
+    if (delta.visible_objects_changed) {
+        state->visible_objects = delta.visible_objects;
+    }
+    if (delta.blocked_exits_changed) {
+        state->blocked_exits = delta.blocked_exits;
+    }
+    if (delta.spatial_anomalies_changed) {
+        state->spatial_anomalies = delta.spatial_anomalies;
+    }
 }
 
 static std::string ToLowerAsciiCopy(const std::string& text)
@@ -519,6 +584,37 @@ static std::string ToLowerAsciiCopy(const std::string& text)
         }
     }
     return lower;
+}
+
+static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
+{
+    if (!spatial_state) {
+        return;
+    }
+
+    const std::string combined =
+        ToLowerAsciiCopy(spatial_state->room_title + " " + spatial_state->room_summary + " " + spatial_state->location_archetype);
+    const bool exterior =
+        combined.find("exterior") != std::string::npos ||
+        combined.find("roof") != std::string::npos ||
+        combined.find("gate") != std::string::npos ||
+        combined.find("desert") != std::string::npos ||
+        combined.find("watch") != std::string::npos ||
+        combined.find("perimeter") != std::string::npos;
+
+    if (exterior) {
+        AddUniqueString(&spatial_state->visible_objects, "warning placard");
+        AddUniqueString(&spatial_state->visible_objects, "service crate");
+        AddUniqueString(&spatial_state->visible_objects, "intercom post");
+        AddUniqueString(&spatial_state->visible_objects, "badge reader");
+        AddUniqueString(&spatial_state->visible_objects, "maintenance hatch");
+    } else {
+        AddUniqueString(&spatial_state->visible_objects, "service panel");
+        AddUniqueString(&spatial_state->visible_objects, "maintenance crate");
+        AddUniqueString(&spatial_state->visible_objects, "cooling keypad");
+        AddUniqueString(&spatial_state->visible_objects, "rack access door");
+        AddUniqueString(&spatial_state->visible_objects, "cabinet latch");
+    }
 }
 
 static bool TryParseTraversalCommand(const char* player_command, CardinalDirection* direction)
@@ -717,9 +813,16 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(const SessionState& ini
     draft.spatial_state.anchors.push_back(exterior ? "perimeter" : "service_lane");
     draft.spatial_state.anchors.push_back(exterior ? "compound_wall" : "utility_wall");
     draft.spatial_state.anchors.push_back(exterior ? "equipment_pad" : "maintenance_lane");
-    draft.spatial_state.visible_objects.push_back(exterior ? "crate" : "rack");
-    draft.spatial_state.visible_objects.push_back("cooling_unit");
-    draft.spatial_state.visible_objects.push_back(exterior ? "gate" : "crate");
+    if (exterior) {
+        draft.spatial_state.visible_objects.push_back("service crate");
+        draft.spatial_state.visible_objects.push_back("badge reader");
+        draft.spatial_state.visible_objects.push_back("warning placard");
+    } else {
+        draft.spatial_state.visible_objects.push_back("rack access door");
+        draft.spatial_state.visible_objects.push_back("service panel");
+        draft.spatial_state.visible_objects.push_back("maintenance crate");
+    }
+    FinalizeGeneratedRoomDraft(&draft, direction);
     return draft;
 }
 
@@ -772,7 +875,7 @@ static std::string BuildBlockedTraversalNarration(const SpatialState& spatial_st
         narration += " ";
         narration += spatial_state.room_summary;
     }
-    return narration;
+    return ConstrainNarrationText(narration, 220, 2);
 }
 
 static std::string BuildTraversalNarrationForKnownPlace(const SessionState& session_state, const std::string& place_id, CardinalDirection direction)
@@ -788,7 +891,40 @@ static std::string BuildTraversalNarrationForKnownPlace(const SessionState& sess
         narration += " ";
         narration += room->spatial_state.room_summary;
     }
-    return narration;
+    return ConstrainNarrationText(narration, 240, 3);
+}
+
+static void FinalizeGeneratedRoomDraft(GeneratedRoomDraft* draft, CardinalDirection direction)
+{
+    if (!draft) {
+        return;
+    }
+
+    draft->title = ConstrainNarrationText(draft->title, 72, 1);
+    if (draft->title.empty()) {
+        draft->title = "Generated Room";
+    }
+
+    if (draft->summary.empty()) {
+        draft->summary = SpatialFeelsExterior(draft->spatial_state)
+            ? "A sparse exterior service pocket at the edge of the datacenter."
+            : "A compact service room branching away from the current route.";
+    }
+    draft->summary = ConstrainNarrationText(draft->summary, 160, 2);
+
+    if (draft->arrival_narration.empty()) {
+        draft->arrival_narration = draft->summary.empty()
+            ? std::string("You move ") + CardinalDirectionToString(direction) + " into " + draft->title + "."
+            : draft->summary;
+    }
+    draft->arrival_narration = ConstrainNarrationText(draft->arrival_narration, 260, 3);
+
+    draft->spatial_state.room_title = draft->title;
+    draft->spatial_state.room_summary = draft->summary;
+    draft->spatial_state.location_id = kLocationUnknown;
+    draft->spatial_state.canonical_fixture.clear();
+    RemoveBlockedDirection(&draft->spatial_state.blocked_exits, OppositeCardinalDirection(direction));
+    EnsureActionableVisibleObjects(&draft->spatial_state);
 }
 
 static bool ParseGeneratedSpatialStateNode(const json& node, SpatialState* spatial_state)
@@ -814,6 +950,7 @@ static bool ParseGeneratedSpatialStateNode(const json& node, SpatialState* spati
 
 static bool ParseGeneratedRoomJson(
     const char* json_text,
+    CardinalDirection direction,
     GeneratedRoomDraft* draft,
     char* error_buffer,
     size_t error_buffer_size)
@@ -861,6 +998,7 @@ static bool ParseGeneratedRoomJson(
                 ? std::string("You enter ") + draft->title + "."
                 : draft->summary;
         }
+        FinalizeGeneratedRoomDraft(draft, direction);
         return true;
     } catch (const std::exception& exception) {
         SetError(error_buffer, error_buffer_size, "Failed to parse generated room JSON: %s", exception.what());
@@ -918,6 +1056,7 @@ static bool ApplyPlaceToState(
             SetError(error_buffer, error_buffer_size, "Cannot build canonical place: %s", place_id.c_str());
             return false;
         }
+        EnsureActionableVisibleObjects(spatial_state);
         hard_state->current_location_id = location_id;
         if (spatial_state->alert_level > 0) {
             hard_state->alert_level = spatial_state->alert_level;
@@ -934,6 +1073,7 @@ static bool ApplyPlaceToState(
     *spatial_state = room->spatial_state;
     spatial_state->location_id = kLocationUnknown;
     spatial_state->canonical_fixture.clear();
+    EnsureActionableVisibleObjects(spatial_state);
     hard_state->current_location_id = kLocationUnknown;
     if (spatial_state->alert_level > 0) {
         hard_state->alert_level = spatial_state->alert_level;
@@ -989,8 +1129,8 @@ bool ParseTurnResultJson(
         }
 
         turn_result->intent = ReadStringValue(root, "intent");
-        turn_result->narration = ReadStringValue(root, "narration");
-        turn_result->clarification = ReadStringValue(root, "clarification");
+        turn_result->narration = ConstrainNarrationText(ReadStringValue(root, "narration"), 280, 3);
+        turn_result->clarification = ConstrainNarrationText(ReadStringValue(root, "clarification"), 220, 2);
 
         if (root.contains("hard_state_delta")) {
             ParseHardStateDeltaNode(root["hard_state_delta"], &turn_result->hard_state_delta);
@@ -1033,6 +1173,7 @@ bool InitializeSessionState(
         SetError(error_buffer, error_buffer_size, "Cannot build canonical spatial state: %s", LocationIdToString(initial_location_id));
         return false;
     }
+    EnsureActionableVisibleObjects(&session_state->spatial_state);
     session_state->hard_state.alert_level = session_state->spatial_state.alert_level;
     NormalizeSessionState(session_state);
     return true;
@@ -1058,6 +1199,10 @@ void ApplyTurnResult(
             hard_state->current_location_id = spatial_state->location_id;
         }
         ++hard_state->turn_number;
+    }
+
+    if (spatial_state) {
+        EnsureActionableVisibleObjects(spatial_state);
     }
 
     if (soft_state) {
@@ -1220,7 +1365,12 @@ bool RunHeadlessTurnFromState(
 
             char metadata_error[512];
             metadata_error[0] = '\0';
-            if (!ParseGeneratedRoomJson(room_generation_result.response_text.c_str(), &draft, metadata_error, sizeof(metadata_error))) {
+            if (!ParseGeneratedRoomJson(
+                    room_generation_result.response_text.c_str(),
+                    traversal_direction,
+                    &draft,
+                    metadata_error,
+                    sizeof(metadata_error))) {
                 draft = MakeFallbackGeneratedRoomDraft(initial_session_state, traversal_direction);
                 used_room_metadata_fallback = true;
                 result->used_turn_fallback = true;
@@ -1351,6 +1501,7 @@ bool RunHeadlessTurnFromState(
         result->updated_spatial_state = generated_room.spatial_state;
         result->updated_spatial_state.location_id = kLocationUnknown;
         result->updated_spatial_state.canonical_fixture.clear();
+        EnsureActionableVisibleObjects(&result->updated_spatial_state);
         if (result->updated_spatial_state.alert_level > 0) {
             result->updated_hard_state.alert_level = result->updated_spatial_state.alert_level;
         }

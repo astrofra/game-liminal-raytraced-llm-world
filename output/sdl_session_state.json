@@ -1,235 +1,238 @@
 {
-  "current_place_id": "generated:room_0004",
+  "current_place_id": "generated:room_0003",
   "generated_rooms": [
     {
       "room_id": "generated:room_0001",
-      "scene_text": "room \"Observation Outpost\"\ncamera eye(0.0,1.7,-10.0) target(0.0,1.0,-2.0) up(0.0,1.0,0.0) fov(45.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.3) range(20.0) cone(10.0,30.0) intensity(60.0)\nsky zenith(0.01) horizon(0.22) nadir(0.00) band(0.30) curve(1.85) noise(0.10) stars(0.0032,1.50,0.090) seed(42)\n\nplane \"ground\" pos(0.0,0.0,-1.0) normal(0.0,1.0,0.0) size(12.0,12.0) gray(0.18)\nbox \"reinforced_door\" pos(0.0,0.5,-1.0) size(2.0,2.0,0.2) gray(0.35)\nbox \"desk\" pos(-1.5,0.5,-3.0) size(2.0,0.8,1.0) gray(0.25)\nbox \"tool_rack\" pos(1.5,0.5,-3.0) size(1.5,1.0,0.5) gray(0.20)\n\nprefab_gate \"entry_gate\" pos(0.0,0.5,-5.0) size(1.5,1.5,0.1) gray(0.28) detail(0.35)\nprefab_rack \"monitor_rack\" pos(-1.0,1.0,-3.5) size(1.0,0.5,0.5) gray(0.22) detail(0.30)\nprefab_crate \"tool_crate\" pos(1.0,0.5,-4.0) size(1.0,0.8,0.8) gray(0.20) detail(0.32)\n\nplane \"window\" pos(0.0,1.5,-6.0) normal(0.0,0.0,1.0) size(3.0,2.0) gray(0.15)\nbox \"cracked_monitor\" pos(-1.0,1.2,-3.5) size(0.8,0.5,0.1) gray(0.25)\nbox \"half_empty_mug\" pos(-1.2,0.7,-3.0) size(0.3,0.3,0.3) gray(0.18)\nbox \"peeling_sign\" pos(0.0,1.2,-3.0) size(1.0,0.5,0.05) gray(0.22)",
+      "scene_text": "room \"Access Tunnel\"\ncamera eye(0.0,1.75,-1.0) target(0.0,1.0,-5.0) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(10.0,25.0) intensity(50.0)\n\nplane \"floor_slope\" pos(0.0,-0.5,-3.0) normal(0.0,1.0,0.0) size(12.0,1.0) gray(0.18)\nplane \"tunnel_wall_left\" pos(-5.0,0.0,-3.0) normal(1.0,0.0,0.0) size(1.0,6.0) gray(0.22)\nplane \"tunnel_wall_right\" pos(5.0,0.0,-3.0) normal(-1.0,0.0,0.0) size(1.0,6.0) gray(0.22)\nplane \"ceiling\" pos(0.0,1.0,-3.0) normal(0.0,-1.0,0.0) size(12.0,1.0) gray(0.20)\n\nprefab_gate \"sliding_gate\" pos(0.0,0.5,-5.0) size(2.0,1.5,0.1) gray(0.25) detail(0.35)\nprefab_rack \"rack_access\" pos(-3.0,0.7,-2.0) size(1.0,1.5,0.8) gray(0.28) detail(0.30)\nprefab_cooling_unit \"ventilation_grille\" pos(3.0,0.5,-1.0) size(1.5,0.8,0.5) gray(0.32) detail(0.38)\nprefab_crate \"maintenance_crate\" pos(2.0,0.5,-4.0) size(1.2,0.8,1.0) gray(0.20) detail(0.31)\n\nbox \"biometric_keypad\" pos(-1.0,1.2,-2.5) size(0.8,0.5,0.3) gray(0.25)\nbox \"emergency_light_panel\" pos(1.0,1.2,-2.5) size(0.8,0.5,0.3) gray(0.25)\nbox \"restricted_placard\" pos(0.0,1.2,-3.5) size(0.6,0.4,0.1) gray(0.20)\nbox \"cooling_keypad\" pos(-2.0,0.8,-1.0) size(0.6,0.4,0.2) gray(0.25)",
       "spatial_state": {
         "alert_level": 2,
         "anchors": [
-          "window",
-          "desk",
-          "reinforced_door",
-          "monitor"
+          "tunnel_wall",
+          "floor_slope",
+          "ceiling",
+          "keypad",
+          "hatch"
         ],
         "blocked_exits": [],
         "canonical_fixture": "",
-        "desert_state": "still",
+        "desert_state": "dusty",
         "interior_density": "sparse",
-        "location_archetype": "perimeter_observation",
+        "location_archetype": "restricted_passage",
         "location_id": "unknown",
-        "room_summary": "A fortified lookout station overlooking the desert road and perimeter fence.",
-        "room_title": "Observation Outpost",
-        "spatial_anomalies": [
-          "flickering_security_feed",
-          "subtle_humidity_reading_fluctuation"
-        ],
+        "room_summary": "A narrow, reinforced passage leading deeper into the datacenter’s restricted core, lined with environmental controls and access points.",
+        "room_title": "Access Tunnel",
+        "spatial_anomalies": [],
         "time_of_day": "dusk",
-        "visibility_level": "dusty",
+        "visibility_level": "low",
         "visible_objects": [
-          "security_feed",
-          "cracked_monitor",
-          "half-empty_mug",
-          "peeling_sign",
-          "tool_rack"
+          "biometric keypad",
+          "maintenance hatch",
+          "restricted placard",
+          "ventilation grille",
+          "emergency light panel",
+          "service panel",
+          "maintenance crate",
+          "cooling keypad",
+          "rack access door",
+          "cabinet latch"
         ]
       }
     },
     {
       "room_id": "generated:room_0002",
-      "scene_text": "room \"generated room\"\ncamera eye(0.0,1.78,-7.8) target(0.0,1.20,8.4) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(14.0,24.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.2,0.0) normal(0.0,-1.0,0.0) size(14.0,24.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.6,11.4) size(14.0,3.2,0.6) gray(0.20)\nbox \"wall_left\" pos(-6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"wall_right\" pos(6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"threshold_frame\" pos(0.0,1.5,8.8) size(3.6,3.0,0.45) gray(0.24)\nprefab_rack \"rack_left\" pos(-3.0,1.25,2.8) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_rack \"rack_right\" pos(3.0,1.25,4.4) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_cooling_unit \"cooling_block\" pos(-4.4,1.0,-2.5) size(1.1,2.0,1.1) gray(0.31) detail(0.39)\nprefab_crate \"maintenance_crate\" pos(2.4,0.55,-1.6) size(1.7,1.0,1.4) gray(0.20) detail(0.30)\n",
+      "scene_text": "room \"Restricted Node Chamber\"\ncamera eye(0.0,1.75,-5.0) target(0.0,1.0,-1.0) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(10.0,25.0) intensity(50.0)\nsky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)\n\nplane \"floor_plate\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.0,12.0) gray(0.18)\nplane \"ceiling_vent\" pos(0.0,2.5,0.0) normal(0.0,-1.0,0.0) size(11.0,11.0) gray(0.22)\n\nbox \"node_unit\" pos(0.0,1.25,0.0) size(3.0,2.0,2.0) gray(0.30) detail(0.40)\nbox \"power_distribution\" pos(-3.0,1.0,-2.0) size(2.0,1.5,1.5) gray(0.25) detail(0.35)\nbox \"cooling_keypad\" pos(2.0,1.0,2.0) size(1.0,0.8,0.8) gray(0.20) detail(0.30)\n\nprefab_gate \"hatch_floor\" pos(0.0,0.0,-5.0) size(1.5,0.2,1.5) gray(0.28) detail(0.32)\nprefab_rack \"rack_access\" pos(-2.0,1.0,1.0) size(1.0,2.0,0.5) gray(0.22) detail(0.38)\nprefab_crate \"service_crate\" pos(3.0,0.5,-3.0) size(1.2,0.8,1.0) gray(0.20) detail(0.31)\nprefab_cooling_unit \"vent_stack\" pos(-1.0,2.0,1.0) size(1.0,1.5,1.0) gray(0.30) detail(0.39)\n\nbox \"keypad_wall\" pos(0.0,1.2,-4.0) size(0.5,0.3,0.5) gray(0.25) detail(0.35)\nbox \"emergency_switch\" pos(1.0,1.5,-1.0) size(0.3,0.2,0.3) gray(0.15) detail(0.40)",
       "spatial_state": {
-        "alert_level": 2,
+        "alert_level": 3,
         "anchors": [
-          "server_racks",
-          "emergency_light",
-          "cracked_mirror",
-          "unmarked_door"
+          "node_unit",
+          "floor_plate",
+          "ceiling_vent",
+          "keypad_wall",
+          "hatch_floor"
         ],
         "blocked_exits": [],
         "canonical_fixture": "",
-        "desert_state": "still",
+        "desert_state": "dusty",
         "interior_density": "sparse",
-        "location_archetype": "technical_storage",
+        "location_archetype": "restricted_node_chamber",
         "location_id": "unknown",
-        "room_summary": "A windowless chamber housing rusted server racks and a single, flickering emergency light, its walls lined with faded network schematics and peeling fire-suppression labels.",
-        "room_title": "Decommissioned Server Vault",
-        "spatial_anomalies": [
-          "inconsistent_temperature_gradient",
-          "subtle_aroma_of_ozone_from_a_single_rack",
-          "door_ajar_with_no_apparent_reason"
-        ],
-        "time_of_day": "night",
+        "room_summary": "A sealed utility chamber housing a single critical node, its walls lined with redundant cooling and power interfaces.",
+        "room_title": "Restricted Node Chamber",
+        "spatial_anomalies": [],
+        "time_of_day": "dusk",
         "visibility_level": "low",
         "visible_objects": [
-          "skeletal_server_racks",
-          "flickering_emergency_light",
-          "smudged_network_schematics",
-          "peeling_fire_suppression_labels",
-          "half-erased_maintenance_notes",
-          "warped_door_frame",
-          "cooling_system_noise"
+          "critical node unit (vented, humming)",
+          "biometric keypad (embedded in wall)",
+          "maintenance hatch (rusted, floor-mounted)",
+          "power distribution cabinet (locked, hissing)",
+          "emergency override switch (red, labeled 'NUCLEAR')",
+          "service panel",
+          "maintenance crate",
+          "cooling keypad",
+          "rack access door",
+          "cabinet latch"
         ]
       }
     },
     {
       "room_id": "generated:room_0003",
-      "scene_text": "room \"isolated_cooling_substation\"\ncamera eye(0.0,1.75,-5.0) target(0.0,1.0,-1.0) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(15.0,30.0) intensity(50.0)\nsky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)\n\nplane \"floor\" pos(0.0,0.0,-1.0) normal(0.0,1.0,0.0) size(12.0,12.0) gray(0.18)\nplane \"back_wall\" pos(0.0,0.0,-6.0) normal(0.0,0.0,1.0) size(12.0,8.0) gray(0.22)\nplane \"left_wall\" pos(-5.5,0.0,-1.0) normal(1.0,0.0,0.0) size(11.0,8.0) gray(0.22)\nplane \"right_wall\" pos(5.5,0.0,-1.0) normal(-1.0,0.0,0.0) size(11.0,8.0) gray(0.22)\n\nprefab_cooling_unit \"jury_rigged_cooling_unit\" pos(0.0,1.0,-3.0) size(2.5,2.0,2.5) gray(0.30) detail(0.40)\nprefab_gate \"rusted_access_panel\" pos(0.0,1.2,-5.5) size(1.5,0.8,0.1) gray(0.25) detail(0.35)\n\nbox \"exposed_piping\" pos(0.0,1.5,-2.0) size(0.2,0.2,3.0) gray(0.28)\nbox \"coolant_reservoir\" pos(1.0,0.8,-3.5) size(0.8,0.5,0.8) gray(0.35)\nbox \"emergency_drain_valve\" pos(-1.0,0.5,-5.0) size(0.3,0.3,0.3) gray(0.20)\n\nplane \"faded_thermal_map\" pos(0.0,0.0,-5.0) normal(0.0,0.0,1.0) size(11.0,7.0) gray(0.15) detail(0.25)\nplane \"cracked_concrete_floor\" pos(0.0,0.0,-1.0) normal(0.0,1.0,0.0) size(12.0,12.0) gray(0.18) detail(0.30)",
+      "scene_text": "room \"generated room\"\ncamera eye(0.0,1.78,-7.8) target(0.0,1.20,8.4) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(14.0,24.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.2,0.0) normal(0.0,-1.0,0.0) size(14.0,24.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.6,11.4) size(14.0,3.2,0.6) gray(0.20)\nbox \"wall_left\" pos(-6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"wall_right\" pos(6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"threshold_frame\" pos(0.0,1.5,8.8) size(3.6,3.0,0.45) gray(0.24)\nprefab_rack \"rack_left\" pos(-3.0,1.25,2.8) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_rack \"rack_right\" pos(3.0,1.25,4.4) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_cooling_unit \"cooling_block\" pos(-4.4,1.0,-2.5) size(1.1,2.0,1.1) gray(0.31) detail(0.39)\nprefab_crate \"maintenance_crate\" pos(2.4,0.55,-1.6) size(1.7,1.0,1.4) gray(0.20) detail(0.30)\n",
       "spatial_state": {
         "alert_level": 4,
         "anchors": [
-          "jury_rigged_cooling_unit",
-          "flickering_backup_generator",
-          "faded_thermal_mapping_schematics",
-          "rusted_access_panel",
-          "cracked_concrete_floor"
+          "data_terminal_stand",
+          "stacked_crates",
+          "intercom_panel",
+          "ceiling_vent",
+          "floor_grate"
         ],
         "blocked_exits": [],
         "canonical_fixture": "",
-        "desert_state": "still",
+        "desert_state": "dusty",
         "interior_density": "sparse",
-        "location_archetype": "technical_support",
+        "location_archetype": "restricted_archive",
         "location_id": "unknown",
-        "room_summary": "A small, reinforced chamber housing a single, jury-rigged cooling unit with exposed piping and a flickering backup generator. The air hums with the sound of cycling compressors, and the walls bear faded thermal-mapping schematics.",
-        "room_title": "Isolated Cooling Substation",
+        "room_summary": "A reinforced archive room containing classified data crates and a single access terminal, its walls lined with redundant security fixtures.",
+        "room_title": "Vaulted Archive",
         "spatial_anomalies": [
-          "inconsistent_temperature_gradient_near_cooling_unit",
-          "subtle_vibration_from_cooling_unit",
-          "drain_valve_pool_of_water_that_should_not_be_there",
-          "flickering_light_reflections_on_condensation",
-          "new_thermal_map_highlighting_rack_7b"
+          "A faint, repeating beep emanates from the terminal every 12 seconds."
         ],
-        "time_of_day": "night",
+        "time_of_day": "dusk",
         "visibility_level": "low",
         "visible_objects": [
-          "exposed_copper_piping",
-          "erratic_fan_shadows",
-          "fading_thermal_maps",
-          "emergency_drain_valve_label",
-          "minor_condensation_on_pipes",
-          "coolant_reservoir_with_low_level_indicator",
-          "wiring_loom_peeking_from_under_unit",
-          "small_pool_of_water_near_drain_valve"
-        ]
-      }
-    },
-    {
-      "room_id": "generated:room_0004",
-      "scene_text": "room \"generated room\"\ncamera eye(0.0,1.82,-8.4) target(0.0,1.20,8.2) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(72.0)\nsky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(91)\nplane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(18.0,30.0) gray(0.13)\nbox \"wall_back\" pos(0.0,2.1,10.4) size(18.0,4.2,0.8) gray(0.18)\nbox \"parapet_left\" pos(-7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\nbox \"parapet_right\" pos(7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\nbox \"parapet_front\" pos(0.0,0.65,1.9) size(14.0,1.3,0.8) gray(0.26)\nprefab_crate \"service_crate\" pos(2.6,0.55,-1.8) size(1.8,1.1,1.5) gray(0.20) detail(0.31)\nprefab_cooling_unit \"vent_stack\" pos(-4.1,1.0,-2.8) size(1.0,2.0,1.0) gray(0.30) detail(0.39)\n",
-      "spatial_state": {
-        "alert_level": 5,
-        "anchors": [
-          "corroded_filtration_unit",
-          "central_reservoir_with_pulsing_light",
-          "peeling_safety_posters",
-          "handwritten_floor_note",
-          "exposed_piping_network",
-          "small_vent_with_condensation"
-        ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "desert_state": "still",
-        "interior_density": "sparse",
-        "location_archetype": "utility_maintenance",
-        "location_id": "unknown",
-        "room_summary": "A corroded water filtration chamber where the desert’s thirst and the facility’s decay collide, its pipes whispering secrets of forgotten recirculation.",
-        "room_title": "Fractured Hydration Node",
-        "spatial_anomalies": [
-          "inconsistent_water_temperature_near_reservoir",
-          "subtle_vibration_from_pipes_when_listening_closely",
-          "reservoir_water_that_should_be_clear_but_is_slightly_milky",
-          "flickering_light_casting_unexpected_shadows_on_wall_posters",
-          "new_warning_sticker_appearing_on_filtration_unit_when_backed_away",
-          "drip_pattern_that_shifts_when_approaching_different_angles"
-        ],
-        "time_of_day": "night",
-        "visibility_level": "low",
-        "visible_objects": [
-          "clogged_pipe_segment_with_organic_debris",
-          "flickering_emergeny_light_reflections_on_water_surface",
-          "rusted_emergency_bypass_valve_half-open",
-          "small_pool_of_murky_water_near_filtration_unit",
-          "water_level_indicator_needle_stuck_at_87%",
-          "scratched_concrete_floor_with_minor_leakage",
-          "loose_wire_peeking_from_under_unit",
-          "faint_blue_glow_from_reservoir_when_leaned_closely"
+          "data terminal (screen blank, blinking cursor, labeled 'CLASSIFIED: LEVEL 5')",
+          "biometric access panel (embedded in crate stack, glowing red)",
+          "emergency intercom (hissing, labeled 'SECURITY CHANNEL')",
+          "locked crate (stamped 'PROPRIETARY: NUCLEAR CORE DIAG')",
+          "overload switch (red, labeled 'DATA PURGE')",
+          "service panel",
+          "maintenance crate",
+          "cooling keypad",
+          "rack access door",
+          "cabinet latch"
         ]
       }
     }
   ],
   "hard_state": {
-    "alert_level": 5,
+    "alert_level": 6,
     "cooling_state": "strained",
     "current_location_id": "unknown",
-    "inventory_items": [
-      "small_usb_drive"
-    ],
+    "inventory_items": [],
     "named_entities": [
       "duty_officer"
     ],
     "power_state": "stable",
-    "turn_number": 6,
+    "turn_number": 11,
     "unresolved_threats": [
-      "possible_external_attack"
+      "possible_external_attack",
+      "potential_system_hijack",
+      "latent_cooling_failure"
     ],
     "water_state": "stable"
   },
   "history": [
     {
       "clarification": "",
-      "intent": "move_north_generated_room",
+      "intent": "move_south_generated_room",
       "location_id": "unknown",
-      "location_label": "Observation Outpost",
-      "narration": "The checkpoint gate swings shut behind you with a muted *clang*, leaving you in a small, reinforced concrete bunker. A single narrow window frames the desert road ahead, its glass etched with a faint grid pattern. The air smells of ozone and stale coffee. A desk with a cracked monitor and a half-empty mug sits against the wall, its screen flickering with a static-laced security feed. A reinforced door to the left bears a faded sign: *'Authorized Personnel Only'* in peeling letters. The hum of a distant generator vibrates through the floor.",
-      "player_command": "north",
+      "location_label": "Access Tunnel",
+      "narration": "The sliding gate seals behind you with a hiss. You step into a dimly lit tunnel, its walls lined with rusted metal and flickering emergency lights. The air smells of ozone and damp concrete.",
+      "player_command": "S",
       "turn_number": 1
     },
     {
-      "clarification": "Generated room scene fallback was used.",
-      "intent": "move_east_generated_room",
-      "location_id": "unknown",
-      "location_label": "Decommissioned Server Vault",
-      "narration": "The reinforced door hisses shut behind you, plunging you into a sterile, dimly lit chamber. The air is thick with the scent of old plastic and faintly burnt wiring. A single emergency light hums overhead, casting long shadows over rows of skeletal server racks, their fans still spinning in slow, uneven cycles. A cracked mirror on the far wall reflects the flickering glow, its surface etched with smudged equations and half-erased maintenance notes. The hum of the generator outside is replaced by a low, rhythmic *thunk* from somewhere deeper in the room—like a cooling system cycling on and off. A small, unmarked door to the right stands slightly ajar, its frame warped by heat.",
-      "player_command": "east",
+      "clarification": "",
+      "intent": "move_north_known_room",
+      "location_id": "gate",
+      "location_label": "gate",
+      "narration": "You go north and enter gate.",
+      "player_command": "N",
       "turn_number": 2
     },
     {
-      "clarification": "The USB port is the only accessible interface. The rack’s cooling system appears to be failing, but the coolant leak is minor and contained for now.",
-      "intent": "interact_with_server_rack",
+      "clarification": "",
+      "intent": "move_south_known_room",
       "location_id": "unknown",
-      "location_label": "Decommissioned Server Vault",
-      "narration": "Your gloved fingers brush against the rusted metal of the nearest server rack. The skeletal frame groans as you pull it toward you, revealing a single, half-melted circuit board with a small, intact USB port. A faint *hiss* of escaping coolant lingers near the bottom. The maintenance notes on the mirror now read: *'Rack 7B: Overload risk—coolant leak detected. Isolate if possible.'*",
-      "player_command": "open the rack",
+      "location_label": "Access Tunnel",
+      "narration": "You go south and enter Access Tunnel. A narrow, reinforced passage leading deeper into the datacenter’s restricted core, lined with environmental controls and access points.",
+      "player_command": "S",
       "turn_number": 3
     },
     {
       "clarification": "",
-      "intent": "move_north_generated_room",
+      "intent": "move_east_generated_room",
       "location_id": "unknown",
-      "location_label": "Isolated Cooling Substation",
-      "narration": "The unmarked door seals shut behind you with a metallic *click*, plunging you into a chamber where the air feels unnaturally cool despite the surrounding heat. A single, jury-rigged cooling unit dominates the space, its exposed copper pipes snaking toward a cracked concrete floor. The unit’s fan cycles erratically, casting shifting shadows across a wall lined with faded thermal-mapping schematics. A small, rusted access panel sits on the floor near the unit, its label reading *'Emergency Drain Valve – Do Not Operate Without Isolation'*. The hum of the backup generator outside is replaced by a rhythmic *thunk-thunk* from the cooling unit itself, like a heartbeat trying to stay steady. The faint scent of ozone lingers, stronger here than in the server vault.",
-      "player_command": "north",
+      "location_label": "Restricted Node Chamber",
+      "narration": "The tunnel’s east wall slides open with a hydraulic groan, revealing a small, windowless chamber. A single humming node unit dominates the space, its blue light pulsing faintly. The air smells of ozone and burnt plastic.",
+      "player_command": "E",
       "turn_number": 4
     },
     {
       "clarification": "Generated room scene fallback was used.",
-      "intent": "move_east_generated_room",
+      "intent": "move_north_generated_room",
       "location_id": "unknown",
-      "location_label": "Fractured Hydration Node",
-      "narration": "The door groans shut behind you with a sound like a dying hinge, plunging you into a chamber where the air is thick with the metallic tang of rust and the faint, cloying sweetness of stagnant water. A single, rusted filtration unit dominates the space, its cracked glass panels revealing a network of clogged pipes and a central reservoir that pulses with an eerie, slow rhythm. The walls are lined with peeling safety posters—some still legible, others reduced to smeared warnings about ‘contaminant levels’ and ‘emergency bypass valves.’ A small, handwritten note on the floor reads: *'Do not drink. Do not flush. Do not trust the color.'* The hum of the cooling unit outside is replaced by a low, rhythmic *drip-drip-drip* from somewhere deeper in the pipes, like a heartbeat trying to stay alive. The faint scent of chlorine and something older—something *wrong*—lingers in the air.",
-      "player_command": "east",
+      "location_label": "Vaulted Archive",
+      "narration": "The hydraulic wall slides shut behind you with a metallic *clang*. You step into a dimly lit vault, its concrete walls lined with rusted metal grates and flickering red emergency lights. The air smells of old paper and static.",
+      "player_command": "N",
       "turn_number": 5
+    },
+    {
+      "clarification": "The sound is environmental (hydraulic seal) and not directly tied to an object. Focus remains on the vault’s fixtures and anomalies.",
+      "intent": "inspect_sound_source",
+      "location_id": "unknown",
+      "location_label": "Vaulted Archive",
+      "narration": "The *clang* echoes from the hydraulic wall slide behind you. It’s the sound of reinforced steel sealing shut—no immediate threat, but the vault’s security is now fully engaged. The intercom hisses faintly, as if waiting for a response.",
+      "player_command": "look clang",
+      "turn_number": 6
+    },
+    {
+      "clarification": "The intercom is a passive interface; no direct interaction yet. The hissing persists as a potential future actionable anomaly.",
+      "intent": "inspect_intercom",
+      "location_id": "unknown",
+      "location_label": "Vaulted Archive",
+      "narration": "The **emergency intercom** hums with static, its cracked screen displaying 'SECURITY CHANNEL' in faded yellow. A faint voice crackles—garbled, but rhythmic—like a looped transmission. Pressing the **red emergency button** (if it were accessible) might force a response.",
+      "player_command": "look intercom",
+      "turn_number": 7
+    },
+    {
+      "clarification": "The intercom’s response triggers a biometric prompt, implying the system recognizes the attempt as an actionable event. The voice loop suggests a security protocol—likely tied to the **duty_officer**’s presence or...",
+      "intent": "interact_with_intercom",
+      "location_id": "unknown",
+      "location_label": "Vaulted Archive",
+      "narration": "The **emergency intercom**’s cracked screen flickers as you press the **red emergency button**. A distorted voice crackles: *'—CONFIRM IDENTIFICATION—REPEAT—'* The **biometric access panel** above it glows brighter, pulsing in sync with the intercom’s static.",
+      "player_command": "press red emergency button",
+      "turn_number": 8
+    },
+    {
+      "clarification": "The world state was kept unchanged after a malformed model response.",
+      "intent": "interact_with_biometric_panel",
+      "location_id": "unknown",
+      "location_label": "Vaulted Archive",
+      "narration": "Your palm hovers over the **biometric access panel**, which emits a sharp *click* as it scans your fingerprint. The screen flashes **'VERIFY: 98% MATCH'** before locking onto **'ACCESS GRANTED'** in green. The **emergency intercom**’s voice mutters: *'—IDENTIFIED—PROCEED—'* The **cooling keypad**’s red pulse steadies slightly.",
+      "player_command": "put hand on biometric panel",
+      "turn_number": 9
+    },
+    {
+      "clarification": "The keypad rejects the code due to system constraints, triggering an intercom alert. The switch’s glow suggests a latent failure—likely tied to the **cooling_state**.",
+      "intent": "interact_with_cooling_keypad",
+      "location_id": "unknown",
+      "location_label": "Vaulted Archive",
+      "narration": "The **cooling keypad**’s red light dims as you type **6128**. A mechanical *click* confirms entry, but the screen flashes **'ACCESS DENIED: OVERLOAD RISK'** in red. The **emergency intercom** crackles: *'—BEWARE: COOLING FAILURE—REPEAT—'* The **overload switch** now glows...",
+      "player_command": "type 6128 code on the keypad",
+      "turn_number": 10
     }
   ],
-  "next_generated_room_index": 5,
+  "next_generated_room_index": 4,
   "room_links": [
     {
-      "direction": "north",
+      "direction": "south",
       "from_place_id": "canonical:gate",
       "to_place_id": "generated:room_0001"
     },
     {
-      "direction": "south",
+      "direction": "north",
       "from_place_id": "generated:room_0001",
       "to_place_id": "canonical:gate"
     },
@@ -252,16 +255,6 @@
       "direction": "south",
       "from_place_id": "generated:room_0003",
       "to_place_id": "generated:room_0002"
-    },
-    {
-      "direction": "east",
-      "from_place_id": "generated:room_0003",
-      "to_place_id": "generated:room_0004"
-    },
-    {
-      "direction": "west",
-      "from_place_id": "generated:room_0004",
-      "to_place_id": "generated:room_0003"
     }
   ],
   "soft_state": {
@@ -270,49 +263,48 @@
       "the institution may be manufacturing the threat"
     ],
     "atmosphere": "administrative, dry, watchful",
-    "rolling_summary": "The door groans shut behind you with a sound like a dying hinge, plunging you into a chamber where the air is thick with the metallic tang of rust and the faint, cloying sweetness of stagnant water. A single, rusted filtration unit dominates the space, its cracked glass panels revealing a network of clogged pipes and a central reservoir that pulses with an eerie, slow rhythm. The walls are lined with peeling safety posters—some still legible, others reduced to smeared warnings about ‘contaminant levels’ and ‘emergency bypass valves.’ A small, handwritten note on the floor reads: *'Do not drink. Do not flush. Do not trust the color.'* The hum of the cooling unit outside is replaced by a low, rhythmic *drip-drip-drip* from somewhere deeper in the pipes, like a heartbeat trying to stay alive. The faint scent of chlorine and something older—something *wrong*—lingers in the air.",
+    "rolling_summary": "The **cooling keypad**’s red light dims as you type **6128**. A mechanical *click* confirms entry, but the screen flashes **'ACCESS DENIED: OVERLOAD RISK'** in red. The **emergency intercom** crackles: *'—BEWARE: COOLING FAILURE—REPEAT—'* The **overload switch** now glows...",
     "tolerated_incoherences": [
-      "The USB drive is likely a data backup or diagnostic tool. The coolant leak suggests the rack is failing, but it hasn’t triggered a full system shutdown yet.",
-      "The maintenance note implies the facility’s cooling system is under stress, reinforcing the 'strained' cooling state."
+      "Keypad rejection implies **6128** is not the correct override code—likely a decoy or temporary bypass.",
+      "Intercom’s shift to 'COOLING ALERT' suggests the system is now prioritizing thermal integrity.",
+      "The **overload switch**’s glow indicates a direct link to cooling failure—potential emergency override."
     ]
   },
   "spatial_state": {
-    "alert_level": 5,
+    "alert_level": 6,
     "anchors": [
-      "corroded_filtration_unit",
-      "central_reservoir_with_pulsing_light",
-      "peeling_safety_posters",
-      "handwritten_floor_note",
-      "exposed_piping_network",
-      "small_vent_with_condensation"
+      "data_terminal_stand",
+      "stacked_crates",
+      "intercom_panel"
     ],
     "blocked_exits": [],
     "canonical_fixture": "",
-    "desert_state": "still",
+    "desert_state": "dusty",
     "interior_density": "sparse",
-    "location_archetype": "utility_maintenance",
+    "location_archetype": "restricted_archive",
     "location_id": "unknown",
-    "room_summary": "A corroded water filtration chamber where the desert’s thirst and the facility’s decay collide, its pipes whispering secrets of forgotten recirculation.",
-    "room_title": "Fractured Hydration Node",
+    "room_summary": "A reinforced archive room containing classified data crates and a single access terminal, its walls lined with redundant security fixtures.",
+    "room_title": "Vaulted Archive",
     "spatial_anomalies": [
-      "inconsistent_water_temperature_near_reservoir",
-      "subtle_vibration_from_pipes_when_listening_closely",
-      "reservoir_water_that_should_be_clear_but_is_slightly_milky",
-      "flickering_light_casting_unexpected_shadows_on_wall_posters",
-      "new_warning_sticker_appearing_on_filtration_unit_when_backed_away",
-      "drip_pattern_that_shifts_when_approaching_different_angles"
+      "intercom voice loop now includes '—COOLING FAILURE—' cue",
+      "cooling keypad emits a continuous error beep",
+      "biometric panel chirps every 2 seconds",
+      "service panel vents emit faint hissing"
     ],
-    "time_of_day": "night",
+    "time_of_day": "dusk",
     "visibility_level": "low",
     "visible_objects": [
-      "clogged_pipe_segment_with_organic_debris",
-      "flickering_emergeny_light_reflections_on_water_surface",
-      "rusted_emergency_bypass_valve_half-open",
-      "small_pool_of_murky_water_near_filtration_unit",
-      "water_level_indicator_needle_stuck_at_87%",
-      "scratched_concrete_floor_with_minor_leakage",
-      "loose_wire_peeking_from_under_unit",
-      "faint_blue_glow_from_reservoir_when_leaned_closely"
+      "data terminal (now displays 'AUTH FAILURE' in red, screen flickering)",
+      "biometric access panel (still flashing 'VERIFY' in green)",
+      "emergency intercom (now reads 'COOLING ALERT: IDENTIFY' in yellow)",
+      "overload switch (now pulsing orange)",
+      "cooling keypad (now locked, screen reads 'ACCESS DENIED')",
+      "service panel (slightly warmer to the touch)",
+      "service panel",
+      "maintenance crate",
+      "cooling keypad",
+      "rack access door",
+      "cabinet latch"
     ]
   }
 }

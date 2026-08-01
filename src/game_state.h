@@ -157,6 +157,10 @@ struct SpatialStateDelta {
     InteriorDensity next_interior_density;
     bool alert_level_changed;
     int next_alert_level;
+    bool anchors_present_changed;
+    bool visible_objects_changed;
+    bool blocked_exits_changed;
+    bool spatial_anomalies_changed;
     std::vector<std::string> anchors_present;
     std::vector<std::string> visible_objects;
     std::vector<std::string> blocked_exits;
@@ -176,6 +180,10 @@ struct SpatialStateDelta {
         , next_interior_density(kInteriorUnknown)
         , alert_level_changed(false)
         , next_alert_level(0)
+        , anchors_present_changed(false)
+        , visible_objects_changed(false)
+        , blocked_exits_changed(false)
+        , spatial_anomalies_changed(false)
     {
     }
 };

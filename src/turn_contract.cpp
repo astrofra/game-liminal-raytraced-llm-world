@@ -210,6 +210,13 @@ std::string BuildTurnPrompt(
         text += "The current room may be an improvised generated room. Keep that room stable unless the player explicitly moves.\n";
     }
     text += "Narration must stay short, concrete, and spatially actionable.\n";
+    text += "Prefer 2 to 4 short sentences and stay roughly under 70 words.\n";
+    text += "Avoid long atmospheric digressions and avoid restating the whole room summary.\n";
+    text += "Whenever the room contains usable objects or interfaces, mention at least one concrete actionable affordance.\n";
+    text += "Prefer nouns the player can inspect, open, read, unlock, press, pull, enter, take, or switch.\n";
+    text += "Good actionable examples: hatch, crate, keypad, badge reader, placard, cabinet, switch, console, intercom, lockbox.\n";
+    text += "If visible_objects are present in the spatial brief, reuse at least one of them directly in the narration when relevant.\n";
+    text += "When the room topology is clear, keep spatial_delta.blocked_exits accurate so closed cardinal directions stay closed.\n";
     text += "\nCurrent hard state\n";
     AppendLabelValue(&text, "turn_number: ", std::to_string(hard_state.turn_number).c_str());
     AppendLabelValue(&text, "current_location_id: ", LocationIdToString(hard_state.current_location_id));
@@ -263,6 +270,12 @@ std::string BuildGeneratedRoomPrompt(
     text += "It must be spatially readable, sparse, and suitable for grayscale raytracing.\n";
     text += "Do not describe a whole region. Describe one immediate neighboring room only.\n";
     text += "The reverse direction back to the source room should usually remain possible.\n";
+    text += "Keep the title short.\n";
+    text += "Keep the summary compact and concrete.\n";
+    text += "Keep arrival_narration under about 60 words and make it immediately playable.\n";
+    text += "visible_objects must contain 3 to 5 concrete actionable objects or interfaces, not vague scenery only.\n";
+    text += "Include at least two directly usable things such as a hatch, crate, keypad, badge reader, placard, switch, cabinet, console, lockbox or intercom.\n";
+    text += "Use blocked_exits to mark closed directions explicitly; directions not listed there will be treated as traversable.\n";
     text += "\nCurrent hard state\n";
     AppendLabelValue(&text, "turn_number: ", std::to_string(hard_state.turn_number).c_str());
     AppendLabelValue(&text, "alert_level: ", std::to_string(hard_state.alert_level).c_str());

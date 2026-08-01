@@ -664,6 +664,95 @@ static void DrawPanel(SDL_Renderer* renderer, const SDL_FRect& rect, Uint8 fill,
     SDL_RenderRect(renderer, &rect);
 }
 
+static bool SpatialStateBlocksDirectionForUi(const SpatialState& spatial_state, CardinalDirection direction)
+{
+    for (size_t index = 0; index < spatial_state.blocked_exits.size(); ++index) {
+        CardinalDirection blocked_direction = kDirectionUnknown;
+        if (ParseCardinalDirection(spatial_state.blocked_exits[index].c_str(), &blocked_direction) &&
+            blocked_direction == direction) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void DrawCompassDirectionCell(SDL_Renderer* renderer, const SDL_FRect& rect, bool open)
+{
+    if (!renderer) {
+        return;
+    }
+
+    if (open) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderFillRect(renderer, &rect);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderRect(renderer, &rect);
+        return;
+    }
+
+    SDL_SetRenderDrawColor(renderer, 236, 236, 236, 255);
+    SDL_RenderFillRect(renderer, &rect);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderRect(renderer, &rect);
+    SDL_RenderLine(renderer, rect.x + 4.0f, rect.y + 4.0f, rect.x + rect.w - 4.0f, rect.y + rect.h - 4.0f);
+    SDL_RenderLine(renderer, rect.x + rect.w - 4.0f, rect.y + 4.0f, rect.x + 4.0f, rect.y + rect.h - 4.0f);
+}
+
+static void DrawExitCompass(SDL_Renderer* renderer, const SessionState& session_state, const SDL_FRect& scene_rect)
+{
+    if (!renderer) {
+        return;
+    }
+
+    const SDL_FRect panel_rect = {
+        scene_rect.x + scene_rect.w - 124.0f,
+        scene_rect.y + 12.0f,
+        108.0f,
+        108.0f,
+    };
+    DrawPanel(renderer, panel_rect, 244, 0);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderDebugText(renderer, panel_rect.x + 24.0f, panel_rect.y + 6.0f, "EXITS");
+
+    const SDL_FRect hub_rect = {panel_rect.x + 44.0f, panel_rect.y + 44.0f, 20.0f, 20.0f};
+    DrawPanel(renderer, hub_rect, 250, 0);
+
+    const SDL_FRect north_rect = {panel_rect.x + 43.0f, panel_rect.y + 20.0f, 22.0f, 22.0f};
+    const SDL_FRect south_rect = {panel_rect.x + 43.0f, panel_rect.y + 66.0f, 22.0f, 22.0f};
+    const SDL_FRect west_rect = {panel_rect.x + 20.0f, panel_rect.y + 43.0f, 22.0f, 22.0f};
+    const SDL_FRect east_rect = {panel_rect.x + 66.0f, panel_rect.y + 43.0f, 22.0f, 22.0f};
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderLine(renderer, panel_rect.x + 54.0f, panel_rect.y + 42.0f, panel_rect.x + 54.0f, panel_rect.y + 44.0f);
+    SDL_RenderLine(renderer, panel_rect.x + 54.0f, panel_rect.y + 64.0f, panel_rect.x + 54.0f, panel_rect.y + 66.0f);
+    SDL_RenderLine(renderer, panel_rect.x + 42.0f, panel_rect.y + 54.0f, panel_rect.x + 44.0f, panel_rect.y + 54.0f);
+    SDL_RenderLine(renderer, panel_rect.x + 64.0f, panel_rect.y + 54.0f, panel_rect.x + 66.0f, panel_rect.y + 54.0f);
+
+    DrawCompassDirectionCell(
+        renderer,
+        north_rect,
+        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionNorth));
+    DrawCompassDirectionCell(
+        renderer,
+        south_rect,
+        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionSouth));
+    DrawCompassDirectionCell(
+        renderer,
+        west_rect,
+        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest));
+    DrawCompassDirectionCell(
+        renderer,
+        east_rect,
+        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionEast));
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderDebugText(renderer, panel_rect.x + 51.0f, panel_rect.y + 12.0f, "N");
+    SDL_RenderDebugText(renderer, panel_rect.x + 51.0f, panel_rect.y + 92.0f, "S");
+    SDL_RenderDebugText(renderer, panel_rect.x + 8.0f, panel_rect.y + 51.0f, "W");
+    SDL_RenderDebugText(renderer, panel_rect.x + 92.0f, panel_rect.y + 51.0f, "E");
+}
+
 static void UploadSceneTexture(
     const std::vector<unsigned char>& rgb_pixels,
     int width,
@@ -1380,6 +1469,7 @@ bool RunSdlFrontend(
         SDL_RenderDebugText(renderer, 48.0f, 500.0f, status_line.c_str());
 
         SDL_RenderTexture(renderer, scene_texture, 0, &scene_rect);
+        DrawExitCompass(renderer, current_session_state, scene_rect);
         DrawConsoleText(renderer, ui_fonts, console_rect, transcript_lines, console_line_capacity);
 
         const SDL_Color player_text_color = {0, 0, 0, 255};

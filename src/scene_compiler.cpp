@@ -54,7 +54,7 @@ static const char* CanonicalFixturePath(LocationId location_id)
 static void SetCommonGateSpatialState(SpatialState* state)
 {
     state->room_title = "Entry Gate";
-    state->room_summary = "A checkpoint threshold between the datacenter compound and the desert road.";
+    state->room_summary = "A checkpoint threshold between the datacenter compound and the desert road, with controls and tagged equipment near the portal.";
     state->location_archetype = "entry_threshold";
     state->canonical_fixture = CanonicalFixturePath(kLocationGate);
     state->time_of_day = kTimeDusk;
@@ -65,15 +65,17 @@ static void SetCommonGateSpatialState(SpatialState* state)
     state->anchors.push_back("portal");
     state->anchors.push_back("fence");
     state->anchors.push_back("service_road");
-    state->visible_objects.push_back("gate");
-    state->visible_objects.push_back("lamp");
-    state->visible_objects.push_back("checkpoint");
+    state->visible_objects.push_back("badge reader");
+    state->visible_objects.push_back("intercom panel");
+    state->visible_objects.push_back("checkpoint crate");
+    state->visible_objects.push_back("warning placard");
+    state->visible_objects.push_back("sliding gate");
 }
 
 static void SetCommonAislesSpatialState(SpatialState* state)
 {
     state->room_title = "Server Aisles";
-    state->room_summary = "Dense rows of racks, maintenance lanes, cooling blocks and low night visibility.";
+    state->room_summary = "Dense rows of racks, maintenance lanes, cooling blocks and low night visibility, with service controls embedded in the aisle.";
     state->location_archetype = "dense_server_interior";
     state->canonical_fixture = CanonicalFixturePath(kLocationServerAisles);
     state->time_of_day = kTimeNight;
@@ -84,15 +86,17 @@ static void SetCommonAislesSpatialState(SpatialState* state)
     state->anchors.push_back("server_aisles");
     state->anchors.push_back("maintenance_lane");
     state->anchors.push_back("cooling_blocks");
-    state->visible_objects.push_back("rack");
-    state->visible_objects.push_back("cooling_unit");
-    state->visible_objects.push_back("crate");
+    state->visible_objects.push_back("rack access door");
+    state->visible_objects.push_back("maintenance crate");
+    state->visible_objects.push_back("cooling keypad");
+    state->visible_objects.push_back("aisle placard");
+    state->visible_objects.push_back("service panel");
 }
 
 static void SetCommonRoofSpatialState(SpatialState* state)
 {
     state->room_title = "Roof Watch";
-    state->room_summary = "A parapet walk above the datacenter with a dark horizon and a dusty desert beyond.";
+    state->room_summary = "A parapet walk above the datacenter with a dark horizon, exposed hardware and a dusty desert beyond.";
     state->location_archetype = "watch_post_exterior";
     state->canonical_fixture = CanonicalFixturePath(kLocationRoofWatch);
     state->time_of_day = kTimeDusk;
@@ -103,9 +107,11 @@ static void SetCommonRoofSpatialState(SpatialState* state)
     state->anchors.push_back("parapet");
     state->anchors.push_back("horizon");
     state->anchors.push_back("roof_plant");
-    state->visible_objects.push_back("parapet");
-    state->visible_objects.push_back("cooling_unit");
-    state->visible_objects.push_back("crate");
+    state->visible_objects.push_back("roof hatch");
+    state->visible_objects.push_back("maintenance lockbox");
+    state->visible_objects.push_back("vent cutoff switch");
+    state->visible_objects.push_back("warning beacon");
+    state->visible_objects.push_back("service crate");
 }
 
 }  // namespace
