@@ -1,8 +1,62 @@
 # Known Issues
 
-Derniere mise a jour : 2026-07-31
+Derniere mise a jour : 2026-08-01
 
 ## Ouverts
+
+### 2026-08-01 - Un dossier litteral `%TEMP%` peut apparaitre a la racine du depot sous Windows
+
+Statut :
+
+Ouvert, mais cause racine probable identifiee.
+
+Description :
+
+Un dossier litteral `%TEMP%` a ete observe a la racine du depot, avec un sous-dossier `%TEMP%\\liminal_sdl3_inspect`.
+
+Les verifications locales montrent que ce sous-dossier contient un clone Git superficiel du depot `https://github.com/libsdl-org/SDL.git`, positionne directement sur le tag `release-3.4.12`.
+
+Les points suivants ont ete confirmes :
+
+- le helper tracked `build_release.bat` n'utilise pas `%TEMP%`
+- le `CMakeLists.txt` tracked ne cree pas ce chemin
+- `.gitignore` ignore deja `/%TEMP%`, ce qui montre qu'il s'agit d'un artefact local deja rencontre
+- le clone parasite a ete cree le `2026-07-31 16:30:52 +0200`
+
+Cause probable :
+
+Mauvais dialecte de variable d'environnement sur Windows.
+
+Inference la plus probable :
+
+Une commande de type PowerShell a utilise une cible comme `%TEMP%\\liminal_sdl3_inspect` au lieu de `$env:TEMP\\liminal_sdl3_inspect`.
+
+Dans ce cas, PowerShell n'expanse pas `%TEMP%` et cree un vrai dossier relatif nomme litteralement `%TEMP%` dans le dossier courant.
+
+Commande probable, inferee a partir du contenu du clone :
+
+```powershell
+git clone --branch release-3.4.12 --depth 1 https://github.com/libsdl-org/SDL.git %TEMP%\liminal_sdl3_inspect
+```
+
+Impact :
+
+- pollution du workspace avec un depot parasite
+- confusion possible sur l'origine reelle des artefacts de build
+- risque de croire a tort que `FetchContent` ou le build principal ecrivent hors de `build/`
+
+Correctifs / prevention :
+
+- PowerShell : utiliser `$env:TEMP`
+- `cmd` / `.bat` : utiliser `%TEMP%`
+- CMake : utiliser `$ENV{TEMP}`
+- Python : utiliser `tempfile.gettempdir()`
+
+Nettoyage local si le dossier parasite est inutile :
+
+```powershell
+Remove-Item -Recurse -Force '.\%TEMP%'
+```
 
 ### 2026-07-29 - Fireflies et bruit encore trop agressifs
 

@@ -1,6 +1,6 @@
 # Technical State
 
-Derniere mise a jour : 2026-07-31
+Derniere mise a jour : 2026-08-01
 
 ## Resume
 
@@ -219,6 +219,16 @@ download_ministral.bat
 ask_ministral.bat
 play_desert_des_tokens.bat
 ```
+
+Note d'hygiene Windows :
+
+- en PowerShell, utiliser `$env:TEMP`
+- en `cmd` / `.bat`, utiliser `%TEMP%`
+- en CMake, utiliser `$ENV{TEMP}`
+
+Observation locale du `2026-07-31` :
+
+Un dossier parasite `/%TEMP%` a ete observe a la racine du depot. Les verifications locales indiquent qu'il s'agit d'un clone SDL temporaire cree via une syntaxe de variable d'environnement inadaptee au shell appelant, et non d'un artefact produit par les fichiers de build tracked du projet.
 
 Exemple de rendu :
 
