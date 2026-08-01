@@ -1,6 +1,6 @@
 # Prefab Catalog
 
-Genere le 2026-08-01 22:50:10.
+Genere le 2026-08-01 23:38:55.
 
 Ce document rassemble le premier catalogue visuel des prefabs `scene v1` dans un seul Markdown.
 
