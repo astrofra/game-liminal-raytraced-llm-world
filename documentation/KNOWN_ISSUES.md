@@ -4,6 +4,38 @@ Derniere mise a jour : 2026-08-01
 
 ## Ouverts
 
+### 2026-08-01 - Les narrations peuvent etre tronquees de maniere abrupte
+
+Statut :
+
+Ouvert.
+
+Description :
+
+La boucle de tour impose aujourd'hui des descriptions courtes par deux mecanismes cumules :
+
+- le prompt demande explicitement une prose breve
+- un garde-fou runtime retaille ensuite certaines sorties et ajoute `...` si la narration depasse les bornes locales
+
+Impact :
+
+- certaines descriptions finissent abruptement au milieu d'une observation
+- l'effet est visible surtout sur les salles generees riches en details actionnables
+- la coupe peut sembler artificielle meme quand le contenu LLM etait encore coherent
+
+Cause actuelle :
+
+La contrainte de concision ne repose pas seulement sur le modele. Elle est aussi imposee proceduralement dans `src/turn_runner.cpp` via `ConstrainNarrationText(...)`.
+
+Piste :
+
+Revenir plus tard sur l'equilibre entre :
+
+- concision demandee au prompt
+- limite dure appliquee au runtime
+- futur scroll de transcript cote SDL3
+- eventuelle distinction entre narration joueur et log debug plus complet
+
 ### 2026-08-01 - Un dossier litteral `%TEMP%` peut apparaitre a la racine du depot sous Windows
 
 Statut :

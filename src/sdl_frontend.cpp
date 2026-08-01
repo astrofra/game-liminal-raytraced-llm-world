@@ -74,6 +74,12 @@ struct UiTextSpan {
 
 struct UiTextLine {
     std::vector<UiTextSpan> spans;
+    bool command_line;
+
+    UiTextLine()
+        : command_line(false)
+    {
+    }
 };
 
 struct UiTextToken {
@@ -526,6 +532,19 @@ static void FlushWrappedLine(UiTextLine* current_line, std::vector<UiTextLine>* 
     lines->push_back(*current_line);
     current_line->spans.clear();
     *current_width = 0;
+}
+
+static void MarkWrappedLinesAsCommand(
+    std::vector<UiTextLine>* lines,
+    size_t start_index)
+{
+    if (!lines) {
+        return;
+    }
+
+    for (size_t index = start_index; index < lines->size(); ++index) {
+        (*lines)[index].command_line = true;
+    }
 }
 
 static void AppendWrappedParagraph(
@@ -1113,14 +1132,18 @@ static void BuildTranscriptLines(
 
     for (size_t index = 0; index < session_state.history.size(); ++index) {
         const SessionTurnRecord& record = session_state.history[index];
+        const size_t start_line = lines->size();
         AppendWrappedText(std::string("> ") + record.player_command, fonts, max_width, lines);
+        MarkWrappedLinesAsCommand(lines, start_line);
         if (!record.narration.empty()) {
             AppendWrappedText(record.narration, fonts, max_width, lines);
         }
     }
 
     if (!pending_command.empty()) {
+        const size_t start_line = lines->size();
         AppendWrappedText(std::string("> ") + pending_command, fonts, max_width, lines);
+        MarkWrappedLinesAsCommand(lines, start_line);
     }
 
     if (!ui_message.empty()) {
@@ -1188,9 +1211,9 @@ static void DrawConsoleText(
 
     const size_t start = lines.size() > line_capacity ? lines.size() - line_capacity : 0;
     float y = text_rect.y + 8.0f;
-    const SDL_Color color = {0, 0, 0, 255};
     for (size_t index = start; index < lines.size(); ++index) {
         float x = text_rect.x + 8.0f;
+        const SDL_Color color = lines[index].command_line ? SDL_Color{76, 76, 76, 255} : SDL_Color{0, 0, 0, 255};
         for (size_t span_index = 0; span_index < lines[index].spans.size(); ++span_index) {
             const UiTextSpan& span = lines[index].spans[span_index];
             float advance_x = 0.0f;
@@ -1562,6 +1585,7 @@ bool RunSdlFrontend(
                 }
 
                 pending_command = command;
+                persistent_hint.clear();
                 input_text.clear();
                 input_cursor = 0;
                 history_index = -1;
