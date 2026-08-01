@@ -1,0 +1,5 @@
+room "prefab_gate catalog left"
+camera eye(-10.00,2.80,-11.20) target(0.00,1.55,0.00) up(0.00,1.00,0.00) fov(40.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+spotlight panel(1.00,1.00) offset(0.00,0.10,0.35) range(20.0) cone(16.0,34.0) intensity(220.0)
+prefab_gate "catalog_gate" pos(0.0,1.55,0.0) size(6.15,3.10,0.40) gray(0.46) detail(0.58) bars(5)
