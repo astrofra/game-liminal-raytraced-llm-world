@@ -240,6 +240,41 @@ static std::string TrimAsciiSpaces(const std::string& text)
     return text.substr(start, end - start);
 }
 
+static std::string CollapseAsciiWhitespace(const std::string& text)
+{
+    std::string output;
+    output.reserve(text.size());
+
+    bool previous_was_space = false;
+    for (size_t index = 0; index < text.size(); ++index) {
+        const char value = text[index];
+        const bool is_space = value == ' ' || value == '\t' || value == '\r' || value == '\n';
+        if (is_space) {
+            if (!previous_was_space && !output.empty()) {
+                output.push_back(' ');
+            }
+            previous_was_space = true;
+            continue;
+        }
+
+        output.push_back(value);
+        previous_was_space = false;
+    }
+
+    return TrimAsciiSpaces(output);
+}
+
+static std::string ToLowerAsciiCopy(const std::string& text)
+{
+    std::string lower = text;
+    for (size_t index = 0; index < lower.size(); ++index) {
+        if (lower[index] >= 'A' && lower[index] <= 'Z') {
+            lower[index] = static_cast<char>(lower[index] - 'A' + 'a');
+        }
+    }
+    return lower;
+}
+
 static bool IsWhitespaceOnly(const std::string& text)
 {
     for (size_t index = 0; index < text.size(); ++index) {
@@ -656,6 +691,39 @@ static std::string TrimCommandText(const std::string& text)
     return TrimAsciiSpaces(text);
 }
 
+static std::string ExpandInfocomShortcutCommand(const std::string& command)
+{
+    const std::string normalized = ToLowerAsciiCopy(CollapseAsciiWhitespace(command));
+    if (normalized == "n") {
+        return "NORTH";
+    }
+    if (normalized == "s") {
+        return "SOUTH";
+    }
+    if (normalized == "e") {
+        return "EAST";
+    }
+    if (normalized == "w") {
+        return "WEST";
+    }
+    if (normalized == "z") {
+        return "WAIT";
+    }
+    if (normalized == "i") {
+        return "INVENTORY";
+    }
+    if (normalized == "q") {
+        return "QUIT";
+    }
+    return command;
+}
+
+static bool IsQuitCommand(const std::string& command)
+{
+    const std::string normalized = ToLowerAsciiCopy(CollapseAsciiWhitespace(command));
+    return normalized == "q" || normalized == "quit";
+}
+
 static void DrawTextSpan(
     SDL_Renderer* renderer,
     TTF_Font* font,
@@ -1031,6 +1099,7 @@ static std::string BuildStatusLine(
 
 static void BuildTranscriptLines(
     const SessionState& session_state,
+    const std::string& pending_command,
     const std::string& ui_message,
     const UiFonts& fonts,
     int max_width,
@@ -1048,6 +1117,10 @@ static void BuildTranscriptLines(
         if (!record.narration.empty()) {
             AppendWrappedText(record.narration, fonts, max_width, lines);
         }
+    }
+
+    if (!pending_command.empty()) {
+        AppendWrappedText(std::string("> ") + pending_command, fonts, max_width, lines);
     }
 
     if (!ui_message.empty()) {
@@ -1351,6 +1424,7 @@ bool RunSdlFrontend(
     std::string persistent_hint = "Ready. Press Enter to send a command.";
     WorkerActivity worker_activity = kWorkerActivityIdle;
     std::string worker_status = "idle";
+    std::string pending_command;
     std::vector<UiTextLine> transcript_lines;
     bool worker_busy = false;
 
@@ -1454,11 +1528,13 @@ bool RunSdlFrontend(
                 continue;
             }
             if (key == SDLK_RETURN) {
-                const std::string command = TrimCommandText(input_text);
-                if (command.empty()) {
+                const std::string raw_command = TrimCommandText(input_text);
+                if (raw_command.empty()) {
                     ui_message = "Empty command ignored.";
                     continue;
                 }
+
+                const std::string command = ExpandInfocomShortcutCommand(raw_command);
 
                 bool busy = false;
                 {
@@ -1475,10 +1551,17 @@ bool RunSdlFrontend(
                     worker_joined = true;
                 }
 
+                if (IsQuitCommand(command)) {
+                    worker_shared_state.stop_requested.store(true);
+                    running = false;
+                    break;
+                }
+
                 if (command_history.empty() || command_history.back() != command) {
                     command_history.push_back(command);
                 }
 
+                pending_command = command;
                 input_text.clear();
                 input_cursor = 0;
                 history_index = -1;
@@ -1520,6 +1603,7 @@ bool RunSdlFrontend(
                 current_session_state = worker_shared_state.session_state;
                 last_turn_result = worker_shared_state.turn_result;
                 have_last_turn = true;
+                pending_command.clear();
                 rgb_pixels = worker_shared_state.pixels;
                 UploadSceneTexture(
                     rgb_pixels,
@@ -1559,7 +1643,13 @@ bool RunSdlFrontend(
             SDL_GetTicks());
 
         const std::string display_message = !ui_message.empty() ? ui_message : persistent_hint;
-        BuildTranscriptLines(current_session_state, display_message, ui_fonts, console_wrap_width, &transcript_lines);
+        BuildTranscriptLines(
+            current_session_state,
+            pending_command,
+            display_message,
+            ui_fonts,
+            console_wrap_width,
+            &transcript_lines);
 
         InputWindow input_window;
         BuildInputWindow(input_text, input_cursor, ui_fonts.regular, input_text_max_width, &input_window);

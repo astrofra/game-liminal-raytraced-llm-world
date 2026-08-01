@@ -1,62 +1,338 @@
 {
-  "current_place_id": "canonical:gate",
-  "generated_rooms": [],
+  "current_place_id": "generated:room_0004",
+  "generated_rooms": [
+    {
+      "room_id": "generated:room_0001",
+      "scene_text": "room \"generated room\"\ncamera eye(0.0,1.82,-8.4) target(0.0,1.20,8.2) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(72.0)\nsky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(91)\nplane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(18.0,30.0) gray(0.13)\nbox \"wall_back\" pos(0.0,2.1,10.4) size(18.0,4.2,0.8) gray(0.18)\nbox \"parapet_left\" pos(-7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\nbox \"parapet_right\" pos(7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\nbox \"parapet_front\" pos(0.0,0.65,1.9) size(14.0,1.3,0.8) gray(0.26)\nprefab_crate \"service_crate\" pos(2.6,0.55,-1.8) size(1.8,1.1,1.5) gray(0.20) detail(0.31)\nprefab_cooling_unit \"vent_stack\" pos(-4.1,1.0,-2.8) size(1.0,2.0,1.0) gray(0.30) detail(0.39)\n",
+      "spatial_state": {
+        "alert_level": 2,
+        "anchors": [
+          "console",
+          "ventilation_hatch",
+          "security_keypad",
+          "status_board"
+        ],
+        "blocked_exits": [],
+        "canonical_fixture": "",
+        "desert_state": "still",
+        "interior_density": "sparse",
+        "location_archetype": "utility_junction",
+        "location_id": "unknown",
+        "room_summary": "A reinforced junction box for the datacenter’s perimeter systems, housing environmental and security interfaces.",
+        "room_title": "Control Hub",
+        "spatial_anomalies": [],
+        "time_of_day": "dusk",
+        "visibility_level": "dusty",
+        "visible_objects": [
+          "maintenance console (interface, locked)",
+          "ventilation hatch (floor, requires tool)",
+          "security keypad (input, numeric)",
+          "metal cabinet (drawer, partially open)",
+          "flickering status board (displays cooling/power)",
+          "warning placard",
+          "service crate",
+          "intercom post",
+          "badge reader",
+          "maintenance hatch"
+        ]
+      }
+    },
+    {
+      "room_id": "generated:room_0002",
+      "scene_text": "room \"generated room\"\ncamera eye(0.0,1.78,-7.8) target(0.0,1.20,8.4) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(14.0,24.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.2,0.0) normal(0.0,-1.0,0.0) size(14.0,24.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.6,11.4) size(14.0,3.2,0.6) gray(0.20)\nbox \"wall_left\" pos(-6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"wall_right\" pos(6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"threshold_frame\" pos(0.0,1.5,8.8) size(3.6,3.0,0.45) gray(0.24)\nprefab_rack \"rack_left\" pos(-3.0,1.25,2.8) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_rack \"rack_right\" pos(3.0,1.25,4.4) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_cooling_unit \"cooling_block\" pos(-4.4,1.0,-2.5) size(1.1,2.0,1.1) gray(0.31) detail(0.39)\nprefab_crate \"maintenance_crate\" pos(2.4,0.55,-1.6) size(1.7,1.0,1.4) gray(0.20) detail(0.30)\n",
+      "spatial_state": {
+        "alert_level": 3,
+        "anchors": [
+          "biometric_scanner",
+          "sliding_drawer",
+          "console",
+          "vent_grille",
+          "warning_placard"
+        ],
+        "blocked_exits": [],
+        "canonical_fixture": "",
+        "desert_state": "still",
+        "interior_density": "sparse",
+        "location_archetype": "secure_storage",
+        "location_id": "unknown",
+        "room_summary": "A climate-controlled vault storing decommissioned core logs and backup drives, accessible only via biometric clearance.",
+        "room_title": "Restricted Archive",
+        "spatial_anomalies": [],
+        "time_of_day": "night",
+        "visibility_level": "clear",
+        "visible_objects": [
+          "biometric scanner (input, requires scan)",
+          "sliding metal drawer (storage, locked, labeled 'CORE-LOG-202X')",
+          "console (interface, displays 'ACCESS DENIED')",
+          "vent grille (ceiling, rattling)",
+          "warning placard (floor, 'DO NOT REMOVE DRIVES WITHOUT AUTHORIZATION')",
+          "service panel",
+          "maintenance crate",
+          "cooling keypad",
+          "rack access door",
+          "cabinet latch"
+        ]
+      }
+    },
+    {
+      "room_id": "generated:room_0003",
+      "scene_text": "room \"generated room\"\ncamera eye(0.0,1.78,-7.8) target(0.0,1.20,8.4) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(14.0,24.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.2,0.0) normal(0.0,-1.0,0.0) size(14.0,24.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.6,11.4) size(14.0,3.2,0.6) gray(0.20)\nbox \"wall_left\" pos(-6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"wall_right\" pos(6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"threshold_frame\" pos(0.0,1.5,8.8) size(3.6,3.0,0.45) gray(0.24)\nprefab_rack \"rack_left\" pos(-3.0,1.25,2.8) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_rack \"rack_right\" pos(3.0,1.25,4.4) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_cooling_unit \"cooling_block\" pos(-4.4,1.0,-2.5) size(1.1,2.0,1.1) gray(0.31) detail(0.39)\nprefab_crate \"maintenance_crate\" pos(2.4,0.55,-1.6) size(1.7,1.0,1.4) gray(0.20) detail(0.30)\n",
+      "spatial_state": {
+        "alert_level": 3,
+        "anchors": [
+          "central console",
+          "locked cabinet",
+          "floor hatch",
+          "wall-mounted badge reader"
+        ],
+        "blocked_exits": [],
+        "canonical_fixture": "",
+        "desert_state": "still",
+        "interior_density": "sparse",
+        "location_archetype": "control_room",
+        "location_id": "unknown",
+        "room_summary": "A small, windowless control room with a central console, a locked cabinet, and a single access hatch in the floor.",
+        "room_title": "Sector 5 Control Hub",
+        "spatial_anomalies": [],
+        "time_of_day": "night",
+        "visibility_level": "low",
+        "visible_objects": [
+          "central console (active, screen shows Sector 5 map)",
+          "locked cabinet (warning label, handle visible)",
+          "floor hatch (slightly open, draft visible)",
+          "wall-mounted badge reader (red light pulsing)",
+          "emergency intercom (silent, mounted near ceiling)",
+          "service panel",
+          "maintenance crate",
+          "cooling keypad",
+          "rack access door",
+          "cabinet latch"
+        ]
+      }
+    },
+    {
+      "room_id": "generated:room_0004",
+      "scene_text": "room \"generated room\"\ncamera eye(0.0,1.78,-7.8) target(0.0,1.20,8.4) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(14.0,24.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.2,0.0) normal(0.0,-1.0,0.0) size(14.0,24.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.6,11.4) size(14.0,3.2,0.6) gray(0.20)\nbox \"wall_left\" pos(-6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"wall_right\" pos(6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"threshold_frame\" pos(0.0,1.5,8.8) size(3.6,3.0,0.45) gray(0.24)\nprefab_rack \"rack_left\" pos(-3.0,1.25,2.8) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_rack \"rack_right\" pos(3.0,1.25,4.4) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_cooling_unit \"cooling_block\" pos(-4.4,1.0,-2.5) size(1.1,2.0,1.1) gray(0.31) detail(0.39)\nprefab_crate \"maintenance_crate\" pos(2.4,0.55,-1.6) size(1.7,1.0,1.4) gray(0.20) detail(0.30)\n",
+      "spatial_state": {
+        "alert_level": 3,
+        "anchors": [
+          "secondary console",
+          "floor hatch",
+          "climate-controlled racks",
+          "manual override switch",
+          "ventilation grille"
+        ],
+        "blocked_exits": [],
+        "canonical_fixture": "",
+        "desert_state": "still",
+        "interior_density": "sparse",
+        "location_archetype": "storage_vault",
+        "location_id": "unknown",
+        "room_summary": "A reinforced storage chamber with climate-controlled racks and a single access hatch leading to a secondary console.",
+        "room_title": "Sector 5 Backup Vault",
+        "spatial_anomalies": [],
+        "time_of_day": "night",
+        "visibility_level": "low",
+        "visible_objects": [
+          "secondary console (corrupted backup display, power button)",
+          "floor hatch (slightly open, draft visible, rusted handle)",
+          "climate-controlled racks (sealed data pods, temperature gauge)",
+          "manual override switch (labeled 'EMERGENCY POWER')",
+          "ventilation grille (rattle on airflow, small access panel)",
+          "service panel",
+          "maintenance crate",
+          "cooling keypad",
+          "rack access door",
+          "cabinet latch"
+        ]
+      }
+    }
+  ],
   "hard_state": {
-    "alert_level": 1,
+    "alert_level": 3,
     "cooling_state": "stable",
-    "current_location_id": "gate",
+    "current_location_id": "unknown",
     "inventory_items": [],
-    "move_count": 0,
+    "move_count": 7,
     "named_entities": [
       "duty_officer"
     ],
     "power_state": "stable",
-    "score": 0,
-    "turn_number": 1,
+    "score": 15,
+    "turn_number": 10,
     "unresolved_threats": [
       "possible_external_attack"
     ],
     "water_state": "stable"
   },
-  "history": [],
-  "next_generated_room_index": 1,
-  "room_links": [],
+  "history": [
+    {
+      "clarification": "Generated room scene fallback was used.",
+      "intent": "move_north_generated_room",
+      "location_id": "unknown",
+      "location_label": "Control Hub",
+      "narration": "The sliding gate seals behind you with a hiss. Inside, a dimly lit alcove hums with equipment: a **maintenance console** mounted on the wall, a **ventilation hatch** set into the floor, and a **security keypad** embedded in a metal cabinet. A **flickering...",
+      "player_command": "NORTH",
+      "turn_number": 1
+    },
+    {
+      "clarification": "Generated room scene fallback was used.",
+      "intent": "move_north_generated_room",
+      "location_id": "unknown",
+      "location_label": "Restricted Archive",
+      "narration": "The gate seals behind you with a metallic *click*. Inside, a sterile chamber glows faintly under emergency lighting. A **biometric scanner** mounted on the wall hums, its red light pulsing.",
+      "player_command": "NORTH",
+      "turn_number": 2
+    },
+    {
+      "clarification": "Generated room scene fallback reused. Scanner requires biometric input or a valid badge.",
+      "intent": "inspect_biometric_scanner",
+      "location_id": "unknown",
+      "location_label": "Restricted Archive",
+      "narration": "The **biometric scanner**’s red light flashes faster. A small screen reads: *'INSERT FINGER OR RETINA SCAN. AUTHORIZATION LEVEL: 5.",
+      "player_command": "look at biometric scanner",
+      "turn_number": 3
+    },
+    {
+      "clarification": "Biometric scan succeeded. Drawer is now accessible.",
+      "intent": "scan_finger_biometric",
+      "location_id": "unknown",
+      "location_label": "Restricted Archive",
+      "narration": "The scanner’s red light dims briefly. A chime sounds—*beep*—then the screen flashes: *'ACCESS GRANTED. LEVEL 5.",
+      "player_command": "insert finger in biometric scanner",
+      "turn_number": 4
+    },
+    {
+      "clarification": "Level 5 access grants entry to a server aisle. The console’s prompt suggests a new location, not a literal 'level' in the building’s vertical structure.",
+      "intent": "interpret_level_5_access",
+      "location_id": "server_aisles",
+      "location_label": "server_aisles",
+      "narration": "The **console** flickers—its screen now reads *'LEVEL 5 ACCESS GRANTED. PROCEED TO SECTOR 5.'* A **rack access door** beside it hums open.",
+      "player_command": "go to level 5",
+      "turn_number": 5
+    },
+    {
+      "clarification": "Generated room scene fallback was used.",
+      "intent": "move_west_generated_room",
+      "location_id": "unknown",
+      "location_label": "Sector 5 Control Hub",
+      "narration": "The **rack access door** hisses shut behind you. A dim blue glow emanates from a **central console** mounted on a pedestal, its screen displaying a static map of Sector 5. To your left, a **locked cabinet** hums faintly, its surface etched with a faded...",
+      "player_command": "WEST",
+      "turn_number": 6
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "server_aisles",
+      "location_label": "server_aisles",
+      "narration": "You go east and enter server_aisles.",
+      "player_command": "EAST",
+      "turn_number": 7
+    },
+    {
+      "clarification": "",
+      "intent": "move_west_known_room",
+      "location_id": "unknown",
+      "location_label": "Sector 5 Control Hub",
+      "narration": "You go west and enter Sector 5 Control Hub. A small, windowless control room with a central console, a locked cabinet, and a single access hatch in the floor.",
+      "player_command": "WEST",
+      "turn_number": 8
+    },
+    {
+      "clarification": "Generated room scene fallback was used.",
+      "intent": "move_south_generated_room",
+      "location_id": "unknown",
+      "location_label": "Sector 5 Backup Vault",
+      "narration": "The **rack access door** seals behind you with a metallic *thunk*. A faint blue emergency light casts long shadows over **climate-controlled racks** lined with sealed data pods. A **secondary console** hums quietly on a pedestal, its screen displaying a...",
+      "player_command": "SOUTH",
+      "turn_number": 9
+    }
+  ],
+  "next_generated_room_index": 5,
+  "room_links": [
+    {
+      "direction": "north",
+      "from_place_id": "canonical:gate",
+      "to_place_id": "generated:room_0001"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "generated:room_0001",
+      "to_place_id": "canonical:gate"
+    },
+    {
+      "direction": "north",
+      "from_place_id": "generated:room_0001",
+      "to_place_id": "generated:room_0002"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "generated:room_0002",
+      "to_place_id": "generated:room_0001"
+    },
+    {
+      "direction": "west",
+      "from_place_id": "canonical:server_aisles",
+      "to_place_id": "generated:room_0003"
+    },
+    {
+      "direction": "east",
+      "from_place_id": "generated:room_0003",
+      "to_place_id": "canonical:server_aisles"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "generated:room_0003",
+      "to_place_id": "generated:room_0004"
+    },
+    {
+      "direction": "north",
+      "from_place_id": "generated:room_0004",
+      "to_place_id": "generated:room_0003"
+    }
+  ],
   "soft_state": {
     "active_hypotheses": [
       "the threat may be real",
       "the institution may be manufacturing the threat"
     ],
     "atmosphere": "administrative, dry, watchful",
-    "rolling_summary": "An officer has just arrived at an isolated datacenter built at the edge of a desert.",
-    "tolerated_incoherences": []
+    "rolling_summary": "The **rack access door** seals behind you with a metallic *thunk*. A faint blue emergency light casts long shadows over **climate-controlled racks** lined with sealed data pods. A **secondary console** hums quietly on a pedestal, its screen displaying a...",
+    "tolerated_incoherences": [
+      "Server aisle replaces Restricted Archive. Anchors updated to reflect new environment. 'Level 5' refers to sector designation, not vertical elevation."
+    ]
   },
   "spatial_state": {
-    "alert_level": 1,
+    "alert_level": 3,
     "anchors": [
-      "portal",
-      "fence",
-      "service_road"
+      "secondary console",
+      "floor hatch",
+      "climate-controlled racks",
+      "manual override switch",
+      "ventilation grille"
     ],
     "blocked_exits": [],
-    "canonical_fixture": "assets/scenes/datacenter_entry_gate.scene",
-    "desert_state": "dusty",
+    "canonical_fixture": "",
+    "desert_state": "still",
     "interior_density": "sparse",
-    "location_archetype": "entry_threshold",
-    "location_id": "gate",
-    "room_summary": "A checkpoint threshold between the datacenter compound and the desert road, with controls and tagged equipment near the portal.",
-    "room_title": "Entry Gate",
+    "location_archetype": "storage_vault",
+    "location_id": "unknown",
+    "room_summary": "A reinforced storage chamber with climate-controlled racks and a single access hatch leading to a secondary console.",
+    "room_title": "Sector 5 Backup Vault",
     "spatial_anomalies": [],
-    "time_of_day": "dusk",
-    "visibility_level": "dusty",
+    "time_of_day": "night",
+    "visibility_level": "low",
     "visible_objects": [
-      "badge reader",
-      "intercom panel",
-      "checkpoint crate",
-      "warning placard",
-      "sliding gate",
-      "service crate",
-      "intercom post",
-      "maintenance hatch"
+      "secondary console (corrupted backup display, power button)",
+      "floor hatch (slightly open, draft visible, rusted handle)",
+      "climate-controlled racks (sealed data pods, temperature gauge)",
+      "manual override switch (labeled 'EMERGENCY POWER')",
+      "ventilation grille (rattle on airflow, small access panel)",
+      "service panel",
+      "maintenance crate",
+      "cooling keypad",
+      "rack access door",
+      "cabinet latch"
     ]
   }
 }
