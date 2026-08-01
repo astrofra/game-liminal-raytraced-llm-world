@@ -656,6 +656,16 @@ static std::string TrimCommandText(const std::string& text)
     return TrimAsciiSpaces(text);
 }
 
+static void DrawTextSpan(
+    SDL_Renderer* renderer,
+    TTF_Font* font,
+    const std::string& text,
+    float x,
+    float y,
+    int line_height,
+    SDL_Color color,
+    float* advance_x);
+
 static void DrawPanel(SDL_Renderer* renderer, const SDL_FRect& rect, Uint8 fill, Uint8 border)
 {
     SDL_SetRenderDrawColor(renderer, fill, fill, fill, 255);
@@ -676,81 +686,96 @@ static bool SpatialStateBlocksDirectionForUi(const SpatialState& spatial_state, 
     return false;
 }
 
-static void DrawCompassDirectionCell(SDL_Renderer* renderer, const SDL_FRect& rect, bool open)
+static void DrawCompassDirectionCell(
+    SDL_Renderer* renderer,
+    TTF_Font* font,
+    const SDL_FRect& rect,
+    const char* label,
+    bool open)
 {
     if (!renderer) {
         return;
     }
 
+    const SDL_FRect outer_rect = {rect.x - 2.0f, rect.y - 2.0f, rect.w + 4.0f, rect.h + 4.0f};
     if (open) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderFillRect(renderer, &outer_rect);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderFillRect(renderer, &rect);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderRect(renderer, &rect);
+    } else {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderFillRect(renderer, &outer_rect);
+        SDL_SetRenderDrawColor(renderer, 242, 242, 242, 255);
+        SDL_RenderFillRect(renderer, &rect);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderRect(renderer, &rect);
+    }
+
+    if (!font || !label || !label[0]) {
         return;
     }
 
-    SDL_SetRenderDrawColor(renderer, 236, 236, 236, 255);
-    SDL_RenderFillRect(renderer, &rect);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderRect(renderer, &rect);
-    SDL_RenderLine(renderer, rect.x + 4.0f, rect.y + 4.0f, rect.x + rect.w - 4.0f, rect.y + rect.h - 4.0f);
-    SDL_RenderLine(renderer, rect.x + rect.w - 4.0f, rect.y + 4.0f, rect.x + 4.0f, rect.y + rect.h - 4.0f);
+    const SDL_Color label_color = open ? SDL_Color{255, 255, 255, 255} : SDL_Color{0, 0, 0, 255};
+    const int label_width = MeasureTextWidth(font, label);
+    const int label_height = std::max(TTF_GetFontHeight(font), 1);
+    DrawTextSpan(
+        renderer,
+        font,
+        label,
+        rect.x + (rect.w - static_cast<float>(label_width)) * 0.5f,
+        rect.y + (rect.h - static_cast<float>(label_height)) * 0.5f - 1.0f,
+        label_height,
+        label_color,
+        0);
 }
 
-static void DrawExitCompass(SDL_Renderer* renderer, const SessionState& session_state, const SDL_FRect& scene_rect)
+static void DrawExitCompass(
+    SDL_Renderer* renderer,
+    const UiFonts& fonts,
+    const SessionState& session_state,
+    const SDL_FRect& scene_rect)
 {
     if (!renderer) {
         return;
     }
 
-    const SDL_FRect panel_rect = {
-        scene_rect.x + scene_rect.w - 124.0f,
-        scene_rect.y + 12.0f,
-        108.0f,
-        108.0f,
-    };
-    DrawPanel(renderer, panel_rect, 244, 0);
+    const float cell_size = 30.0f;
+    const float gap = 8.0f;
+    const float anchor_x = scene_rect.x + scene_rect.w - 112.0f;
+    const float anchor_y = scene_rect.y + scene_rect.h - 112.0f;
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderDebugText(renderer, panel_rect.x + 24.0f, panel_rect.y + 6.0f, "EXITS");
-
-    const SDL_FRect hub_rect = {panel_rect.x + 44.0f, panel_rect.y + 44.0f, 20.0f, 20.0f};
-    DrawPanel(renderer, hub_rect, 250, 0);
-
-    const SDL_FRect north_rect = {panel_rect.x + 43.0f, panel_rect.y + 20.0f, 22.0f, 22.0f};
-    const SDL_FRect south_rect = {panel_rect.x + 43.0f, panel_rect.y + 66.0f, 22.0f, 22.0f};
-    const SDL_FRect west_rect = {panel_rect.x + 20.0f, panel_rect.y + 43.0f, 22.0f, 22.0f};
-    const SDL_FRect east_rect = {panel_rect.x + 66.0f, panel_rect.y + 43.0f, 22.0f, 22.0f};
-
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderLine(renderer, panel_rect.x + 54.0f, panel_rect.y + 42.0f, panel_rect.x + 54.0f, panel_rect.y + 44.0f);
-    SDL_RenderLine(renderer, panel_rect.x + 54.0f, panel_rect.y + 64.0f, panel_rect.x + 54.0f, panel_rect.y + 66.0f);
-    SDL_RenderLine(renderer, panel_rect.x + 42.0f, panel_rect.y + 54.0f, panel_rect.x + 44.0f, panel_rect.y + 54.0f);
-    SDL_RenderLine(renderer, panel_rect.x + 64.0f, panel_rect.y + 54.0f, panel_rect.x + 66.0f, panel_rect.y + 54.0f);
+    const SDL_FRect north_rect = {anchor_x + cell_size + gap, anchor_y, cell_size, cell_size};
+    const SDL_FRect west_rect = {anchor_x, anchor_y + cell_size + gap, cell_size, cell_size};
+    const SDL_FRect east_rect = {anchor_x + (cell_size + gap) * 2.0f, anchor_y + cell_size + gap, cell_size, cell_size};
+    const SDL_FRect south_rect = {anchor_x + cell_size + gap, anchor_y + (cell_size + gap) * 2.0f, cell_size, cell_size};
 
     DrawCompassDirectionCell(
         renderer,
+        fonts.regular,
         north_rect,
+        "N",
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionNorth));
     DrawCompassDirectionCell(
         renderer,
+        fonts.regular,
+        east_rect,
+        "E",
+        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionEast));
+    DrawCompassDirectionCell(
+        renderer,
+        fonts.regular,
         south_rect,
+        "S",
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionSouth));
     DrawCompassDirectionCell(
         renderer,
+        fonts.regular,
         west_rect,
+        "W",
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest));
-    DrawCompassDirectionCell(
-        renderer,
-        east_rect,
-        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionEast));
-
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderDebugText(renderer, panel_rect.x + 51.0f, panel_rect.y + 12.0f, "N");
-    SDL_RenderDebugText(renderer, panel_rect.x + 51.0f, panel_rect.y + 92.0f, "S");
-    SDL_RenderDebugText(renderer, panel_rect.x + 8.0f, panel_rect.y + 51.0f, "W");
-    SDL_RenderDebugText(renderer, panel_rect.x + 92.0f, panel_rect.y + 51.0f, "E");
 }
 
 static void UploadSceneTexture(
@@ -1111,6 +1136,82 @@ static void DrawConsoleText(
     }
 }
 
+static std::string FitTextWithEllipsis(TTF_Font* font, const std::string& text, int max_width)
+{
+    if (!font || text.empty() || max_width <= 0) {
+        return std::string();
+    }
+
+    if (MeasureTextWidth(font, text) <= max_width) {
+        return text;
+    }
+
+    const std::string ellipsis = "...";
+    const int ellipsis_width = MeasureTextWidth(font, ellipsis);
+    if (ellipsis_width >= max_width) {
+        return ellipsis;
+    }
+
+    const size_t fit_length = MeasureFitLength(font, text, max_width - ellipsis_width);
+    const std::string trimmed = TrimAsciiSpaces(text.substr(0, fit_length));
+    if (trimmed.empty()) {
+        return ellipsis;
+    }
+
+    return trimmed + ellipsis;
+}
+
+static void DrawTitleBar(
+    SDL_Renderer* renderer,
+    const UiFonts& fonts,
+    const SDL_FRect& rect,
+    const SessionState& session_state)
+{
+    if (!renderer) {
+        return;
+    }
+
+    DrawPanel(renderer, rect, 18, 0);
+
+    const std::string room_title = session_state.spatial_state.room_title.empty()
+        ? DescribeCurrentPlaceLabel(session_state)
+        : session_state.spatial_state.room_title;
+    char stats_buffer[128];
+    snprintf(
+        stats_buffer,
+        sizeof(stats_buffer),
+        "Moves %d   Score %d",
+        session_state.hard_state.move_count,
+        session_state.hard_state.score);
+    const std::string stats_text = stats_buffer;
+
+    const int stats_width = MeasureTextWidth(fonts.regular, stats_text);
+    const int title_max_width = std::max(1, static_cast<int>(rect.w) - 24 - stats_width - 24);
+    const std::string fitted_title = FitTextWithEllipsis(fonts.regular, room_title, title_max_width);
+    const float text_y = rect.y + (rect.h - static_cast<float>(fonts.line_height)) * 0.5f - 1.0f;
+    const SDL_Color title_color = {255, 255, 255, 255};
+
+    DrawTextSpan(
+        renderer,
+        fonts.regular,
+        fitted_title,
+        rect.x + 10.0f,
+        text_y,
+        fonts.line_height,
+        title_color,
+        0);
+
+    DrawTextSpan(
+        renderer,
+        fonts.regular,
+        stats_text,
+        rect.x + rect.w - 10.0f - static_cast<float>(stats_width),
+        text_y,
+        fonts.line_height,
+        title_color,
+        0);
+}
+
 }  // namespace
 
 bool RunSdlFrontend(
@@ -1220,8 +1321,14 @@ bool RunSdlFrontend(
         &texture_rgba_pixels,
         scene_texture);
 
+    const SDL_FRect title_rect = {40.0f, 4.0f, 920.0f, 22.0f};
     const SDL_FRect scene_frame = {40.0f, 28.0f, 920.0f, 460.0f};
-    const SDL_FRect scene_rect = {60.0f, 48.0f, 880.0f, 440.0f};
+    const SDL_FRect scene_rect = {
+        scene_frame.x + 1.0f,
+        scene_frame.y + 1.0f,
+        scene_frame.w - 2.0f,
+        scene_frame.h - 2.0f,
+    };
     const SDL_FRect console_rect = {40.0f, 516.0f, 920.0f, 196.0f};
     const SDL_FRect input_rect = {40.0f, 728.0f, 920.0f, 44.0f};
     const int console_wrap_width = std::max(1, static_cast<int>(console_rect.w) - 16);
@@ -1457,7 +1564,7 @@ bool RunSdlFrontend(
         InputWindow input_window;
         BuildInputWindow(input_text, input_cursor, ui_fonts.regular, input_text_max_width, &input_window);
 
-        SDL_SetRenderDrawColor(renderer, 198, 198, 198, 255);
+        SDL_SetRenderDrawColor(renderer, 99, 99, 99, 255);
         SDL_RenderClear(renderer);
 
         DrawPanel(renderer, scene_frame, 236, 0);
@@ -1465,11 +1572,13 @@ bool RunSdlFrontend(
         DrawPanel(renderer, input_rect, 250, 0);
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderDebugText(renderer, 48.0f, 8.0f, "LE DESERT DES TOKENS");
+        DrawTitleBar(renderer, ui_fonts, title_rect, current_session_state);
         SDL_RenderDebugText(renderer, 48.0f, 500.0f, status_line.c_str());
 
         SDL_RenderTexture(renderer, scene_texture, 0, &scene_rect);
-        DrawExitCompass(renderer, current_session_state, scene_rect);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderRect(renderer, &scene_frame);
+        DrawExitCompass(renderer, ui_fonts, current_session_state, scene_rect);
         DrawConsoleText(renderer, ui_fonts, console_rect, transcript_lines, console_line_capacity);
 
         const SDL_Color player_text_color = {0, 0, 0, 255};

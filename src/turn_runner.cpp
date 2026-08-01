@@ -30,7 +30,15 @@ struct GeneratedRoomDraft {
     std::string title;
     std::string summary;
     std::string arrival_narration;
+    int move_cost;
+    int score_delta;
     SpatialState spatial_state;
+
+    GeneratedRoomDraft()
+        : move_cost(1)
+        , score_delta(0)
+    {
+    }
 };
 
 static void FinalizeGeneratedRoomDraft(GeneratedRoomDraft* draft, CardinalDirection direction);
@@ -451,6 +459,10 @@ static void ParseHardStateDeltaNode(const json& node, HardStateDelta* delta)
 
     delta->location_changed = ReadBoolValue(node, "location_changed", false);
     ParseLocationId(ReadStringValue(node, "next_location_id").c_str(), &delta->next_location_id);
+    delta->move_count_changed = ReadBoolValue(node, "move_count_changed", false);
+    delta->next_move_count = ReadIntValue(node, "next_move_count", 0);
+    delta->score_changed = ReadBoolValue(node, "score_changed", false);
+    delta->next_score = ReadIntValue(node, "next_score", 0);
     delta->alert_level_changed = ReadBoolValue(node, "alert_level_changed", false);
     delta->next_alert_level = ReadIntValue(node, "next_alert_level", 0);
     delta->cooling_state_changed = ReadBoolValue(node, "cooling_state_changed", false);
@@ -503,6 +515,12 @@ static void ApplyHardDelta(HardState* state, const HardStateDelta& delta)
     if (delta.location_changed && delta.next_location_id != kLocationUnknown) {
         state->current_location_id = delta.next_location_id;
     }
+    if (delta.move_count_changed) {
+        state->move_count = delta.next_move_count;
+    }
+    if (delta.score_changed) {
+        state->score = delta.next_score;
+    }
     if (delta.alert_level_changed) {
         state->alert_level = delta.next_alert_level;
     }
@@ -527,6 +545,13 @@ static void ApplyHardDelta(HardState* state, const HardStateDelta& delta)
     }
     for (size_t index = 0; index < delta.threats_remove.size(); ++index) {
         RemoveString(&state->unresolved_threats, delta.threats_remove[index]);
+    }
+
+    if (state->move_count < 0) {
+        state->move_count = 0;
+    }
+    if (state->score < 0) {
+        state->score = 0;
     }
 }
 
@@ -918,6 +943,9 @@ static void FinalizeGeneratedRoomDraft(GeneratedRoomDraft* draft, CardinalDirect
             : draft->summary;
     }
     draft->arrival_narration = ConstrainNarrationText(draft->arrival_narration, 260, 3);
+    if (draft->move_cost < 0) {
+        draft->move_cost = 0;
+    }
 
     draft->spatial_state.room_title = draft->title;
     draft->spatial_state.room_summary = draft->summary;
@@ -980,6 +1008,8 @@ static bool ParseGeneratedRoomJson(
         draft->title = ReadStringValue(root, "title");
         draft->summary = ReadStringValue(root, "summary");
         draft->arrival_narration = ReadStringValue(root, "arrival_narration");
+        draft->move_cost = ReadIntValue(root, "move_cost", draft->move_cost);
+        draft->score_delta = ReadIntValue(root, "score_delta", draft->score_delta);
         if (root.contains("spatial_state")) {
             ParseGeneratedSpatialStateNode(root["spatial_state"], &draft->spatial_state);
         }
@@ -1318,6 +1348,7 @@ bool RunHeadlessTurnFromState(
                 return false;
             }
             result->updated_soft_state.rolling_summary = result->turn_result.narration;
+            ++result->updated_hard_state.move_count;
             ++result->updated_hard_state.turn_number;
             if (!LoadSceneForPlace(initial_session_state, linked_place_id, &result->rendered_scene, error_buffer, error_buffer_size)) {
                 return false;
@@ -1502,6 +1533,14 @@ bool RunHeadlessTurnFromState(
         result->updated_spatial_state.location_id = kLocationUnknown;
         result->updated_spatial_state.canonical_fixture.clear();
         EnsureActionableVisibleObjects(&result->updated_spatial_state);
+        result->updated_hard_state.move_count += draft.move_cost;
+        result->updated_hard_state.score += draft.score_delta;
+        if (result->updated_hard_state.move_count < 0) {
+            result->updated_hard_state.move_count = 0;
+        }
+        if (result->updated_hard_state.score < 0) {
+            result->updated_hard_state.score = 0;
+        }
         if (result->updated_spatial_state.alert_level > 0) {
             result->updated_hard_state.alert_level = result->updated_spatial_state.alert_level;
         }

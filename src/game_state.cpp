@@ -107,6 +107,8 @@ static json MakeHardStateJson(const HardState& state)
 {
     json node = json::object();
     node["turn_number"] = state.turn_number;
+    node["move_count"] = state.move_count;
+    node["score"] = state.score;
     node["current_location_id"] = LocationIdToString(state.current_location_id);
     node["alert_level"] = state.alert_level;
     node["cooling_state"] = ResourceStateToString(state.cooling_state);
@@ -199,6 +201,8 @@ static void ParseHardStateNode(const json& node, HardState* state)
     }
 
     state->turn_number = ReadIntNode(node, "turn_number", state->turn_number);
+    state->move_count = ReadIntNode(node, "move_count", state->move_count);
+    state->score = ReadIntNode(node, "score", state->score);
     ParseLocationId(ReadStringNode(node, "current_location_id").c_str(), &state->current_location_id);
     state->alert_level = ReadIntNode(node, "alert_level", state->alert_level);
     ParseResourceState(ReadStringNode(node, "cooling_state").c_str(), &state->cooling_state);
@@ -671,6 +675,8 @@ HardState MakeInitialHardState()
 {
     HardState state;
     state.turn_number = 1;
+    state.move_count = 0;
+    state.score = 0;
     state.current_location_id = kLocationGate;
     state.alert_level = 1;
     state.cooling_state = kResourceStable;
@@ -730,6 +736,12 @@ void NormalizeSessionState(SessionState* state)
 
     if (state->hard_state.turn_number <= 0) {
         state->hard_state.turn_number = 1;
+    }
+    if (state->hard_state.move_count < 0) {
+        state->hard_state.move_count = 0;
+    }
+    if (state->hard_state.score < 0) {
+        state->hard_state.score = 0;
     }
 
     if (in_generated_room) {
@@ -847,6 +859,8 @@ void PrintHardStateSummary(const HardState& state, FILE* stream)
     FILE* out = stream ? stream : stdout;
     fprintf(out, "HardState\n");
     fprintf(out, "  turn_number: %d\n", state.turn_number);
+    fprintf(out, "  move_count: %d\n", state.move_count);
+    fprintf(out, "  score: %d\n", state.score);
     fprintf(out, "  current_location_id: %s\n", LocationIdToString(state.current_location_id));
     fprintf(out, "  alert_level: %d\n", state.alert_level);
     fprintf(out, "  cooling_state: %s\n", ResourceStateToString(state.cooling_state));

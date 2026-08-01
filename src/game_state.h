@@ -59,6 +59,8 @@ enum ResourceState {
 
 struct HardState {
     int turn_number;
+    int move_count;
+    int score;
     LocationId current_location_id;
     int alert_level;
     ResourceState cooling_state;
@@ -70,6 +72,8 @@ struct HardState {
 
     HardState()
         : turn_number(0)
+        , move_count(0)
+        , score(0)
         , current_location_id(kLocationGate)
         , alert_level(1)
         , cooling_state(kResourceStable)
@@ -116,6 +120,10 @@ struct SpatialState {
 struct HardStateDelta {
     bool location_changed;
     LocationId next_location_id;
+    bool move_count_changed;
+    int next_move_count;
+    bool score_changed;
+    int next_score;
     bool alert_level_changed;
     int next_alert_level;
     bool cooling_state_changed;
@@ -132,6 +140,10 @@ struct HardStateDelta {
     HardStateDelta()
         : location_changed(false)
         , next_location_id(kLocationUnknown)
+        , move_count_changed(false)
+        , next_move_count(0)
+        , score_changed(false)
+        , next_score(0)
         , alert_level_changed(false)
         , next_alert_level(0)
         , cooling_state_changed(false)
