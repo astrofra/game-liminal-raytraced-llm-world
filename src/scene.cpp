@@ -803,16 +803,18 @@ static void AddCratePrefab(
     float body_gray,
     float detail_gray)
 {
-    const float brace = Clamp(std::min(size.x, size.z) * 0.12f, 0.04f, 0.18f);
-    const float lid_height = Clamp(size.y * 0.14f, 0.04f, size.y * 0.28f);
+    const float min_dimension = std::min(std::min(size.x, size.y), size.z);
+    const float lid_thickness = Clamp(min_dimension * 0.12f, 0.04f, min_dimension * 0.22f);
+    const float body_height = std::max(size.y - lid_thickness, lid_thickness);
+    const Vec3 body_size(size.x, body_height, size.z);
+    const Vec3 lid_size(
+        std::max(size.x * 1.04f, size.x + 0.03f),
+        lid_thickness,
+        std::max(size.z * 1.04f, size.z + 0.03f));
+    const float lid_center_y = body_size.y * 0.5f;
 
-    AddPrefabChildBox(scene, name, "body", center, Vec3(0.0f, -lid_height * 0.18f, 0.0f), Vec3(size.x * 0.88f, std::max(size.y - lid_height * 0.55f, 0.10f), size.z * 0.88f), body_gray);
-    AddPrefabChildBox(scene, name, "lid", center, Vec3(0.0f, (size.y - lid_height) * 0.5f, 0.0f), Vec3(size.x, lid_height, size.z), detail_gray);
-
-    AddPrefabChildBox(scene, name, "brace_fl", center, Vec3(-(size.x - brace) * 0.5f, 0.0f, -(size.z - brace) * 0.5f), Vec3(brace, size.y, brace), detail_gray);
-    AddPrefabChildBox(scene, name, "brace_fr", center, Vec3((size.x - brace) * 0.5f, 0.0f, -(size.z - brace) * 0.5f), Vec3(brace, size.y, brace), detail_gray);
-    AddPrefabChildBox(scene, name, "brace_bl", center, Vec3(-(size.x - brace) * 0.5f, 0.0f, (size.z - brace) * 0.5f), Vec3(brace, size.y, brace), detail_gray);
-    AddPrefabChildBox(scene, name, "brace_br", center, Vec3((size.x - brace) * 0.5f, 0.0f, (size.z - brace) * 0.5f), Vec3(brace, size.y, brace), detail_gray);
+    AddPrefabChildBox(scene, name, "body", center, Vec3(0.0f, -lid_thickness * 0.5f, 0.0f), body_size, body_gray);
+    AddPrefabChildBox(scene, name, "lid", center, Vec3(0.0f, lid_center_y, 0.0f), lid_size, detail_gray);
 }
 
 static void AddCoolingUnitPrefab(

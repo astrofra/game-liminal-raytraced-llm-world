@@ -181,6 +181,22 @@ Consequence :
 
 Un lancement sans `--width` ni `--height` produit maintenant un rendu plus couteux, mais plus representatif du projet.
 
+## 2026-08-01 - Passer le catalogue de prefabs en mode HQ par defaut
+
+Decision :
+
+Le script `scripts/generate_prefab_catalog.py` utilise desormais par defaut `1536x1536` et `32` samples par pixel.
+
+Raison :
+
+- le catalogue sert surtout au diagnostic visuel des prefabs
+- les artefacts geometriques subtils se voient mal a `768x768` et `8 spp`
+- cette charge supplementaire n'impacte pas le rendu interactif du jeu, seulement les exports de controle
+
+Consequence :
+
+Un lancement sans options du generateur de catalogue produit maintenant des PNG plus lents a calculer, mais nettement plus utiles pour l'audit.
+
 ## 2026-07-30 - Valider `llama.cpp` avec CUDA et `Ministral 3 8B` comme cible d'inference v1
 
 Decision :

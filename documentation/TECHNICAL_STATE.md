@@ -65,6 +65,7 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
 - Reconstruction locale de la lumiere de la Cornell Box a partir des metadonnees de la scene.
 - Structure d'acceleration BVH sur triangles.
 - Intersections rayon/AABB et rayon/triangle.
+- Les AABB de feuilles coplanaires, donc d'epaisseur nulle sur un axe, sont acceptees par le parcours BVH. Cette correction evite la disparition de triangles entiers ou de demi-facettes sur les primitives `box`.
 - Path tracing diffus simple avec :
   - echantillonnage direct de la lumiere
   - un petit nombre de rebonds diffus
@@ -114,6 +115,7 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - ligne de statut avec spinner ASCII pour distinguer `llm` et `cpu`
   - annulation best-effort via `Escape`
 - Script Python `scripts/generate_prefab_catalog.py` pour rendre chaque prefab supporte, stocker les `.scene`/`.png` d'audit et assembler un unique `documentation/PREFAB_CATALOG.md`.
+  - Le mode par defaut du catalogue est desormais HQ : `1536x1536`, `32` samples par pixel.
 - Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`, desormais en buffer RGB.
 - Options CLI de boucle fonctionnelle :
   - `--run-turn`

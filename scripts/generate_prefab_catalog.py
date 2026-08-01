@@ -12,6 +12,9 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_RENDERER = REPO_ROOT / "build" / "Release" / "liminal_cornell_renderer.exe"
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "documentation" / "generated" / "prefab_catalog"
 DEFAULT_MARKDOWN = REPO_ROOT / "documentation" / "PREFAB_CATALOG.md"
+DEFAULT_CATALOG_WIDTH = 1536
+DEFAULT_CATALOG_HEIGHT = 1536
+DEFAULT_CATALOG_SAMPLES = 32
 SKY_DIRECTIVE = (
     "sky zenith(0.01) horizon(0.24) nadir(0.00) "
     "band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)"
@@ -163,7 +166,7 @@ def write_markdown(markdown_path, output_root, entries, width, height, samples):
             ]
         )
 
-    markdown_path.write_text("\n".join(lines), encoding="utf-8")
+    markdown_path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
 
 
 def main():
@@ -171,9 +174,9 @@ def main():
     parser.add_argument("--renderer", type=pathlib.Path, default=DEFAULT_RENDERER)
     parser.add_argument("--output-root", type=pathlib.Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--markdown", type=pathlib.Path, default=DEFAULT_MARKDOWN)
-    parser.add_argument("--width", type=int, default=768)
-    parser.add_argument("--height", type=int, default=768)
-    parser.add_argument("--samples", type=int, default=8)
+    parser.add_argument("--width", type=int, default=DEFAULT_CATALOG_WIDTH)
+    parser.add_argument("--height", type=int, default=DEFAULT_CATALOG_HEIGHT)
+    parser.add_argument("--samples", type=int, default=DEFAULT_CATALOG_SAMPLES)
     args = parser.parse_args()
 
     renderer_path = args.renderer.resolve()

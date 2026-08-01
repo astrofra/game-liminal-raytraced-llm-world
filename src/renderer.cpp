@@ -295,7 +295,9 @@ static bool IntersectAabb(const Ray& ray, const Aabb& bounds, float max_distance
 
         t_min = std::max(t_min, t0);
         t_max = std::min(t_max, t1);
-        if (t_max <= t_min) {
+        // A triangle leaf can have a zero-thickness AABB. Equality is still a
+        // valid overlap at the triangle plane and must not reject the leaf.
+        if (t_max < t_min) {
             return false;
         }
     }

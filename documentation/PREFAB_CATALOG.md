@@ -1,6 +1,6 @@
 # Prefab Catalog
 
-Genere le 2026-08-01 19:00:01.
+Genere le 2026-08-01 22:50:10.
 
 Ce document rassemble le premier catalogue visuel des prefabs `scene v1` dans un seul Markdown.
 
@@ -9,7 +9,7 @@ Notes :
 - rendu carre sans changement d'architecture du raytraceur : seul le buffer de sortie change
 - studio ouvert avec `sky` visible et sans sol : les prefabs flottent volontairement dans le vide
 - deux vues par prefab : 3/4 gauche et 3/4 droite
-- parametres de rendu utilises : `768x768`, `8` samples par pixel
+- parametres de rendu utilises : `1536x1536`, `32` samples par pixel
 
 ## prefab_gate
 
