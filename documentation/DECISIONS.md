@@ -286,3 +286,20 @@ Raison :
 Consequence :
 
 La prochaine etape doit definir un contrat de tour structure, les structures de memoire du monde et un compilateur de scene deterministe pour les lieux canoniques avant d'ouvrir une generation spatiale plus libre.
+
+## 2026-07-31 - Passer du grayscale strict a un RGB semantique verrouille
+
+Decision :
+
+Le renderer n'est plus strictement monochrome. Il produit maintenant une image RGB tres contrainte : ciel bleu, desert ocre, LEDs de racks rouges, et tout le reste en niveaux de gris.
+
+Raison :
+
+- la palette limitee renforce la lisibilite spatiale sans perdre l'austerite du projet
+- le contraste bleu / ocre / rouge aide a distinguer exterieur, desert et repere technique
+- laisser la couleur libre au format `.scene` ou au LLM serait trop instable pour la preuve de concept
+- garder `gray()` comme seule entree materielle reste plus simple pour le parseur et pour le prompt
+
+Consequence :
+
+Le coeur du renderer et les buffers memoire passent en RGB, mais le langage `.scene` reste base sur `gray()` et sur un nommage semantique simple. Le `PGM` legacy reste disponible via conversion en luminance.

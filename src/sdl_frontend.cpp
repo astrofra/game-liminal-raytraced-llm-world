@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 #include "renderer.h"
 #include "scene_compiler.h"
@@ -53,10 +54,51 @@ struct WorkerSharedState {
 
 struct InputWindow {
     std::string text;
-    size_t cursor_column;
+    int cursor_x;
 
     InputWindow()
-        : cursor_column(0)
+        : cursor_x(0)
+    {
+    }
+};
+
+struct UiTextSpan {
+    std::string text;
+    bool highlighted;
+
+    UiTextSpan()
+        : highlighted(false)
+    {
+    }
+};
+
+struct UiTextLine {
+    std::vector<UiTextSpan> spans;
+};
+
+struct UiTextToken {
+    std::string text;
+    bool highlighted;
+    bool whitespace;
+
+    UiTextToken()
+        : highlighted(false)
+        , whitespace(false)
+    {
+    }
+};
+
+struct UiFonts {
+    TTF_Font* regular;
+    TTF_Font* highlight;
+    int line_skip;
+    int line_height;
+
+    UiFonts()
+        : regular(0)
+        , highlight(0)
+        , line_skip(20)
+        , line_height(18)
     {
     }
 };
@@ -82,6 +124,11 @@ static void SetSdlError(char* error_buffer, size_t error_buffer_size, const char
     }
 
     snprintf(error_buffer, error_buffer_size, "%s: %s", prefix ? prefix : "SDL error", sdl_error);
+}
+
+static void SetTtfError(char* error_buffer, size_t error_buffer_size, const char* prefix)
+{
+    SetSdlError(error_buffer, error_buffer_size, prefix ? prefix : "SDL_ttf error");
 }
 
 static const char* StreamPhaseLabel(HeadlessTurnStreamPhase phase)
@@ -173,47 +220,9 @@ static size_t RetreatUtf8(const std::string& text, size_t index)
     return cursor;
 }
 
-static char ToDebugGlyph(const std::string& codepoint)
+static TTF_Font* FontForSpan(const UiFonts& fonts, bool highlighted)
 {
-    if (codepoint.empty()) {
-        return ' ';
-    }
-
-    const unsigned char value = static_cast<unsigned char>(codepoint[0]);
-    if (codepoint.size() == 1 && value >= 32u && value <= 126u) {
-        return static_cast<char>(value);
-    }
-    if (codepoint.size() == 1 && (value == '\n' || value == '\t')) {
-        return static_cast<char>(value);
-    }
-    return '?';
-}
-
-static std::vector<std::string> SplitUtf8(const std::string& text)
-{
-    std::vector<std::string> parts;
-    for (size_t index = 0; index < text.size();) {
-        const size_t next = AdvanceUtf8(text, index);
-        parts.push_back(text.substr(index, next - index));
-        index = next;
-    }
-    return parts;
-}
-
-static std::string SanitizeDebugText(const std::string& text)
-{
-    const std::vector<std::string> codepoints = SplitUtf8(text);
-    std::string output;
-    output.reserve(codepoints.size());
-    for (size_t index = 0; index < codepoints.size(); ++index) {
-        const char glyph = ToDebugGlyph(codepoints[index]);
-        if (glyph == '\t') {
-            output.append("    ");
-        } else {
-            output.push_back(glyph);
-        }
-    }
-    return output;
+    return highlighted ? fonts.highlight : fonts.regular;
 }
 
 static std::string TrimAsciiSpaces(const std::string& text)
@@ -231,62 +240,380 @@ static std::string TrimAsciiSpaces(const std::string& text)
     return text.substr(start, end - start);
 }
 
-static void AppendWrappedParagraph(const std::string& paragraph, size_t max_chars, std::vector<std::string>* lines)
+static bool IsWhitespaceOnly(const std::string& text)
 {
-    if (!lines) {
-        return;
-    }
-
-    if (max_chars == 0) {
-        lines->push_back(std::string());
-        return;
-    }
-
-    std::string remaining = paragraph;
-    if (remaining.empty()) {
-        lines->push_back(std::string());
-        return;
-    }
-
-    while (!remaining.empty()) {
-        if (remaining.size() <= max_chars) {
-            lines->push_back(remaining);
-            break;
+    for (size_t index = 0; index < text.size(); ++index) {
+        const char value = text[index];
+        if (value != ' ' && value != '\t' && value != '\r' && value != '\n') {
+            return false;
         }
+    }
+    return true;
+}
 
-        size_t split = remaining.rfind(' ', max_chars);
-        if (split == std::string::npos || split == 0) {
-            split = max_chars;
+static int MeasureTextWidth(TTF_Font* font, const std::string& text)
+{
+    if (!font || text.empty()) {
+        return 0;
+    }
+
+    int width = 0;
+    int height = 0;
+    if (!TTF_GetStringSize(font, text.c_str(), text.size(), &width, &height)) {
+        return 0;
+    }
+    return width;
+}
+
+static size_t MeasureFitLength(TTF_Font* font, const std::string& text, int max_width)
+{
+    if (!font || text.empty() || max_width <= 0) {
+        return 0;
+    }
+
+    int measured_width = 0;
+    size_t measured_length = 0;
+    if (!TTF_MeasureString(font, text.c_str(), text.size(), max_width, &measured_width, &measured_length)) {
+        return 0;
+    }
+    return measured_length;
+}
+
+static bool TryOpenFontCandidate(const char* path, float point_size, TTF_Font** font)
+{
+    if (!path || !path[0] || !font) {
+        return false;
+    }
+
+    *font = TTF_OpenFont(path, point_size);
+    return *font != 0;
+}
+
+static bool OpenFontWithFallbacks(const char* asset_path, float point_size, TTF_Font** font)
+{
+    if (!asset_path || !font) {
+        return false;
+    }
+
+    if (TryOpenFontCandidate(asset_path, point_size, font)) {
+        return true;
+    }
+
+    const char* base_path = SDL_GetBasePath();
+    if (base_path) {
+        const std::string base(base_path);
+
+        const std::string candidates[] = {
+            base + asset_path,
+            base + "../" + asset_path,
+            base + "../../" + asset_path,
+        };
+        for (size_t index = 0; index < sizeof(candidates) / sizeof(candidates[0]); ++index) {
+            if (TryOpenFontCandidate(candidates[index].c_str(), point_size, font)) {
+                return true;
+            }
         }
+    }
 
-        lines->push_back(remaining.substr(0, split));
-        remaining = TrimAsciiSpaces(remaining.substr(split));
+    return false;
+}
+
+static bool LoadUiFonts(UiFonts* fonts, char* error_buffer, size_t error_buffer_size)
+{
+    if (!fonts) {
+        SetError(error_buffer, error_buffer_size, "Invalid UI font container.");
+        return false;
+    }
+
+    if (!TTF_Init()) {
+        SetTtfError(error_buffer, error_buffer_size, "TTF_Init failed");
+        return false;
+    }
+
+    if (!OpenFontWithFallbacks("assets/fonts/Zilla_Slab/ZillaSlab-Regular.ttf", 18.0f, &fonts->regular)) {
+        SetTtfError(error_buffer, error_buffer_size, "Failed to open Zilla Slab regular font");
+        TTF_Quit();
+        return false;
+    }
+
+    if (!OpenFontWithFallbacks(
+            "assets/fonts/Zilla_Slab_Highlight/ZillaSlabHighlight-Regular.ttf",
+            18.0f,
+            &fonts->highlight)) {
+        SetTtfError(error_buffer, error_buffer_size, "Failed to open Zilla Slab highlight font");
+        TTF_CloseFont(fonts->regular);
+        fonts->regular = 0;
+        TTF_Quit();
+        return false;
+    }
+
+    fonts->line_skip = std::max(TTF_GetFontLineSkip(fonts->regular), TTF_GetFontLineSkip(fonts->highlight));
+    fonts->line_height = std::max(TTF_GetFontHeight(fonts->regular), TTF_GetFontHeight(fonts->highlight));
+    if (fonts->line_skip <= 0) {
+        fonts->line_skip = 24;
+    }
+    if (fonts->line_height <= 0) {
+        fonts->line_height = fonts->line_skip;
+    }
+    return true;
+}
+
+static void DestroyUiFonts(UiFonts* fonts)
+{
+    if (!fonts) {
+        return;
+    }
+
+    if (fonts->highlight) {
+        TTF_CloseFont(fonts->highlight);
+        fonts->highlight = 0;
+    }
+    if (fonts->regular) {
+        TTF_CloseFont(fonts->regular);
+        fonts->regular = 0;
+    }
+    if (TTF_WasInit()) {
+        TTF_Quit();
     }
 }
 
-static void AppendWrappedText(const std::string& text, size_t max_chars, std::vector<std::string>* lines)
+static void AppendSpanText(UiTextLine* line, const std::string& text, bool highlighted)
+{
+    if (!line || text.empty()) {
+        return;
+    }
+
+    if (!line->spans.empty() && line->spans.back().highlighted == highlighted) {
+        line->spans.back().text += text;
+        return;
+    }
+
+    UiTextSpan span;
+    span.text = text;
+    span.highlighted = highlighted;
+    line->spans.push_back(span);
+}
+
+static void ParseHighlightMarkup(const std::string& text, std::vector<UiTextSpan>* spans)
+{
+    if (!spans) {
+        return;
+    }
+
+    spans->clear();
+
+    size_t cursor = 0;
+    while (cursor < text.size()) {
+        const size_t open = text.find('*', cursor);
+        if (open == std::string::npos) {
+            if (cursor < text.size()) {
+                UiTextSpan span;
+                span.text = text.substr(cursor);
+                span.highlighted = false;
+                spans->push_back(span);
+            }
+            break;
+        }
+
+        if (open > cursor) {
+            UiTextSpan span;
+            span.text = text.substr(cursor, open - cursor);
+            span.highlighted = false;
+            spans->push_back(span);
+        }
+
+        const size_t close = text.find('*', open + 1);
+        if (close == std::string::npos) {
+            UiTextSpan span;
+            span.text = text.substr(open);
+            span.highlighted = false;
+            spans->push_back(span);
+            break;
+        }
+
+        if (close > open + 1) {
+            UiTextSpan span;
+            span.text = text.substr(open + 1, close - open - 1);
+            span.highlighted = true;
+            spans->push_back(span);
+        }
+        cursor = close + 1;
+    }
+}
+
+static void TokenizeUiTextSpans(const std::vector<UiTextSpan>& spans, std::vector<UiTextToken>* tokens)
+{
+    if (!tokens) {
+        return;
+    }
+
+    tokens->clear();
+    for (size_t span_index = 0; span_index < spans.size(); ++span_index) {
+        const UiTextSpan& span = spans[span_index];
+        size_t cursor = 0;
+        while (cursor < span.text.size()) {
+            const char value = span.text[cursor];
+            const bool whitespace = value == ' ' || value == '\t' || value == '\r';
+            const size_t start = cursor;
+            if (whitespace) {
+                while (cursor < span.text.size()) {
+                    const char next = span.text[cursor];
+                    if (next != ' ' && next != '\t' && next != '\r') {
+                        break;
+                    }
+                    ++cursor;
+                }
+            } else {
+                while (cursor < span.text.size()) {
+                    const char next = span.text[cursor];
+                    if (next == ' ' || next == '\t' || next == '\r') {
+                        break;
+                    }
+                    cursor = AdvanceUtf8(span.text, cursor);
+                }
+            }
+
+            UiTextToken token;
+            token.highlighted = span.highlighted;
+            token.whitespace = whitespace;
+            token.text = whitespace ? " " : span.text.substr(start, cursor - start);
+            tokens->push_back(token);
+        }
+    }
+}
+
+static void FlushWrappedLine(UiTextLine* current_line, std::vector<UiTextLine>* lines, int* current_width)
+{
+    if (!current_line || !lines || !current_width) {
+        return;
+    }
+
+    lines->push_back(*current_line);
+    current_line->spans.clear();
+    *current_width = 0;
+}
+
+static void AppendWrappedParagraph(
+    const std::string& paragraph,
+    const UiFonts& fonts,
+    int max_width,
+    std::vector<UiTextLine>* lines)
 {
     if (!lines) {
         return;
     }
 
-    const std::string sanitized = SanitizeDebugText(text);
+    if (max_width <= 0) {
+        lines->push_back(UiTextLine());
+        return;
+    }
+
+    std::vector<UiTextSpan> parsed_spans;
+    ParseHighlightMarkup(paragraph, &parsed_spans);
+
+    std::vector<UiTextToken> tokens;
+    TokenizeUiTextSpans(parsed_spans, &tokens);
+    if (tokens.empty()) {
+        lines->push_back(UiTextLine());
+        return;
+    }
+
+    UiTextLine current_line;
+    int current_width = 0;
+    bool pending_space = false;
+    bool pending_space_highlight = false;
+
+    for (size_t token_index = 0; token_index < tokens.size(); ++token_index) {
+        UiTextToken token = tokens[token_index];
+        if (token.whitespace) {
+            pending_space = !current_line.spans.empty();
+            pending_space_highlight = token.highlighted;
+            continue;
+        }
+
+        std::string remaining = token.text;
+        while (!remaining.empty()) {
+            const TTF_Font* pending_font = FontForSpan(fonts, pending_space_highlight);
+            TTF_Font* word_font = FontForSpan(fonts, token.highlighted);
+            const int pending_width =
+                pending_space && !current_line.spans.empty() ? MeasureTextWidth(const_cast<TTF_Font*>(pending_font), " ") : 0;
+            const int word_width = MeasureTextWidth(word_font, remaining);
+
+            if (!current_line.spans.empty() && current_width + pending_width + word_width > max_width) {
+                FlushWrappedLine(&current_line, lines, &current_width);
+                pending_space = false;
+                continue;
+            }
+
+            if (current_width + pending_width + word_width <= max_width) {
+                if (pending_width > 0) {
+                    AppendSpanText(&current_line, " ", pending_space_highlight);
+                    current_width += pending_width;
+                }
+                AppendSpanText(&current_line, remaining, token.highlighted);
+                current_width += word_width;
+                remaining.clear();
+                pending_space = false;
+                continue;
+            }
+
+            const int available_width = std::max(1, max_width - current_width - pending_width);
+            size_t fit_length = MeasureFitLength(word_font, remaining, available_width);
+            if (fit_length == 0) {
+                fit_length = AdvanceUtf8(remaining, 0);
+            }
+
+            const std::string fitted = remaining.substr(0, fit_length);
+            if (pending_width > 0) {
+                AppendSpanText(&current_line, " ", pending_space_highlight);
+                current_width += pending_width;
+            }
+            AppendSpanText(&current_line, fitted, token.highlighted);
+            current_width += MeasureTextWidth(word_font, fitted);
+            remaining.erase(0, fit_length);
+            pending_space = false;
+
+            if (!remaining.empty()) {
+                FlushWrappedLine(&current_line, lines, &current_width);
+            }
+        }
+    }
+
+    if (current_line.spans.empty()) {
+        lines->push_back(UiTextLine());
+    } else {
+        lines->push_back(current_line);
+    }
+}
+
+static void AppendWrappedText(const std::string& text, const UiFonts& fonts, int max_width, std::vector<UiTextLine>* lines)
+{
+    if (!lines) {
+        return;
+    }
+
     size_t start = 0;
-    while (start <= sanitized.size()) {
-        const size_t end = sanitized.find('\n', start);
-        const size_t length = end == std::string::npos ? sanitized.size() - start : end - start;
-        AppendWrappedParagraph(sanitized.substr(start, length), max_chars, lines);
+    while (start <= text.size()) {
+        const size_t end = text.find('\n', start);
         if (end == std::string::npos) {
+            AppendWrappedParagraph(text.substr(start), fonts, max_width, lines);
             break;
         }
+
+        AppendWrappedParagraph(text.substr(start, end - start), fonts, max_width, lines);
         start = end + 1;
+        if (start == text.size()) {
+            lines->push_back(UiTextLine());
+            break;
+        }
     }
 }
 
 static void BuildInputWindow(
     const std::string& input_text,
     size_t cursor_byte,
-    size_t max_chars,
+    TTF_Font* font,
+    int max_width,
     InputWindow* input_window)
 {
     if (!input_window) {
@@ -294,33 +621,34 @@ static void BuildInputWindow(
     }
 
     input_window->text.clear();
-    input_window->cursor_column = 0;
+    input_window->cursor_x = 0;
 
-    const std::vector<std::string> glyphs = SplitUtf8(input_text);
-    size_t cursor_codepoint = 0;
-    for (size_t index = 0, byte_offset = 0; index < glyphs.size() && byte_offset < cursor_byte; ++index) {
-        byte_offset += glyphs[index].size();
-        ++cursor_codepoint;
+    if (!font || max_width <= 0) {
+        return;
     }
 
     size_t start = 0;
-    if (glyphs.size() > max_chars && cursor_codepoint >= max_chars) {
-        start = cursor_codepoint - max_chars + 1;
+    const size_t clamped_cursor = std::min(cursor_byte, input_text.size());
+    while (start < clamped_cursor) {
+        const std::string visible_before_cursor = input_text.substr(start, clamped_cursor - start);
+        if (MeasureTextWidth(font, visible_before_cursor) <= max_width) {
+            break;
+        }
+        start = AdvanceUtf8(input_text, start);
     }
 
-    const size_t end = std::min(glyphs.size(), start + max_chars);
-    for (size_t index = start; index < end; ++index) {
-        const char glyph = ToDebugGlyph(glyphs[index]);
-        input_window->text.push_back(glyph == '\n' ? ' ' : glyph);
+    size_t end = clamped_cursor;
+    while (end < input_text.size()) {
+        const size_t next = AdvanceUtf8(input_text, end);
+        const std::string candidate = input_text.substr(start, next - start);
+        if (MeasureTextWidth(font, candidate) > max_width) {
+            break;
+        }
+        end = next;
     }
 
-    if (cursor_codepoint < start) {
-        input_window->cursor_column = 0;
-    } else if (cursor_codepoint > end) {
-        input_window->cursor_column = end - start;
-    } else {
-        input_window->cursor_column = cursor_codepoint - start;
-    }
+    input_window->text = input_text.substr(start, end - start);
+    input_window->cursor_x = MeasureTextWidth(font, input_text.substr(start, clamped_cursor - start));
 }
 
 static std::string TrimCommandText(const std::string& text)
@@ -337,7 +665,7 @@ static void DrawPanel(SDL_Renderer* renderer, const SDL_FRect& rect, Uint8 fill,
 }
 
 static void UploadSceneTexture(
-    const std::vector<unsigned char>& grayscale_pixels,
+    const std::vector<unsigned char>& rgb_pixels,
     int width,
     int height,
     std::vector<unsigned char>* rgba_pixels,
@@ -348,12 +676,13 @@ static void UploadSceneTexture(
     }
 
     rgba_pixels->resize(static_cast<size_t>(width * height * 4));
-    for (size_t index = 0; index < grayscale_pixels.size(); ++index) {
-        const unsigned char value = grayscale_pixels[index];
+    const size_t pixel_count = static_cast<size_t>(width * height);
+    for (size_t index = 0; index < pixel_count; ++index) {
+        const size_t src = index * 3;
         const size_t dst = index * 4;
-        (*rgba_pixels)[dst + 0] = value;
-        (*rgba_pixels)[dst + 1] = value;
-        (*rgba_pixels)[dst + 2] = value;
+        (*rgba_pixels)[dst + 0] = src + 0 < rgb_pixels.size() ? rgb_pixels[src + 0] : 0u;
+        (*rgba_pixels)[dst + 1] = src + 1 < rgb_pixels.size() ? rgb_pixels[src + 1] : 0u;
+        (*rgba_pixels)[dst + 2] = src + 2 < rgb_pixels.size() ? rgb_pixels[src + 2] : 0u;
         (*rgba_pixels)[dst + 3] = 255u;
     }
 
@@ -589,8 +918,9 @@ static std::string BuildStatusLine(
 static void BuildTranscriptLines(
     const SessionState& session_state,
     const std::string& ui_message,
-    size_t max_chars,
-    std::vector<std::string>* lines)
+    const UiFonts& fonts,
+    int max_width,
+    std::vector<UiTextLine>* lines)
 {
     if (!lines) {
         return;
@@ -600,21 +930,69 @@ static void BuildTranscriptLines(
 
     for (size_t index = 0; index < session_state.history.size(); ++index) {
         const SessionTurnRecord& record = session_state.history[index];
-        AppendWrappedText(std::string("> ") + record.player_command, max_chars, lines);
+        AppendWrappedText(std::string("> ") + record.player_command, fonts, max_width, lines);
         if (!record.narration.empty()) {
-            AppendWrappedText(record.narration, max_chars, lines);
+            AppendWrappedText(record.narration, fonts, max_width, lines);
         }
     }
 
     if (!ui_message.empty()) {
-        AppendWrappedText(std::string("[") + ui_message + "]", max_chars, lines);
+        AppendWrappedText(std::string("[") + ui_message + "]", fonts, max_width, lines);
     }
+}
+
+static void DrawTextSpan(
+    SDL_Renderer* renderer,
+    TTF_Font* font,
+    const std::string& text,
+    float x,
+    float y,
+    int line_height,
+    SDL_Color color,
+    float* advance_x)
+{
+    if (advance_x) {
+        *advance_x = 0.0f;
+    }
+    if (!renderer || !font || text.empty()) {
+        return;
+    }
+
+    const int width = MeasureTextWidth(font, text);
+    if (advance_x) {
+        *advance_x = static_cast<float>(width);
+    }
+    if (width <= 0 || IsWhitespaceOnly(text)) {
+        return;
+    }
+
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), text.size(), color);
+    if (!surface) {
+        return;
+    }
+
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (!texture) {
+        SDL_DestroySurface(surface);
+        return;
+    }
+
+    const SDL_FRect dst = {
+        x,
+        y + (static_cast<float>(line_height) - static_cast<float>(surface->h)) * 0.5f,
+        static_cast<float>(surface->w),
+        static_cast<float>(surface->h),
+    };
+    SDL_RenderTexture(renderer, texture, 0, &dst);
+    SDL_DestroyTexture(texture);
+    SDL_DestroySurface(surface);
 }
 
 static void DrawConsoleText(
     SDL_Renderer* renderer,
+    const UiFonts& fonts,
     const SDL_FRect& text_rect,
-    const std::vector<std::string>& lines,
+    const std::vector<UiTextLine>& lines,
     size_t line_capacity)
 {
     if (!renderer || line_capacity == 0) {
@@ -623,10 +1001,24 @@ static void DrawConsoleText(
 
     const size_t start = lines.size() > line_capacity ? lines.size() - line_capacity : 0;
     float y = text_rect.y + 8.0f;
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    const SDL_Color color = {0, 0, 0, 255};
     for (size_t index = start; index < lines.size(); ++index) {
-        SDL_RenderDebugText(renderer, text_rect.x + 8.0f, y, lines[index].c_str());
-        y += static_cast<float>(SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE);
+        float x = text_rect.x + 8.0f;
+        for (size_t span_index = 0; span_index < lines[index].spans.size(); ++span_index) {
+            const UiTextSpan& span = lines[index].spans[span_index];
+            float advance_x = 0.0f;
+            DrawTextSpan(
+                renderer,
+                FontForSpan(fonts, span.highlighted),
+                span.text,
+                x,
+                y,
+                fonts.line_height,
+                color,
+                &advance_x);
+            x += advance_x;
+        }
+        y += static_cast<float>(fonts.line_skip);
     }
 }
 
@@ -656,8 +1048,8 @@ bool RunSdlFrontend(
         return false;
     }
 
-    std::vector<unsigned char> grayscale_pixels;
-    if (!RenderSceneToPixels(initial_scene, config.render_config, &grayscale_pixels)) {
+    std::vector<unsigned char> rgb_pixels;
+    if (!RenderSceneToPixels(initial_scene, config.render_config, &rgb_pixels)) {
         SetError(error_buffer, error_buffer_size, "Cannot render initial scene.");
         return false;
     }
@@ -667,6 +1059,7 @@ bool RunSdlFrontend(
         return false;
     }
 
+    UiFonts ui_fonts;
     SDL_Window* window = 0;
     SDL_Renderer* renderer = 0;
     SDL_Texture* scene_texture = 0;
@@ -680,6 +1073,7 @@ bool RunSdlFrontend(
             &window,
             &renderer)) {
         SetSdlError(error_buffer, error_buffer_size, "SDL_CreateWindowAndRenderer failed");
+        DestroyUiFonts(&ui_fonts);
         SDL_Quit();
         return false;
     }
@@ -692,12 +1086,21 @@ bool RunSdlFrontend(
         SetSdlError(error_buffer, error_buffer_size, "SDL_SetRenderLogicalPresentation failed");
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
+        DestroyUiFonts(&ui_fonts);
+        SDL_Quit();
+        return false;
+    }
+
+    if (!LoadUiFonts(&ui_fonts, error_buffer, error_buffer_size)) {
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
         SDL_Quit();
         return false;
     }
 
     if (!SDL_StartTextInput(window)) {
         SetSdlError(error_buffer, error_buffer_size, "SDL_StartTextInput failed");
+        DestroyUiFonts(&ui_fonts);
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -713,6 +1116,7 @@ bool RunSdlFrontend(
     if (!scene_texture) {
         SetSdlError(error_buffer, error_buffer_size, "SDL_CreateTexture failed");
         SDL_StopTextInput(window);
+        DestroyUiFonts(&ui_fonts);
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -721,7 +1125,7 @@ bool RunSdlFrontend(
 
     std::vector<unsigned char> texture_rgba_pixels;
     UploadSceneTexture(
-        grayscale_pixels,
+        rgb_pixels,
         config.render_config.width,
         config.render_config.height,
         &texture_rgba_pixels,
@@ -729,11 +1133,13 @@ bool RunSdlFrontend(
 
     const SDL_FRect scene_frame = {40.0f, 28.0f, 920.0f, 460.0f};
     const SDL_FRect scene_rect = {60.0f, 48.0f, 880.0f, 440.0f};
-    const SDL_FRect console_rect = {40.0f, 516.0f, 920.0f, 208.0f};
-    const SDL_FRect input_rect = {40.0f, 740.0f, 920.0f, 32.0f};
-    const size_t console_max_chars = static_cast<size_t>(std::max(1, static_cast<int>(console_rect.w / 8.0f) - 2));
-    const size_t input_max_chars = static_cast<size_t>(std::max(1, static_cast<int>((input_rect.w - 24.0f) / 8.0f)));
-    const size_t console_line_capacity = static_cast<size_t>(std::max(1, static_cast<int>((console_rect.h - 16.0f) / 8.0f)));
+    const SDL_FRect console_rect = {40.0f, 516.0f, 920.0f, 196.0f};
+    const SDL_FRect input_rect = {40.0f, 728.0f, 920.0f, 44.0f};
+    const int console_wrap_width = std::max(1, static_cast<int>(console_rect.w) - 16);
+    const int prompt_width = MeasureTextWidth(ui_fonts.regular, "> ");
+    const int input_text_max_width = std::max(1, static_cast<int>(input_rect.w) - 24 - prompt_width - 12);
+    const size_t console_line_capacity = static_cast<size_t>(
+        std::max(1, static_cast<int>((console_rect.h - 16.0f) / static_cast<float>(std::max(ui_fonts.line_skip, 1)))));
 
     WorkerSharedState worker_shared_state;
     std::thread worker_thread;
@@ -749,7 +1155,7 @@ bool RunSdlFrontend(
     std::string persistent_hint = "Ready. Press Enter to send a command.";
     WorkerActivity worker_activity = kWorkerActivityIdle;
     std::string worker_status = "idle";
-    std::vector<std::string> transcript_lines;
+    std::vector<UiTextLine> transcript_lines;
     bool worker_busy = false;
 
     while (running) {
@@ -918,9 +1324,9 @@ bool RunSdlFrontend(
                 current_session_state = worker_shared_state.session_state;
                 last_turn_result = worker_shared_state.turn_result;
                 have_last_turn = true;
-                grayscale_pixels = worker_shared_state.pixels;
+                rgb_pixels = worker_shared_state.pixels;
                 UploadSceneTexture(
-                    grayscale_pixels,
+                    rgb_pixels,
                     config.render_config.width,
                     config.render_config.height,
                     &texture_rgba_pixels,
@@ -957,10 +1363,10 @@ bool RunSdlFrontend(
             SDL_GetTicks());
 
         const std::string display_message = !ui_message.empty() ? ui_message : persistent_hint;
-        BuildTranscriptLines(current_session_state, display_message, console_max_chars, &transcript_lines);
+        BuildTranscriptLines(current_session_state, display_message, ui_fonts, console_wrap_width, &transcript_lines);
 
         InputWindow input_window;
-        BuildInputWindow(input_text, input_cursor, input_max_chars, &input_window);
+        BuildInputWindow(input_text, input_cursor, ui_fonts.regular, input_text_max_width, &input_window);
 
         SDL_SetRenderDrawColor(renderer, 198, 198, 198, 255);
         SDL_RenderClear(renderer);
@@ -974,18 +1380,38 @@ bool RunSdlFrontend(
         SDL_RenderDebugText(renderer, 48.0f, 500.0f, status_line.c_str());
 
         SDL_RenderTexture(renderer, scene_texture, 0, &scene_rect);
-        DrawConsoleText(renderer, console_rect, transcript_lines, console_line_capacity);
+        DrawConsoleText(renderer, ui_fonts, console_rect, transcript_lines, console_line_capacity);
 
-        SDL_RenderDebugText(renderer, input_rect.x + 8.0f, input_rect.y + 12.0f, ">");
-        SDL_RenderDebugText(renderer, input_rect.x + 24.0f, input_rect.y + 12.0f, input_window.text.c_str());
-        const float cursor_x =
-            input_rect.x + 24.0f + static_cast<float>(input_window.cursor_column * SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE);
+        const SDL_Color player_text_color = {0, 0, 0, 255};
+        const float input_text_y =
+            input_rect.y + (input_rect.h - static_cast<float>(ui_fonts.line_height)) * 0.5f - 1.0f;
+        float prompt_advance = 0.0f;
+        DrawTextSpan(
+            renderer,
+            ui_fonts.regular,
+            "> ",
+            input_rect.x + 8.0f,
+            input_text_y,
+            ui_fonts.line_height,
+            player_text_color,
+            &prompt_advance);
+        float input_advance = 0.0f;
+        DrawTextSpan(
+            renderer,
+            ui_fonts.regular,
+            input_window.text,
+            input_rect.x + 8.0f + prompt_advance,
+            input_text_y,
+            ui_fonts.line_height,
+            player_text_color,
+            &input_advance);
+        const float cursor_x = input_rect.x + 8.0f + prompt_advance + static_cast<float>(input_window.cursor_x);
         SDL_RenderLine(
             renderer,
             cursor_x,
-            input_rect.y + 10.0f,
+            input_rect.y + 8.0f,
             cursor_x,
-            input_rect.y + 22.0f);
+            input_rect.y + input_rect.h - 8.0f);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
@@ -1002,6 +1428,7 @@ bool RunSdlFrontend(
 
     SDL_DestroyTexture(scene_texture);
     SDL_StopTextInput(window);
+    DestroyUiFonts(&ui_fonts);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

@@ -141,9 +141,11 @@ std::string BuildSceneFormatRuleText()
     text += "- keep geometry sparse and legible\n";
     text += "- prefer stable repeated objects through prefab_* directives\n";
     text += "- avoid long decorative lists of tiny objects\n";
-    text += "- keep the place readable at 800x400 grayscale noisy rendering\n";
+    text += "- keep the place readable at 800x400 palette-limited noisy rendering\n";
     text += "- stay inside the datacenter + desert fiction; canonical lieux are examples, not limits\n";
     text += "- use gray(), not color() or opacity()\n";
+    text += "- gray() controls luminance only; the engine applies locked semantic colors to sky, desert surfaces, and rack LEDs\n";
+    text += "- prefer names like ground, desert_*, ridge_* or outcrop_* for exterior sand masses\n";
     text += "- valid examples:\n";
     text += "  room \"datacenter roof watch\"\n";
     text += "  camera eye(0.0,1.75,-7.9) target(0.0,1.18,8.8) up(0.0,1.0,0.0) fov(46.0)\n";

@@ -63,6 +63,34 @@ if (LIMINAL_ENABLE_SDL3_FRONTEND)
     else()
         message(FATAL_ERROR "SDL3 frontend requested but SDL3::SDL3 target is not available")
     endif()
+
+    find_package(SDL3_ttf CONFIG QUIET)
+    if (NOT SDL3_ttf_FOUND AND NOT TARGET SDL3_ttf::SDL3_ttf)
+        include(FetchContent)
+        set(SDLTTF_SAMPLES OFF CACHE BOOL "Build SDL3_ttf samples" FORCE)
+        set(SDLTTF_INSTALL OFF CACHE BOOL "Install SDL3_ttf" FORCE)
+        set(SDLTTF_VENDORED ON CACHE BOOL "Use vendored dependencies for SDL3_ttf" FORCE)
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libraries" FORCE)
+        FetchContent_Declare(
+            SDL3_ttf
+            GIT_REPOSITORY "https://github.com/libsdl-org/SDL_ttf.git"
+            GIT_TAG "release-3.2.2"
+            GIT_SHALLOW TRUE
+            GIT_SUBMODULES_RECURSE TRUE)
+        FetchContent_MakeAvailable(SDL3_ttf)
+    endif()
+
+    if (TARGET SDL3_ttf::SDL3_ttf)
+        target_link_libraries(liminal_cornell_renderer PRIVATE SDL3_ttf::SDL3_ttf)
+        target_compile_definitions(liminal_cornell_renderer PRIVATE LIMINAL_HAVE_SDL3_TTF=1)
+    else()
+        message(FATAL_ERROR "SDL3 frontend requested but SDL3_ttf::SDL3_ttf target is not available")
+    endif()
+endif()
+
+if (DEFINED MATH_LIBRARY AND "${MATH_LIBRARY}" MATCHES "NOTFOUND$")
+    unset(MATH_LIBRARY CACHE)
+    unset(MATH_LIBRARY)
 endif()
 
 set(LIMINAL_LLAMA_VENDORED_COMMIT "not-vendored")

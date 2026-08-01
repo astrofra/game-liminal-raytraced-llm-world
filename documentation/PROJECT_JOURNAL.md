@@ -614,6 +614,35 @@ Prochaine etape recommandee :
 
 Attaquer la reduction du cout structurel des prefabs, par exemple via materiaux partages, repetition modulaire ou instanciation plus compacte.
 
+## 2026-07-31 - Iteration 0017 - Palette RGB semantique verrouillee
+
+Objectif :
+
+Quitter le grayscale strict sans ouvrir un renderer couleur libre, afin de donner au monde une signature visuelle plus stable et plus lisible.
+
+Travail effectue :
+
+- passage du path tracer interne de la luminance scalaire a une radiance `Vec3`
+- sortie `PNG` et buffer memoire `RenderSceneToPixels()` convertis en RGB
+- conservation du `PGM` legacy par projection en luminance
+- ajout d'une palette semantique verrouillee :
+  - ciel bleu degrade
+  - desert ocre via nommage `ground` / `desert_*` / `ridge_*` / `outcrop_*`
+  - LEDs rouges injectees automatiquement dans `prefab_rack`
+  - reste du decor en gris
+- retrait des LEDs du sampling de lumiere directe pour eviter qu'elles ne degradent tout le rendu interieur par un bruit rouge excessif
+- mise a jour du prompt de regles `.scene` pour expliquer que `gray()` pilote la luminance, pas une palette libre
+
+Resultat :
+
+Le renderer garde son austerite et son grain, mais il sort maintenant du monochrome pur. Les exterieurs lisent mieux, les racks gagnent des points d'ancrage visuels, et le LLM reste cadre par une palette que le moteur applique lui-meme.
+
+Observations :
+
+- le changement le plus couteux n'etait pas la texture SDL mais bien le passage du chemin de lumiere en `Vec3`
+- les LEDs rouges fonctionnent mieux comme accents visibles que comme vraies lampes de scene
+- la contrainte semantique reste preferable a une syntaxe `color()` ouverte pour l'etape actuelle
+
 ## 2026-07-31 - Iteration 0016 - Cadrage fonctionnel de la boucle de tour et de la generation de scene
 
 Objectif :
@@ -945,3 +974,28 @@ Faire monter d'un cran la qualite des salles improvisees :
 - repair dedie du JSON de room generation
 - mise a jour optionnelle de la scene d'une salle existante apres certaines actions locales
 - etiquette visuelle explicite des sorties disponibles dans le transcript ou l'HMI
+
+## 2026-07-31 - Iteration 0018 - Lisibilite de la GUI SDL3 avec fontes TTF
+
+Objectif :
+
+Rendre la zone textuelle joueur plus lisible sans perdre la separation entre interface fictionnelle et instrumentation debug.
+
+Travail effectue :
+
+- integration de `SDL3_ttf` dans la build SDL3
+- chargement de `assets/fonts/Zilla_Slab/ZillaSlab-Regular.ttf` pour le transcript et la saisie
+- chargement de `assets/fonts/Zilla_Slab_Highlight/ZillaSlabHighlight-Regular.ttf` pour les segments `*highlightes*`
+- conservation de `SDL_RenderDebugText` pour le titre et la barre de statut
+- remplacement du wrapping par nombre de caracteres par un wrapping fonde sur la largeur reelle du texte
+- adaptation du champ de saisie a une largeur proportionnelle avec curseur mesure en pixels
+
+Resultat :
+
+La GUI joueur n'est plus rendue avec la petite fonte bitmap monospaced. Le texte narratif et la saisie utilisent maintenant une fonte bien plus lisible, tandis que la couche debug garde son caractere brut et instrumental.
+
+Observations :
+
+- la distinction entre zone fictionnelle et zone debug devient plus nette
+- le support UTF-8 cote joueur est meilleur qu'avec `SDL_RenderDebugText`
+- la convention `*...*` devient une facon simple d'obtenir des accents visuels sans ouvrir un systeme de style plus lourd

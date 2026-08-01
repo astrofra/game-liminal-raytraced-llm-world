@@ -61,7 +61,7 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - `assets/scenes/datacenter_server_aisles.scene`
   - `assets/scenes/datacenter_roof_watch.scene`
 - Chargement d'un fichier OBJ triangule simple.
-- Chargement d'un fichier MTL reduit en materiaux grayscale.
+- Chargement d'un fichier MTL reduit en materiaux simples, convertis vers la palette RGB semantique interne.
 - Reconstruction locale de la lumiere de la Cornell Box a partir des metadonnees de la scene.
 - Structure d'acceleration BVH sur triangles.
 - Intersections rayon/AABB et rayon/triangle.
@@ -70,8 +70,13 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - un petit nombre de rebonds diffus
   - roulette russe
   - clamp simple des contributions extremes
+- Palette visuelle verrouillee :
+  - ciel bleu degrade
+  - desert ocre
+  - LEDs de racks rouges
+  - reste du decor en gris
 - Parallelisation optionnelle de la boucle de rendu par lignes via OpenMP, avec fallback mono-thread.
-- Sortie image en `PNG` via `stb_image_write`.
+- Sortie image en `PNG` RGB via `stb_image_write`.
 - Sortie `PGM` legacy encore supportee selon l'extension du fichier.
 - Mesure du temps de chargement et du temps de rendu.
 - Arborescence `vendor/llama.cpp` ajoutee au depot comme base d'integration locale du runtime LLM.
@@ -102,10 +107,12 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - worker thread dedie a l'inference et au raytracing
   - flux brut du modele et `.scene` dans le terminal
   - panneau de transcript joueur avec narration finale seulement
+  - rendu TTF joueur via `SDL3_ttf` et fontes `Zilla Slab`
+  - segments `*highlightes*` rendus avec `Zilla Slab Highlight`
   - ligne de commande avec edition clavier et historique haut/bas
   - ligne de statut avec spinner ASCII pour distinguer `llm` et `cpu`
   - annulation best-effort via `Escape`
-- Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`.
+- Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`, desormais en buffer RGB.
 - Options CLI de boucle fonctionnelle :
   - `--run-turn`
   - `--run-session`
@@ -323,7 +330,7 @@ Observation importante :
 
 ## Ecart assume par rapport a la spec longue
 
-La spec cible a terme une image grayscale avec une lumiere portee par la camera, afin d'obtenir un rendu plus brutaliste et found-footage.
+La spec longue parlait initialement d'une image strictement grayscale. Le depot a maintenant bifurque vers un RGB tres contraint : ciel bleu, desert ocre, LEDs rouges et tout le reste en gris, tout en conservant la lumiere portee par la camera et le grain brutaliste.
 
 Le depot n'est plus limite a la Cornell Box : il sait maintenant rendre une premiere scene proprietaire a primitives et l'eclairer avec un spot analytique attache a la camera.
 

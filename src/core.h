@@ -43,6 +43,11 @@ inline Vec3 operator*(const Vec3& value, float scalar)
     return Vec3(value.x * scalar, value.y * scalar, value.z * scalar);
 }
 
+inline Vec3 operator*(const Vec3& a, const Vec3& b)
+{
+    return Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
+}
+
 inline Vec3 operator*(float scalar, const Vec3& value)
 {
     return value * scalar;
@@ -66,6 +71,22 @@ inline Vec3& operator*=(Vec3& value, float scalar)
     value.x *= scalar;
     value.y *= scalar;
     value.z *= scalar;
+    return value;
+}
+
+inline Vec3& operator*=(Vec3& a, const Vec3& b)
+{
+    a.x *= b.x;
+    a.y *= b.y;
+    a.z *= b.z;
+    return a;
+}
+
+inline Vec3& operator/=(Vec3& value, float scalar)
+{
+    value.x /= scalar;
+    value.y /= scalar;
+    value.z /= scalar;
     return value;
 }
 
@@ -127,6 +148,22 @@ inline float Luminance(const Vec3& rgb)
     return rgb.x * 0.2126f + rgb.y * 0.7152f + rgb.z * 0.0722f;
 }
 
+inline float MaxComponent(const Vec3& value)
+{
+    return std::max(value.x, std::max(value.y, value.z));
+}
+
+inline bool IsNearBlack(const Vec3& value)
+{
+    return value.x <= kEpsilon && value.y <= kEpsilon && value.z <= kEpsilon;
+}
+
+enum MaterialSemantic {
+    kMaterialSemanticNeutral = 0,
+    kMaterialSemanticDesert,
+    kMaterialSemanticRackLed,
+};
+
 struct Ray {
     Vec3 origin;
     Vec3 direction;
@@ -153,10 +190,16 @@ struct Aabb {
 
 struct Material {
     std::string name;
-    float albedo;
-    float emission;
+    Vec3 albedo;
+    Vec3 emission;
+    MaterialSemantic semantic;
 
-    Material() : albedo(0.6f), emission(0.0f) {}
+    Material()
+        : albedo(0.6f)
+        , emission(0.0f)
+        , semantic(kMaterialSemanticNeutral)
+    {
+    }
 };
 
 struct Triangle {

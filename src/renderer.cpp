@@ -78,9 +78,27 @@ static float Smoothstep(float edge0, float edge1, float value)
     return t * t * (3.0f - 2.0f * t);
 }
 
-static float Lerp(float a, float b, float t)
+static Vec3 Lerp(const Vec3& a, const Vec3& b, float t)
 {
     return a + (b - a) * t;
+}
+
+static Vec3 ClampColor(const Vec3& color, float min_value, float max_value)
+{
+    return Vec3(
+        Clamp(color.x, min_value, max_value),
+        Clamp(color.y, min_value, max_value),
+        Clamp(color.z, min_value, max_value));
+}
+
+static Vec3 ScaleColorToLuminance(const Vec3& tint, float target_luminance)
+{
+    if (target_luminance <= 0.0f) {
+        return Vec3(0.0f);
+    }
+
+    const float tint_luminance = std::max(Luminance(tint), kEpsilon);
+    return tint * (target_luminance / tint_luminance);
 }
 
 static float Fract(float value)
@@ -212,19 +230,23 @@ static float EvaluateSkyStars(const SkyBackground& sky, const Vec3& direction)
     return intensity * altitude_visibility * (core + halo);
 }
 
-static float SampleSkyBackground(const SkyBackground& sky, const Vec3& direction, Rng* rng)
+static Vec3 SampleSkyBackground(const SkyBackground& sky, const Vec3& direction, Rng* rng)
 {
     if (!sky.enabled) {
-        return 0.0f;
+        return Vec3(0.0f);
     }
 
     const float abs_y = fabsf(direction.y);
     const float horizon_t = 1.0f - Saturate(abs_y / std::max(sky.horizon_band, 0.0001f));
     const float curved_horizon = powf(horizon_t, sky.horizon_curve);
-    const float base_luminance = direction.y >= 0.0f ? sky.zenith_luminance : sky.nadir_luminance;
+    const Vec3 zenith_color = ScaleColorToLuminance(Vec3(0.12f, 0.24f, 0.52f), sky.zenith_luminance);
+    const Vec3 horizon_color = ScaleColorToLuminance(Vec3(0.42f, 0.58f, 0.82f), sky.horizon_luminance);
+    const Vec3 nadir_color = ScaleColorToLuminance(Vec3(0.03f, 0.05f, 0.09f), sky.nadir_luminance);
+    const Vec3 base_color = direction.y >= 0.0f ? zenith_color : nadir_color;
 
-    float luminance = Lerp(base_luminance, sky.horizon_luminance, curved_horizon);
-    luminance += EvaluateSkyStars(sky, direction);
+    Vec3 radiance = Lerp(base_color, horizon_color, curved_horizon);
+    const float star_intensity = EvaluateSkyStars(sky, direction);
+    radiance += Vec3(star_intensity * 0.94f, star_intensity * 0.97f, star_intensity * 1.06f);
 
     if (sky.noise_amount > 0.0f && rng) {
         const float phi = atan2f(direction.z, direction.x);
@@ -237,10 +259,10 @@ static float SampleSkyBackground(const SkyBackground& sky, const Vec3& direction
         const float sample_noise = rng->NextFloat() * 2.0f - 1.0f;
         const float noise_weight = 0.35f + 0.65f * curved_horizon;
         const float combined_noise = directional_noise * 0.20f + sample_noise * 0.80f;
-        luminance += combined_noise * sky.noise_amount * noise_weight;
+        radiance += Vec3(combined_noise * sky.noise_amount * noise_weight);
     }
 
-    return std::max(0.0f, luminance);
+    return ClampColor(radiance, 0.0f, kHuge);
 }
 
 // Rewritten from the slab-style rejection logic in the 2003 raytracer.
@@ -409,18 +431,18 @@ static Vec3 SamplePointOnCameraLight(const CameraLightState& light, Rng* rng)
         light.bitangent * (v * light.panel_height);
 }
 
-static float EstimateEmissiveTriangleLighting(
+static Vec3 EstimateEmissiveTriangleLighting(
     const Scene& scene,
     const Hit& hit,
     const Material& material,
     int light_samples,
     Rng* rng)
 {
-    if (scene.emissive_triangles.empty() || material.albedo <= 0.0f || light_samples <= 0) {
-        return 0.0f;
+    if (scene.emissive_triangles.empty() || IsNearBlack(material.albedo) || light_samples <= 0) {
+        return Vec3(0.0f);
     }
 
-    float contribution = 0.0f;
+    Vec3 contribution(0.0f);
     const float light_count = static_cast<float>(scene.emissive_triangles.size());
 
     for (int sample_index = 0; sample_index < light_samples; ++sample_index) {
@@ -456,15 +478,15 @@ static float EstimateEmissiveTriangleLighting(
         const float area_pdf = 1.0f / light.area;
         const float selection_pdf = 1.0f / light_count;
         const float pdf = area_pdf * selection_pdf;
-        const float brdf = material.albedo / kPi;
+        const Vec3 brdf = material.albedo / kPi;
 
-        contribution += brdf * light_material.emission * cos_surface * cos_light / (distance_squared * pdf);
+        contribution += brdf * light_material.emission * (cos_surface * cos_light / (distance_squared * pdf));
     }
 
     return contribution / static_cast<float>(light_samples);
 }
 
-static float EstimateCameraSpotLighting(
+static Vec3 EstimateCameraSpotLighting(
     const Scene& scene,
     const CameraLightState& camera_light,
     const Hit& hit,
@@ -472,13 +494,13 @@ static float EstimateCameraSpotLighting(
     int light_samples,
     Rng* rng)
 {
-    if (!camera_light.enabled || material.albedo <= 0.0f || light_samples <= 0) {
-        return 0.0f;
+    if (!camera_light.enabled || IsNearBlack(material.albedo) || light_samples <= 0) {
+        return Vec3(0.0f);
     }
 
-    float contribution = 0.0f;
+    Vec3 contribution(0.0f);
     const float area_pdf = 1.0f / std::max(camera_light.area, kEpsilon);
-    const float brdf = material.albedo / kPi;
+    const Vec3 brdf = material.albedo / kPi;
 
     for (int sample_index = 0; sample_index < light_samples; ++sample_index) {
         const Vec3 sample_point = SamplePointOnCameraLight(camera_light, rng);
@@ -516,14 +538,15 @@ static float EstimateCameraSpotLighting(
             continue;
         }
 
-        contribution += brdf * camera_light.intensity * cone_factor * range_factor * cos_surface * cos_light /
-            (distance_squared * area_pdf);
+        contribution += brdf *
+            (camera_light.intensity * cone_factor * range_factor * cos_surface * cos_light /
+                (distance_squared * area_pdf));
     }
 
     return contribution / static_cast<float>(light_samples);
 }
 
-static float EstimateDirectLighting(
+static Vec3 EstimateDirectLighting(
     const Scene& scene,
     const CameraLightState& camera_light,
     const Hit& hit,
@@ -535,7 +558,7 @@ static float EstimateDirectLighting(
         EstimateCameraSpotLighting(scene, camera_light, hit, material, light_samples, rng);
 }
 
-static float TracePath(
+static Vec3 TracePath(
     const Scene& scene,
     const CameraLightState& camera_light,
     const RenderConfig& config,
@@ -543,8 +566,8 @@ static float TracePath(
     Rng* rng)
 {
     Ray ray = camera_ray;
-    float throughput = 1.0f;
-    float radiance = 0.0f;
+    Vec3 throughput(1.0f);
+    Vec3 radiance(0.0f);
 
     for (int bounce = 0; bounce < config.max_bounces; ++bounce) {
         Hit hit;
@@ -556,7 +579,7 @@ static float TracePath(
         const Triangle& triangle = scene.triangles[hit.triangle_index];
         const Material& material = scene.materials[triangle.material_index];
 
-        if (material.emission > 0.0f) {
+        if (!IsNearBlack(material.emission)) {
             radiance += throughput * material.emission;
             break;
         }
@@ -564,13 +587,13 @@ static float TracePath(
         radiance += throughput *
             EstimateDirectLighting(scene, camera_light, hit, material, config.direct_light_samples, rng);
 
-        if (material.albedo <= 0.0f) {
+        if (IsNearBlack(material.albedo)) {
             break;
         }
 
         throughput *= material.albedo;
         if (bounce >= 1) {
-            const float survival_probability = Clamp(throughput, 0.2f, 0.95f);
+            const float survival_probability = Clamp(MaxComponent(throughput), 0.2f, 0.95f);
             if (rng->NextFloat() > survival_probability) {
                 break;
             }
@@ -581,7 +604,7 @@ static float TracePath(
         ray.direction = SampleCosineHemisphere(hit.normal, rng);
     }
 
-    return std::min(radiance, kSampleRadianceClamp);
+    return ClampColor(radiance, 0.0f, kSampleRadianceClamp);
 }
 
 static Ray GenerateCameraRay(
@@ -608,11 +631,22 @@ static Ray GenerateCameraRay(
     return ray;
 }
 
-static unsigned char ToneMapToByte(float luminance, float exposure)
+static unsigned char ToneMapChannel(float value, float exposure)
 {
-    const float mapped = 1.0f - expf(-luminance * exposure);
+    const float mapped = 1.0f - expf(-value * exposure);
     const float gamma = powf(Clamp(mapped, 0.0f, 1.0f), 1.0f / 2.2f);
     return static_cast<unsigned char>(Clamp(gamma * 255.0f, 0.0f, 255.0f));
+}
+
+static void ToneMapToRgb(const Vec3& radiance, float exposure, unsigned char* rgb)
+{
+    if (!rgb) {
+        return;
+    }
+
+    rgb[0] = ToneMapChannel(radiance.x, exposure);
+    rgb[1] = ToneMapChannel(radiance.y, exposure);
+    rgb[2] = ToneMapChannel(radiance.z, exposure);
 }
 
 static bool WritePgm(const char* output_path, const std::vector<unsigned char>& pixels, int width, int height)
@@ -623,16 +657,26 @@ static bool WritePgm(const char* output_path, const std::vector<unsigned char>& 
         return false;
     }
 
+    std::vector<unsigned char> grayscale(static_cast<size_t>(width * height), 0u);
+    for (int pixel_index = 0; pixel_index < width * height; ++pixel_index) {
+        const size_t src = static_cast<size_t>(pixel_index * 3);
+        const float luminance =
+            static_cast<float>(pixels[src + 0]) * 0.2126f +
+            static_cast<float>(pixels[src + 1]) * 0.7152f +
+            static_cast<float>(pixels[src + 2]) * 0.0722f;
+        grayscale[static_cast<size_t>(pixel_index)] = static_cast<unsigned char>(Clamp(luminance, 0.0f, 255.0f));
+    }
+
     fprintf(file, "P5\n%d %d\n255\n", width, height);
-    fwrite(&pixels[0], sizeof(unsigned char), pixels.size(), file);
+    fwrite(&grayscale[0], sizeof(unsigned char), grayscale.size(), file);
     fclose(file);
     return true;
 }
 
 static bool WritePng(const char* output_path, const std::vector<unsigned char>& pixels, int width, int height)
 {
-    const int stride = width;
-    return stbi_write_png(output_path, width, height, 1, &pixels[0], stride) != 0;
+    const int stride = width * 3;
+    return stbi_write_png(output_path, width, height, 3, &pixels[0], stride) != 0;
 }
 
 static bool WriteImageByExtension(
@@ -670,7 +714,7 @@ static bool RenderSceneInternal(
 
     const CameraBasis basis = BuildCameraBasis(scene.camera);
     const CameraLightState camera_light = BuildCameraLightState(scene, basis);
-    pixels->assign(static_cast<size_t>(config.width * config.height), 0u);
+    pixels->assign(static_cast<size_t>(config.width * config.height * 3), 0u);
     bool parallel_enabled = false;
     int openmp_threads = 1;
 
@@ -699,14 +743,15 @@ static bool RenderSceneInternal(
                 config.seed ^ (static_cast<uint32_t>(x) * 1973u) ^ (static_cast<uint32_t>(y) * 9277u);
             Rng rng(pixel_seed);
 
-            float accumulated = 0.0f;
+            Vec3 accumulated(0.0f);
             for (int sample_index = 0; sample_index < config.samples_per_pixel; ++sample_index) {
                 const Ray ray = GenerateCameraRay(scene.camera, basis, x, y, config, &rng);
                 accumulated += TracePath(scene, camera_light, config, ray, &rng);
             }
 
-            const float average = accumulated / static_cast<float>(config.samples_per_pixel);
-            (*pixels)[static_cast<size_t>(x + y * config.width)] = ToneMapToByte(average, config.exposure);
+            const Vec3 average = accumulated / static_cast<float>(config.samples_per_pixel);
+            const size_t pixel_index = static_cast<size_t>((x + y * config.width) * 3);
+            ToneMapToRgb(average, config.exposure, &(*pixels)[pixel_index]);
         }
 
         if (print_progress && !parallel_enabled && ((y % 16) == 0 || y + 1 == config.height)) {

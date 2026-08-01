@@ -151,6 +151,78 @@ static std::string ToLowerCopy(const std::string& text)
     return lower;
 }
 
+static Vec3 ClampColor(const Vec3& color, float min_value, float max_value)
+{
+    return Vec3(
+        Clamp(color.x, min_value, max_value),
+        Clamp(color.y, min_value, max_value),
+        Clamp(color.z, min_value, max_value));
+}
+
+static Vec3 ScaleColorToLuminance(const Vec3& tint, float target_luminance)
+{
+    if (target_luminance <= 0.0f) {
+        return Vec3(0.0f);
+    }
+
+    const float tint_luminance = std::max(Luminance(tint), kEpsilon);
+    return tint * (target_luminance / tint_luminance);
+}
+
+static MaterialSemantic InferMaterialSemantic(const std::string& name)
+{
+    const std::string lower = ToLowerCopy(name);
+    if (lower.find("led") != std::string::npos) {
+        return kMaterialSemanticRackLed;
+    }
+
+    if (lower == "ground" ||
+        lower.find("desert") != std::string::npos ||
+        lower.find("dune") != std::string::npos ||
+        lower.find("sand") != std::string::npos ||
+        lower.find("ridge") != std::string::npos ||
+        lower.find("outcrop") != std::string::npos) {
+        return kMaterialSemanticDesert;
+    }
+
+    return kMaterialSemanticNeutral;
+}
+
+static Vec3 BuildSemanticAlbedo(float gray_value, MaterialSemantic semantic)
+{
+    const float luminance = Clamp(gray_value, 0.0f, 0.95f);
+    if (luminance <= 0.0f) {
+        return Vec3(0.0f);
+    }
+
+    switch (semantic) {
+        case kMaterialSemanticDesert:
+            return ClampColor(ScaleColorToLuminance(Vec3(0.92f, 0.67f, 0.24f), luminance), 0.0f, 0.95f);
+        case kMaterialSemanticRackLed:
+            return ClampColor(ScaleColorToLuminance(Vec3(0.95f, 0.18f, 0.14f), luminance), 0.0f, 0.95f);
+        case kMaterialSemanticNeutral:
+        default:
+            return Vec3(luminance);
+    }
+}
+
+static Vec3 BuildSemanticEmission(float emission_value, MaterialSemantic semantic)
+{
+    const float intensity = std::max(0.0f, emission_value);
+    if (intensity <= 0.0f) {
+        return Vec3(0.0f);
+    }
+
+    switch (semantic) {
+        case kMaterialSemanticRackLed:
+            return ScaleColorToLuminance(Vec3(1.00f, 0.12f, 0.08f), intensity);
+        case kMaterialSemanticNeutral:
+        case kMaterialSemanticDesert:
+        default:
+            return Vec3(intensity);
+    }
+}
+
 static bool ParseVec3Text(const char* text, Vec3* value)
 {
     if (!text || !value) {
@@ -293,6 +365,7 @@ static Material FinalizeMaterial(const MaterialDraft& draft)
 {
     Material material;
     material.name = draft.name;
+    material.semantic = InferMaterialSemantic(draft.name);
 
     const Vec3 kd = draft.has_kd ? draft.kd : Vec3(0.6f);
     const Vec3 ka = draft.has_ka ? draft.ka : kd;
@@ -302,11 +375,13 @@ static Material FinalizeMaterial(const MaterialDraft& draft)
     const bool emissive = (draft.name == "light") || kd_luminance > 1.0f || ka_luminance > 1.0f;
 
     if (emissive) {
-        material.albedo = 0.0f;
-        material.emission = std::max(kd_luminance, ka_luminance);
+        material.albedo = Vec3(0.0f);
+        material.emission = BuildSemanticEmission(std::max(kd_luminance, ka_luminance), material.semantic);
     } else {
-        material.albedo = Clamp(kd_luminance > 0.0f ? kd_luminance : ka_luminance, 0.05f, 0.95f);
-        material.emission = 0.0f;
+        material.albedo = BuildSemanticAlbedo(
+            Clamp(kd_luminance > 0.0f ? kd_luminance : ka_luminance, 0.05f, 0.95f),
+            material.semantic);
+        material.emission = Vec3(0.0f);
     }
 
     return material;
@@ -335,8 +410,9 @@ static int AddPrimitiveMaterial(Scene* scene, const std::string& name, float gra
 {
     Material material;
     material.name = name;
-    material.albedo = Clamp(gray_value, 0.0f, 0.95f);
-    material.emission = std::max(0.0f, emission_value);
+    material.semantic = InferMaterialSemantic(name);
+    material.albedo = BuildSemanticAlbedo(gray_value, material.semantic);
+    material.emission = BuildSemanticEmission(emission_value, material.semantic);
     scene->materials.push_back(material);
     return static_cast<int>(scene->materials.size()) - 1;
 }
@@ -572,7 +648,8 @@ static void AddPrefabChildBox(
     const Vec3& prefab_center,
     const Vec3& local_center,
     const Vec3& size,
-    float gray_value)
+    float gray_value,
+    float emission_value = 0.0f)
 {
     AddBoxPrimitive(
         scene,
@@ -581,7 +658,7 @@ static void AddPrefabChildBox(
         size,
         Vec3(0.0f),
         gray_value,
-        0.0f);
+        emission_value);
 }
 
 static void AddGatePrefab(
@@ -694,6 +771,27 @@ static void AddRackPrefab(
             Vec3(0.0f, y, front_z),
             Vec3(std::max(size.x - frame_width * 2.4f, 0.10f), std::max(frame_height * 0.45f, 0.04f), front_depth * 0.65f),
             body_gray);
+    }
+
+    const float led_width = Clamp(size.x * 0.05f, 0.03f, 0.08f);
+    const float led_height = Clamp(size.y * 0.03f, 0.03f, 0.08f);
+    const float led_depth = std::max(front_depth * 0.40f, 0.03f);
+    const float led_x = -(size.x * 0.5f) + frame_width + led_width * 1.6f;
+
+    for (int led_index = 0; led_index < 4; ++led_index) {
+        const float t = static_cast<float>(led_index) / 3.0f;
+        const float y = LerpScalar(-size.y * 0.18f, size.y * 0.18f, t);
+        char suffix[32];
+        snprintf(suffix, sizeof(suffix), "led_%02d", led_index + 1);
+        AddPrefabChildBox(
+            scene,
+            name,
+            suffix,
+            center,
+            Vec3(led_x, y, front_z - front_depth * 0.08f),
+            Vec3(led_width, led_height, led_depth),
+            0.05f,
+            4.0f);
     }
 }
 
@@ -871,7 +969,7 @@ static void CollectEmissiveTriangles(Scene* scene)
     for (size_t index = 0; index < scene->triangles.size(); ++index) {
         const Triangle& triangle = scene->triangles[index];
         const Material& material = scene->materials[triangle.material_index];
-        if (material.emission > 0.0f) {
+        if (!IsNearBlack(material.emission) && material.semantic != kMaterialSemanticRackLed) {
             scene->emissive_triangles.push_back(static_cast<int>(index));
         }
     }
@@ -1274,8 +1372,8 @@ bool LoadSceneFromObj(const char* obj_path, Scene* scene, char* error_buffer, si
 
     Material default_material;
     default_material.name = "default";
-    default_material.albedo = 0.6f;
-    default_material.emission = 0.0f;
+    default_material.albedo = Vec3(0.6f);
+    default_material.emission = Vec3(0.0f);
     scene->materials.push_back(default_material);
     material_indices[default_material.name] = 0;
 
@@ -1416,9 +1514,9 @@ bool LoadSceneFromObj(const char* obj_path, Scene* scene, char* error_buffer, si
 
     const int light_material_index = EnsureMaterial("light", &scene->materials, &material_indices);
     Material& light_material = scene->materials[light_material_index];
-    if (light_material.emission <= 0.0f) {
-        light_material.albedo = 0.0f;
-        light_material.emission = 12.0f;
+    if (IsNearBlack(light_material.emission)) {
+        light_material.albedo = Vec3(0.0f);
+        light_material.emission = Vec3(12.0f);
     }
 
     if (has_light_center) {

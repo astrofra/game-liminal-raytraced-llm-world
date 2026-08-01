@@ -74,7 +74,7 @@ spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(16.0,38.0) intens
 
 ### `sky`
 
-Active un fond proceduriel grayscale pour les rayons qui ne rencontrent aucune geometrie.
+Active un fond proceduriel palette-limitee pour les rayons qui ne rencontrent aucune geometrie.
 
 Proprietes supportees :
 
@@ -87,7 +87,7 @@ Proprietes supportees :
 - `stars(density,intensity,radius)` optionnel
 - `seed(value)` optionnel
 
-Le ciel est pense pour les exterieurs pauvres du projet : zenith sombre, horizon plus clair, nadir sombre, grain fort et etoiles deterministes possibles.
+Le ciel est pense pour les exterieurs pauvres du projet : degrade bleu sombre, horizon plus clair, nadir sombre, grain fort et etoiles deterministes possibles.
 
 Exemple :
 
@@ -117,6 +117,8 @@ prefab_gate "entry_gate" pos(0.0,1.55,4.8) size(6.15,3.10,0.40) gray(0.46) detai
 ### `prefab_rack`
 
 Prefab de baie ou rack technique axis-aligne, utile pour les allees de serveurs.
+
+Le renderer injecte automatiquement de petites LEDs rouges sur la facade du rack. Elles n'ont pas besoin d'etre decrites dans le fichier `.scene`.
 
 Proprietes supportees :
 
@@ -211,6 +213,19 @@ box "tilted_panel" pos(1.45,1.35,-1.9) size(0.12,2.2,1.1) rot(0.0,18.0,0.0) gray
 ## Commentaires
 
 Les commentaires commencent par `#` et vont jusqu'a la fin de la ligne.
+
+## Palette semantique actuelle
+
+Le format reste volontairement simple : `gray(value)` est toujours obligatoire pour les primitives et prefabs, et continue de piloter la luminance de base.
+
+La couleur finale est appliquee par le moteur selon une palette verrouillee :
+
+- `sky` produit un ciel bleu degrade
+- les surfaces nommees `ground`, `desert_*`, `ridge_*`, `outcrop_*` sont teintees en ocre
+- `prefab_rack` ajoute des LEDs rouges discretes
+- tout le reste reste en niveaux de gris
+
+Le LLM ne doit donc pas inventer de `color()` libre. La stabilite passe par le nommage et par `gray()`, pas par une palette ouverte dans le langage de scene.
 
 ## Validation actuelle
 
