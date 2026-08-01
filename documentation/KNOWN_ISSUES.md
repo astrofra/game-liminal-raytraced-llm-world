@@ -4,6 +4,53 @@ Derniere mise a jour : 2026-08-01
 
 ## Ouverts
 
+### 2026-08-01 - Les scenes `.scene` candidates du LLM peuvent arriver tronquees et sont rejetees en bloc
+
+Statut :
+
+Ouvert.
+
+Description :
+
+Les sorties `.scene` generees par le LLM peuvent parfois se terminer abruptement, y compris au milieu d'une directive.
+
+Exemples observes :
+
+- fin de ligne coupee en plein identifiant ou en pleine propriete, par exemple `box "met`
+- fin de ligne coupee au milieu d'une directive valide, par exemple `spotlight panel(0.5,0.5) offset(0.0,0`
+
+Impact :
+
+- la scene candidate peut sembler "presque correcte" visuellement dans le terminal, mais rester inexploitable pour le moteur
+- le parseur `scene v1` n'essaie pas aujourd'hui de conserver un prefixe sain puis d'ignorer la queue corrompue
+- la scene candidate est donc invalidee en bloc des qu'une directive est syntaxiquement incomplete ou inconnue
+
+Comportement actuel :
+
+- `LoadSceneFromSceneText(...)` parse ligne par ligne
+- `ParseSceneV1Directive(...)` echoue a la premiere directive invalide
+- il n'y a pas de mode "best effort" qui ignorerait le reliquat tronque
+
+Consequence runtime :
+
+- pour une nouvelle salle improvisee, `turn_runner.cpp` audite d'abord la scene candidate LLM
+- si cette scene est invalide, le pipeline bascule sur `BuildFallbackGeneratedRoomSceneText(...)`
+- le raytraceur ne rend donc pas la scene tronquee : il rend soit une scene candidate valide, soit une scene fallback deterministe
+- pour un tour standard avec `candidate_scene_text`, une candidate invalide est simplement ignoree et le rendu retombe sur `LoadSceneForPlace(...)`, sauf si une candidate valide a explicitement ete retenue
+
+Nuance :
+
+Si la troncature tombe exactement apres une ligne complete, la scene peut encore charger correctement. Le probleme apparait surtout quand la coupure tombe au milieu d'une directive.
+
+Piste :
+
+Plus tard, choisir explicitement entre :
+
+- garder le comportement actuel fail-closed, simple et robuste
+- tenter un mode de recuperation qui conserve seulement le prefixe syntaxiquement valide
+- imposer des garde-fous de generation plus stricts pour les `.scene` longs
+- separer encore mieux la scene debug brute et la scene effectivement admissible par le moteur
+
 ### 2026-08-01 - Les narrations peuvent etre tronquees de maniere abrupte
 
 Statut :
