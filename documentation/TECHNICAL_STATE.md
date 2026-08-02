@@ -100,6 +100,7 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - mode repair d'une sortie JSON mal formee
   - fallback no-op si la sortie reste inexploitable apres repair
   - application des deltas sur `HardState`, `SoftState` et `SpatialState`
+  - `scene_constraints` persiste maintenant dans `SpatialState`, remonte dans les prompts et peut piloter la composition du decor compile
   - deuxieme appel LLM separe pour l'audit `.scene`
   - rendu final depuis la voie deterministe `SpatialState -> Scene`
 - Premier graphe de salles improvisees :
@@ -395,6 +396,7 @@ Validation manuelle :
 Observation importante :
 
 - le pipeline runtime `metadata JSON -> SpatialState -> layout hybride -> .scene -> audit -> rendu` fonctionne maintenant de bout en bout
+- `scene_constraints` fournit maintenant un vrai canal runtime entre la sortie JSON du LLM et les prefabs / masses choisis par le compilateur de scene
 - le benchmark de generation `.scene` libre reste utile pour auditer Ministral, mais il n'est plus le chemin principal de fabrication des nouvelles salles runtime
 
 ### 2026-08-02 - Benchmark runtime de la chaine hybride

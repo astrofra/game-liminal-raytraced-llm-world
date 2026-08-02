@@ -155,6 +155,7 @@ static json MakeSpatialStateJson(const SpatialState& state)
     node["visible_objects"] = state.visible_objects;
     node["blocked_exits"] = state.blocked_exits;
     node["spatial_anomalies"] = state.spatial_anomalies;
+    node["scene_constraints"] = state.scene_constraints;
     return node;
 }
 
@@ -273,6 +274,9 @@ static void ParseSpatialStateNode(const json& node, SpatialState* state)
     }
     if (node.contains("spatial_anomalies")) {
         state->spatial_anomalies = ReadStringArrayNode(node["spatial_anomalies"]);
+    }
+    if (node.contains("scene_constraints")) {
+        state->scene_constraints = ReadStringArrayNode(node["scene_constraints"]);
     }
 }
 
@@ -916,6 +920,7 @@ void PrintSpatialStateSummary(const SpatialState& state, FILE* stream)
     PrintStringList("  visible_objects", state.visible_objects, out);
     PrintStringList("  blocked_exits", state.blocked_exits, out);
     PrintStringList("  spatial_anomalies", state.spatial_anomalies, out);
+    PrintStringList("  scene_constraints", state.scene_constraints, out);
 }
 
 void PrintSessionStateSummary(const SessionState& state, FILE* stream)

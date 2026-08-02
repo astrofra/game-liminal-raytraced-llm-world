@@ -863,6 +863,111 @@ static bool HasSpecNameContaining(const std::vector<LayoutObjectSpec>& specs, co
     return false;
 }
 
+static LayoutZone InferConstraintZone(const std::string& lower_text, LayoutZone fallback_zone)
+{
+    if (ContainsSubstring(lower_text, "left") || ContainsSubstring(lower_text, "west")) {
+        return kLayoutZoneLeft;
+    }
+    if (ContainsSubstring(lower_text, "right") || ContainsSubstring(lower_text, "east")) {
+        return kLayoutZoneRight;
+    }
+    if (ContainsSubstring(lower_text, "center") || ContainsSubstring(lower_text, "central") || ContainsSubstring(lower_text, "middle")) {
+        return kLayoutZoneCenter;
+    }
+    if (ContainsSubstring(lower_text, "front") || ContainsSubstring(lower_text, "entry") || ContainsSubstring(lower_text, "near")) {
+        return kLayoutZoneFront;
+    }
+    if (ContainsSubstring(lower_text, "rear") || ContainsSubstring(lower_text, "back") || ContainsSubstring(lower_text, "far") ||
+        ContainsSubstring(lower_text, "horizon")) {
+        return kLayoutZoneBack;
+    }
+    return fallback_zone;
+}
+
+static void AddConstraintDrivenSpecs(
+    const SpatialState& spatial_state,
+    const RoomShell& shell,
+    std::vector<LayoutObjectSpec>* specs)
+{
+    if (!specs || spatial_state.scene_constraints.empty()) {
+        return;
+    }
+
+    for (size_t index = 0; index < spatial_state.scene_constraints.size(); ++index) {
+        const std::string label = spatial_state.scene_constraints[index];
+        const std::string lower = ToLowerAsciiCopy(label);
+        const LayoutZone zone = InferConstraintZone(lower, shell.exterior ? kLayoutZoneBack : kLayoutZoneCenter);
+
+        if (ContainsSubstring(lower, "ai server") || ContainsSubstring(lower, "mainframe") ||
+            ContainsSubstring(lower, "gpu") || ContainsSubstring(lower, "accelerator") ||
+            ContainsSubstring(lower, "tensor") || ContainsSubstring(lower, "inference")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabAiServer)) {
+                AddAiServerSpec(specs, label, zone, static_cast<int>(200 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "rack") || ContainsSubstring(lower, "server bank") ||
+            ContainsSubstring(lower, "server wall") || ContainsSubstring(lower, "pod row")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabRack)) {
+                AddRackSpec(specs, label, zone, static_cast<int>(220 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "cooling") || ContainsSubstring(lower, "vent") ||
+            ContainsSubstring(lower, "chiller") || ContainsSubstring(lower, "hvac")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabCoolingUnit)) {
+                AddCoolingSpec(specs, label, zone, static_cast<int>(240 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "console") || ContainsSubstring(lower, "pedestal") || ContainsSubstring(lower, "desk")) {
+            if (!HasSpecNameContaining(*specs, "console")) {
+                AddConsoleSpec(specs, label, zone, static_cast<int>(260 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "hatch")) {
+            if (!HasSpecNameContaining(*specs, "hatch")) {
+                AddHatchSpec(specs, label, zone == kLayoutZoneCenter ? kLayoutZoneBack : zone, static_cast<int>(280 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "crate") || ContainsSubstring(lower, "lockbox") ||
+            ContainsSubstring(lower, "case") || ContainsSubstring(lower, "spool")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabCrate)) {
+                AddCrateSpec(specs, label, zone, static_cast<int>(300 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "locker") || ContainsSubstring(lower, "cabinet")) {
+            if (!HasSpecNameContaining(*specs, "locker") && !HasSpecNameContaining(*specs, "cabinet")) {
+                AddLockerSpec(specs, label, zone == kLayoutZoneLeft ? kLayoutZoneLeft : kLayoutZoneRight, static_cast<int>(320 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "gate") || ContainsSubstring(lower, "door") || ContainsSubstring(lower, "portal")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabGate)) {
+                AddGateSpec(specs, shell, label, static_cast<int>(340 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "beacon") || ContainsSubstring(lower, "lamp") || ContainsSubstring(lower, "light")) {
+            if (!HasSpecNameContaining(*specs, "beacon") && !HasSpecNameContaining(*specs, "lamp") && !HasSpecNameContaining(*specs, "light")) {
+                AddBeaconSpec(specs, label, zone, static_cast<int>(360 + index));
+            }
+            continue;
+        }
+    }
+}
+
 static void AddArchetypeDefaults(
     const SpatialState& spatial_state,
     const RoomShell& shell,
@@ -1519,6 +1624,7 @@ static bool BuildProceduralSceneText(
     const RoomShell shell = BuildRoomShell(spatial_state);
     std::vector<LayoutObjectSpec> specs;
     BuildVisibleObjectSpecs(spatial_state, shell, &specs);
+    AddConstraintDrivenSpecs(spatial_state, shell, &specs);
     AddArchetypeDefaults(spatial_state, shell, &specs);
 
     std::vector<PlacedLayoutObject> objects;

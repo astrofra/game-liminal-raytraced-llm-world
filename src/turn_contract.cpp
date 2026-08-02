@@ -128,7 +128,8 @@ std::string BuildGeneratedRoomSchemaText()
     text += "    \"anchors\": [string],\n";
     text += "    \"visible_objects\": [string],\n";
     text += "    \"blocked_exits\": [\"north\" | \"east\" | \"south\" | \"west\"],\n";
-    text += "    \"spatial_anomalies\": [string]\n";
+    text += "    \"spatial_anomalies\": [string],\n";
+    text += "    \"scene_constraints\": [string]\n";
     text += "  }\n";
     text += "}";
     return text;
@@ -198,6 +199,7 @@ std::string BuildSpatialBriefText(const SpatialState& spatial_state)
     AppendStringList(&text, "visible_objects: ", spatial_state.visible_objects);
     AppendStringList(&text, "blocked_exits: ", spatial_state.blocked_exits);
     AppendStringList(&text, "spatial_anomalies: ", spatial_state.spatial_anomalies);
+    AppendStringList(&text, "scene_constraints: ", spatial_state.scene_constraints);
     return text;
 }
 
@@ -227,6 +229,8 @@ std::string BuildTurnPrompt(
     text += "If visible_objects are present in the spatial brief, reuse at least one of them directly in the narration when relevant.\n";
     text += "When the room topology is clear, keep spatial_delta.blocked_exits accurate so closed cardinal directions stay closed.\n";
     text += "If topology is clear, explicitly decide which cardinal directions are blocked instead of leaving the room ambiguous.\n";
+    text += "When the decor composition becomes clearer or changes materially, update spatial_delta.scene_constraints with short layout cues, never coordinates.\n";
+    text += "Good scene_constraints examples: hero ai server, rack bank, cooling flank, central console, rear hatch, service crate, checkpoint gate, open horizon, keep corridor clear.\n";
     text += "\nCurrent hard state\n";
     AppendLabelValue(&text, "turn_number: ", std::to_string(hard_state.turn_number).c_str());
     AppendLabelValue(&text, "move_count: ", std::to_string(hard_state.move_count).c_str());
@@ -289,6 +293,8 @@ std::string BuildGeneratedRoomPrompt(
     text += "Set score_delta conservatively. Use 0 unless entering this room meaningfully advances progress or reveals something important.\n";
     text += "visible_objects must contain 3 to 5 concrete actionable objects or interfaces, not vague scenery only.\n";
     text += "Include at least two directly usable things such as a hatch, crate, keypad, badge reader, placard, switch, cabinet, console, lockbox or intercom.\n";
+    text += "scene_constraints should contain 1 to 4 short decor cues for the engine, describing dominant masses or layout bias, never coordinates.\n";
+    text += "Good scene_constraints examples: hero ai server, rack bank, cooling flank, central console, rear hatch, service crate, checkpoint gate, open horizon, keep corridor clear.\n";
     text += "Use blocked_exits to mark closed directions explicitly; directions not listed there will be treated as traversable.\n";
     text += "For every new room, decide all four cardinal directions. blocked_exits must list every blocked direction explicitly.\n";
     text += "The reverse direction back to the source room should usually stay open, so it should usually be absent from blocked_exits.\n";

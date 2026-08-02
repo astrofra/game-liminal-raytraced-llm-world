@@ -499,6 +499,7 @@ static void ParseSpatialStateDeltaNode(const json& node, SpatialStateDelta* delt
     delta->visible_objects_changed = node.contains("visible_objects");
     delta->blocked_exits_changed = node.contains("blocked_exits");
     delta->spatial_anomalies_changed = node.contains("spatial_anomalies");
+    delta->scene_constraints_changed = node.contains("scene_constraints");
     delta->anchors_present = ReadStringArray(node.contains("anchors_present") ? node["anchors_present"] : json());
     delta->visible_objects = ReadStringArray(node.contains("visible_objects") ? node["visible_objects"] : json());
     delta->blocked_exits = ReadStringArray(node.contains("blocked_exits") ? node["blocked_exits"] : json());
@@ -598,6 +599,9 @@ static void ApplySpatialDelta(SpatialState* state, const SpatialStateDelta& delt
     if (delta.spatial_anomalies_changed) {
         state->spatial_anomalies = delta.spatial_anomalies;
     }
+    if (delta.scene_constraints_changed) {
+        state->scene_constraints = delta.scene_constraints;
+    }
 }
 
 static std::string ToLowerAsciiCopy(const std::string& text)
@@ -610,6 +614,8 @@ static std::string ToLowerAsciiCopy(const std::string& text)
     }
     return lower;
 }
+
+static bool ListContainsSubstring(const std::vector<std::string>& values, const char* pattern);
 
 static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
 {
@@ -639,6 +645,50 @@ static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
         AddUniqueString(&spatial_state->visible_objects, "cooling keypad");
         AddUniqueString(&spatial_state->visible_objects, "rack access door");
         AddUniqueString(&spatial_state->visible_objects, "cabinet latch");
+    }
+
+    if (ListContainsSubstring(spatial_state->visible_objects, "ai server") ||
+        ListContainsSubstring(spatial_state->visible_objects, "mainframe") ||
+        ListContainsSubstring(spatial_state->visible_objects, "gpu") ||
+        ListContainsSubstring(spatial_state->visible_objects, "accelerator") ||
+        ListContainsSubstring(spatial_state->visible_objects, "inference")) {
+        AddUniqueString(&spatial_state->scene_constraints, "hero ai server");
+    }
+    if (ListContainsSubstring(spatial_state->visible_objects, "rack") ||
+        ListContainsSubstring(spatial_state->visible_objects, "server") ||
+        ListContainsSubstring(spatial_state->visible_objects, "pod")) {
+        AddUniqueString(&spatial_state->scene_constraints, "rack bank");
+    }
+    if (ListContainsSubstring(spatial_state->visible_objects, "cooling") ||
+        ListContainsSubstring(spatial_state->visible_objects, "vent") ||
+        ListContainsSubstring(spatial_state->visible_objects, "chiller") ||
+        ListContainsSubstring(spatial_state->visible_objects, "hvac")) {
+        AddUniqueString(&spatial_state->scene_constraints, "cooling flank");
+    }
+    if (ListContainsSubstring(spatial_state->visible_objects, "console") ||
+        ListContainsSubstring(spatial_state->visible_objects, "pedestal") ||
+        ListContainsSubstring(spatial_state->visible_objects, "desk")) {
+        AddUniqueString(&spatial_state->scene_constraints, "central console");
+    }
+    if (ListContainsSubstring(spatial_state->visible_objects, "hatch")) {
+        AddUniqueString(&spatial_state->scene_constraints, "rear hatch");
+    }
+    if (ListContainsSubstring(spatial_state->visible_objects, "crate") ||
+        ListContainsSubstring(spatial_state->visible_objects, "lockbox") ||
+        ListContainsSubstring(spatial_state->visible_objects, "box") ||
+        ListContainsSubstring(spatial_state->visible_objects, "case") ||
+        ListContainsSubstring(spatial_state->visible_objects, "spool")) {
+        AddUniqueString(&spatial_state->scene_constraints, "service crate");
+    }
+    if (ListContainsSubstring(spatial_state->visible_objects, "gate") ||
+        ListContainsSubstring(spatial_state->visible_objects, "door") ||
+        ListContainsSubstring(spatial_state->visible_objects, "portal")) {
+        AddUniqueString(&spatial_state->scene_constraints, exterior ? "checkpoint gate" : "access door");
+    }
+    if (exterior) {
+        AddUniqueString(&spatial_state->scene_constraints, "open horizon");
+    } else {
+        AddUniqueString(&spatial_state->scene_constraints, "keep corridor clear");
     }
 }
 
@@ -842,10 +892,14 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(const SessionState& ini
         draft.spatial_state.visible_objects.push_back("service crate");
         draft.spatial_state.visible_objects.push_back("badge reader");
         draft.spatial_state.visible_objects.push_back("warning placard");
+        draft.spatial_state.scene_constraints.push_back("open horizon");
+        draft.spatial_state.scene_constraints.push_back("checkpoint gate");
     } else {
         draft.spatial_state.visible_objects.push_back("rack access door");
         draft.spatial_state.visible_objects.push_back("service panel");
         draft.spatial_state.visible_objects.push_back("maintenance crate");
+        draft.spatial_state.scene_constraints.push_back("keep corridor clear");
+        draft.spatial_state.scene_constraints.push_back("rack bank");
     }
     FinalizeGeneratedRoomDraft(&draft, direction);
     return draft;
@@ -854,6 +908,20 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(const SessionState& ini
 static std::string BuildFallbackGeneratedRoomSceneText(const SpatialState& spatial_state)
 {
     const bool exterior = SpatialFeelsExterior(spatial_state);
+    const bool wants_gate =
+        ListContainsSubstring(spatial_state.visible_objects, "gate") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "gate") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "door");
+    const bool wants_ai_server =
+        ListContainsSubstring(spatial_state.scene_constraints, "ai server") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "mainframe") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "gpu") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "accelerator") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "inference");
+    const bool wants_racks =
+        ListContainsSubstring(spatial_state.visible_objects, "rack") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "rack") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "server bank");
     std::string text;
     text += "room \"generated room\"\n";
 
@@ -866,7 +934,7 @@ static std::string BuildFallbackGeneratedRoomSceneText(const SpatialState& spati
         text += "box \"parapet_left\" pos(-7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\n";
         text += "box \"parapet_right\" pos(7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\n";
         text += "box \"parapet_front\" pos(0.0,0.65,1.9) size(14.0,1.3,0.8) gray(0.26)\n";
-        if (ListContainsSubstring(spatial_state.visible_objects, "gate")) {
+        if (wants_gate) {
             text += "prefab_gate \"aux_gate\" pos(0.0,1.4,7.2) size(4.6,2.8,0.5) gray(0.28) detail(0.40)\n";
         }
         text += "prefab_crate \"service_crate\" pos(2.6,0.55,-1.8) size(1.8,1.1,1.5) gray(0.20) detail(0.31)\n";
@@ -880,7 +948,9 @@ static std::string BuildFallbackGeneratedRoomSceneText(const SpatialState& spati
         text += "box \"wall_left\" pos(-6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\n";
         text += "box \"wall_right\" pos(6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\n";
         text += "box \"threshold_frame\" pos(0.0,1.5,8.8) size(3.6,3.0,0.45) gray(0.24)\n";
-        if (ListContainsSubstring(spatial_state.visible_objects, "rack")) {
+        if (wants_ai_server) {
+            text += "prefab_ai_server \"inference_mainframe\" pos(0.0,1.40,3.6) size(1.70,2.80,1.70) gray(0.16) detail(0.28)\n";
+        } else if (wants_racks) {
             text += "prefab_rack \"rack_left\" pos(-3.0,1.25,2.8) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\n";
             text += "prefab_rack \"rack_right\" pos(3.0,1.25,4.4) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\n";
         }
@@ -1093,6 +1163,7 @@ static bool ParseGeneratedSpatialStateNode(const json& node, SpatialState* spati
     spatial_state->visible_objects = ReadStringArray(node.contains("visible_objects") ? node["visible_objects"] : json());
     spatial_state->blocked_exits = ReadStringArray(node.contains("blocked_exits") ? node["blocked_exits"] : json());
     spatial_state->spatial_anomalies = ReadStringArray(node.contains("spatial_anomalies") ? node["spatial_anomalies"] : json());
+    spatial_state->scene_constraints = ReadStringArray(node.contains("scene_constraints") ? node["scene_constraints"] : json());
     return true;
 }
 

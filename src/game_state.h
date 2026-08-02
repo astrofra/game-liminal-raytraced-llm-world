@@ -105,6 +105,7 @@ struct SpatialState {
     std::vector<std::string> visible_objects;
     std::vector<std::string> blocked_exits;
     std::vector<std::string> spatial_anomalies;
+    std::vector<std::string> scene_constraints;
 
     SpatialState()
         : location_id(kLocationUnknown)
@@ -173,6 +174,7 @@ struct SpatialStateDelta {
     bool visible_objects_changed;
     bool blocked_exits_changed;
     bool spatial_anomalies_changed;
+    bool scene_constraints_changed;
     std::vector<std::string> anchors_present;
     std::vector<std::string> visible_objects;
     std::vector<std::string> blocked_exits;
@@ -196,6 +198,7 @@ struct SpatialStateDelta {
         , visible_objects_changed(false)
         , blocked_exits_changed(false)
         , spatial_anomalies_changed(false)
+        , scene_constraints_changed(false)
     {
     }
 };

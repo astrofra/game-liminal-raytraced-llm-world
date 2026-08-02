@@ -1,0 +1,144 @@
+{
+  "current_place_id": "generated:room_0001",
+  "generated_rooms": [
+    {
+      "metadata_fallback_used": false,
+      "room_id": "generated:room_0001",
+      "scene_fallback_used": false,
+      "scene_source": "hybrid",
+      "scene_text": "room \"Access Tunnel\"\ncamera eye(0.0,1.76,-7.20) target(0.0,1.16,7.00) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(28.0) cone(12.0,28.0) intensity(78.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(11.6,20.8) gray(0.12)\nplane \"ceiling\" pos(0.0,3.10,0.0) normal(0.0,-1.0,0.0) size(11.6,20.8) gray(0.20)\nbox \"wall_back\" pos(0.0,1.55,10.40) size(11.6,3.1,0.60) gray(0.19)\nbox \"wall_left\" pos(-5.80,1.55,0.0) size(0.60,3.1,20.8) gray(0.19)\nbox \"wall_right\" pos(5.80,1.55,0.0) size(0.60,3.1,20.8) gray(0.19)\nbox \"threshold_frame\" pos(0.0,1.49,8.11) size(3.8,2.98,0.42) gray(0.25)\nbox \"keypad_01\" pos(0.00,1.42,10.25) size(0.90,0.65,0.14) gray(0.39)\nbox \"maintenance_hatch_02\" pos(-1.20,0.12,5.20) size(1.80,0.24,1.80) gray(0.22)\nbox \"locked_cabinet_03\" pos(3.13,1.00,-1.66) size(1.10,2.00,0.90) gray(0.24)\nbox \"emergency_light_panel_04\" pos(-5.67,1.38,-0.65) size(0.14,0.65,0.90) gray(0.39)\nprefab_cooling_unit \"vented_floor_grate_05\" pos(-3.90,1.17,-1.66) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\nbox \"service_panel_06\" pos(5.67,1.38,5.72) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"maintenance_crate_07\" pos(3.13,0.55,0.94) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"cooling_keypad_08\" pos(-1.50,1.42,10.25) size(0.90,0.65,0.14) gray(0.39)\nprefab_gate \"rack_access_door_09\" pos(1.50,1.72,10.18) size(2.20,2.50,0.28) gray(0.23) detail(0.42)\nbox \"cabinet_latch_10\" pos(5.67,1.72,3.92) size(0.14,0.65,0.90) gray(0.39)\nprefab_rack \"rack_bank_222\" pos(-2.28,1.25,-0.87) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nbox \"central_console_263\" pos(0.40,0.50,0.83) size(1.70,1.00,0.80) gray(0.25)\nbox \"control_cabinet_142\" pos(3.13,1.00,2.54) size(1.10,2.00,0.90) gray(0.24)\nbox \"status_panel_143\" pos(2.00,1.72,10.25) size(0.90,0.65,0.14) gray(0.39)\n",
+      "spatial_state": {
+        "alert_level": 2,
+        "anchors": [
+          "keypad",
+          "maintenance_hatch",
+          "locked_cabinet",
+          "cooling_grates"
+        ],
+        "blocked_exits": [],
+        "canonical_fixture": "",
+        "desert_state": "dusty",
+        "interior_density": "sparse",
+        "location_archetype": "restricted_passage",
+        "location_id": "unknown",
+        "room_summary": "A narrow, reinforced passage leading into the datacenter’s core, lined with environmental controls and restricted access points.",
+        "room_title": "Access Tunnel",
+        "scene_constraints": [
+          "cooling flank",
+          "rack bank",
+          "central console",
+          "rear hatch",
+          "service crate",
+          "access door",
+          "keep corridor clear"
+        ],
+        "spatial_anomalies": [],
+        "time_of_day": "dusk",
+        "visibility_level": "low",
+        "visible_objects": [
+          "keypad",
+          "maintenance_hatch",
+          "locked_cabinet",
+          "emergency light panel",
+          "vented floor grate",
+          "service panel",
+          "maintenance crate",
+          "cooling keypad",
+          "rack access door",
+          "cabinet latch"
+        ]
+      }
+    }
+  ],
+  "hard_state": {
+    "alert_level": 2,
+    "cooling_state": "stable",
+    "current_location_id": "unknown",
+    "inventory_items": [],
+    "move_count": 1,
+    "named_entities": [
+      "duty_officer"
+    ],
+    "power_state": "stable",
+    "score": 0,
+    "turn_number": 2,
+    "unresolved_threats": [
+      "possible_external_attack"
+    ],
+    "water_state": "stable"
+  },
+  "history": [
+    {
+      "clarification": "",
+      "intent": "move_north_generated_room",
+      "location_id": "unknown",
+      "location_label": "Access Tunnel",
+      "narration": "The sliding gate seals behind you with a hiss. You step into a dimly lit tunnel, its walls lined with rusted metal grates and flickering emergency lights. A faint hum of cooling fans fills the air, and the scent of ozone lingers.",
+      "player_command": "north",
+      "turn_number": 1
+    }
+  ],
+  "next_generated_room_index": 2,
+  "room_links": [
+    {
+      "direction": "north",
+      "from_place_id": "canonical:gate",
+      "to_place_id": "generated:room_0001"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "generated:room_0001",
+      "to_place_id": "canonical:gate"
+    }
+  ],
+  "soft_state": {
+    "active_hypotheses": [
+      "the threat may be real",
+      "the institution may be manufacturing the threat"
+    ],
+    "atmosphere": "administrative, dry, watchful",
+    "rolling_summary": "The sliding gate seals behind you with a hiss. You step into a dimly lit tunnel, its walls lined with rusted metal grates and flickering emergency lights. A faint hum of cooling fans fills the air, and the scent of ozone lingers.",
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "alert_level": 2,
+    "anchors": [
+      "keypad",
+      "maintenance_hatch",
+      "locked_cabinet",
+      "cooling_grates"
+    ],
+    "blocked_exits": [],
+    "canonical_fixture": "",
+    "desert_state": "dusty",
+    "interior_density": "sparse",
+    "location_archetype": "restricted_passage",
+    "location_id": "unknown",
+    "room_summary": "A narrow, reinforced passage leading into the datacenter’s core, lined with environmental controls and restricted access points.",
+    "room_title": "Access Tunnel",
+    "scene_constraints": [
+      "cooling flank",
+      "rack bank",
+      "central console",
+      "rear hatch",
+      "service crate",
+      "access door",
+      "keep corridor clear"
+    ],
+    "spatial_anomalies": [],
+    "time_of_day": "dusk",
+    "visibility_level": "low",
+    "visible_objects": [
+      "keypad",
+      "maintenance_hatch",
+      "locked_cabinet",
+      "emergency light panel",
+      "vented floor grate",
+      "service panel",
+      "maintenance crate",
+      "cooling keypad",
+      "rack access door",
+      "cabinet latch"
+    ]
+  }
+}
