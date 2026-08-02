@@ -27,6 +27,7 @@ enum ScenePrimitive {
     kScenePrimitivePrefabRack,
     kScenePrimitivePrefabCrate,
     kScenePrimitivePrefabCoolingUnit,
+    kScenePrimitivePrefabAiServer,
 };
 
 enum LayoutMount {
@@ -647,6 +648,21 @@ static void AddCoolingSpec(std::vector<LayoutObjectSpec>* specs, const std::stri
     AddObjectSpec(specs, spec);
 }
 
+static void AddAiServerSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
+{
+    LayoutObjectSpec spec;
+    spec.primitive = kScenePrimitivePrefabAiServer;
+    spec.mount = kLayoutMountFloor;
+    spec.zone = zone;
+    spec.name = SanitizeIdentifier(label, "ai_server", index);
+    spec.size = Vec3(1.70f, 2.80f, 1.70f);
+    spec.gray = 0.16f;
+    spec.has_detail = true;
+    spec.detail = 0.28f;
+    spec.blocks_corridor = true;
+    AddObjectSpec(specs, spec);
+}
+
 static void AddCrateSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
 {
     LayoutObjectSpec spec;
@@ -711,6 +727,7 @@ static void BuildVisibleObjectSpecs(
     int floor_objects = 0;
     int rack_objects = 0;
     int cooling_objects = 0;
+    int ai_server_objects = 0;
     int crate_objects = 0;
     int gate_objects = 0;
 
@@ -750,6 +767,17 @@ static void BuildVisibleObjectSpecs(
             if (gate_objects < 1) {
                 AddGateSpec(specs, shell, label, static_cast<int>(index));
                 ++gate_objects;
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "ai server") || ContainsSubstring(lower, "mainframe") ||
+            ContainsSubstring(lower, "accelerator") || ContainsSubstring(lower, "gpu") ||
+            ContainsSubstring(lower, "tensor") || ContainsSubstring(lower, "inference")) {
+            if (ai_server_objects < 4 && floor_objects < 10) {
+                AddAiServerSpec(specs, label, ai_server_objects % 2 == 0 ? kLayoutZoneLeft : kLayoutZoneRight, static_cast<int>(index));
+                ++ai_server_objects;
+                ++floor_objects;
             }
             continue;
         }
@@ -1426,6 +1454,23 @@ static void AppendPlacedObject(std::string* scene_text, const PlacedLayoutObject
         AppendLine(
             scene_text,
             "prefab_cooling_unit \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f)",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray);
+        if (object.spec.has_detail) {
+            AppendLine(scene_text, " detail(%.2f)", object.spec.detail);
+        }
+        AppendLine(scene_text, "\n");
+        break;
+    case kScenePrimitivePrefabAiServer:
+        AppendLine(
+            scene_text,
+            "prefab_ai_server \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f)",
             object.spec.name.c_str(),
             object.pos.x,
             object.pos.y,

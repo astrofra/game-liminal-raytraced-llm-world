@@ -1,6 +1,6 @@
 # Prefab Catalog
 
-Genere le 2026-08-01 23:38:55.
+Genere le 2026-08-02 18:15:47.
 
 Ce document rassemble le premier catalogue visuel des prefabs `scene v1` dans un seul Markdown.
 
@@ -77,4 +77,21 @@ Directive rendue :
 
 ```text
 prefab_cooling_unit "catalog_cooling_unit" pos(0.0,1.35,0.0) size(1.20,2.70,3.10) gray(0.25) detail(0.37)
+```
+
+## prefab_ai_server
+
+Serveur IA ou mainframe d'inference sombre, compose d'un noyau central et de quatre colonnes peripheriques laissant apparaitre trois LEDs rouges.
+
+Scene gauche : `generated/prefab_catalog/scenes/prefab_ai_server_left.scene`
+Scene droite : `generated/prefab_catalog/scenes/prefab_ai_server_right.scene`
+
+Vue 3/4 gauche : ![prefab_ai_server left](generated/prefab_catalog/images/prefab_ai_server_left.png)
+
+Vue 3/4 droite : ![prefab_ai_server right](generated/prefab_catalog/images/prefab_ai_server_right.png)
+
+Directive rendue :
+
+```text
+prefab_ai_server "catalog_ai_server" pos(0.0,1.40,0.0) size(1.70,2.80,1.70) gray(0.16) detail(0.28)
 ```

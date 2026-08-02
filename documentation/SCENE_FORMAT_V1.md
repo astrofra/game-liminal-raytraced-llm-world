@@ -1,6 +1,6 @@
 # Scene Format V1
 
-Derniere mise a jour : 2026-07-31
+Derniere mise a jour : 2026-08-02
 
 ## Statut
 
@@ -170,6 +170,26 @@ Exemple :
 prefab_cooling_unit "cooling_block_left" pos(-4.6,1.35,2.4) size(1.2,2.7,3.1) gray(0.25) detail(0.37)
 ```
 
+### `prefab_ai_server`
+
+Prefab de serveur IA ou de mainframe d'inference axis-aligne.
+
+Le renderer l'expanse en cinq masses simples : un noyau central et quatre colonnes peripheriques, avec trois LEDs rouges verticales visibles dans l'entrecolonnement frontal.
+
+Proprietes supportees :
+
+- nom entre guillemets obligatoire
+- `pos(x,y,z)` obligatoire
+- `size(x,y,z)` obligatoire
+- `gray(value)` obligatoire
+- `detail(value)` optionnel
+
+Exemple :
+
+```text
+prefab_ai_server "inference_mainframe" pos(4.1,1.40,-2.2) size(1.7,2.8,1.7) gray(0.16) detail(0.28)
+```
+
 ### `plane`
 
 Primitive plane finie, rendue comme un quad triangule.
@@ -223,6 +243,7 @@ La couleur finale est appliquee par le moteur selon une palette verrouillee :
 - `sky` produit un ciel bleu degrade
 - les surfaces nommees `ground`, `desert_*`, `ridge_*`, `outcrop_*` sont teintees en ocre
 - `prefab_rack` ajoute des LEDs rouges discretes
+- `prefab_ai_server` ajoute aussi trois LEDs rouges verticales
 - tout le reste reste en niveaux de gris
 
 Le LLM ne doit donc pas inventer de `color()` libre. La stabilite passe par le nommage et par `gray()`, pas par une palette ouverte dans le langage de scene.

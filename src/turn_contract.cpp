@@ -142,7 +142,7 @@ std::string BuildSceneFormatRuleText()
     text += "- one directive per line\n";
     text += "- do not use indented property blocks; every directive must be complete on one line\n";
     text += "- names must be quoted like \"roof\" or \"service_crate\"\n";
-    text += "- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit\n";
+    text += "- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit, prefab_ai_server\n";
     text += "- every scene must declare one room and one camera\n";
     text += "- keep geometry sparse and legible\n";
     text += "- prefer stable repeated objects through prefab_* directives\n";
@@ -161,6 +161,7 @@ std::string BuildSceneFormatRuleText()
     text += "  box \"parapet_front\" pos(0.0,0.55,1.6) size(14.0,1.1,0.7) gray(0.26)\n";
     text += "  prefab_crate \"service_crate\" pos(2.4,0.55,-1.8) size(1.7,1.1,1.4) gray(0.20) detail(0.31)\n";
     text += "  prefab_cooling_unit \"vent_stack_left\" pos(-4.3,1.0,-3.2) size(1.0,2.0,1.0) gray(0.30) detail(0.39)\n";
+    text += "  prefab_ai_server \"inference_mainframe\" pos(4.1,1.40,-2.2) size(1.7,2.8,1.7) gray(0.16) detail(0.28)\n";
     return text;
 }
 

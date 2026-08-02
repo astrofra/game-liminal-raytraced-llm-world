@@ -58,6 +58,7 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - `prefab_rack`
   - `prefab_crate`
   - `prefab_cooling_unit`
+  - `prefab_ai_server`
 - Conversion des primitives `plane` et `box` vers le backend triangle/BVH existant.
 - Premiere scene liminale handcraftee dans `assets/scenes/liminal_service_corridor.scene`.
 - Trois scenes canoniques de validation spatiale handcraftees :

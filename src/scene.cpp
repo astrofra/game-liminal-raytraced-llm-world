@@ -891,6 +891,88 @@ static void AddCoolingUnitPrefab(
     }
 }
 
+static void AddAiServerPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray,
+    float detail_gray)
+{
+    const float core_width = Clamp(size.x * 0.52f, 0.18f, size.x * 0.72f);
+    const float core_depth = Clamp(size.z * 0.52f, 0.18f, size.z * 0.72f);
+    const float column_height = std::max(size.y * 0.98f, 0.28f);
+    const float core_height = column_height;
+    const float column_width = Clamp(size.x * 0.36f, 0.12f, size.x * 0.52f);
+    const float column_depth = Clamp(size.z * 0.36f, 0.12f, size.z * 0.52f);
+    const float corner_x = (size.x - column_width) * 0.5f;
+    const float corner_z = (size.z - column_depth) * 0.5f;
+    const float core_gray = Clamp(body_gray * 0.35f, 0.0f, 0.95f);
+    const float column_gray = Clamp(detail_gray * 0.5f, 0.0f, 0.95f);
+
+    AddPrefabChildBox(
+        scene,
+        name,
+        "core",
+        center,
+        Vec3(0.0f, 0.0f, 0.0f),
+        Vec3(core_width, core_height, core_depth),
+        core_gray);
+    AddPrefabChildBox(
+        scene,
+        name,
+        "column_fl",
+        center,
+        Vec3(-corner_x, 0.0f, -corner_z),
+        Vec3(column_width, column_height, column_depth),
+        column_gray);
+    AddPrefabChildBox(
+        scene,
+        name,
+        "column_fr",
+        center,
+        Vec3(corner_x, 0.0f, -corner_z),
+        Vec3(column_width, column_height, column_depth),
+        column_gray);
+    AddPrefabChildBox(
+        scene,
+        name,
+        "column_bl",
+        center,
+        Vec3(-corner_x, 0.0f, corner_z),
+        Vec3(column_width, column_height, column_depth),
+        column_gray);
+    AddPrefabChildBox(
+        scene,
+        name,
+        "column_br",
+        center,
+        Vec3(corner_x, 0.0f, corner_z),
+        Vec3(column_width, column_height, column_depth),
+        column_gray);
+
+    const float led_width = Clamp(size.x * 0.06f, 0.03f, 0.09f);
+    const float led_height = Clamp(size.y * 0.035f, 0.03f, 0.09f);
+    const float led_depth = std::max(size.z * 0.05f, 0.03f);
+    const float led_spacing = led_height * 2.0f;
+    const float led_front_z = -(core_depth + led_depth) * 0.5f + led_depth * 0.35f;
+
+    for (int led_index = 0; led_index < 3; ++led_index) {
+        const float y = static_cast<float>(led_index - 1) * led_spacing;
+        char suffix[32];
+        snprintf(suffix, sizeof(suffix), "led_%02d", led_index + 1);
+        AddPrefabChildBox(
+            scene,
+            name,
+            suffix,
+            center,
+            Vec3(0.0f, y, led_front_z),
+            Vec3(led_width, led_height, led_depth),
+            0.05f,
+            4.0f);
+    }
+}
+
 static int LargestAxis(const Vec3& extent)
 {
     if (extent.x > extent.y && extent.x > extent.z) {
@@ -1301,6 +1383,38 @@ static bool ParseSceneV1Directive(
             detail_value = Clamp(gray_value + 0.11f, 0.0f, 0.95f);
         }
         AddCoolingUnitPrefab(scene, name, position, size, gray_value, detail_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_ai_server ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float detail_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_ai_server requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_ai_server has invalid size");
+            return false;
+        }
+
+        if (!ExtractFloatProperty(line, "detail(", &detail_value)) {
+            detail_value = Clamp(gray_value + 0.12f, 0.0f, 0.95f);
+        }
+        AddAiServerPrefab(scene, name, position, size, gray_value, detail_value);
         return true;
     }
 

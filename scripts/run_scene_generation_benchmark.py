@@ -138,7 +138,7 @@ def extract_scene_candidate_text(text):
                 candidate = candidate[:closing_fence]
     else:
         directive_match = re.search(
-            r"(?m)^(room|camera|spotlight|sky|plane|box|prefab_gate|prefab_rack|prefab_crate|prefab_cooling_unit)\b",
+            r"(?m)^(room|camera|spotlight|sky|plane|box|prefab_gate|prefab_rack|prefab_crate|prefab_cooling_unit|prefab_ai_server)\b",
             candidate,
         )
         if directive_match:
@@ -155,7 +155,7 @@ def extract_scene_candidate_text(text):
 
     cleaned = "\n".join(cleaned_lines).strip()
     directive_match = re.search(
-        r"(?m)^(room|camera|spotlight|sky|plane|box|prefab_gate|prefab_rack|prefab_crate|prefab_cooling_unit)\b",
+        r"(?m)^(room|camera|spotlight|sky|plane|box|prefab_gate|prefab_rack|prefab_crate|prefab_cooling_unit|prefab_ai_server)\b",
         cleaned,
     )
     if directive_match:

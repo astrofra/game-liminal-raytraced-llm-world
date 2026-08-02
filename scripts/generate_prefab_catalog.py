@@ -62,6 +62,16 @@ PREFABS = [
         "extra_geometry": [],
         "directive": 'prefab_cooling_unit "catalog_cooling_unit" pos(0.0,1.35,0.0) size(1.20,2.70,3.10) gray(0.25) detail(0.37)',
     },
+    {
+        "slug": "prefab_ai_server",
+        "title": "prefab_ai_server",
+        "role": "Serveur IA ou mainframe d'inference sombre, compose d'un noyau central et de quatre colonnes peripheriques laissant apparaitre trois LEDs rouges.",
+        "camera_eye": (-6.4, 2.8, -7.8),
+        "camera_target": (0.0, 1.4, 0.0),
+        "fov": 40.0,
+        "extra_geometry": [],
+        "directive": 'prefab_ai_server "catalog_ai_server" pos(0.0,1.40,0.0) size(1.70,2.80,1.70) gray(0.16) detail(0.28)',
+    },
 ]
 
 
