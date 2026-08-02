@@ -1,0 +1,92 @@
+{
+  "hard_state": {
+    "turn_number": 1,
+    "move_count": 0,
+    "score": 0,
+    "current_location_id": "unknown",
+    "alert_level": 2,
+    "cooling_state": "stable",
+    "water_state": "stable",
+    "power_state": "stable",
+    "inventory_items": [],
+    "named_entities": [],
+    "unresolved_threats": []
+  },
+  "soft_state": {
+    "rolling_summary": "Tall cooling blocks and pipe runs crowd an industrial chamber. A valve wheel, a drip tray, and a maintenance console provide the room's few obvious handles.",
+    "atmosphere": "cooling plant bay",
+    "active_hypotheses": [],
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "location_id": "unknown",
+    "room_title": "Cooling Exchange Bay",
+    "room_summary": "Tall cooling blocks and pipe runs crowd an industrial chamber. A valve wheel, a drip tray, and a maintenance console provide the room's few obvious handles.",
+    "location_archetype": "cooling plant bay",
+    "canonical_fixture": "",
+    "time_of_day": "night",
+    "visibility_level": "dusty",
+    "desert_state": "still",
+    "interior_density": "dense",
+    "alert_level": 2,
+    "anchors": [
+      "cooling blocks",
+      "pipe gallery",
+      "drain trench"
+    ],
+    "visible_objects": [
+      "valve wheel",
+      "maintenance console",
+      "drip tray",
+      "tool locker"
+    ],
+    "blocked_exits": [
+      "west"
+    ],
+    "spatial_anomalies": [
+      "one pipe bank rattles under strain"
+    ]
+  },
+  "history": [],
+  "current_place_id": "generated:origin_cooling_exchange_bay",
+  "next_generated_room_index": 1,
+  "generated_rooms": [
+    {
+      "room_id": "generated:origin_cooling_exchange_bay",
+      "spatial_state": {
+        "location_id": "unknown",
+        "room_title": "Cooling Exchange Bay",
+        "room_summary": "Tall cooling blocks and pipe runs crowd an industrial chamber. A valve wheel, a drip tray, and a maintenance console provide the room's few obvious handles.",
+        "location_archetype": "cooling plant bay",
+        "canonical_fixture": "",
+        "time_of_day": "night",
+        "visibility_level": "dusty",
+        "desert_state": "still",
+        "interior_density": "dense",
+        "alert_level": 2,
+        "anchors": [
+          "cooling blocks",
+          "pipe gallery",
+          "drain trench"
+        ],
+        "visible_objects": [
+          "valve wheel",
+          "maintenance console",
+          "drip tray",
+          "tool locker"
+        ],
+        "blocked_exits": [
+          "west"
+        ],
+        "spatial_anomalies": [
+          "one pipe bank rattles under strain"
+        ]
+      },
+      "scene_text": "",
+      "scene_source": "benchmark_origin",
+      "metadata_fallback_used": false,
+      "scene_fallback_used": false
+    }
+  ],
+  "room_links": []
+}

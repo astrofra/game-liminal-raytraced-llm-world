@@ -1,0 +1,30 @@
+{
+  "title": "Access Node",
+  "summary": "A narrow corridor splits into a junction where a single console dominates the left wall, flanked by a locked cabinet and a flickering intercom panel.",
+  "arrival_narration": "The airlock\u2019s inner door hisses shut behind you. A dimly lit corridor stretches ahead, its walls lined with exposed conduit. To the left, a **console** hums faintly, its screen displaying a single red light. A **locked cabinet** stands beside it, its handle cold to the touch. A **wall-mounted intercom panel** crackles with static, its buttons unmarked. The corridor splits\u2014one path continues straight, the other veers right into a shadowed alcove.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "corridor junction",
+    "time_of_day": "night",
+    "visibility_level": "clear",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 1,
+    "anchors": [
+      "console",
+      "locked cabinet",
+      "intercom panel",
+      "split corridor"
+    ],
+    "visible_objects": [
+      "console",
+      "locked cabinet",
+      "intercom panel",
+      "exposed conduit",
+      "red emergency light"
+    ],
+    "blocked_exits": [],
+    "spatial_anomalies": []
+  }
+}

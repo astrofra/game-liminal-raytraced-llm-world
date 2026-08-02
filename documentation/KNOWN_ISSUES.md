@@ -73,9 +73,11 @@ Comportement actuel :
 
 Consequence runtime :
 
-- pour une nouvelle salle improvisee, `turn_runner.cpp` audite d'abord la scene candidate LLM
-- si cette scene est invalide, le pipeline bascule sur `BuildFallbackGeneratedRoomSceneText(...)`
-- le raytraceur ne rend donc pas la scene tronquee : il rend soit une scene candidate valide, soit une scene fallback deterministe
+- pour une nouvelle salle improvisee, le runtime ne depend plus d'un `.scene` libre :
+  - `turn_runner.cpp` demande au LLM seulement la metadata JSON de la salle
+  - `scene_compiler.cpp` reconstruit ensuite une scene `hybrid` deterministe a partir du `SpatialState`
+  - si ce compilateur hybride echoue, le pipeline bascule sur `BuildFallbackGeneratedRoomSceneText(...)`
+- le raytraceur ne rend donc pas une scene tronquee en runtime : il rend soit une scene hybride valide, soit une scene fallback deterministe
 - pour un tour standard avec `candidate_scene_text`, une candidate invalide est simplement ignoree et le rendu retombe sur `LoadSceneForPlace(...)`, sauf si une candidate valide a explicitement ete retenue
 
 Nuance :

@@ -1,0 +1,21 @@
+```json
+{
+  "title": "Cable Trench",
+  "summary": "A narrow, sloping trench of exposed conduit and rusted piping channels power between vaults. A single access hatch and a loose junction box suggest recent tampering.",
+  "arrival_narration": "You step into a sloping trench of corroded metal, the air thick with the scent of ozone and old oil. A single access hatch—marked with a faded ‘C-7’—flanks the trench wall to your left. A junction box, its cover pried open, sits half-buried in the gravel beside a loose cable. The trench slopes downward toward a distant hum of machinery.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "utility trench",
+    "time_of_day": "night",
+    "visibility_level": "dusty",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": ["access hatch", "junction box", "loose cable", "trench slope"],
+    "visible_objects": ["access hatch (C-7)", "junction box (open)", "loose cable", "emergency switch (buried in gravel)", "gravel-covered conduit"],
+    "blocked_exits": [],
+    "spatial_anomalies": ["cable humming faintly in distance", "condensation on conduit"]
+  }
+}
+```

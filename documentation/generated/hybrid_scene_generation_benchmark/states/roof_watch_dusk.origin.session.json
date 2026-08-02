@@ -1,0 +1,54 @@
+{
+  "hard_state": {
+    "turn_number": 1,
+    "move_count": 0,
+    "score": 0,
+    "current_location_id": "roof_watch",
+    "alert_level": 1,
+    "cooling_state": "stable",
+    "water_state": "stable",
+    "power_state": "stable",
+    "inventory_items": [],
+    "named_entities": [],
+    "unresolved_threats": []
+  },
+  "soft_state": {
+    "rolling_summary": "The datacenter roof becomes a parapet walk above the desert. A beacon mast, a hatch door, and a field scope hold the line against the horizon.",
+    "atmosphere": "roof parapet",
+    "active_hypotheses": [],
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "location_id": "roof_watch",
+    "room_title": "Roof Watch",
+    "room_summary": "The datacenter roof becomes a parapet walk above the desert. A beacon mast, a hatch door, and a field scope hold the line against the horizon.",
+    "location_archetype": "roof parapet",
+    "canonical_fixture": "roof_watch",
+    "time_of_day": "dusk",
+    "visibility_level": "clear",
+    "desert_state": "windy",
+    "interior_density": "sparse",
+    "alert_level": 1,
+    "anchors": [
+      "parapet",
+      "horizon",
+      "beacon mast",
+      "roof hatch"
+    ],
+    "visible_objects": [
+      "roof hatch",
+      "field scope",
+      "beacon mast switch",
+      "warning sign"
+    ],
+    "blocked_exits": [
+      "south"
+    ],
+    "spatial_anomalies": []
+  },
+  "history": [],
+  "current_place_id": "canonical:roof_watch",
+  "next_generated_room_index": 1,
+  "generated_rooms": [],
+  "room_links": []
+}

@@ -1,0 +1,34 @@
+{
+  "title": "Vaulted Corridor",
+  "summary": "A narrow, sloping corridor ascends through a reinforced concrete vault, its walls lined with flickering emergency lights and a single open maintenance hatch.",
+  "arrival_narration": "You step through the checkpoint\u2019s northern gate into a steep, dimly lit corridor. The air smells of ozone and rust. A single emergency light hums overhead, casting jagged shadows. To your left, a **maintenance hatch** is propped open, revealing a ladder descending into darkness. A **wall-mounted keypad** glows faintly beside it, its screen blank. A **metal cabinet** stands half-open, its contents obscured by a tattered inspection placard pinned to its door.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "industrial corridor",
+    "time_of_day": "night",
+    "visibility_level": "low",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": [
+      "sloping floor",
+      "maintenance hatch",
+      "wall keypad",
+      "metal cabinet",
+      "flickering light"
+    ],
+    "visible_objects": [
+      "maintenance hatch (open, ladder descending)",
+      "wall-mounted keypad (glowing, blank screen)",
+      "metal cabinet (half-open, inspection placard pinned)",
+      "tattered inspection placard (flapping)",
+      "exposed wiring bundle (near hatch)"
+    ],
+    "blocked_exits": [],
+    "spatial_anomalies": [
+      "flickering light cycles every 12 seconds",
+      "keypad emits faint static when approached"
+    ]
+  }
+}

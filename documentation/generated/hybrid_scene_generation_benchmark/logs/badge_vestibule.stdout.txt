@@ -1,0 +1,70 @@
+Headless turn completed.
+Turn 1 completed.
+Prompt tokens: 806
+Generated tokens: 309
+Inference time: 7549.01 ms
+Turn JSON repair: not needed
+Turn fallback: not needed
+Intent: move_north_generated_room
+Narration: The airlock’s inner door hisses shut behind you. A dimly lit corridor stretches ahead, its walls lined with exposed conduit. To the left, a **console** hums faintly, its screen displaying a single red light.
+Initial location: unknown
+Updated location: unknown
+Initial place: Badge Vestibule
+Updated place: Access Node
+Candidate scene audit: not provided
+Rendered scene source: generated_room_cache
+Generated room metadata source: llm
+Generated room scene source: hybrid
+
+=== Raw Turn Response ===
+```json
+{
+  "title": "Access Node",
+  "summary": "A narrow corridor splits into a junction where a single console dominates the left wall, flanked by a locked cabinet and a flickering intercom panel.",
+  "arrival_narration": "The airlock’s inner door hisses shut behind you. A dimly lit corridor stretches ahead, its walls lined with exposed conduit. To the left, a **console** hums faintly, its screen displaying a single red light. A **locked cabinet** stands beside it, its handle cold to the touch. A **wall-mounted intercom panel** crackles with static, its buttons unmarked. The corridor splits—one path continues straight, the other veers right into a shadowed alcove.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "corridor junction",
+    "time_of_day": "night",
+    "visibility_level": "clear",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 1,
+    "anchors": ["console", "locked cabinet", "intercom panel", "split corridor"],
+    "visible_objects": ["console", "locked cabinet", "intercom panel", "exposed conduit", "red emergency light"],
+    "blocked_exits": [],
+    "spatial_anomalies": []
+  }
+}
+```
+
+=== Raw Scene Audit Response ===
+room "Access Node"
+camera eye(0.0,1.76,-7.20) target(0.0,1.16,7.00) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(28.0) cone(12.0,28.0) intensity(78.0)
+plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(11.6,20.8) gray(0.12)
+plane "ceiling" pos(0.0,3.10,0.0) normal(0.0,-1.0,0.0) size(11.6,20.8) gray(0.20)
+box "wall_back" pos(0.0,1.55,10.40) size(11.6,3.1,0.60) gray(0.19)
+box "wall_left" pos(-5.80,1.55,0.0) size(0.60,3.1,20.8) gray(0.19)
+box "wall_right" pos(5.80,1.55,0.0) size(0.60,3.1,20.8) gray(0.19)
+box "threshold_frame" pos(0.0,1.49,8.11) size(3.8,2.98,0.42) gray(0.25)
+box "console_01" pos(-0.40,0.50,-0.87) size(1.70,1.00,0.80) gray(0.25)
+box "locked_cabinet_02" pos(3.13,1.00,-1.66) size(1.10,2.00,0.90) gray(0.24)
+box "intercom_panel_03" pos(0.00,1.42,10.25) size(0.90,0.65,0.14) gray(0.39)
+box "red_emergency_light_05" pos(-1.20,1.15,5.20) size(0.38,2.30,0.38) gray(0.30) emit(2.40)
+box "service_panel_06" pos(-5.67,1.38,-0.65) size(0.14,0.65,0.90) gray(0.39)
+prefab_crate "maintenance_crate_07" pos(3.13,0.55,0.94) size(1.70,1.10,1.40) gray(0.20) detail(0.31)
+box "cooling_keypad_08" pos(5.67,1.38,5.72) size(0.14,0.65,0.90) gray(0.39)
+prefab_gate "rack_access_door_09" pos(-1.50,1.42,10.18) size(2.20,2.50,0.28) gray(0.23) detail(0.42)
+box "cabinet_latch_10" pos(1.50,1.72,10.25) size(0.90,0.65,0.14) gray(0.39)
+box "control_cabinet_142" pos(3.13,1.00,2.54) size(1.10,2.00,0.90) gray(0.24)
+box "status_panel_143" pos(2.00,1.72,10.25) size(0.90,0.65,0.14) gray(0.39)
+
+Loaded scene Access Node
+Loaded 340 triangles, 30 materials, 12 emissive triangles
+Preparation time: 10661.65 ms
+Rendering 800x400, spp=8, bounces=3, emissive=12, camera_spot=on, openmp=on, threads=16
+  lines 400 / 400
+Render time: 607.01 ms
+Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\hybrid_scene_generation_benchmark\images\badge_vestibule.png

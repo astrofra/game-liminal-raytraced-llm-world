@@ -1,0 +1,44 @@
+{
+  "metadata_fallback_used": false,
+  "room_id": "generated:room_0001",
+  "scene_fallback_used": false,
+  "scene_source": "hybrid",
+  "scene_text": "room \"Backup Vault\"\ncamera eye(0.0,1.78,-8.10) target(0.0,1.20,9.60) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(80.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(13.6,28.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.30,0.0) normal(0.0,-1.0,0.0) size(13.6,28.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.65,14.00) size(13.6,3.3,0.60) gray(0.18)\nbox \"wall_left\" pos(-6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nbox \"wall_right\" pos(6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nplane \"light_strip\" pos(0.0,3.29,2.4) normal(0.0,-1.0,0.0) size(1.2,7.8) gray(0.45) emit(1.6)\nprefab_cooling_unit \"cooling_unit_01\" pos(-3.67,1.17,-2.24) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\nbox \"metal_hatch_03\" pos(-1.20,0.12,7.00) size(1.80,0.24,1.80) gray(0.22)\nbox \"badge_reader_04\" pos(0.00,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"sealed_data_crate_05\" pos(3.67,0.55,-2.24) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"service_panel_06\" pos(-6.67,1.38,-0.22) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"maintenance_crate_07\" pos(-3.67,0.55,0.36) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"cooling_keypad_08\" pos(6.67,1.38,7.70) size(0.14,0.65,0.90) gray(0.39)\nprefab_gate \"rack_access_door_09\" pos(-1.50,1.42,13.78) size(2.20,2.50,0.28) gray(0.23) detail(0.42)\nbox \"cabinet_latch_10\" pos(1.50,1.72,13.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_rack \"rack_block_left_131\" pos(-3.67,1.25,3.56) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_right_132\" pos(3.67,1.25,0.66) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_left_rear_133\" pos(-3.67,1.25,6.46) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_right_rear_134\" pos(3.67,1.25,3.56) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\n",
+  "spatial_state": {
+    "alert_level": 2,
+    "anchors": [
+      "insulated wall",
+      "floor hatch",
+      "cooling unit",
+      "terminal",
+      "badge reader"
+    ],
+    "blocked_exits": [],
+    "canonical_fixture": "",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "location_archetype": "server vault",
+    "location_id": "unknown",
+    "room_summary": "A reinforced chamber lined with redundant cooling units and a single access console. The air hums with static, and a faint blue glow pulses from a terminal.",
+    "room_title": "Backup Vault",
+    "spatial_anomalies": [
+      "cooling unit emits faint electrical crackle",
+      "terminal screen flickers intermittently",
+      "floor hatch shows signs of forced entry"
+    ],
+    "time_of_day": "night",
+    "visibility_level": "dusty",
+    "visible_objects": [
+      "cooling unit",
+      "terminal",
+      "metal hatch",
+      "badge reader",
+      "sealed data crate",
+      "service panel",
+      "maintenance crate",
+      "cooling keypad",
+      "rack access door",
+      "cabinet latch"
+    ]
+  }
+}

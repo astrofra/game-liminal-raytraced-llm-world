@@ -1,0 +1,21 @@
+```json
+{
+  "title": "Ventilation Grid",
+  "summary": "A narrow corridor of exposed ducts and rusted grates leads to a junction of ventilation shafts. A single access panel and a flickering emergency light dominate the space.",
+  "arrival_narration": "You step into a low-ceilinged corridor where the air hums with the distant whir of fans. The walls are lined with corroded metal ducts, their grates warped by age. A single access panel—marked with a faded ‘C’—hangs slightly ajar on the right wall. Above it, an emergency light flickers weakly, casting long shadows. The floor slopes downward toward a junction of three ventilation shafts ahead.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "ventilation corridor",
+    "time_of_day": "night",
+    "visibility_level": "dusty",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": ["ductwork gallery", "slope to junction", "flickering light", "access panel"],
+    "visible_objects": ["access panel (marked ‘C’)","ventilation shaft junction","flickering emergency light","rusted grate (left wall)","loose pipe coupling (floor)"],
+    "blocked_exits": [],
+    "spatial_anomalies": ["one duct panel emits a faint hissing sound"]
+  }
+}
+```

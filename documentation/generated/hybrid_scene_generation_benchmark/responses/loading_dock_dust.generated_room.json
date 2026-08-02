@@ -1,0 +1,36 @@
+{
+  "title": "Rusted Maintenance Tunnel",
+  "summary": "A narrow, sloping tunnel of corroded metal plates leads downward, its walls lined with exposed wiring and a single flickering emergency light. A rusted hatch lies half-open to the left, and a keypad-mounted cabinet stands against the right wall.",
+  "arrival_narration": "The air smells of ozone and damp metal as you step into the tunnel. The emergency light hums weakly, casting jagged shadows over a rusted ladder descending into darkness. The hatch to your left groans slightly in the breeze, and the cabinet\u2019s keypad glows faintly blue.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "industrial tunnel",
+    "time_of_day": "dusk",
+    "visibility_level": "low",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 3,
+    "anchors": [
+      "descending ladder",
+      "half-open rusted hatch",
+      "keypad cabinet",
+      "exposed wiring",
+      "flickering emergency light"
+    ],
+    "visible_objects": [
+      "rusted hatch (half-open, requires keycard or manual override)",
+      "keypad cabinet (locked, illuminated)",
+      "exposed wiring bundle (loose strands dangling)",
+      "cracked concrete slab (embedded with a small metal plate)",
+      "handrail (corroded, unstable)"
+    ],
+    "blocked_exits": [
+      "north"
+    ],
+    "spatial_anomalies": [
+      "The ladder\u2019s rungs are uneven; stepping on the third from the top emits a faint metallic *clang*.",
+      "The emergency light flickers in sync with a distant hum\u2014like a generator or cooling unit."
+    ]
+  }
+}

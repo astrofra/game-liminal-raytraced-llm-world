@@ -1,0 +1,67 @@
+Headless turn completed.
+Turn 1 completed.
+Prompt tokens: 818
+Generated tokens: 336
+Inference time: 8223.88 ms
+Turn JSON repair: not needed
+Turn fallback: not needed
+Intent: move_north_generated_room
+Narration: You step through the gate and descend into a vertical shaft, the concrete walls slick with condensation. The emergency light hums faintly, casting jagged shadows. A rusted metal ladder spirals upward, but the only exit is a reinforced hatch at the bottom.
+Initial location: unknown
+Updated location: unknown
+Initial place: Parapet Stairhead
+Updated place: Ventilation Shaft
+Candidate scene audit: not provided
+Rendered scene source: generated_room_cache
+Generated room metadata source: llm
+Generated room scene source: hybrid
+
+=== Raw Turn Response ===
+```json
+{
+  "title": "Ventilation Shaft",
+  "summary": "A narrow concrete shaft lined with rusted grates and a single flickering emergency light. The air smells of ozone and old oil.",
+  "arrival_narration": "You step through the gate and descend into a vertical shaft, the concrete walls slick with condensation. The emergency light hums faintly, casting jagged shadows. A rusted metal ladder spirals upward, but the only exit is a reinforced hatch at the bottom. A small control panel is mounted on the wall beside it, its buttons labeled in faded symbols. A loose cable dangles from the ceiling, its end frayed.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "industrial shaft",
+    "time_of_day": "night",
+    "visibility_level": "dusty",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": ["concrete walls", "emergency light", "reinforced hatch", "control panel", "dangling cable"],
+    "visible_objects": ["rusted ladder", "control panel (3 buttons)", "reinforced hatch (locked)", "frayed cable end", "small tool crate"],
+    "blocked_exits": ["east", "south"],
+    "spatial_anomalies": ["condensation drips from walls", "hatch emits a faint metallic click"]
+  }
+}
+```
+
+=== Raw Scene Audit Response ===
+room "Ventilation Shaft"
+camera eye(0.0,1.78,-7.80) target(0.0,1.20,8.40) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)
+plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.8,23.0) gray(0.12)
+plane "ceiling" pos(0.0,3.20,0.0) normal(0.0,-1.0,0.0) size(12.8,23.0) gray(0.19)
+box "wall_back" pos(0.0,1.60,11.50) size(12.8,3.2,0.60) gray(0.18)
+box "wall_left" pos(-6.40,1.60,0.0) size(0.60,3.2,23.0) gray(0.18)
+box "wall_right" pos(6.40,1.60,0.0) size(0.60,3.2,23.0) gray(0.18)
+box "control_panel_3_buttons_02" pos(0.00,1.42,11.35) size(0.90,0.65,0.14) gray(0.39)
+box "reinforced_hatch_locked_03" pos(-1.20,0.12,5.75) size(1.80,0.24,1.80) gray(0.22)
+prefab_crate "small_tool_crate_05" pos(3.46,0.55,-1.84) size(1.70,1.10,1.40) gray(0.20) detail(0.31)
+box "service_panel_06" pos(-6.27,1.38,-0.52) size(0.14,0.65,0.90) gray(0.39)
+prefab_crate "maintenance_crate_07" pos(-3.46,0.55,-1.84) size(1.70,1.10,1.40) gray(0.20) detail(0.31)
+box "cooling_keypad_08" pos(6.27,1.38,6.33) size(0.14,0.65,0.90) gray(0.39)
+prefab_gate "rack_access_door_09" pos(-1.50,1.42,11.28) size(2.20,2.50,0.28) gray(0.23) detail(0.42)
+box "cabinet_latch_10" pos(1.50,1.72,11.35) size(0.90,0.65,0.14) gray(0.39)
+prefab_rack "service_rack_173" pos(-3.46,1.25,1.06) size(1.35,2.50,1.70) gray(0.20) detail(0.35)
+
+Loaded scene Ventilation Shaft
+Loaded 508 triangles, 44 materials, 0 emissive triangles
+Preparation time: 11470.38 ms
+Rendering 800x400, spp=8, bounces=3, emissive=0, camera_spot=on, openmp=on, threads=16
+  lines 400 / 400
+Render time: 701.68 ms
+Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\hybrid_scene_generation_benchmark\images\stairhead_parapet.png

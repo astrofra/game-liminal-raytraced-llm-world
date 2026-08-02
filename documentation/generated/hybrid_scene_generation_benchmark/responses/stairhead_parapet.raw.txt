@@ -1,0 +1,21 @@
+```json
+{
+  "title": "Ventilation Shaft",
+  "summary": "A narrow concrete shaft lined with rusted grates and a single flickering emergency light. The air smells of ozone and old oil.",
+  "arrival_narration": "You step through the gate and descend into a vertical shaft, the concrete walls slick with condensation. The emergency light hums faintly, casting jagged shadows. A rusted metal ladder spirals upward, but the only exit is a reinforced hatch at the bottom. A small control panel is mounted on the wall beside it, its buttons labeled in faded symbols. A loose cable dangles from the ceiling, its end frayed.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "industrial shaft",
+    "time_of_day": "night",
+    "visibility_level": "dusty",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": ["concrete walls", "emergency light", "reinforced hatch", "control panel", "dangling cable"],
+    "visible_objects": ["rusted ladder", "control panel (3 buttons)", "reinforced hatch (locked)", "frayed cable end", "small tool crate"],
+    "blocked_exits": ["east", "south"],
+    "spatial_anomalies": ["condensation drips from walls", "hatch emits a faint metallic click"]
+  }
+}
+```

@@ -184,6 +184,7 @@ static json MakeGeneratedRoomsJson(const std::vector<GeneratedRoom>& rooms)
         item["room_id"] = rooms[index].room_id;
         item["spatial_state"] = MakeSpatialStateJson(rooms[index].spatial_state);
         item["scene_text"] = rooms[index].scene_text;
+        item["scene_source"] = rooms[index].scene_source;
         item["metadata_fallback_used"] = rooms[index].metadata_fallback_used;
         item["scene_fallback_used"] = rooms[index].scene_fallback_used;
         node.push_back(item);
@@ -317,8 +318,12 @@ static void ParseGeneratedRoomsNode(const json& node, std::vector<GeneratedRoom>
             ParseSpatialStateNode(node[index]["spatial_state"], &room.spatial_state);
         }
         room.scene_text = ReadStringNode(node[index], "scene_text");
+        room.scene_source = ReadStringNode(node[index], "scene_source");
         room.metadata_fallback_used = ReadBoolNode(node[index], "metadata_fallback_used", false);
         room.scene_fallback_used = ReadBoolNode(node[index], "scene_fallback_used", false);
+        if (room.scene_source.empty()) {
+            room.scene_source = room.scene_fallback_used ? "fallback" : "llm";
+        }
         if (!room.room_id.empty()) {
             rooms->push_back(room);
         }

@@ -1,0 +1,21 @@
+```json
+{
+  "title": "Access Tunnel",
+  "summary": "A narrow concrete tunnel slopes upward, its walls lined with faded utility conduits and a single operational emergency hatch.",
+  "arrival_narration": "You step through the gate and into a sloping tunnel, the air thick with the scent of ozone and rust. A single emergency hatch—marked with a red circle—flanks the wall to your right. A keypad beside it glows faintly. A loose conduit pipe lies half-buried in the dust near your feet, and a flickering maintenance placard warns of ‘unauthorized access voids.’ The tunnel’s ceiling curves upward, revealing a single overhead light fixture that hums weakly.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "utility corridor",
+    "time_of_day": "dusk",
+    "visibility_level": "clear",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 1,
+    "anchors": ["sloping tunnel floor", "emergency hatch", "keypad", "overhead light fixture", "maintenance placard"],
+    "visible_objects": ["emergency hatch", "keypad", "loose conduit pipe", "maintenance placard", "flickering light fixture"],
+    "blocked_exits": [],
+    "spatial_anomalies": []
+  }
+}
+```

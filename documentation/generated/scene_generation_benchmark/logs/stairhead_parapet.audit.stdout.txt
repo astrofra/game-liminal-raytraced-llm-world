@@ -1,7 +1,7 @@
 Loaded scene Parapet Stairhead
 Loaded 378 triangles, 34 materials, 0 emissive triangles
-Load time: 7.60 ms
+Load time: 0.39 ms
 Rendering 800x400, spp=8, bounces=3, emissive=0, camera_spot=on, openmp=on, threads=16
   lines 400 / 400
-Render time: 409.49 ms
+Render time: 407.28 ms
 Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_generation_benchmark\images\stairhead_parapet.png

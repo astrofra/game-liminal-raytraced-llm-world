@@ -1,7 +1,7 @@
 Loaded scene Entry Gate
 Loaded 220 triangles, 20 materials, 0 emissive triangles
-Load time: 1.19 ms
+Load time: 0.31 ms
 Rendering 800x400, spp=8, bounces=3, emissive=0, camera_spot=on, openmp=on, threads=16
   lines 400 / 400
-Render time: 367.35 ms
+Render time: 367.34 ms
 Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_generation_benchmark\images\entry_gate_dusk.png

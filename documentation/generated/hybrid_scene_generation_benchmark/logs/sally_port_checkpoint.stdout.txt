@@ -1,0 +1,79 @@
+Headless turn completed.
+Turn 1 completed.
+Prompt tokens: 799
+Generated tokens: 387
+Inference time: 9338.74 ms
+Turn JSON repair: not needed
+Turn fallback: not needed
+Intent: move_north_generated_room
+Narration: You step through the checkpoint’s northern gate into a steep, dimly lit corridor. The air smells of ozone and rust. A single emergency light hums overhead, casting jagged shadows.
+Initial location: unknown
+Updated location: unknown
+Initial place: Sally Port Checkpoint
+Updated place: Vaulted Corridor
+Candidate scene audit: not provided
+Rendered scene source: generated_room_cache
+Generated room metadata source: llm
+Generated room scene source: hybrid
+
+=== Raw Turn Response ===
+```json
+{
+  "title": "Vaulted Corridor",
+  "summary": "A narrow, sloping corridor ascends through a reinforced concrete vault, its walls lined with flickering emergency lights and a single open maintenance hatch.",
+  "arrival_narration": "You step through the checkpoint’s northern gate into a steep, dimly lit corridor. The air smells of ozone and rust. A single emergency light hums overhead, casting jagged shadows. To your left, a **maintenance hatch** is propped open, revealing a ladder descending into darkness. A **wall-mounted keypad** glows faintly beside it, its screen blank. A **metal cabinet** stands half-open, its contents obscured by a tattered inspection placard pinned to its door.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "industrial corridor",
+    "time_of_day": "night",
+    "visibility_level": "low",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": ["sloping floor", "maintenance hatch", "wall keypad", "metal cabinet", "flickering light"],
+    "visible_objects": [
+      "maintenance hatch (open, ladder descending)",
+      "wall-mounted keypad (glowing, blank screen)",
+      "metal cabinet (half-open, inspection placard pinned)",
+      "tattered inspection placard (flapping)",
+      "exposed wiring bundle (near hatch)"
+    ],
+    "blocked_exits": [],
+    "spatial_anomalies": [
+      "flickering light cycles every 12 seconds",
+      "keypad emits faint static when approached"
+    ]
+  }
+}
+```
+
+=== Raw Scene Audit Response ===
+room "Vaulted Corridor"
+camera eye(0.0,1.78,-7.60) target(0.0,1.18,8.20) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(29.0) cone(12.0,28.0) intensity(76.0)
+plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.4,22.8) gray(0.12)
+plane "ceiling" pos(0.0,3.20,0.0) normal(0.0,-1.0,0.0) size(12.4,22.8) gray(0.19)
+box "wall_back" pos(0.0,1.60,11.40) size(12.4,3.2,0.60) gray(0.18)
+box "wall_left" pos(-6.20,1.60,0.0) size(0.60,3.2,22.8) gray(0.18)
+box "wall_right" pos(6.20,1.60,0.0) size(0.60,3.2,22.8) gray(0.18)
+box "threshold_frame" pos(0.0,1.54,8.89) size(3.8,3.07,0.42) gray(0.25)
+box "maintenance_hatch_open_ladder_descending_01" pos(-1.20,0.12,5.70) size(1.80,0.24,1.80) gray(0.22)
+box "wall_mounted_keypad_glowing_blank_screen_02" pos(0.00,1.42,11.25) size(0.90,0.65,0.14) gray(0.39)
+box "metal_cabinet_half_open_inspection_placard_pinned_03" pos(-6.07,1.38,-0.53) size(0.14,0.65,0.90) gray(0.39)
+box "tattered_inspection_placard_flapping_04" pos(6.07,1.38,6.27) size(0.14,0.65,0.90) gray(0.39)
+box "exposed_wiring_bundle_near_hatch_05" pos(1.20,0.12,4.00) size(1.80,0.24,1.80) gray(0.22)
+box "service_panel_06" pos(-1.50,1.42,11.25) size(0.90,0.65,0.14) gray(0.39)
+prefab_crate "maintenance_crate_07" pos(3.35,0.55,-1.82) size(1.70,1.10,1.40) gray(0.20) detail(0.31)
+box "cooling_keypad_08" pos(6.07,1.72,4.47) size(0.14,0.65,0.90) gray(0.39)
+prefab_gate "rack_access_door_09" pos(1.50,1.72,11.18) size(2.20,2.50,0.28) gray(0.23) detail(0.42)
+prefab_rack "vault_rack_left_151" pos(-3.35,1.25,-1.82) size(1.35,2.50,1.70) gray(0.20) detail(0.35)
+prefab_rack "vault_rack_right_152" pos(3.35,1.25,1.08) size(1.35,2.50,1.70) gray(0.20) detail(0.35)
+
+Loaded scene Vaulted Corridor
+Loaded 628 triangles, 54 materials, 0 emissive triangles
+Preparation time: 12441.81 ms
+Rendering 800x400, spp=8, bounces=3, emissive=0, camera_spot=on, openmp=on, threads=16
+  lines 400 / 400
+Render time: 645.94 ms
+Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\hybrid_scene_generation_benchmark\images\sally_port_checkpoint.png

@@ -1,0 +1,92 @@
+{
+  "hard_state": {
+    "turn_number": 1,
+    "move_count": 0,
+    "score": 0,
+    "current_location_id": "unknown",
+    "alert_level": 2,
+    "cooling_state": "stable",
+    "water_state": "stable",
+    "power_state": "stable",
+    "inventory_items": [],
+    "named_entities": [],
+    "unresolved_threats": []
+  },
+  "soft_state": {
+    "rolling_summary": "A side loading bay opens toward the desert through a half-raised shutter. Pallets, a cargo crate, and a bent lamp post stage a tense threshold between inside and outside.",
+    "atmosphere": "loading dock",
+    "active_hypotheses": [],
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "location_id": "unknown",
+    "room_title": "Dust Loading Dock",
+    "room_summary": "A side loading bay opens toward the desert through a half-raised shutter. Pallets, a cargo crate, and a bent lamp post stage a tense threshold between inside and outside.",
+    "location_archetype": "loading dock",
+    "canonical_fixture": "",
+    "time_of_day": "dusk",
+    "visibility_level": "dusty",
+    "desert_state": "dusty",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": [
+      "half-raised shutter",
+      "dock lip",
+      "desert threshold"
+    ],
+    "visible_objects": [
+      "cargo crate",
+      "shipping placard",
+      "control switch",
+      "lamp post"
+    ],
+    "blocked_exits": [
+      "north"
+    ],
+    "spatial_anomalies": [
+      "dust slips under the shutter in thin sheets"
+    ]
+  },
+  "history": [],
+  "current_place_id": "generated:origin_loading_dock_dust",
+  "next_generated_room_index": 1,
+  "generated_rooms": [
+    {
+      "room_id": "generated:origin_loading_dock_dust",
+      "spatial_state": {
+        "location_id": "unknown",
+        "room_title": "Dust Loading Dock",
+        "room_summary": "A side loading bay opens toward the desert through a half-raised shutter. Pallets, a cargo crate, and a bent lamp post stage a tense threshold between inside and outside.",
+        "location_archetype": "loading dock",
+        "canonical_fixture": "",
+        "time_of_day": "dusk",
+        "visibility_level": "dusty",
+        "desert_state": "dusty",
+        "interior_density": "sparse",
+        "alert_level": 2,
+        "anchors": [
+          "half-raised shutter",
+          "dock lip",
+          "desert threshold"
+        ],
+        "visible_objects": [
+          "cargo crate",
+          "shipping placard",
+          "control switch",
+          "lamp post"
+        ],
+        "blocked_exits": [
+          "north"
+        ],
+        "spatial_anomalies": [
+          "dust slips under the shutter in thin sheets"
+        ]
+      },
+      "scene_text": "",
+      "scene_source": "benchmark_origin",
+      "metadata_fallback_used": false,
+      "scene_fallback_used": false
+    }
+  ],
+  "room_links": []
+}

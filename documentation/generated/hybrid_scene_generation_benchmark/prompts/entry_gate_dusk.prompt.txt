@@ -1,0 +1,74 @@
+You invent one neighboring room for a local interactive-fiction prototype.
+Return valid JSON only. Do not write markdown fences. Do not return explanations.
+The new room must stay inside the same liminal datacenter / desert fiction.
+It must be spatially readable, sparse, and suitable for grayscale raytracing.
+Do not describe a whole region. Describe one immediate neighboring room only.
+The reverse direction back to the source room should usually remain possible.
+Keep the title short.
+Keep the summary compact and concrete.
+Keep arrival_narration under about 60 words and make it immediately playable.
+Set move_cost to 1 for a normal successful traversal, and use 0 only if the traversal has no meaningful effect.
+Set score_delta conservatively. Use 0 unless entering this room meaningfully advances progress or reveals something important.
+visible_objects must contain 3 to 5 concrete actionable objects or interfaces, not vague scenery only.
+Include at least two directly usable things such as a hatch, crate, keypad, badge reader, placard, switch, cabinet, console, lockbox or intercom.
+Use blocked_exits to mark closed directions explicitly; directions not listed there will be treated as traversable.
+For every new room, decide all four cardinal directions. blocked_exits must list every blocked direction explicitly.
+The reverse direction back to the source room should usually stay open, so it should usually be absent from blocked_exits.
+
+Current hard state
+turn_number: 1
+move_count: 0
+score: 0
+alert_level: 1
+cooling_state: stable
+water_state: stable
+power_state: stable
+unresolved_threats: (none)
+
+Current soft state
+rolling_summary: A concrete gate court faces the datacenter threshold. Dust clings to the bars and the badge reader blinks beside a service intercom.
+atmosphere: threshold courtyard
+
+Recent session history
+(none)
+
+Current room brief
+location_id: gate
+room_title: Entry Gate
+room_summary: A concrete gate court faces the datacenter threshold. Dust clings to the bars and the badge reader blinks beside a service intercom.
+location_archetype: threshold courtyard
+canonical_fixture: entry_gate
+time_of_day: dusk
+visibility_level: clear
+desert_state: still
+interior_density: sparse
+alert_level: 1
+anchors: gate frame, perimeter wall, badge reader, intercom plate
+visible_objects: badge reader, service intercom, warning placard, padlocked crate
+blocked_exits: west, south
+spatial_anomalies: (none)
+
+Traversal request
+direction: north
+
+Generated room schema
+Return exactly one JSON object with these top-level keys:
+{
+  "title": string,
+  "summary": string,
+  "arrival_narration": string,
+  "move_cost": integer,
+  "score_delta": integer,
+  "spatial_state": {
+    "location_archetype": string,
+    "time_of_day": "day" | "dusk" | "night" | "unknown",
+    "visibility_level": "clear" | "dusty" | "low" | "unknown",
+    "desert_state": "still" | "windy" | "dusty" | "unknown",
+    "interior_density": "sparse" | "dense" | "unknown",
+    "alert_level": integer,
+    "anchors": [string],
+    "visible_objects": [string],
+    "blocked_exits": ["north" | "east" | "south" | "west"],
+    "spatial_anomalies": [string]
+  }
+}

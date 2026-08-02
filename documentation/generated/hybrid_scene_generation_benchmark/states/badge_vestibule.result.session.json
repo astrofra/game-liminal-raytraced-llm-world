@@ -1,0 +1,153 @@
+{
+  "current_place_id": "generated:room_0001",
+  "generated_rooms": [
+    {
+      "metadata_fallback_used": false,
+      "room_id": "generated:origin_badge_vestibule",
+      "scene_fallback_used": false,
+      "scene_source": "benchmark_origin",
+      "scene_text": "",
+      "spatial_state": {
+        "alert_level": 1,
+        "anchors": [
+          "reader column",
+          "inner door",
+          "outer door"
+        ],
+        "blocked_exits": [
+          "west"
+        ],
+        "canonical_fixture": "",
+        "desert_state": "still",
+        "interior_density": "sparse",
+        "location_archetype": "airlock vestibule",
+        "location_id": "unknown",
+        "room_summary": "A bare vestibule buffers the exterior from the datacenter core. The only relief is a reader column, a maintenance hatch, and a wall placard with faded rules.",
+        "room_title": "Badge Vestibule",
+        "spatial_anomalies": [],
+        "time_of_day": "night",
+        "visibility_level": "clear",
+        "visible_objects": [
+          "badge reader",
+          "maintenance hatch",
+          "wall placard",
+          "ceiling speaker"
+        ]
+      }
+    },
+    {
+      "metadata_fallback_used": false,
+      "room_id": "generated:room_0001",
+      "scene_fallback_used": false,
+      "scene_source": "hybrid",
+      "scene_text": "room \"Access Node\"\ncamera eye(0.0,1.76,-7.20) target(0.0,1.16,7.00) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(28.0) cone(12.0,28.0) intensity(78.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(11.6,20.8) gray(0.12)\nplane \"ceiling\" pos(0.0,3.10,0.0) normal(0.0,-1.0,0.0) size(11.6,20.8) gray(0.20)\nbox \"wall_back\" pos(0.0,1.55,10.40) size(11.6,3.1,0.60) gray(0.19)\nbox \"wall_left\" pos(-5.80,1.55,0.0) size(0.60,3.1,20.8) gray(0.19)\nbox \"wall_right\" pos(5.80,1.55,0.0) size(0.60,3.1,20.8) gray(0.19)\nbox \"threshold_frame\" pos(0.0,1.49,8.11) size(3.8,2.98,0.42) gray(0.25)\nbox \"console_01\" pos(-0.40,0.50,-0.87) size(1.70,1.00,0.80) gray(0.25)\nbox \"locked_cabinet_02\" pos(3.13,1.00,-1.66) size(1.10,2.00,0.90) gray(0.24)\nbox \"intercom_panel_03\" pos(0.00,1.42,10.25) size(0.90,0.65,0.14) gray(0.39)\nbox \"red_emergency_light_05\" pos(-1.20,1.15,5.20) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"service_panel_06\" pos(-5.67,1.38,-0.65) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"maintenance_crate_07\" pos(3.13,0.55,0.94) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"cooling_keypad_08\" pos(5.67,1.38,5.72) size(0.14,0.65,0.90) gray(0.39)\nprefab_gate \"rack_access_door_09\" pos(-1.50,1.42,10.18) size(2.20,2.50,0.28) gray(0.23) detail(0.42)\nbox \"cabinet_latch_10\" pos(1.50,1.72,10.25) size(0.90,0.65,0.14) gray(0.39)\nbox \"control_cabinet_142\" pos(3.13,1.00,2.54) size(1.10,2.00,0.90) gray(0.24)\nbox \"status_panel_143\" pos(2.00,1.72,10.25) size(0.90,0.65,0.14) gray(0.39)\n",
+      "spatial_state": {
+        "alert_level": 1,
+        "anchors": [
+          "console",
+          "locked cabinet",
+          "intercom panel",
+          "split corridor"
+        ],
+        "blocked_exits": [],
+        "canonical_fixture": "",
+        "desert_state": "still",
+        "interior_density": "sparse",
+        "location_archetype": "corridor junction",
+        "location_id": "unknown",
+        "room_summary": "A narrow corridor splits into a junction where a single console dominates the left wall, flanked by a locked cabinet and a flickering intercom panel.",
+        "room_title": "Access Node",
+        "spatial_anomalies": [],
+        "time_of_day": "night",
+        "visibility_level": "clear",
+        "visible_objects": [
+          "console",
+          "locked cabinet",
+          "intercom panel",
+          "exposed conduit",
+          "red emergency light",
+          "service panel",
+          "maintenance crate",
+          "cooling keypad",
+          "rack access door",
+          "cabinet latch"
+        ]
+      }
+    }
+  ],
+  "hard_state": {
+    "alert_level": 1,
+    "cooling_state": "stable",
+    "current_location_id": "unknown",
+    "inventory_items": [],
+    "move_count": 1,
+    "named_entities": [],
+    "power_state": "stable",
+    "score": 0,
+    "turn_number": 2,
+    "unresolved_threats": [],
+    "water_state": "stable"
+  },
+  "history": [
+    {
+      "clarification": "",
+      "intent": "move_north_generated_room",
+      "location_id": "unknown",
+      "location_label": "Access Node",
+      "narration": "The airlock’s inner door hisses shut behind you. A dimly lit corridor stretches ahead, its walls lined with exposed conduit. To the left, a **console** hums faintly, its screen displaying a single red light.",
+      "player_command": "north",
+      "turn_number": 1
+    }
+  ],
+  "next_generated_room_index": 2,
+  "room_links": [
+    {
+      "direction": "north",
+      "from_place_id": "generated:origin_badge_vestibule",
+      "to_place_id": "generated:room_0001"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "generated:room_0001",
+      "to_place_id": "generated:origin_badge_vestibule"
+    }
+  ],
+  "soft_state": {
+    "active_hypotheses": [],
+    "atmosphere": "airlock vestibule",
+    "rolling_summary": "The airlock’s inner door hisses shut behind you. A dimly lit corridor stretches ahead, its walls lined with exposed conduit. To the left, a **console** hums faintly, its screen displaying a single red light.",
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "alert_level": 1,
+    "anchors": [
+      "console",
+      "locked cabinet",
+      "intercom panel",
+      "split corridor"
+    ],
+    "blocked_exits": [],
+    "canonical_fixture": "",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "location_archetype": "corridor junction",
+    "location_id": "unknown",
+    "room_summary": "A narrow corridor splits into a junction where a single console dominates the left wall, flanked by a locked cabinet and a flickering intercom panel.",
+    "room_title": "Access Node",
+    "spatial_anomalies": [],
+    "time_of_day": "night",
+    "visibility_level": "clear",
+    "visible_objects": [
+      "console",
+      "locked cabinet",
+      "intercom panel",
+      "exposed conduit",
+      "red emergency light",
+      "service panel",
+      "maintenance crate",
+      "cooling keypad",
+      "rack access door",
+      "cabinet latch"
+    ]
+  }
+}

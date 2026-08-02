@@ -1,0 +1,21 @@
+```json
+{
+  "title": "Beacon Tower",
+  "summary": "A reinforced observation tower extends above the parapet, housing a failing beacon array and a locked maintenance hatch. The desert wind howls through a cracked ventilation grille.",
+  "arrival_narration": "You step onto a narrow metal platform jutting from the parapet’s edge. The beacon tower looms ahead—a skeletal lattice of rusted steel, its top half shrouded in flickering amber light. A maintenance hatch, half-buried in debris, sits at the base. A ventilation grille groans in the wind, scattering loose papers. The horizon shifts slightly—something glints in the dusk’s last light.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "observation tower",
+    "time_of_day": "dusk",
+    "visibility_level": "clear",
+    "desert_state": "windy",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": ["metal platform", "beacon array", "ventilation grille", "locked hatch", "debris pile"],
+    "visible_objects": ["beacon array console", "locked maintenance hatch", "ventilation grille", "scattered schematics", "rusted handrail"],
+    "blocked_exits": ["south"],
+    "spatial_anomalies": ["flickering amber light from beacon array"]
+  }
+}
+```

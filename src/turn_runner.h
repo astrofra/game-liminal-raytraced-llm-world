@@ -58,8 +58,11 @@ struct HeadlessTurnResult {
     bool used_candidate_scene_for_render;
     bool used_turn_repair;
     bool used_turn_fallback;
+    bool generated_room_created;
+    bool generated_room_cache_refreshed;
     bool generated_room_metadata_fallback_used;
     bool generated_room_scene_fallback_used;
+    std::string generated_room_scene_source;
     std::string candidate_scene_error;
     std::vector<GeneratedRoom> generated_rooms_to_add;
     std::vector<RoomLink> room_links_to_add;
@@ -72,6 +75,8 @@ struct HeadlessTurnResult {
         , used_candidate_scene_for_render(false)
         , used_turn_repair(false)
         , used_turn_fallback(false)
+        , generated_room_created(false)
+        , generated_room_cache_refreshed(false)
         , generated_room_metadata_fallback_used(false)
         , generated_room_scene_fallback_used(false)
         , prompt_tokens(0)

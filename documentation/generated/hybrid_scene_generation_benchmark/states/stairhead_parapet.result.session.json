@@ -1,0 +1,168 @@
+{
+  "current_place_id": "generated:room_0001",
+  "generated_rooms": [
+    {
+      "metadata_fallback_used": false,
+      "room_id": "generated:origin_stairhead_parapet",
+      "scene_fallback_used": false,
+      "scene_source": "benchmark_origin",
+      "scene_text": "",
+      "spatial_state": {
+        "alert_level": 1,
+        "anchors": [
+          "stairhead bulk",
+          "roof gate",
+          "parapet edge"
+        ],
+        "blocked_exits": [
+          "east",
+          "south"
+        ],
+        "canonical_fixture": "",
+        "desert_state": "windy",
+        "interior_density": "sparse",
+        "location_archetype": "roof stairhead",
+        "location_id": "unknown",
+        "room_summary": "A concrete stairhead interrupts the roof line. The landing is tight, with a latch box, a cable spool, and a narrow gate looking over the darkening desert.",
+        "room_title": "Parapet Stairhead",
+        "spatial_anomalies": [
+          "wind makes the gate vibrate softly"
+        ],
+        "time_of_day": "dusk",
+        "visibility_level": "low",
+        "visible_objects": [
+          "latch box",
+          "cable spool",
+          "roof gate handle",
+          "inspection placard"
+        ]
+      }
+    },
+    {
+      "metadata_fallback_used": false,
+      "room_id": "generated:room_0001",
+      "scene_fallback_used": false,
+      "scene_source": "hybrid",
+      "scene_text": "room \"Ventilation Shaft\"\ncamera eye(0.0,1.78,-7.80) target(0.0,1.20,8.40) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.8,23.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.20,0.0) normal(0.0,-1.0,0.0) size(12.8,23.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.60,11.50) size(12.8,3.2,0.60) gray(0.18)\nbox \"wall_left\" pos(-6.40,1.60,0.0) size(0.60,3.2,23.0) gray(0.18)\nbox \"wall_right\" pos(6.40,1.60,0.0) size(0.60,3.2,23.0) gray(0.18)\nbox \"control_panel_3_buttons_02\" pos(0.00,1.42,11.35) size(0.90,0.65,0.14) gray(0.39)\nbox \"reinforced_hatch_locked_03\" pos(-1.20,0.12,5.75) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"small_tool_crate_05\" pos(3.46,0.55,-1.84) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"service_panel_06\" pos(-6.27,1.38,-0.52) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"maintenance_crate_07\" pos(-3.46,0.55,-1.84) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"cooling_keypad_08\" pos(6.27,1.38,6.33) size(0.14,0.65,0.90) gray(0.39)\nprefab_gate \"rack_access_door_09\" pos(-1.50,1.42,11.28) size(2.20,2.50,0.28) gray(0.23) detail(0.42)\nbox \"cabinet_latch_10\" pos(1.50,1.72,11.35) size(0.90,0.65,0.14) gray(0.39)\nprefab_rack \"service_rack_173\" pos(-3.46,1.25,1.06) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\n",
+      "spatial_state": {
+        "alert_level": 2,
+        "anchors": [
+          "concrete walls",
+          "emergency light",
+          "reinforced hatch",
+          "control panel",
+          "dangling cable"
+        ],
+        "blocked_exits": [
+          "east"
+        ],
+        "canonical_fixture": "",
+        "desert_state": "still",
+        "interior_density": "sparse",
+        "location_archetype": "industrial shaft",
+        "location_id": "unknown",
+        "room_summary": "A narrow concrete shaft lined with rusted grates and a single flickering emergency light. The air smells of ozone and old oil.",
+        "room_title": "Ventilation Shaft",
+        "spatial_anomalies": [
+          "condensation drips from walls",
+          "hatch emits a faint metallic click"
+        ],
+        "time_of_day": "night",
+        "visibility_level": "dusty",
+        "visible_objects": [
+          "rusted ladder",
+          "control panel (3 buttons)",
+          "reinforced hatch (locked)",
+          "frayed cable end",
+          "small tool crate",
+          "service panel",
+          "maintenance crate",
+          "cooling keypad",
+          "rack access door",
+          "cabinet latch"
+        ]
+      }
+    }
+  ],
+  "hard_state": {
+    "alert_level": 2,
+    "cooling_state": "stable",
+    "current_location_id": "unknown",
+    "inventory_items": [],
+    "move_count": 1,
+    "named_entities": [],
+    "power_state": "stable",
+    "score": 0,
+    "turn_number": 2,
+    "unresolved_threats": [],
+    "water_state": "stable"
+  },
+  "history": [
+    {
+      "clarification": "",
+      "intent": "move_north_generated_room",
+      "location_id": "unknown",
+      "location_label": "Ventilation Shaft",
+      "narration": "You step through the gate and descend into a vertical shaft, the concrete walls slick with condensation. The emergency light hums faintly, casting jagged shadows. A rusted metal ladder spirals upward, but the only exit is a reinforced hatch at the bottom.",
+      "player_command": "north",
+      "turn_number": 1
+    }
+  ],
+  "next_generated_room_index": 2,
+  "room_links": [
+    {
+      "direction": "north",
+      "from_place_id": "generated:origin_stairhead_parapet",
+      "to_place_id": "generated:room_0001"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "generated:room_0001",
+      "to_place_id": "generated:origin_stairhead_parapet"
+    }
+  ],
+  "soft_state": {
+    "active_hypotheses": [],
+    "atmosphere": "roof stairhead",
+    "rolling_summary": "You step through the gate and descend into a vertical shaft, the concrete walls slick with condensation. The emergency light hums faintly, casting jagged shadows. A rusted metal ladder spirals upward, but the only exit is a reinforced hatch at the bottom.",
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "alert_level": 2,
+    "anchors": [
+      "concrete walls",
+      "emergency light",
+      "reinforced hatch",
+      "control panel",
+      "dangling cable"
+    ],
+    "blocked_exits": [
+      "east"
+    ],
+    "canonical_fixture": "",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "location_archetype": "industrial shaft",
+    "location_id": "unknown",
+    "room_summary": "A narrow concrete shaft lined with rusted grates and a single flickering emergency light. The air smells of ozone and old oil.",
+    "room_title": "Ventilation Shaft",
+    "spatial_anomalies": [
+      "condensation drips from walls",
+      "hatch emits a faint metallic click"
+    ],
+    "time_of_day": "night",
+    "visibility_level": "dusty",
+    "visible_objects": [
+      "rusted ladder",
+      "control panel (3 buttons)",
+      "reinforced hatch (locked)",
+      "frayed cable end",
+      "small tool crate",
+      "service panel",
+      "maintenance crate",
+      "cooling keypad",
+      "rack access door",
+      "cabinet latch"
+    ]
+  }
+}

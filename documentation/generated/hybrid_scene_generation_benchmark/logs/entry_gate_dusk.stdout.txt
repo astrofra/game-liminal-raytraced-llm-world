@@ -1,0 +1,68 @@
+Headless turn completed.
+Turn 1 completed.
+Prompt tokens: 798
+Generated tokens: 319
+Inference time: 7787.57 ms
+Turn JSON repair: not needed
+Turn fallback: not needed
+Intent: move_north_generated_room
+Narration: You step through the gate and into a sloping tunnel, the air thick with the scent of ozone and rust. A single emergency hatch—marked with a red circle—flanks the wall to your right. A keypad beside it glows faintly.
+Initial location: gate
+Updated location: unknown
+Initial place: gate
+Updated place: Access Tunnel
+Candidate scene audit: not provided
+Rendered scene source: generated_room_cache
+Generated room metadata source: llm
+Generated room scene source: hybrid
+
+=== Raw Turn Response ===
+```json
+{
+  "title": "Access Tunnel",
+  "summary": "A narrow concrete tunnel slopes upward, its walls lined with faded utility conduits and a single operational emergency hatch.",
+  "arrival_narration": "You step through the gate and into a sloping tunnel, the air thick with the scent of ozone and rust. A single emergency hatch—marked with a red circle—flanks the wall to your right. A keypad beside it glows faintly. A loose conduit pipe lies half-buried in the dust near your feet, and a flickering maintenance placard warns of ‘unauthorized access voids.’ The tunnel’s ceiling curves upward, revealing a single overhead light fixture that hums weakly.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "utility corridor",
+    "time_of_day": "dusk",
+    "visibility_level": "clear",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 1,
+    "anchors": ["sloping tunnel floor", "emergency hatch", "keypad", "overhead light fixture", "maintenance placard"],
+    "visible_objects": ["emergency hatch", "keypad", "loose conduit pipe", "maintenance placard", "flickering light fixture"],
+    "blocked_exits": [],
+    "spatial_anomalies": []
+  }
+}
+```
+
+=== Raw Scene Audit Response ===
+room "Access Tunnel"
+camera eye(0.0,1.78,-7.80) target(0.0,1.20,8.40) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)
+plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.8,23.0) gray(0.12)
+plane "ceiling" pos(0.0,3.20,0.0) normal(0.0,-1.0,0.0) size(12.8,23.0) gray(0.19)
+box "wall_back" pos(0.0,1.60,11.50) size(12.8,3.2,0.60) gray(0.18)
+box "wall_left" pos(-6.40,1.60,0.0) size(0.60,3.2,23.0) gray(0.18)
+box "wall_right" pos(6.40,1.60,0.0) size(0.60,3.2,23.0) gray(0.18)
+box "emergency_hatch_01" pos(-1.20,0.12,5.75) size(1.80,0.24,1.80) gray(0.22)
+box "keypad_02" pos(0.00,1.42,11.35) size(0.90,0.65,0.14) gray(0.39)
+box "maintenance_placard_04" pos(-6.27,1.38,-0.52) size(0.14,0.65,0.90) gray(0.39)
+box "flickering_light_fixture_05" pos(1.20,1.15,4.05) size(0.38,2.30,0.38) gray(0.30) emit(2.40)
+box "service_panel_06" pos(6.27,1.38,6.33) size(0.14,0.65,0.90) gray(0.39)
+prefab_crate "maintenance_crate_07" pos(3.46,0.55,-1.84) size(1.70,1.10,1.40) gray(0.20) detail(0.31)
+box "cooling_keypad_08" pos(-1.50,1.42,11.35) size(0.90,0.65,0.14) gray(0.39)
+prefab_gate "rack_access_door_09" pos(1.50,1.72,11.28) size(2.20,2.50,0.28) gray(0.23) detail(0.42)
+box "cabinet_latch_10" pos(6.27,1.72,4.53) size(0.14,0.65,0.90) gray(0.39)
+prefab_rack "service_rack_173" pos(-3.46,1.25,-1.84) size(1.35,2.50,1.70) gray(0.20) detail(0.35)
+
+Loaded scene Access Tunnel
+Loaded 460 triangles, 40 materials, 12 emissive triangles
+Preparation time: 10898.24 ms
+Rendering 800x400, spp=8, bounces=3, emissive=12, camera_spot=on, openmp=on, threads=16
+  lines 400 / 400
+Render time: 803.02 ms
+Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\hybrid_scene_generation_benchmark\images\entry_gate_dusk.png

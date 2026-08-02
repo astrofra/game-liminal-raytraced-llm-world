@@ -49,6 +49,8 @@ static void PrintUsage()
     printf("  --prefer-candidate-scene Render a valid candidate_scene_text instead of the deterministic compiled scene\n");
     printf("  --dump-raw-turn          Print the raw structured model response after --run-turn\n");
     printf("  --dump-turn-contract     Print the structured turn prompt and exit\n");
+    printf("  --dump-generated-room-prompt Print the generated-room JSON prompt and exit\n");
+    printf("  --generated-room-direction <dir> Direction used with --dump-generated-room-prompt (north, east, south, west)\n");
     printf("  --dump-scene-audit-prompt Print the direct .scene audit prompt and exit\n");
     printf("  --llama-info             Print llama.cpp runtime information and exit\n");
 }
@@ -232,7 +234,9 @@ static void PrintTurnSummary(const liminal::HeadlessTurnResult& turn_result, boo
     const char* generated_room_metadata_source =
         turn_result.generated_room_metadata_fallback_used ? "fallback" : "llm";
     const char* generated_room_scene_source =
-        turn_result.generated_room_scene_fallback_used ? "fallback" : "llm";
+        turn_result.generated_room_scene_source.empty()
+            ? (turn_result.generated_room_scene_fallback_used ? "fallback" : "unknown")
+            : turn_result.generated_room_scene_source.c_str();
 
     printf("Turn %d completed.\n", turn_result.initial_hard_state.turn_number);
     printf("Prompt tokens: %d\n", turn_result.prompt_tokens);
@@ -265,9 +269,11 @@ static void PrintTurnSummary(const liminal::HeadlessTurnResult& turn_result, boo
     printf(
         "Rendered scene source: %s\n",
         rendered_scene_source);
-    if (!turn_result.generated_rooms_to_add.empty()) {
+    if (turn_result.generated_room_created) {
         printf("Generated room metadata source: %s\n", generated_room_metadata_source);
         printf("Generated room scene source: %s\n", generated_room_scene_source);
+    } else if (turn_result.generated_room_cache_refreshed) {
+        printf("Generated room cache refresh source: %s\n", generated_room_scene_source);
     }
     if (dump_raw_turn) {
         printf("\n=== Raw Turn Response ===\n%s\n", turn_result.raw_response_text.c_str());
@@ -290,6 +296,7 @@ int main(int argc, char** argv)
     liminal::RenderConfig config;
     bool print_llama_info_only = false;
     bool dump_turn_contract = false;
+    bool dump_generated_room_prompt = false;
     bool dump_scene_audit_prompt = false;
     bool compile_canonical_location = false;
     const char* audit_scene_text_path = 0;
@@ -304,6 +311,7 @@ int main(int argc, char** argv)
     const char* load_state_path = 0;
     const char* save_state_path = 0;
     liminal::LocationId selected_location = liminal::kLocationGate;
+    liminal::CardinalDirection generated_room_direction = liminal::kDirectionNorth;
     liminal::HeadlessTurnConfig headless_turn_config;
     std::vector<std::string> session_commands;
 
@@ -444,6 +452,18 @@ int main(int argc, char** argv)
             dump_turn_contract = true;
             continue;
         }
+        if (strcmp(argv[index], "--dump-generated-room-prompt") == 0) {
+            dump_generated_room_prompt = true;
+            continue;
+        }
+        if (strcmp(argv[index], "--generated-room-direction") == 0 && index + 1 < argc) {
+            if (!liminal::ParseCardinalDirection(argv[++index], &generated_room_direction) ||
+                generated_room_direction == liminal::kDirectionUnknown) {
+                fprintf(stderr, "Invalid generated room direction value.\n");
+                return 1;
+            }
+            continue;
+        }
         if (strcmp(argv[index], "--dump-scene-audit-prompt") == 0) {
             dump_scene_audit_prompt = true;
             continue;
@@ -508,7 +528,7 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    if (dump_turn_contract || dump_scene_audit_prompt) {
+    if (dump_turn_contract || dump_generated_room_prompt || dump_scene_audit_prompt) {
         liminal::SessionState session_state;
         if (load_state_path) {
             if (!LoadSessionStateFromPath(load_state_path, &session_state, error_buffer, sizeof(error_buffer))) {
@@ -530,6 +550,16 @@ int main(int argc, char** argv)
                     &session_state.history,
                     player_command,
                     true)
+                    .c_str());
+        } else if (dump_generated_room_prompt) {
+            printf(
+                "%s\n",
+                liminal::BuildGeneratedRoomPrompt(
+                    session_state.hard_state,
+                    session_state.soft_state,
+                    session_state.spatial_state,
+                    &session_state.history,
+                    generated_room_direction)
                     .c_str());
         } else {
             printf("%s\n", liminal::BuildSceneAuditPrompt(session_state.spatial_state).c_str());

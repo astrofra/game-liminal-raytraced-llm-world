@@ -1,0 +1,90 @@
+{
+  "hard_state": {
+    "turn_number": 1,
+    "move_count": 0,
+    "score": 0,
+    "current_location_id": "unknown",
+    "alert_level": 2,
+    "cooling_state": "stable",
+    "water_state": "stable",
+    "power_state": "stable",
+    "inventory_items": [],
+    "named_entities": [],
+    "unresolved_threats": []
+  },
+  "soft_state": {
+    "rolling_summary": "A compact control room opens off the aisles. One main console dominates the center while a locked cabinet and an access hatch wait at the margins.",
+    "atmosphere": "control room",
+    "active_hypotheses": [],
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "location_id": "unknown",
+    "room_title": "Sector Control Hub",
+    "room_summary": "A compact control room opens off the aisles. One main console dominates the center while a locked cabinet and an access hatch wait at the margins.",
+    "location_archetype": "control room",
+    "canonical_fixture": "",
+    "time_of_day": "night",
+    "visibility_level": "clear",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": [
+      "main console",
+      "wall cabinet",
+      "floor hatch"
+    ],
+    "visible_objects": [
+      "main console",
+      "locked cabinet",
+      "floor hatch",
+      "status placard"
+    ],
+    "blocked_exits": [
+      "east",
+      "south"
+    ],
+    "spatial_anomalies": []
+  },
+  "history": [],
+  "current_place_id": "generated:origin_control_hub",
+  "next_generated_room_index": 1,
+  "generated_rooms": [
+    {
+      "room_id": "generated:origin_control_hub",
+      "spatial_state": {
+        "location_id": "unknown",
+        "room_title": "Sector Control Hub",
+        "room_summary": "A compact control room opens off the aisles. One main console dominates the center while a locked cabinet and an access hatch wait at the margins.",
+        "location_archetype": "control room",
+        "canonical_fixture": "",
+        "time_of_day": "night",
+        "visibility_level": "clear",
+        "desert_state": "still",
+        "interior_density": "sparse",
+        "alert_level": 2,
+        "anchors": [
+          "main console",
+          "wall cabinet",
+          "floor hatch"
+        ],
+        "visible_objects": [
+          "main console",
+          "locked cabinet",
+          "floor hatch",
+          "status placard"
+        ],
+        "blocked_exits": [
+          "east",
+          "south"
+        ],
+        "spatial_anomalies": []
+      },
+      "scene_text": "",
+      "scene_source": "benchmark_origin",
+      "metadata_fallback_used": false,
+      "scene_fallback_used": false
+    }
+  ],
+  "room_links": []
+}

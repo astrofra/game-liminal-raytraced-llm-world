@@ -977,6 +977,10 @@ static bool TurnCreatesCurrentGeneratedRoom(
     const HeadlessTurnResult& turn_result,
     const std::string& place_id)
 {
+    if (!turn_result.generated_room_created) {
+        return false;
+    }
+
     for (size_t index = 0; index < turn_result.generated_rooms_to_add.size(); ++index) {
         if (turn_result.generated_rooms_to_add[index].room_id == place_id) {
             return true;
@@ -989,6 +993,17 @@ static bool TurnCreatesCurrentGeneratedRoom(
 static const char* BoolSourceLabel(bool fallback_used)
 {
     return fallback_used ? "fallback" : "llm";
+}
+
+static const char* GeneratedRoomSceneSourceLabel(const GeneratedRoom* room)
+{
+    if (!room) {
+        return "unknown";
+    }
+    if (!room->scene_source.empty()) {
+        return room->scene_source.c_str();
+    }
+    return room->scene_fallback_used ? "fallback" : "llm";
 }
 
 static const char* RenderSourceLabel(
@@ -1028,7 +1043,7 @@ static void PrintTurnProvenance(
         TurnCreatesCurrentGeneratedRoom(turn_result, session_state.current_place_id) ? "new" : "cached",
         RenderSourceLabel(session_state, turn_result),
         room ? BoolSourceLabel(room->metadata_fallback_used) : "unknown",
-        room ? BoolSourceLabel(room->scene_fallback_used) : "unknown",
+        GeneratedRoomSceneSourceLabel(room),
         turn_result.used_turn_fallback ? "yes" : "no");
     fflush(stdout);
 }

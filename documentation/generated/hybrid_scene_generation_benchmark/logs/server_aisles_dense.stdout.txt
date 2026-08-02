@@ -1,0 +1,82 @@
+Headless turn completed.
+Turn 1 completed.
+Prompt tokens: 802
+Generated tokens: 379
+Inference time: 9187.81 ms
+Turn JSON repair: not needed
+Turn fallback: not needed
+Intent: move_north_generated_room
+Narration: The northward door hisses shut behind you. A thick, insulated wall blocks any sound from the aisles beyond. Your boots crunch on a thin layer of static-clinging dust.
+Initial location: server_aisles
+Updated location: unknown
+Initial place: server_aisles
+Updated place: Backup Vault
+Candidate scene audit: not provided
+Rendered scene source: generated_room_cache
+Generated room metadata source: llm
+Generated room scene source: hybrid
+
+=== Raw Turn Response ===
+```json
+{
+  "title": "Backup Vault",
+  "summary": "A reinforced chamber lined with redundant cooling units and a single access console. The air hums with static, and a faint blue glow pulses from a terminal.",
+  "arrival_narration": "The northward door hisses shut behind you. A thick, insulated wall blocks any sound from the aisles beyond. Your boots crunch on a thin layer of static-clinging dust. A **cooling unit** vents warm air, its fan whirring unevenly. A **terminal** mounted on the wall displays a single line: *AUTHORIZATION REQUIRED*. To your left, a **metal hatch** is bolted to the floor, its edges warped. A **wall-mounted badge reader** sits idle beside a **sealed data crate** stamped with a faded red triangle.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "server vault",
+    "time_of_day": "night",
+    "visibility_level": "dusty",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": ["insulated wall", "floor hatch", "cooling unit", "terminal", "badge reader"],
+    "visible_objects": [
+      "cooling unit",
+      "terminal",
+      "metal hatch",
+      "badge reader",
+      "sealed data crate"
+    ],
+    "blocked_exits": [],
+    "spatial_anomalies": [
+      "cooling unit emits faint electrical crackle",
+      "terminal screen flickers intermittently",
+      "floor hatch shows signs of forced entry"
+    ]
+  }
+}
+```
+
+=== Raw Scene Audit Response ===
+room "Backup Vault"
+camera eye(0.0,1.78,-8.10) target(0.0,1.20,9.60) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(80.0)
+plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(13.6,28.0) gray(0.12)
+plane "ceiling" pos(0.0,3.30,0.0) normal(0.0,-1.0,0.0) size(13.6,28.0) gray(0.19)
+box "wall_back" pos(0.0,1.65,14.00) size(13.6,3.3,0.60) gray(0.18)
+box "wall_left" pos(-6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)
+box "wall_right" pos(6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)
+plane "light_strip" pos(0.0,3.29,2.4) normal(0.0,-1.0,0.0) size(1.2,7.8) gray(0.45) emit(1.6)
+prefab_cooling_unit "cooling_unit_01" pos(-3.67,1.17,-2.24) size(1.20,2.35,1.20) gray(0.29) detail(0.38)
+box "metal_hatch_03" pos(-1.20,0.12,7.00) size(1.80,0.24,1.80) gray(0.22)
+box "badge_reader_04" pos(0.00,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)
+prefab_crate "sealed_data_crate_05" pos(3.67,0.55,-2.24) size(1.70,1.10,1.40) gray(0.20) detail(0.31)
+box "service_panel_06" pos(-6.67,1.38,-0.22) size(0.14,0.65,0.90) gray(0.39)
+prefab_crate "maintenance_crate_07" pos(-3.67,0.55,0.36) size(1.70,1.10,1.40) gray(0.20) detail(0.31)
+box "cooling_keypad_08" pos(6.67,1.38,7.70) size(0.14,0.65,0.90) gray(0.39)
+prefab_gate "rack_access_door_09" pos(-1.50,1.42,13.78) size(2.20,2.50,0.28) gray(0.23) detail(0.42)
+box "cabinet_latch_10" pos(1.50,1.72,13.85) size(0.90,0.65,0.14) gray(0.39)
+prefab_rack "rack_block_left_131" pos(-3.67,1.25,3.56) size(1.35,2.50,1.70) gray(0.20) detail(0.35)
+prefab_rack "rack_block_right_132" pos(3.67,1.25,0.66) size(1.35,2.50,1.70) gray(0.20) detail(0.35)
+prefab_rack "rack_block_left_rear_133" pos(-3.67,1.25,6.46) size(1.35,2.50,1.70) gray(0.20) detail(0.35)
+prefab_rack "rack_block_right_rear_134" pos(3.67,1.25,3.56) size(1.35,2.50,1.70) gray(0.20) detail(0.35)
+
+Loaded scene Backup Vault
+Loaded 1062 triangles, 91 materials, 2 emissive triangles
+Preparation time: 12328.85 ms
+Rendering 800x400, spp=8, bounces=3, emissive=2, camera_spot=on, openmp=on, threads=16
+  lines 400 / 400
+Render time: 1330.60 ms
+Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\hybrid_scene_generation_benchmark\images\server_aisles_dense.png

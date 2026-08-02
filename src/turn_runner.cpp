@@ -891,6 +891,126 @@ static std::string BuildFallbackGeneratedRoomSceneText(const SpatialState& spati
     return text;
 }
 
+static void EmitSceneProgramText(const HeadlessTurnConfig& config, const std::string& scene_text)
+{
+    if (!config.stream_callback || scene_text.empty()) {
+        return;
+    }
+
+    config.stream_callback(
+        kHeadlessTurnStreamSceneProgram,
+        scene_text.c_str(),
+        scene_text.c_str(),
+        config.stream_user_data);
+}
+
+static bool BuildGeneratedRoomSceneProgram(
+    const HeadlessTurnConfig& config,
+    const SpatialState& spatial_state,
+    std::string* scene_text,
+    Scene* scene,
+    std::string* scene_source,
+    bool* used_fallback,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (!scene_text || !scene || !scene_source || !used_fallback) {
+        SetError(error_buffer, error_buffer_size, "Invalid generated scene target: %s", "(null)");
+        return false;
+    }
+
+    *used_fallback = false;
+    *scene_source = "hybrid";
+
+    std::string hybrid_scene_text;
+    char hybrid_error[512];
+    hybrid_error[0] = '\0';
+    if (BuildSceneTextFromSpatialState(spatial_state, &hybrid_scene_text, hybrid_error, sizeof(hybrid_error))) {
+        EmitSceneProgramText(config, hybrid_scene_text);
+        if (AuditSceneCandidateText(
+                "generated_hybrid.scene",
+                hybrid_scene_text.c_str(),
+                scene,
+                error_buffer,
+                error_buffer_size)) {
+            *scene_text = hybrid_scene_text;
+            return true;
+        }
+    }
+
+    *used_fallback = true;
+    *scene_source = "fallback";
+    *scene_text = BuildFallbackGeneratedRoomSceneText(spatial_state);
+    EmitSceneProgramText(config, *scene_text);
+    if (!AuditSceneCandidateText(
+            "generated_fallback.scene",
+            scene_text->c_str(),
+            scene,
+            error_buffer,
+            error_buffer_size)) {
+        if (hybrid_error[0]) {
+            SetError(
+                error_buffer,
+                error_buffer_size,
+                "Generated room scene remained invalid after hybrid compile failure: %s",
+                hybrid_error);
+        }
+        return false;
+    }
+
+    return true;
+}
+
+static bool RefreshGeneratedRoomCache(
+    const SessionState& initial_session_state,
+    const HeadlessTurnConfig& config,
+    HeadlessTurnResult* result,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (!result || !IsGeneratedPlaceId(result->updated_place_id)) {
+        return true;
+    }
+
+    const GeneratedRoom* existing_room = FindGeneratedRoomById(initial_session_state, result->updated_place_id);
+    if (!existing_room) {
+        SetError(error_buffer, error_buffer_size, "Unknown generated place: %s", result->updated_place_id.c_str());
+        return false;
+    }
+
+    GeneratedRoom refreshed_room = *existing_room;
+    refreshed_room.spatial_state = result->updated_spatial_state;
+    refreshed_room.spatial_state.location_id = kLocationUnknown;
+    refreshed_room.spatial_state.canonical_fixture.clear();
+    EnsureActionableVisibleObjects(&refreshed_room.spatial_state);
+
+    Scene refreshed_scene;
+    std::string scene_source;
+    bool scene_fallback_used = false;
+    if (!BuildGeneratedRoomSceneProgram(
+            config,
+            refreshed_room.spatial_state,
+            &refreshed_room.scene_text,
+            &refreshed_scene,
+            &scene_source,
+            &scene_fallback_used,
+            error_buffer,
+            error_buffer_size)) {
+        return false;
+    }
+
+    refreshed_room.scene_source = scene_source;
+    refreshed_room.scene_fallback_used = scene_fallback_used;
+    result->generated_rooms_to_add.push_back(refreshed_room);
+    result->generated_room_cache_refreshed = true;
+    result->generated_room_scene_fallback_used = scene_fallback_used;
+    result->generated_room_scene_source = scene_source;
+    result->raw_scene_audit_response_text = refreshed_room.scene_text;
+    result->rendered_scene = refreshed_scene;
+    result->used_candidate_scene_for_render = false;
+    return true;
+}
+
 static std::string BuildBlockedTraversalNarration(const SpatialState& spatial_state, CardinalDirection direction)
 {
     std::string narration = "The way ";
@@ -1447,82 +1567,33 @@ bool RunHeadlessTurnFromState(
 
         std::string generated_scene_text;
         Scene generated_scene;
-        bool generated_scene_valid = false;
-        char generated_scene_error[512];
-        generated_scene_error[0] = '\0';
-
-        std::vector<LlmPromptMessage> scene_messages;
-        scene_messages.push_back(LlmPromptMessage());
-        scene_messages.back().role = "system";
-        scene_messages.back().content =
-            "You are a deterministic scene compiler. Return only a valid .scene program. "
-            "Do not use markdown fences. Do not write any explanation.";
-        scene_messages.push_back(LlmPromptMessage());
-        scene_messages.back().role = "user";
-        scene_messages.back().content = BuildGeneratedRoomScenePrompt(
-            result->initial_spatial_state,
-            draft.spatial_state,
-            traversal_direction);
-
-        LlmGenerationConfig scene_config = config.generation_config;
-        scene_config.use_json_grammar = false;
-
-        LlmGenerationResult scene_generation_result;
-        StreamForwarder scene_stream_forwarder;
-        scene_stream_forwarder.callback = config.stream_callback;
-        scene_stream_forwarder.phase = kHeadlessTurnStreamSceneProgram;
-        scene_stream_forwarder.user_data = config.stream_user_data;
-        if (GenerateChatCompletion(
-                scene_config,
-                scene_messages,
-                config.stream_callback ? ForwardStreamChunk : 0,
-                config.stream_callback ? &scene_stream_forwarder : 0,
-                &scene_generation_result)) {
-            result->raw_scene_audit_response_text = scene_generation_result.response_text;
-            result->prompt_tokens += scene_generation_result.prompt_tokens;
-            result->generated_tokens += scene_generation_result.generated_tokens;
-            result->inference_time_ms += scene_generation_result.inference_time_ms;
-            generated_scene_text = NormalizeCodeBlockText(scene_generation_result.response_text);
-            generated_scene_valid = AuditSceneCandidateText(
-                "generated.scene",
-                generated_scene_text.c_str(),
+        std::string generated_scene_source;
+        if (!BuildGeneratedRoomSceneProgram(
+                config,
+                draft.spatial_state,
+                &generated_scene_text,
                 &generated_scene,
-                generated_scene_error,
-                sizeof(generated_scene_error));
-        }
-
-        if (!generated_scene_valid) {
-            generated_scene_text = BuildFallbackGeneratedRoomSceneText(draft.spatial_state);
-            used_room_scene_fallback = true;
-            result->used_turn_fallback = true;
-            generated_scene_error[0] = '\0';
-            generated_scene_valid = AuditSceneCandidateText(
-                "generated_fallback.scene",
-                generated_scene_text.c_str(),
-                &generated_scene,
-                generated_scene_error,
-                sizeof(generated_scene_error));
-        }
-
-        if (!generated_scene_valid) {
-            SetError(
+                &generated_scene_source,
+                &used_room_scene_fallback,
                 error_buffer,
-                error_buffer_size,
-                "Generated room scene remained invalid: %s",
-                generated_scene_error[0] ? generated_scene_error : "unknown error");
+                error_buffer_size)) {
             return false;
         }
+        result->raw_scene_audit_response_text = generated_scene_text;
 
         GeneratedRoom generated_room;
         generated_room.room_id = BuildGeneratedPlaceId(initial_session_state.next_generated_room_index);
         generated_room.spatial_state = draft.spatial_state;
         generated_room.scene_text = generated_scene_text;
+        generated_room.scene_source = generated_scene_source;
         generated_room.metadata_fallback_used = used_room_metadata_fallback;
         generated_room.scene_fallback_used = used_room_scene_fallback;
 
         result->generated_rooms_to_add.push_back(generated_room);
+        result->generated_room_created = true;
         result->generated_room_metadata_fallback_used = used_room_metadata_fallback;
         result->generated_room_scene_fallback_used = used_room_scene_fallback;
+        result->generated_room_scene_source = generated_scene_source;
         AddRoomLinkUnique(&result->room_links_to_add, result->initial_place_id, traversal_direction, generated_room.room_id);
         AddRoomLinkUnique(
             &result->room_links_to_add,
@@ -1561,11 +1632,6 @@ bool RunHeadlessTurnFromState(
             }
             result->turn_result.clarification.append("Generated room scene fallback was used.");
         }
-        result->turn_result.candidate_scene_text = generated_scene_text;
-        result->turn_result.candidate_scene_included = true;
-        result->candidate_scene = generated_scene;
-        result->candidate_scene_valid = true;
-        result->used_candidate_scene_for_render = true;
         result->rendered_scene = generated_scene;
         return true;
     }
@@ -1633,7 +1699,7 @@ bool RunHeadlessTurnFromState(
     ApplyTurnResult(result->turn_result, &result->updated_hard_state, &result->updated_soft_state, &result->updated_spatial_state);
     result->updated_place_id = DetermineUpdatedPlaceIdAfterStandardTurn(initial_session_state, result->updated_spatial_state);
 
-    if (config.request_candidate_scene) {
+    if (config.request_candidate_scene && !IsGeneratedPlaceId(result->updated_place_id)) {
         std::vector<LlmPromptMessage> scene_messages;
         scene_messages.push_back(LlmPromptMessage());
         scene_messages.back().role = "system";
@@ -1681,6 +1747,13 @@ bool RunHeadlessTurnFromState(
     if (config.prefer_candidate_scene && result->candidate_scene_valid) {
         result->rendered_scene = result->candidate_scene;
         result->used_candidate_scene_for_render = true;
+        return true;
+    }
+
+    if (IsGeneratedPlaceId(result->updated_place_id)) {
+        if (!RefreshGeneratedRoomCache(initial_session_state, config, result, error_buffer, error_buffer_size)) {
+            return false;
+        }
         return true;
     }
 

@@ -1,0 +1,42 @@
+{
+  "metadata_fallback_used": false,
+  "room_id": "generated:room_0001",
+  "scene_fallback_used": false,
+  "scene_source": "hybrid",
+  "scene_text": "room \"Cable Trench\"\ncamera eye(0.0,1.78,-7.60) target(0.0,1.18,8.20) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(29.0) cone(12.0,28.0) intensity(76.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.4,22.8) gray(0.12)\nplane \"ceiling\" pos(0.0,3.20,0.0) normal(0.0,-1.0,0.0) size(12.4,22.8) gray(0.19)\nbox \"wall_back\" pos(0.0,1.60,11.40) size(12.4,3.2,0.60) gray(0.18)\nbox \"wall_left\" pos(-6.20,1.60,0.0) size(0.60,3.2,22.8) gray(0.18)\nbox \"wall_right\" pos(6.20,1.60,0.0) size(0.60,3.2,22.8) gray(0.18)\nbox \"threshold_frame\" pos(0.0,1.54,8.89) size(3.8,3.07,0.42) gray(0.25)\nbox \"access_hatch_c_7_01\" pos(-1.20,0.12,5.70) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"junction_box_open_02\" pos(3.35,0.55,-1.82) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"emergency_switch_buried_in_gravel_04\" pos(0.00,1.42,11.25) size(0.90,0.65,0.14) gray(0.39)\nbox \"service_panel_06\" pos(-6.07,1.38,-0.53) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"maintenance_crate_07\" pos(-3.35,0.55,-1.82) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"cooling_keypad_08\" pos(6.07,1.38,6.27) size(0.14,0.65,0.90) gray(0.39)\nprefab_gate \"rack_access_door_09\" pos(-1.50,1.42,11.18) size(2.20,2.50,0.28) gray(0.23) detail(0.42)\nbox \"cabinet_latch_10\" pos(1.50,1.72,11.25) size(0.90,0.65,0.14) gray(0.39)\nprefab_rack \"vault_rack_left_151\" pos(-3.35,1.25,1.08) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"vault_rack_right_152\" pos(3.35,1.25,1.08) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\n",
+  "spatial_state": {
+    "alert_level": 2,
+    "anchors": [
+      "access hatch",
+      "junction box",
+      "loose cable",
+      "trench slope"
+    ],
+    "blocked_exits": [],
+    "canonical_fixture": "",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "location_archetype": "utility trench",
+    "location_id": "unknown",
+    "room_summary": "A narrow, sloping trench of exposed conduit and rusted piping channels power between vaults. A single access hatch and a loose junction box suggest recent...",
+    "room_title": "Cable Trench",
+    "spatial_anomalies": [
+      "cable humming faintly in distance",
+      "condensation on conduit"
+    ],
+    "time_of_day": "night",
+    "visibility_level": "dusty",
+    "visible_objects": [
+      "access hatch (C-7)",
+      "junction box (open)",
+      "loose cable",
+      "emergency switch (buried in gravel)",
+      "gravel-covered conduit",
+      "service panel",
+      "maintenance crate",
+      "cooling keypad",
+      "rack access door",
+      "cabinet latch"
+    ]
+  }
+}

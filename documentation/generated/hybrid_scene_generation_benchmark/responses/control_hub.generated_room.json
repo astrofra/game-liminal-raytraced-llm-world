@@ -1,0 +1,32 @@
+{
+  "title": "Ventilation Grid",
+  "summary": "A narrow maintenance corridor lined with rusted grates and a single operational vent panel.",
+  "arrival_narration": "The air grows cooler as you step into a low-ceilinged corridor. A single vent panel, its metal pitted with age, hums faintly above a rusted grate. To your left, a small cabinet holds a loose wrench and a faded schematic. The corridor stretches ahead, but a thick door blocks the way to the right\u2014its surface etched with faded warning symbols. The faint scent of ozone lingers.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "maintenance corridor",
+    "time_of_day": "night",
+    "visibility_level": "clear",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": [
+      "vent panel",
+      "rusted grate",
+      "cabinet",
+      "warning door"
+    ],
+    "visible_objects": [
+      "vent panel",
+      "loose wrench",
+      "faded schematic",
+      "warning door",
+      "rusted grate"
+    ],
+    "blocked_exits": [
+      "east"
+    ],
+    "spatial_anomalies": []
+  }
+}

@@ -1,7 +1,7 @@
 Loaded scene server_aisles
 Loaded 1240 triangles, 105 materials, 0 emissive triangles
-Load time: 7.56 ms
+Load time: 0.69 ms
 Rendering 800x400, spp=8, bounces=3, emissive=0, camera_spot=on, openmp=on, threads=16
   lines 400 / 400
-Render time: 519.29 ms
+Render time: 515.59 ms
 Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_generation_benchmark\images\server_aisles_dense.png

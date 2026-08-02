@@ -1,0 +1,31 @@
+```json
+{
+  "title": "Backup Vault",
+  "summary": "A reinforced chamber lined with redundant cooling units and a single access console. The air hums with static, and a faint blue glow pulses from a terminal.",
+  "arrival_narration": "The northward door hisses shut behind you. A thick, insulated wall blocks any sound from the aisles beyond. Your boots crunch on a thin layer of static-clinging dust. A **cooling unit** vents warm air, its fan whirring unevenly. A **terminal** mounted on the wall displays a single line: *AUTHORIZATION REQUIRED*. To your left, a **metal hatch** is bolted to the floor, its edges warped. A **wall-mounted badge reader** sits idle beside a **sealed data crate** stamped with a faded red triangle.",
+  "move_cost": 1,
+  "score_delta": 0,
+  "spatial_state": {
+    "location_archetype": "server vault",
+    "time_of_day": "night",
+    "visibility_level": "dusty",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 2,
+    "anchors": ["insulated wall", "floor hatch", "cooling unit", "terminal", "badge reader"],
+    "visible_objects": [
+      "cooling unit",
+      "terminal",
+      "metal hatch",
+      "badge reader",
+      "sealed data crate"
+    ],
+    "blocked_exits": [],
+    "spatial_anomalies": [
+      "cooling unit emits faint electrical crackle",
+      "terminal screen flickers intermittently",
+      "floor hatch shows signs of forced entry"
+    ]
+  }
+}
+```

@@ -1,0 +1,88 @@
+{
+  "hard_state": {
+    "turn_number": 1,
+    "move_count": 0,
+    "score": 0,
+    "current_location_id": "unknown",
+    "alert_level": 1,
+    "cooling_state": "stable",
+    "water_state": "stable",
+    "power_state": "stable",
+    "inventory_items": [],
+    "named_entities": [],
+    "unresolved_threats": []
+  },
+  "soft_state": {
+    "rolling_summary": "A bare vestibule buffers the exterior from the datacenter core. The only relief is a reader column, a maintenance hatch, and a wall placard with faded rules.",
+    "atmosphere": "airlock vestibule",
+    "active_hypotheses": [],
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "location_id": "unknown",
+    "room_title": "Badge Vestibule",
+    "room_summary": "A bare vestibule buffers the exterior from the datacenter core. The only relief is a reader column, a maintenance hatch, and a wall placard with faded rules.",
+    "location_archetype": "airlock vestibule",
+    "canonical_fixture": "",
+    "time_of_day": "night",
+    "visibility_level": "clear",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 1,
+    "anchors": [
+      "reader column",
+      "inner door",
+      "outer door"
+    ],
+    "visible_objects": [
+      "badge reader",
+      "maintenance hatch",
+      "wall placard",
+      "ceiling speaker"
+    ],
+    "blocked_exits": [
+      "west"
+    ],
+    "spatial_anomalies": []
+  },
+  "history": [],
+  "current_place_id": "generated:origin_badge_vestibule",
+  "next_generated_room_index": 1,
+  "generated_rooms": [
+    {
+      "room_id": "generated:origin_badge_vestibule",
+      "spatial_state": {
+        "location_id": "unknown",
+        "room_title": "Badge Vestibule",
+        "room_summary": "A bare vestibule buffers the exterior from the datacenter core. The only relief is a reader column, a maintenance hatch, and a wall placard with faded rules.",
+        "location_archetype": "airlock vestibule",
+        "canonical_fixture": "",
+        "time_of_day": "night",
+        "visibility_level": "clear",
+        "desert_state": "still",
+        "interior_density": "sparse",
+        "alert_level": 1,
+        "anchors": [
+          "reader column",
+          "inner door",
+          "outer door"
+        ],
+        "visible_objects": [
+          "badge reader",
+          "maintenance hatch",
+          "wall placard",
+          "ceiling speaker"
+        ],
+        "blocked_exits": [
+          "west"
+        ],
+        "spatial_anomalies": []
+      },
+      "scene_text": "",
+      "scene_source": "benchmark_origin",
+      "metadata_fallback_used": false,
+      "scene_fallback_used": false
+    }
+  ],
+  "room_links": []
+}

@@ -1,6 +1,6 @@
 # Scene Generation Benchmark
 
-Genere le 2026-08-02 08:53:12.
+Genere le 2026-08-02 16:08:36.
 
 Ce document audite la generation directe de `.scene` par `Ministral` a partir de briefs spatiaux fixes.
 
@@ -18,16 +18,16 @@ Resultat global : `9/10` scenes valides, `1` invalides.
 
 | Case | Status | Gen ms | Audit ms | Triangles | Materials |
 | --- | --- | ---: | ---: | ---: | ---: |
-| `entry_gate_dusk` | `valid` | 17970.32 | 462.28 | 220 | 20 |
-| `sally_port_checkpoint` | `valid` | 21264.78 | 595.13 | 518 | 44 |
-| `badge_vestibule` | `valid` | 21911.30 | 641.99 | 276 | 28 |
-| `server_aisles_dense` | `valid` | 23490.59 | 623.22 | 1240 | 105 |
-| `control_hub` | `valid` | 18984.96 | 577.93 | 166 | 18 |
-| `backup_vault` | `valid` | 24408.34 | 798.83 | 772 | 66 |
-| `cooling_exchange_bay` | `valid` | 27164.59 | 995.67 | 736 | 63 |
-| `loading_dock_dust` | `invalid_scene` | 21338.12 | 104.25 | 0 | 0 |
-| `roof_watch_dusk` | `valid` | 20129.25 | 587.23 | 410 | 35 |
-| `stairhead_parapet` | `valid` | 20316.05 | 514.02 | 378 | 34 |
+| `entry_gate_dusk` | `valid` | 18067.30 | 462.15 | 220 | 20 |
+| `sally_port_checkpoint` | `valid` | 20972.08 | 582.50 | 518 | 44 |
+| `badge_vestibule` | `valid` | 21665.24 | 630.95 | 276 | 28 |
+| `server_aisles_dense` | `valid` | 23216.06 | 612.73 | 1240 | 105 |
+| `control_hub` | `valid` | 18988.96 | 559.02 | 166 | 18 |
+| `backup_vault` | `valid` | 24317.32 | 774.31 | 772 | 66 |
+| `cooling_exchange_bay` | `valid` | 26772.40 | 968.71 | 736 | 63 |
+| `loading_dock_dust` | `invalid_scene` | 21240.09 | 95.15 | 0 | 0 |
+| `roof_watch_dusk` | `valid` | 20044.93 | 577.93 | 410 | 35 |
+| `stairhead_parapet` | `valid` | 20270.69 | 504.36 | 378 | 34 |
 
 ## Entry Gate
 
@@ -35,8 +35,8 @@ A concrete gate court faces the datacenter threshold. Dust clings to the bars an
 
 Status : `valid`
 Slug : `entry_gate_dusk`
-Generation : `17970.32 ms`
-Audit + render : `462.28 ms`
+Generation : `18067.30 ms`
+Audit + render : `462.15 ms`
 Scene lines : `11`
 Scene chars : `884`
 Triangles : `220`
@@ -70,8 +70,8 @@ A narrow checkpoint sits between two heavy gates. A code keypad, a dead camera h
 
 Status : `valid`
 Slug : `sally_port_checkpoint`
-Generation : `21264.78 ms`
-Audit + render : `595.13 ms`
+Generation : `20972.08 ms`
+Audit + render : `582.50 ms`
 Scene lines : `15`
 Scene chars : `1116`
 Triangles : `518`
@@ -105,8 +105,8 @@ A bare vestibule buffers the exterior from the datacenter core. The only relief 
 
 Status : `valid`
 Slug : `badge_vestibule`
-Generation : `21911.30 ms`
-Audit + render : `641.99 ms`
+Generation : `21665.24 ms`
+Audit + render : `630.95 ms`
 Scene lines : `15`
 Scene chars : `1124`
 Triangles : `276`
@@ -140,8 +140,8 @@ Dense aisles of racks run into darkness. A service cart, a floor hatch, and a si
 
 Status : `valid`
 Slug : `server_aisles_dense`
-Generation : `23490.59 ms`
-Audit + render : `623.22 ms`
+Generation : `23216.06 ms`
+Audit + render : `612.73 ms`
 Scene lines : `16`
 Scene chars : `1251`
 Triangles : `1240`
@@ -175,8 +175,8 @@ A compact control room opens off the aisles. One main console dominates the cent
 
 Status : `valid`
 Slug : `control_hub`
-Generation : `18984.96 ms`
-Audit + render : `577.93 ms`
+Generation : `18988.96 ms`
+Audit + render : `559.02 ms`
 Scene lines : `13`
 Scene chars : `937`
 Triangles : `166`
@@ -210,8 +210,8 @@ A chilled storage vault holds sealed pods and backup racks. A biometric pad, a w
 
 Status : `valid`
 Slug : `backup_vault`
-Generation : `24408.34 ms`
-Audit + render : `798.83 ms`
+Generation : `24317.32 ms`
+Audit + render : `774.31 ms`
 Scene lines : `17`
 Scene chars : `1348`
 Triangles : `772`
@@ -245,8 +245,8 @@ Tall cooling blocks and pipe runs crowd an industrial chamber. A valve wheel, a 
 
 Status : `valid`
 Slug : `cooling_exchange_bay`
-Generation : `27164.59 ms`
-Audit + render : `995.67 ms`
+Generation : `26772.40 ms`
+Audit + render : `968.71 ms`
 Scene lines : `19`
 Scene chars : `1511`
 Triangles : `736`
@@ -280,8 +280,8 @@ A side loading bay opens toward the desert through a half-raised shutter. Pallet
 
 Status : `invalid_scene`
 Slug : `loading_dock_dust`
-Generation : `21338.12 ms`
-Audit + render : `104.25 ms`
+Generation : `21240.09 ms`
+Audit + render : `95.15 ms`
 Scene lines : `14`
 Scene chars : `1103`
 Triangles : `0`
@@ -319,8 +319,8 @@ The datacenter roof becomes a parapet walk above the desert. A beacon mast, a ha
 
 Status : `valid`
 Slug : `roof_watch_dusk`
-Generation : `20129.25 ms`
-Audit + render : `587.23 ms`
+Generation : `20044.93 ms`
+Audit + render : `577.93 ms`
 Scene lines : `13`
 Scene chars : `1012`
 Triangles : `410`
@@ -354,8 +354,8 @@ A concrete stairhead interrupts the roof line. The landing is tight, with a latc
 
 Status : `valid`
 Slug : `stairhead_parapet`
-Generation : `20316.05 ms`
-Audit + render : `514.02 ms`
+Generation : `20270.69 ms`
+Audit + render : `504.36 ms`
 Scene lines : `13`
 Scene chars : `1021`
 Triangles : `378`

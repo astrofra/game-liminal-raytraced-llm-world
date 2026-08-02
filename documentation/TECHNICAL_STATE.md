@@ -31,11 +31,13 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
 - Helper Windows `play_desert_des_tokens.bat` pour lancer directement la premiere boucle SDL3.
 - Helper Windows `generate_prefab_catalog.bat` pour regenerer le catalogue visuel des prefabs.
 - Helper Windows `run_scene_generation_benchmark.bat` pour executer une batterie fixe de generations `.scene` via `Ministral`, puis auditer et rendre chaque cas.
+- Helper Windows `run_hybrid_scene_generation_benchmark.bat` pour executer la chaine runtime `room JSON -> compilateur hybride -> rendu` sur une batterie fixe de briefs source.
 - Executable CLI `liminal_cornell_renderer`.
 - Option CLI `--llama-info` pour verifier la presence du runtime `llama.cpp`, le commit vendorise et la disponibilite de l'offload GPU.
 - Option CLI `--sdl` pour lancer la premiere boucle desktop `SDL3`.
 - Options CLI pour le noyau fonctionnel en preparation :
   - `--dump-turn-contract`
+  - `--dump-generated-room-prompt`
   - `--dump-scene-audit-prompt`
   - `--compile-location`
   - `--audit-scene-text`
@@ -124,6 +126,12 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - normaliser la sortie brute en `.scene`
   - auditer chaque scene avec le parseur runtime
   - rendre les scenes valides et assembler `documentation/SCENE_GENERATION_BENCHMARK.md`
+- Script Python `scripts/run_hybrid_scene_generation_benchmark.py` pour :
+  - fabriquer le prompt exact de generation de salle JSON via le moteur
+  - lancer `--run-turn` sur les memes briefs source
+  - capter la metadata brute, la scene compilee et l'etat final
+  - rendre les scenes generees par la chaine hybride
+  - assembler `documentation/HYBRID_SCENE_GENERATION_BENCHMARK.md`
 - Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`, desormais en buffer RGB.
 - Options CLI de boucle fonctionnelle :
   - `--run-turn`
@@ -171,9 +179,12 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
 - [../scripts/download_ministral.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/download_ministral.py:1) : telechargement et validation du modele cible.
 - [../scripts/generate_prefab_catalog.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/generate_prefab_catalog.py:1) : regeneration du catalogue visuel des prefabs.
 - [../scripts/run_scene_generation_benchmark.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/run_scene_generation_benchmark.py:1) : benchmark local de generation de scenes `.scene`.
+- [../scripts/run_hybrid_scene_generation_benchmark.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/run_hybrid_scene_generation_benchmark.py:1) : benchmark local de la chaine runtime hybride.
 - [../scripts/scene_generation_benchmark_cases.json](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/scene_generation_benchmark_cases.json:1) : batterie fixe des briefs spatiaux benchmarkes.
 - [SCENE_FORMAT_V1.md](./SCENE_FORMAT_V1.md) : description du format de scene implemente.
+- [HYBRID_SCENE_LAYOUT_PLAN.md](./HYBRID_SCENE_LAYOUT_PLAN.md) : plan technique de la future couche hybride LLM + placement procedural.
 - [SCENE_GENERATION_BENCHMARK.md](./SCENE_GENERATION_BENCHMARK.md) : synthese visuelle et technique de la batterie de generation `.scene`.
+- [HYBRID_SCENE_GENERATION_BENCHMARK.md](./HYBRID_SCENE_GENERATION_BENCHMARK.md) : synthese visuelle et technique de la chaine runtime hybride.
 - [SPATIAL_VALIDATION_PLAN.md](./SPATIAL_VALIDATION_PLAN.md) : protocole de validation du lien entre brief narratif, texte, scene v1 et rendu.
 - [FUNCTIONAL_PIPELINE_V1.md](./FUNCTIONAL_PIPELINE_V1.md) : cadrage de la future boucle fonctionnelle et de la generation de scene assistee par LLM.
 - [LLAMA_CUDA_SPECS.md](./LLAMA_CUDA_SPECS.md) : procedure de build et de validation du runtime `llama.cpp` cible.
@@ -355,6 +366,51 @@ Observation importante :
   - les scenes tronquees
   - les scenes syntaxiquement propres mais hors contrat
 
+### 2026-08-02 - Premiere integration runtime du layout hybride
+
+Contexte : build `Release` local avec `llama.cpp` et CUDA, `Ministral 3 8B Instruct 2512`, creation d'une salle improvisee depuis `gate`, puis second tour dans cette salle via etat JSON recharge.
+
+- la generation de metadata de salle improvisee reste confiee au LLM local
+- la generation de la scene de cette salle ne passe plus par un prompt `.scene` libre :
+  - `scene_compiler.cpp` fabrique maintenant un `.scene` deterministe a partir du `SpatialState`
+  - les scenes canoniques continuent a etre lues depuis leurs fichiers `.scene`
+- la provenance de scene est maintenant stockee dans l'etat de session :
+  - `hybrid`
+  - `fallback`
+  - `llm` pour les anciennes sauvegardes ou les anciennes salles deja serialisees
+- un tour standard dans une salle generee recalcule maintenant le cache de scene de cette salle au lieu de reutiliser aveuglement un ancien `.scene`
+
+Validation manuelle :
+
+- `--run-turn --location gate --command north` :
+  - salle `Control Hub` creee
+  - `Generated room scene source: hybrid`
+  - rendu : `output\\hybrid_generated_room_v2.png`
+- `--run-turn --load-state output\\hybrid_generated_room_v2.session.json --command "examine status board"` :
+  - meme salle rechargee
+  - `Generated room cache refresh source: hybrid`
+  - rendu : `output\\hybrid_generated_room_refresh.png`
+
+Observation importante :
+
+- le pipeline runtime `metadata JSON -> SpatialState -> layout hybride -> .scene -> audit -> rendu` fonctionne maintenant de bout en bout
+- le benchmark de generation `.scene` libre reste utile pour auditer Ministral, mais il n'est plus le chemin principal de fabrication des nouvelles salles runtime
+
+### 2026-08-02 - Benchmark runtime de la chaine hybride
+
+Contexte : build `Release` local avec `llama.cpp` et CUDA, `Ministral 3 8B Instruct 2512`, meme batterie de `10` briefs source que le benchmark `.scene` direct, mais exploites ici comme salles d'origine pour la chaine `brief source -> room JSON -> compilateur hybride -> rendu`.
+
+- scenes valides : `10 / 10`
+- scenes avec fallback metadata ou scene : `0 / 10`
+- temps d'inference observes : environ `7.08 s` a `9.68 s`
+- temps de rendu observes : environ `0.56 s` a `1.33 s`
+
+Observation importante :
+
+- la voie runtime hybride elimine ici l'echec residuel observe sur `loading_dock_dust` dans le benchmark `.scene` direct
+- la robustesse vient du fait que Ministral n'a plus a inventer la grammaire `.scene` complete : il n'invente plus qu'une metadata JSON de salle
+- le benchmark historique reste donc utile pour auditer la "liberte syntaxique" de Ministral, tandis que le benchmark hybride mesure la voie effectivement retenue pour le jeu
+
 ## Ce que ce module ne fait pas encore
 
 - pas de scene v1 complete : seulement un sous-ensemble centre sur `room`, `camera`, `spotlight`, `sky`, `plane`, `box` et les premiers `prefab_*` est supporte
@@ -368,10 +424,14 @@ Observation importante :
 - le streaming actuel expose le flux brut du modele pendant la fabrication du JSON, pas encore une narration incrementalement parsee
 - la generation de metadata de salle improvisee reste fragile :
   - fallback metadata utilise si le JSON de room generation est mal forme
-  - fallback scene utilise si le `.scene` genere reste invalide
+  - fallback scene utilise si le compilateur hybride echoue a produire une scene admissible
 - la generation directe de `.scene` reste partiellement hors contrat :
   - le modele peut encore inventer des proprietes non supportees comme `open()`, `bent()` ou des arites de `size(...)` invalides
   - le benchmark `SCENE_GENERATION_BENCHMARK.md` sert maintenant a objectiver ces derives
+- la couche hybride reste encore heuristique :
+  - classification texte -> objet encore sommaire
+  - certains objets textuels sont encore ramenes a des `box` ou `prefab_*` approximatifs
+  - pas encore de solveur de placement plus fin qu'une repartition 2.5D avec anti-chevauchement simple
 - la grammaire JSON `llama.cpp` n'est pas activee par defaut car l'appel bas niveau s'est montre instable sur ce build Windows/CUDA
 - pas encore de couche compacte d'instanciation ou de repetition pour les prefabs
 - les prefabs actuels augmentent fortement le nombre de triangles et de materiaux
