@@ -4,6 +4,38 @@ Derniere mise a jour : 2026-08-02
 
 ## Ouverts
 
+### 2026-08-02 - Un futur passage a un rendu spectral risque de casser l'economie CPU du prototype
+
+Statut :
+
+Ouvert.
+
+Description :
+
+Le renderer actuel travaille sur une palette RGB tres contrainte. Un passage a un rendu spectral ferait surtout monter le cout des materiaux, du shading, des milieux et de la bande passante memoire, meme si les intersections geometriques et le BVH resteraient globalement du meme ordre.
+
+Ordres de grandeur a garder en tete :
+
+- rendu spectral naif avec `12` longueurs d'onde : environ `4x` le cout du calcul couleur par rapport a `RGB`
+- rendu spectral naif avec `30` longueurs d'onde : environ `10x` le cout du calcul couleur
+- sur un path tracer complet, le surcout total reel serait souvent plutot de l'ordre de `2x` a `8x`, selon la part prise par les intersections par rapport au shading
+- une approche type `hero wavelength` ou quelques longueurs d'onde par chemin pourrait rester vers `1.2x` a `3x`, mais avec plus de bruit et parfois plus de samples par pixel pour converger
+
+Impact :
+
+- risque de contredire l'hypothese centrale du projet selon laquelle l'image doit rester nettement moins couteuse que l'inference
+- risque de rendre le budget CPU du raytracing trop visible dans la boucle interactive
+- risque d'ouvrir une complexite supplementaire sur les textures, materiaux et futures mesures de performance
+
+Piste :
+
+Si un besoin visuel reel apparait plus tard (dispersion, absorption plus juste, iridescence, caustiques colorees), preferer d'abord une approche spectrale parcimonieuse et benchmarker separement :
+
+- intersections
+- shading / BSDF
+- bande passante memoire
+- convergence en samples par pixel
+
 ### 2026-08-02 - La generation directe `.scene` peut inventer des proprietes hors grammaire
 
 Statut :
