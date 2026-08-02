@@ -1,0 +1,59 @@
+
+
+Loading model... 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b28-cd60aba
+model      : C:\works\projects\game-liminal-raytraced-llm-world\models\ministral-3-8b\Ministral-3-8B-Instruct-2512-Q4_K_M.gguf
+ftype      : Q4_K - Medium
+modalities : text
+using custom system prompt
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> You are in scene-audit mode.
+Return only a .scene program, no markdown, no explanations.
+Scene v1 authoring rules for audit mode:
+- output ASCII only
+- one directive per line
+- do not use indented property blocks; every directive must be complete on one line
+- names must be quoted like "roof" or "service_crate"
+- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit
+- every scene must declare one room and one camera
+- keep geome ... (truncated)
+room "Dust Loading Dock"
+camera eye(0.0,1.75,-3.0) target(0.0,1.0,-1.0) up(0.0,1.0,0.0) fov(46.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+
+plane "dock_floor" pos(0.0,0.0,-1.0) normal(0.0,1.0,0.0) size(12.0,10.0) gray(0.18)
+plane "dock_wall" pos(0.0,0.0,0.0) normal(0.0,0.0,-1.0) size(12.0,8.0) gray(0.22)
+
+prefab_gate "shutter" pos(0.0,0.0,-1.0) size(12.0,8.0) gray(0.28) open(0.5)
+box "dock_lip" pos(0.0,0.0,-1.0) size(12.0,0.2,0.1) gray(0.30)
+
+prefab_crate "cargo_crate" pos(2.0,0.5,-0.5) size(1.5,1.0,1.5) gray(0.20) detail(0.31)
+box "shipping_placard" pos(1.5,1.2,-0.5) size(0.8,0.5,0.05) gray(0.15)
+
+box "control_switch" pos(-2.0,0.8,-0.5) size(0.3,0.3,0.2) gray(0.25)
+box "lamp_post" pos(-1.0,0.0,-1.0) size(0.2,2.0,0.2) gray(0.20) bent(0.7)
+spotlight "lamp" panel(0.5,0.5) offset(0.0,2.0,0.0) range(3.0) cone(10.0,30.0) intensity(50.0)
+
+plane "desert_ground" pos(0.0,-0.1,-1.0) normal(0.0,1.0,0.0) size(12.0,10.0) gray(0.12)
+plane "desert_ridge" pos(0.0,-0.1,-1.0) normal(0.0,1.0,0.0) size(12.0,10.0) gray(0.15) noise(0.25)
+
+
+Exiting...

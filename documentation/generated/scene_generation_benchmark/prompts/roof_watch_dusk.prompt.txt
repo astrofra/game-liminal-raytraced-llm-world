@@ -1,0 +1,43 @@
+You are in scene-audit mode.
+Return only a .scene program, no markdown, no explanations.
+Scene v1 authoring rules for audit mode:
+- output ASCII only
+- one directive per line
+- do not use indented property blocks; every directive must be complete on one line
+- names must be quoted like "roof" or "service_crate"
+- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit
+- every scene must declare one room and one camera
+- keep geometry sparse and legible
+- prefer stable repeated objects through prefab_* directives
+- avoid long decorative lists of tiny objects
+- keep the place readable at 800x400 palette-limited noisy rendering
+- stay inside the datacenter + desert fiction; canonical lieux are examples, not limits
+- use gray(), not color() or opacity()
+- gray() controls luminance only; the engine applies locked semantic colors to sky, desert surfaces, and rack LEDs
+- prefer names like ground, desert_*, ridge_* or outcrop_* for exterior sand masses
+- valid examples:
+  room "datacenter roof watch"
+  camera eye(0.0,1.75,-7.9) target(0.0,1.18,8.8) up(0.0,1.0,0.0) fov(46.0)
+  spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(70.0)
+  sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+  plane "roof" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(16.0,24.0) gray(0.14)
+  box "parapet_front" pos(0.0,0.55,1.6) size(14.0,1.1,0.7) gray(0.26)
+  prefab_crate "service_crate" pos(2.4,0.55,-1.8) size(1.7,1.1,1.4) gray(0.20) detail(0.31)
+  prefab_cooling_unit "vent_stack_left" pos(-4.3,1.0,-3.2) size(1.0,2.0,1.0) gray(0.30) detail(0.39)
+
+Spatial brief
+location_id: roof_watch
+room_title: Roof Watch
+room_summary: The datacenter roof becomes a parapet walk above the desert. A beacon mast, a hatch door, and a field scope hold the line against the horizon.
+location_archetype: roof parapet
+canonical_fixture: roof_watch
+time_of_day: dusk
+visibility_level: clear
+desert_state: windy
+interior_density: sparse
+alert_level: 1
+anchors: parapet, horizon, beacon mast, roof hatch
+visible_objects: roof hatch, field scope, beacon mast switch, warning sign
+blocked_exits: south
+spatial_anomalies: (none)
+

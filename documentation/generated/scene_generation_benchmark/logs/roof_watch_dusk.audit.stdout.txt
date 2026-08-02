@@ -1,0 +1,7 @@
+Loaded scene roof_watch
+Loaded 410 triangles, 35 materials, 0 emissive triangles
+Load time: 7.67 ms
+Rendering 800x400, spp=8, bounces=3, emissive=0, camera_spot=on, openmp=on, threads=16
+  lines 400 / 400
+Render time: 482.30 ms
+Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_generation_benchmark\images\roof_watch_dusk.png

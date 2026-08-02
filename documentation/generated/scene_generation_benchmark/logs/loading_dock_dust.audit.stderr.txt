@@ -1,0 +1,1 @@
+C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_generation_benchmark\scenes\loading_dock_dust.scene:8: prefab_gate requires name, pos(), size(), and gray()

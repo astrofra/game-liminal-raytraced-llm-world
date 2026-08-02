@@ -1,0 +1,7 @@
+Loaded scene backup_vault
+Loaded 772 triangles, 66 materials, 0 emissive triangles
+Load time: 8.44 ms
+Rendering 800x400, spp=8, bounces=3, emissive=0, camera_spot=on, openmp=on, threads=16
+  lines 400 / 400
+Render time: 693.34 ms
+Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_generation_benchmark\images\backup_vault.png

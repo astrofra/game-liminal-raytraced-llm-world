@@ -1,0 +1,17 @@
+room "roof_watch"
+camera eye(0.0,1.75,-7.0) target(0.0,1.25,7.0) up(0.0,1.0,0.0) fov(46.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+
+plane "roof" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(16.0,24.0) gray(0.14)
+box "parapet" pos(0.0,0.55,1.6) size(16.0,1.1,0.7) gray(0.26)
+box "parapet_end_left" pos(-7.0,0.55,1.6) size(1.0,1.1,0.7) gray(0.26)
+box "parapet_end_right" pos(7.0,0.55,1.6) size(1.0,1.1,0.7) gray(0.26)
+
+prefab_gate "roof_hatch" pos(0.0,0.55,7.0) size(2.0,1.5,0.1) gray(0.20) detail(0.31)
+prefab_cooling_unit "beacon_mast" pos(0.0,2.0,-7.0) size(0.5,3.0,0.5) gray(0.30) detail(0.39)
+box "beacon_mast_base" pos(0.0,1.0,-7.0) size(0.5,1.0,0.5) gray(0.30)
+
+prefab_rack "field_scope" pos(5.0,1.0,-3.0) size(1.0,1.0,1.0) gray(0.25) detail(0.35)
+box "warning_sign" pos(-5.0,1.5,-4.0) size(0.5,0.5,0.1) gray(0.20) detail(0.30)
+
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(70.0) pos(0.0,2.5,-7.0)

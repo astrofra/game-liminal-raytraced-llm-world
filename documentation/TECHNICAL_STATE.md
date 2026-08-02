@@ -1,6 +1,6 @@
 # Technical State
 
-Derniere mise a jour : 2026-08-01
+Derniere mise a jour : 2026-08-02
 
 ## Resume
 
@@ -29,6 +29,8 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
 - Helper Windows `download_ministral.bat` pour telecharger le modele cible.
 - Helper Windows `ask_ministral.bat` pour lancer une question libre contre le modele local via `llama-cli`.
 - Helper Windows `play_desert_des_tokens.bat` pour lancer directement la premiere boucle SDL3.
+- Helper Windows `generate_prefab_catalog.bat` pour regenerer le catalogue visuel des prefabs.
+- Helper Windows `run_scene_generation_benchmark.bat` pour executer une batterie fixe de generations `.scene` via `Ministral`, puis auditer et rendre chaque cas.
 - Executable CLI `liminal_cornell_renderer`.
 - Option CLI `--llama-info` pour verifier la presence du runtime `llama.cpp`, le commit vendorise et la disponibilite de l'offload GPU.
 - Option CLI `--sdl` pour lancer la premiere boucle desktop `SDL3`.
@@ -116,6 +118,12 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - annulation best-effort via `Escape`
 - Script Python `scripts/generate_prefab_catalog.py` pour rendre chaque prefab supporte, stocker les `.scene`/`.png` d'audit et assembler un unique `documentation/PREFAB_CATALOG.md`.
   - Le mode par defaut du catalogue est desormais HQ : `1536x1536`, `32` samples par pixel.
+- Script Python `scripts/run_scene_generation_benchmark.py` pour :
+  - fabriquer des prompts d'audit `.scene` depuis le moteur lui-meme
+  - interroger `Ministral` via `llama-cli`
+  - normaliser la sortie brute en `.scene`
+  - auditer chaque scene avec le parseur runtime
+  - rendre les scenes valides et assembler `documentation/SCENE_GENERATION_BENCHMARK.md`
 - Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`, desormais en buffer RGB.
 - Options CLI de boucle fonctionnelle :
   - `--run-turn`
@@ -161,7 +169,11 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
 - [../assets/scenes/datacenter_server_aisles.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_server_aisles.scene:1) : fixture canonique des travees de serveurs.
 - [../assets/scenes/datacenter_roof_watch.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_roof_watch.scene:1) : fixture canonique du toit / tour de ronde.
 - [../scripts/download_ministral.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/download_ministral.py:1) : telechargement et validation du modele cible.
+- [../scripts/generate_prefab_catalog.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/generate_prefab_catalog.py:1) : regeneration du catalogue visuel des prefabs.
+- [../scripts/run_scene_generation_benchmark.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/run_scene_generation_benchmark.py:1) : benchmark local de generation de scenes `.scene`.
+- [../scripts/scene_generation_benchmark_cases.json](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/scene_generation_benchmark_cases.json:1) : batterie fixe des briefs spatiaux benchmarkes.
 - [SCENE_FORMAT_V1.md](./SCENE_FORMAT_V1.md) : description du format de scene implemente.
+- [SCENE_GENERATION_BENCHMARK.md](./SCENE_GENERATION_BENCHMARK.md) : synthese visuelle et technique de la batterie de generation `.scene`.
 - [SPATIAL_VALIDATION_PLAN.md](./SPATIAL_VALIDATION_PLAN.md) : protocole de validation du lien entre brief narratif, texte, scene v1 et rendu.
 - [FUNCTIONAL_PIPELINE_V1.md](./FUNCTIONAL_PIPELINE_V1.md) : cadrage de la future boucle fonctionnelle et de la generation de scene assistee par LLM.
 - [LLAMA_CUDA_SPECS.md](./LLAMA_CUDA_SPECS.md) : procedure de build et de validation du runtime `llama.cpp` cible.
@@ -222,6 +234,8 @@ run_cornell_test.bat
 download_ministral.bat
 ask_ministral.bat
 play_desert_des_tokens.bat
+generate_prefab_catalog.bat
+run_scene_generation_benchmark.bat
 ```
 
 Note d'hygiene Windows :
@@ -322,6 +336,25 @@ Observation importante :
 - le fallback conserve la jouabilite, mais il reste un mode degrade
 - la generation `.scene` libre reste plus fragile que la voie compilee deterministe
 
+### 2026-08-02 - Benchmark direct de generation `.scene`
+
+Contexte : build `Release` local avec `llama.cpp` et CUDA, `Ministral 3 8B Instruct 2512`, prompts fabriques via `--dump-scene-audit-prompt`, rendu benchmark en `800x400`, `8 spp`, `3 bounces`.
+
+- batterie fixe : `10` briefs spatiaux
+- scenes valides : `9 / 10`
+- temps de generation LLM observes : environ `17.95 s` a `27.16 s` selon les cas
+- temps d'audit + rendu observes : environ `0.46 s` a `1.00 s`
+
+Observation importante :
+
+- la plupart des briefs fixes passent maintenant de bout en bout jusqu'au PNG
+- l'echec restant (`loading_dock_dust`) n'est pas une troncature mais une invention de vocabulaire hors grammaire `scene v1`
+- le modele a tente un `prefab_gate` de type volet/shutter avec `size` incomplete et des proprietes non supportees comme `open()` ou `bent()`
+- le benchmark devient donc un bon outil pour separer :
+  - les scenes simplement valides
+  - les scenes tronquees
+  - les scenes syntaxiquement propres mais hors contrat
+
 ## Ce que ce module ne fait pas encore
 
 - pas de scene v1 complete : seulement un sous-ensemble centre sur `room`, `camera`, `spotlight`, `sky`, `plane`, `box` et les premiers `prefab_*` est supporte
@@ -336,6 +369,9 @@ Observation importante :
 - la generation de metadata de salle improvisee reste fragile :
   - fallback metadata utilise si le JSON de room generation est mal forme
   - fallback scene utilise si le `.scene` genere reste invalide
+- la generation directe de `.scene` reste partiellement hors contrat :
+  - le modele peut encore inventer des proprietes non supportees comme `open()`, `bent()` ou des arites de `size(...)` invalides
+  - le benchmark `SCENE_GENERATION_BENCHMARK.md` sert maintenant a objectiver ces derives
 - la grammaire JSON `llama.cpp` n'est pas activee par defaut car l'appel bas niveau s'est montre instable sur ce build Windows/CUDA
 - pas encore de couche compacte d'instanciation ou de repetition pour les prefabs
 - les prefabs actuels augmentent fortement le nombre de triangles et de materiaux

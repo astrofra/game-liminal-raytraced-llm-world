@@ -1,0 +1,56 @@
+
+
+Loading model... 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b28-cd60aba
+model      : C:\works\projects\game-liminal-raytraced-llm-world\models\ministral-3-8b\Ministral-3-8B-Instruct-2512-Q4_K_M.gguf
+ftype      : Q4_K - Medium
+modalities : text
+using custom system prompt
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> You are in scene-audit mode.
+Return only a .scene program, no markdown, no explanations.
+Scene v1 authoring rules for audit mode:
+- output ASCII only
+- one directive per line
+- do not use indented property blocks; every directive must be complete on one line
+- names must be quoted like "roof" or "service_crate"
+- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit
+- every scene must declare one room and one camera
+- keep geome ... (truncated)
+room "Parapet Stairhead"
+camera eye(0.0,1.75,-3.5) target(0.0,1.2,-1.0) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(10.0,25.0) intensity(50.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+
+plane "roof" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(16.0,24.0) gray(0.14)
+box "stairhead_bulk" pos(0.0,0.0,-1.0) size(12.0,1.5,2.0) gray(0.26)
+box "parapet_edge" pos(-6.0,0.55,-1.0) size(0.2,1.1,2.0) gray(0.26)
+box "parapet_front" pos(6.0,0.55,-1.0) size(0.2,1.1,2.0) gray(0.26)
+
+prefab_gate "roof_gate" pos(0.0,0.75,-1.5) size(2.0,1.5,0.1) gray(0.20) detail(0.31)
+prefab_crate "latch_box" pos(-1.5,0.55,-1.0) size(1.0,0.8,0.8) gray(0.20) detail(0.31)
+prefab_rack "cable_spool" pos(1.5,0.55,-1.0) size(1.0,0.8,0.8) gray(0.20) detail(0.31)
+
+plane "desert_ridge" pos(0.0,-0.5,-10.0) normal(0.0,1.0,0.0) size(18.0,26.0) gray(0.18)
+plane "desert_outcrop" pos(0.0,-0.5,-12.0) normal(0.0,1.0,0.0) size(1.0,1.0) gray(0.22)
+
+
+Exiting...

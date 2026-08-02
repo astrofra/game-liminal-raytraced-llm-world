@@ -1,0 +1,66 @@
+
+
+Loading model... 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b28-cd60aba
+model      : C:\works\projects\game-liminal-raytraced-llm-world\models\ministral-3-8b\Ministral-3-8B-Instruct-2512-Q4_K_M.gguf
+ftype      : Q4_K - Medium
+modalities : text
+using custom system prompt
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> You are in scene-audit mode.
+Return only a .scene program, no markdown, no explanations.
+Scene v1 authoring rules for audit mode:
+- output ASCII only
+- one directive per line
+- do not use indented property blocks; every directive must be complete on one line
+- names must be quoted like "roof" or "service_crate"
+- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit
+- every scene must declare one room and one camera
+- keep geome ... (truncated)
+room "backup_vault"
+camera eye(0.0,1.75,-3.0) target(0.0,1.0,-1.0) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(10.0,25.0) intensity(50.0)
+
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+
+plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.0,12.0) gray(0.10)
+plane "ceiling" pos(0.0,4.0,0.0) normal(0.0,-1.0,0.0) size(12.0,12.0) gray(0.18)
+
+box "vault_walls" pos(0.0,2.0,0.0) size(12.0,4.0,0.2) gray(0.25)
+box "vault_door" pos(0.0,2.0,-5.9) size(0.2,4.0,1.0) gray(0.30)
+
+prefab_gate "vault_door_handle" pos(-0.1,2.5,-5.9) size(0.1,0.3,0.1) gray(0.40)
+
+prefab_rack "data_rack_left" pos(-3.0,1.5,-2.0) size(1.0,2.5,1.0) gray(0.20) detail(0.35)
+prefab_rack "data_rack_right" pos(3.0,1.5,-2.0) size(1.0,2.5,1.0) gray(0.20) detail(0.35)
+
+prefab_crate "sealed_pod_1" pos(-2.0,0.5,-3.0) size(1.5,1.0,1.5) gray(0.22) detail(0.30)
+prefab_crate "sealed_pod_2" pos(2.0,0.5,-3.0) size(1.5,1.0,1.5) gray(0.22) detail(0.30)
+
+prefab_cooling_unit "vent_unit" pos(0.0,3.0,-2.0) size(2.0,1.0,2.0) gray(0.30) detail(0.40)
+
+box "biometric_pad" pos(0.0,1.0,-5.0) size(1.0,0.2,0.5) gray(0.28)
+box "emergency_switch" pos(-1.0,1.0,-1.0) size(0.3,0.2,0.3) gray(0.35)
+
+prefab_crate "wheeled_crate" pos(1.0,0.5,-4.0) size(1.5,0.8,1.5) gray(0.25) detail(0.32)
+
+
+Exiting...

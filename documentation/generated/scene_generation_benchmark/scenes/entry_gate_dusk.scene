@@ -1,0 +1,13 @@
+room "Entry Gate"
+camera eye(0.0,1.75,-5.0) target(0.0,1.0,-1.0) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(20.0) cone(10.0,30.0) intensity(60.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+
+plane "ground" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(12.0,12.0) gray(0.18)
+plane "perimeter_wall" pos(0.0,0.0,-2.0) normal(0.0,0.0,1.0) size(12.0,3.0) gray(0.26)
+
+prefab_gate "entry_gate" pos(0.0,0.0,-2.0) size(3.0,3.0,0.1) gray(0.30) detail(0.35)
+box "badge_reader" pos(-1.5,0.5,-1.8) size(0.5,0.3,0.2) gray(0.20) detail(0.40)
+box "intercom_plate" pos(-1.5,0.8,-1.8) size(0.6,0.2,0.1) gray(0.25) detail(0.30)
+prefab_crate "padlocked_crate" pos(1.5,0.5,-1.8) size(1.7,1.1,1.4) gray(0.20) detail(0.31)
+box "warning_placard" pos(-0.5,1.2,-1.8) size(0.8,0.4,0.05) gray(0.15) detail(0.35)

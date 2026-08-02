@@ -1,0 +1,24 @@
+room "cooling_exchange_bay"
+camera eye(0.0,1.75,-7.9) target(0.0,1.18,8.8) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(70.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+
+plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(20.0,20.0) gray(0.18)
+plane "ceiling" pos(0.0,10.0,0.0) normal(0.0,-1.0,0.0) size(20.0,20.0) gray(0.22)
+
+box "west_wall" pos(0.0,5.0,-10.0) size(0.2,10.0,20.0) gray(0.26)
+box "east_wall" pos(0.0,5.0,10.0) size(0.2,10.0,20.0) gray(0.26)
+box "north_wall" pos(-10.0,5.0,0.0) size(20.0,10.0,0.2) gray(0.26)
+box "south_wall" pos(10.0,5.0,0.0) size(20.0,10.0,0.2) gray(0.26)
+
+prefab_cooling_unit "cooling_block_1" pos(-6.0,5.0,-5.0) size(2.0,6.0,2.0) gray(0.30) detail(0.39)
+prefab_cooling_unit "cooling_block_2" pos(6.0,5.0,5.0) size(2.0,6.0,2.0) gray(0.30) detail(0.39)
+prefab_cooling_unit "cooling_block_3" pos(-3.0,5.0,3.0) size(2.0,6.0,2.0) gray(0.30) detail(0.39)
+
+box "pipe_gallery" pos(0.0,7.0,0.0) size(18.0,0.5,18.0) gray(0.20)
+box "drain_trench" pos(0.0,0.0,0.0) size(18.0,0.5,18.0) gray(0.20)
+
+prefab_gate "valve_wheel" pos(-4.0,3.0,-2.0) size(1.5,1.5,1.5) gray(0.25) detail(0.40)
+prefab_rack "maintenance_console" pos(5.0,3.0,2.0) size(2.0,1.5,1.0) gray(0.22) detail(0.35)
+prefab_crate "drip_tray" pos(0.0,2.0,-7.0) size(3.0,0.5,2.0) gray(0.20) detail(0.31)
+prefab_crate "tool_locker" pos(7.0,2.0,7.0) size(1.5,1.5,1.5) gray(0.20) detail(0.31)

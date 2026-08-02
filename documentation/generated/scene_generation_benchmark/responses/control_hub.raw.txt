@@ -1,0 +1,56 @@
+
+
+Loading model... 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b28-cd60aba
+model      : C:\works\projects\game-liminal-raytraced-llm-world\models\ministral-3-8b\Ministral-3-8B-Instruct-2512-Q4_K_M.gguf
+ftype      : Q4_K - Medium
+modalities : text
+using custom system prompt
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> You are in scene-audit mode.
+Return only a .scene program, no markdown, no explanations.
+Scene v1 authoring rules for audit mode:
+- output ASCII only
+- one directive per line
+- do not use indented property blocks; every directive must be complete on one line
+- names must be quoted like "roof" or "service_crate"
+- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit
+- every scene must declare one room and one camera
+- keep geome ... (truncated)
+room "Sector Control Hub"
+camera eye(0.0,1.75,-3.0) target(0.0,1.0,-1.0) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(15.0,30.0) intensity(60.0)
+
+plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.0,12.0) gray(0.18)
+plane "west_wall" pos(0.0,0.0,0.0) normal(1.0,0.0,0.0) size(12.0,8.0) gray(0.22)
+plane "east_wall" pos(0.0,0.0,12.0) normal(-1.0,0.0,0.0) size(12.0,8.0) gray(0.22)
+plane "north_wall" pos(0.0,0.0,6.0) normal(0.0,0.0,-1.0) size(12.0,8.0) gray(0.22)
+plane "ceiling" pos(0.0,8.0,6.0) normal(0.0,-1.0,0.0) size(12.0,12.0) gray(0.14)
+
+box "main_console" pos(0.0,0.5,6.0) size(4.0,2.0,1.5) gray(0.28)
+box "locked_cabinet" pos(-3.0,0.5,1.0) size(1.5,1.5,1.0) gray(0.35)
+box "floor_hatch" pos(3.0,0.0,1.0) size(1.5,0.5,1.5) gray(0.30)
+box "status_placard" pos(0.0,1.5,10.0) size(0.5,1.0,0.1) gray(0.20)
+
+prefab_gate "control_gate" pos(0.0,0.0,-1.0) size(1.0,2.0,0.1) gray(0.25)
+
+
+Exiting...

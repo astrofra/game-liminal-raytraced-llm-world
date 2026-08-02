@@ -1,8 +1,48 @@
 # Known Issues
 
-Derniere mise a jour : 2026-08-01
+Derniere mise a jour : 2026-08-02
 
 ## Ouverts
+
+### 2026-08-02 - La generation directe `.scene` peut inventer des proprietes hors grammaire
+
+Statut :
+
+Ouvert.
+
+Description :
+
+Le benchmark direct `SCENE_GENERATION_BENCHMARK.md` montre que `Ministral` ne se contente pas de parfois tronquer une scene : il peut aussi produire une scene complete mais hors contrat `scene v1`.
+
+Exemple observe :
+
+Cas `loading_dock_dust` du `2026-08-02` :
+
+- tentative de `prefab_gate "shutter"` avec une `size(...)` a seulement deux dimensions
+- invention de proprietes non supportees comme `open(0.5)` sur `prefab_gate`
+- invention de `bent(0.7)` sur un `box`
+- tentative de `noise(0.25)` sur une primitive `plane`
+
+Impact :
+
+- la scene n'est pas tronquee, mais elle reste irrecevable par le parseur
+- ce type d'echec ne se corrige pas par simple augmentation du budget de tokens
+- il revele une derive semantique du modele vers un format plus riche que le sous-ensemble reellement implemente
+
+Comportement actuel :
+
+- le parseur refuse la scene des qu'une directive ou une signature sort de la grammaire supportee
+- aucun mode de repli ne reecrit aujourd'hui ces proprietes vers une forme admissible
+- le benchmark les classe donc a juste titre comme `invalid_scene`
+
+Piste :
+
+Plus tard, choisir explicitement entre :
+
+- enrichir progressivement `scene v1` pour absorber quelques affordances frequentes
+- resserrer encore le prompt pour interdire plus brutalement les extensions implicites
+- ajouter un petit reparateur syntaxique / semantique qui supprime ou projette les proprietes inconnues
+- garder ce comportement strict si l'objectif principal reste la lisibilite et l'audit du contrat
 
 ### 2026-08-01 - Les scenes `.scene` candidates du LLM peuvent arriver tronquees et sont rejetees en bloc
 

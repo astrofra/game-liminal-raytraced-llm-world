@@ -1,0 +1,55 @@
+{
+  "hard_state": {
+    "turn_number": 1,
+    "move_count": 0,
+    "score": 0,
+    "current_location_id": "gate",
+    "alert_level": 1,
+    "cooling_state": "stable",
+    "water_state": "stable",
+    "power_state": "stable",
+    "inventory_items": [],
+    "named_entities": [],
+    "unresolved_threats": []
+  },
+  "soft_state": {
+    "rolling_summary": "A concrete gate court faces the datacenter threshold. Dust clings to the bars and the badge reader blinks beside a service intercom.",
+    "atmosphere": "threshold courtyard",
+    "active_hypotheses": [],
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "location_id": "gate",
+    "room_title": "Entry Gate",
+    "room_summary": "A concrete gate court faces the datacenter threshold. Dust clings to the bars and the badge reader blinks beside a service intercom.",
+    "location_archetype": "threshold courtyard",
+    "canonical_fixture": "entry_gate",
+    "time_of_day": "dusk",
+    "visibility_level": "clear",
+    "desert_state": "still",
+    "interior_density": "sparse",
+    "alert_level": 1,
+    "anchors": [
+      "gate frame",
+      "perimeter wall",
+      "badge reader",
+      "intercom plate"
+    ],
+    "visible_objects": [
+      "badge reader",
+      "service intercom",
+      "warning placard",
+      "padlocked crate"
+    ],
+    "blocked_exits": [
+      "west",
+      "south"
+    ],
+    "spatial_anomalies": []
+  },
+  "history": [],
+  "current_place_id": "benchmark_entry_gate_dusk",
+  "next_generated_room_index": 1,
+  "generated_rooms": [],
+  "room_links": []
+}
