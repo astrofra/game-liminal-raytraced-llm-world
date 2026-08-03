@@ -32,11 +32,15 @@ struct GeneratedRoomDraft {
     std::string arrival_narration;
     int move_cost;
     int score_delta;
+    bool temperature_changed;
+    int next_datacenter_temperature_c;
     SpatialState spatial_state;
 
     GeneratedRoomDraft()
         : move_cost(1)
         , score_delta(0)
+        , temperature_changed(false)
+        , next_datacenter_temperature_c(kDefaultDatacenterTemperatureC)
     {
     }
 };
@@ -465,6 +469,13 @@ static void ParseHardStateDeltaNode(const json& node, HardStateDelta* delta)
     delta->next_score = ReadIntValue(node, "next_score", 0);
     delta->alert_level_changed = ReadBoolValue(node, "alert_level_changed", false);
     delta->next_alert_level = ReadIntValue(node, "next_alert_level", 0);
+    const bool has_next_temperature =
+        node.contains("next_datacenter_temperature_c") &&
+        node["next_datacenter_temperature_c"].is_number_integer();
+    delta->temperature_changed = ReadBoolValue(node, "temperature_changed", false) && has_next_temperature;
+    delta->next_datacenter_temperature_c =
+        ClampDatacenterTemperatureC(
+            ReadIntValue(node, "next_datacenter_temperature_c", delta->next_datacenter_temperature_c));
     delta->cooling_state_changed = ReadBoolValue(node, "cooling_state_changed", false);
     ParseResourceState(ReadStringValue(node, "next_cooling_state").c_str(), &delta->next_cooling_state);
     delta->water_state_changed = ReadBoolValue(node, "water_state_changed", false);
@@ -525,6 +536,9 @@ static void ApplyHardDelta(HardState* state, const HardStateDelta& delta)
     if (delta.alert_level_changed) {
         state->alert_level = delta.next_alert_level;
     }
+    if (delta.temperature_changed) {
+        state->datacenter_temperature_c = ClampDatacenterTemperatureC(delta.next_datacenter_temperature_c);
+    }
     if (delta.cooling_state_changed && delta.next_cooling_state != kResourceUnknown) {
         state->cooling_state = delta.next_cooling_state;
     }
@@ -554,6 +568,7 @@ static void ApplyHardDelta(HardState* state, const HardStateDelta& delta)
     if (state->score < 0) {
         state->score = 0;
     }
+    state->datacenter_temperature_c = ClampDatacenterTemperatureC(state->datacenter_temperature_c);
 }
 
 static void ApplySpatialDelta(SpatialState* state, const SpatialStateDelta& delta)
@@ -1136,6 +1151,8 @@ static void FinalizeGeneratedRoomDraft(GeneratedRoomDraft* draft, CardinalDirect
     if (draft->move_cost < 0) {
         draft->move_cost = 0;
     }
+    draft->next_datacenter_temperature_c =
+        ClampDatacenterTemperatureC(draft->next_datacenter_temperature_c);
 
     draft->spatial_state.room_title = draft->title;
     draft->spatial_state.room_summary = draft->summary;
@@ -1201,6 +1218,13 @@ static bool ParseGeneratedRoomJson(
         draft->arrival_narration = ReadStringValue(root, "arrival_narration");
         draft->move_cost = ReadIntValue(root, "move_cost", draft->move_cost);
         draft->score_delta = ReadIntValue(root, "score_delta", draft->score_delta);
+        if (root.contains("next_datacenter_temperature_c") &&
+            root["next_datacenter_temperature_c"].is_number_integer()) {
+            draft->temperature_changed = true;
+            draft->next_datacenter_temperature_c =
+                ClampDatacenterTemperatureC(
+                    ReadIntValue(root, "next_datacenter_temperature_c", draft->next_datacenter_temperature_c));
+        }
         if (root.contains("spatial_state")) {
             ParseGeneratedSpatialStateNode(root["spatial_state"], &draft->spatial_state);
         }
@@ -1681,6 +1705,9 @@ bool RunHeadlessTurnFromState(
         EnsureActionableVisibleObjects(&result->updated_spatial_state);
         result->updated_hard_state.move_count += draft.move_cost;
         result->updated_hard_state.score += draft.score_delta;
+        if (draft.temperature_changed) {
+            result->updated_hard_state.datacenter_temperature_c = draft.next_datacenter_temperature_c;
+        }
         if (result->updated_hard_state.move_count < 0) {
             result->updated_hard_state.move_count = 0;
         }

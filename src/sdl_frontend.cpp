@@ -1369,9 +1369,10 @@ static void DrawTitleBar(
     snprintf(
         stats_buffer,
         sizeof(stats_buffer),
-        "Moves %d   Score %d",
+        "Moves %d   Score %d   Temp %dC",
         session_state.hard_state.move_count,
-        session_state.hard_state.score);
+        session_state.hard_state.score,
+        session_state.hard_state.datacenter_temperature_c);
     const std::string stats_text = stats_buffer;
 
     const int stats_width = MeasureTextWidth(fonts.regular, stats_text);

@@ -119,6 +119,7 @@ static json MakeHardStateJson(const HardState& state)
     node["score"] = state.score;
     node["current_location_id"] = LocationIdToString(state.current_location_id);
     node["alert_level"] = state.alert_level;
+    node["datacenter_temperature_c"] = ClampDatacenterTemperatureC(state.datacenter_temperature_c);
     node["cooling_state"] = ResourceStateToString(state.cooling_state);
     node["water_state"] = ResourceStateToString(state.water_state);
     node["power_state"] = ResourceStateToString(state.power_state);
@@ -217,6 +218,9 @@ static void ParseHardStateNode(const json& node, HardState* state)
     state->score = ReadIntNode(node, "score", state->score);
     ParseLocationId(ReadStringNode(node, "current_location_id").c_str(), &state->current_location_id);
     state->alert_level = ReadIntNode(node, "alert_level", state->alert_level);
+    state->datacenter_temperature_c =
+        ClampDatacenterTemperatureC(
+            ReadIntNode(node, "datacenter_temperature_c", state->datacenter_temperature_c));
     ParseResourceState(ReadStringNode(node, "cooling_state").c_str(), &state->cooling_state);
     ParseResourceState(ReadStringNode(node, "water_state").c_str(), &state->water_state);
     ParseResourceState(ReadStringNode(node, "power_state").c_str(), &state->power_state);
@@ -357,6 +361,17 @@ static void ParseRoomLinksNode(const json& node, std::vector<RoomLink>* links)
 }
 
 }  // namespace
+
+int ClampDatacenterTemperatureC(int value)
+{
+    if (value < kMinDatacenterTemperatureC) {
+        return kMinDatacenterTemperatureC;
+    }
+    if (value > kMaxDatacenterTemperatureC) {
+        return kMaxDatacenterTemperatureC;
+    }
+    return value;
+}
 
 const char* LocationIdToString(LocationId value)
 {
@@ -700,6 +715,7 @@ HardState MakeInitialHardState()
     state.score = 0;
     state.current_location_id = kLocationGate;
     state.alert_level = 1;
+    state.datacenter_temperature_c = kDefaultDatacenterTemperatureC;
     state.cooling_state = kResourceStable;
     state.water_state = kResourceStable;
     state.power_state = kResourceStable;
@@ -764,6 +780,8 @@ void NormalizeSessionState(SessionState* state)
     if (state->hard_state.score < 0) {
         state->hard_state.score = 0;
     }
+    state->hard_state.datacenter_temperature_c =
+        ClampDatacenterTemperatureC(state->hard_state.datacenter_temperature_c);
 
     if (in_generated_room) {
         state->hard_state.current_location_id = kLocationUnknown;
@@ -884,6 +902,7 @@ void PrintHardStateSummary(const HardState& state, FILE* stream)
     fprintf(out, "  score: %d\n", state.score);
     fprintf(out, "  current_location_id: %s\n", LocationIdToString(state.current_location_id));
     fprintf(out, "  alert_level: %d\n", state.alert_level);
+    fprintf(out, "  datacenter_temperature_c: %d\n", state.datacenter_temperature_c);
     fprintf(out, "  cooling_state: %s\n", ResourceStateToString(state.cooling_state));
     fprintf(out, "  water_state: %s\n", ResourceStateToString(state.water_state));
     fprintf(out, "  power_state: %s\n", ResourceStateToString(state.power_state));

@@ -57,12 +57,17 @@ enum ResourceState {
     kResourceCritical,
 };
 
+static const int kDefaultDatacenterTemperatureC = 19;
+static const int kMinDatacenterTemperatureC = 5;
+static const int kMaxDatacenterTemperatureC = 60;
+
 struct HardState {
     int turn_number;
     int move_count;
     int score;
     LocationId current_location_id;
     int alert_level;
+    int datacenter_temperature_c;
     ResourceState cooling_state;
     ResourceState water_state;
     ResourceState power_state;
@@ -76,6 +81,7 @@ struct HardState {
         , score(0)
         , current_location_id(kLocationGate)
         , alert_level(1)
+        , datacenter_temperature_c(kDefaultDatacenterTemperatureC)
         , cooling_state(kResourceStable)
         , water_state(kResourceStable)
         , power_state(kResourceStable)
@@ -127,6 +133,8 @@ struct HardStateDelta {
     int next_score;
     bool alert_level_changed;
     int next_alert_level;
+    bool temperature_changed;
+    int next_datacenter_temperature_c;
     bool cooling_state_changed;
     ResourceState next_cooling_state;
     bool water_state_changed;
@@ -147,6 +155,8 @@ struct HardStateDelta {
         , next_score(0)
         , alert_level_changed(false)
         , next_alert_level(0)
+        , temperature_changed(false)
+        , next_datacenter_temperature_c(kDefaultDatacenterTemperatureC)
         , cooling_state_changed(false)
         , next_cooling_state(kResourceUnknown)
         , water_state_changed(false)
@@ -281,6 +291,7 @@ const char* VisibilityLevelToString(VisibilityLevel value);
 const char* DesertStateToString(DesertState value);
 const char* InteriorDensityToString(InteriorDensity value);
 const char* ResourceStateToString(ResourceState value);
+int ClampDatacenterTemperatureC(int value);
 
 bool ParseLocationId(const char* text, LocationId* value);
 bool ParseCardinalDirection(const char* text, CardinalDirection* value);

@@ -1,8 +1,40 @@
 # Known Issues
 
-Derniere mise a jour : 2026-08-02
+Derniere mise a jour : 2026-08-03
 
 ## Ouverts
+
+### 2026-08-03 - Le vocabulaire de `scene_constraints` reste trop libre
+
+Statut :
+
+Ouvert.
+
+Description :
+
+La chaine hybride `scenario -> metadata LLM -> compilateur de scene` fonctionne mieux avec `scene_constraints`, mais le champ accepte encore des libelles quasi libres.
+
+Aujourd'hui, cela aide l'exploration rapide, mais laisse aussi passer :
+
+- des variantes redondantes pour une meme intention de decor
+- des cues trop vagues pour produire un placement stable
+- des nuances lexicales que le compilateur traite de facon opportuniste plutot que strictement semantique
+
+Impact :
+
+- stabilite visuelle encore variable d'une salle a l'autre
+- difficultes a benchmarker proprement la relation entre metadata et rendu
+- risque que le prompt "apprenne" de mauvais synonymes plus vite que le compilateur n'apprend a les interpreter
+
+Piste :
+
+Resserrer plus tard `scene_constraints` autour d'un petit vocabulaire controle, versionne et documente, par exemple :
+
+- masses dominantes (`rack_bank`, `hero_ai_server`, `central_console`, `cooling_flank`)
+- ouvertures / seuils (`rear_hatch`, `checkpoint_gate`, `service_door`)
+- biais de composition (`keep_corridor_clear`, `open_horizon`, `perimeter_crates`)
+
+L'objectif serait de garder un champ expressif, mais nettement moins libre, afin d'ameliorer a la fois la stabilite esthetique et l'audit du pipeline.
 
 ### 2026-08-02 - Un futur passage a un rendu spectral risque de casser l'economie CPU du prototype
 

@@ -73,6 +73,8 @@ std::string BuildTurnResultSchemaText()
     text += "    \"next_score\": integer,\n";
     text += "    \"alert_level_changed\": boolean,\n";
     text += "    \"next_alert_level\": integer,\n";
+    text += "    \"temperature_changed\": boolean,\n";
+    text += "    \"next_datacenter_temperature_c\": integer,\n";
     text += "    \"cooling_state_changed\": boolean,\n";
     text += "    \"next_cooling_state\": \"stable\" | \"strained\" | \"critical\" | \"unknown\",\n";
     text += "    \"water_state_changed\": boolean,\n";
@@ -118,6 +120,7 @@ std::string BuildGeneratedRoomSchemaText()
     text += "  \"arrival_narration\": string,\n";
     text += "  \"move_cost\": integer,\n";
     text += "  \"score_delta\": integer,\n";
+    text += "  \"next_datacenter_temperature_c\": integer,\n";
     text += "  \"spatial_state\": {\n";
     text += "    \"location_archetype\": string,\n";
     text += "    \"time_of_day\": \"day\" | \"dusk\" | \"night\" | \"unknown\",\n";
@@ -231,12 +234,19 @@ std::string BuildTurnPrompt(
     text += "If topology is clear, explicitly decide which cardinal directions are blocked instead of leaving the room ambiguous.\n";
     text += "When the decor composition becomes clearer or changes materially, update spatial_delta.scene_constraints with short layout cues, never coordinates.\n";
     text += "Good scene_constraints examples: hero ai server, rack bank, cooling flank, central console, rear hatch, service crate, checkpoint gate, open horizon, keep corridor clear.\n";
+    text += "datacenter_temperature_c is the ambient technical temperature in Celsius. Let it influence the feel of the prose, the airflow, the discomfort, or the operational tension.\n";
+    text += "Use temperature as a narrative cue, not as a reason to invent new geometry or random props.\n";
+    text += "Set hard_state_delta.temperature_changed only when heat, cooling, airflow, load, or power conditions materially shift.\n";
     text += "\nCurrent hard state\n";
     AppendLabelValue(&text, "turn_number: ", std::to_string(hard_state.turn_number).c_str());
     AppendLabelValue(&text, "move_count: ", std::to_string(hard_state.move_count).c_str());
     AppendLabelValue(&text, "score: ", std::to_string(hard_state.score).c_str());
     AppendLabelValue(&text, "current_location_id: ", LocationIdToString(hard_state.current_location_id));
     AppendLabelValue(&text, "alert_level: ", std::to_string(hard_state.alert_level).c_str());
+    AppendLabelValue(
+        &text,
+        "datacenter_temperature_c: ",
+        std::to_string(hard_state.datacenter_temperature_c).c_str());
     AppendLabelValue(&text, "cooling_state: ", ResourceStateToString(hard_state.cooling_state));
     AppendLabelValue(&text, "water_state: ", ResourceStateToString(hard_state.water_state));
     AppendLabelValue(&text, "power_state: ", ResourceStateToString(hard_state.power_state));
@@ -295,6 +305,8 @@ std::string BuildGeneratedRoomPrompt(
     text += "Include at least two directly usable things such as a hatch, crate, keypad, badge reader, placard, switch, cabinet, console, lockbox or intercom.\n";
     text += "scene_constraints should contain 1 to 4 short decor cues for the engine, describing dominant masses or layout bias, never coordinates.\n";
     text += "Good scene_constraints examples: hero ai server, rack bank, cooling flank, central console, rear hatch, service crate, checkpoint gate, open horizon, keep corridor clear.\n";
+    text += "datacenter_temperature_c should shape title, summary, and arrival_narration through heat, air, hum, or strain, without turning it directly into scene geometry.\n";
+    text += "Set next_datacenter_temperature_c to the temperature that should remain on the HUD after entering the room. Keep it close to the current value unless the room is materially hotter or colder.\n";
     text += "Use blocked_exits to mark closed directions explicitly; directions not listed there will be treated as traversable.\n";
     text += "For every new room, decide all four cardinal directions. blocked_exits must list every blocked direction explicitly.\n";
     text += "The reverse direction back to the source room should usually stay open, so it should usually be absent from blocked_exits.\n";
@@ -303,6 +315,10 @@ std::string BuildGeneratedRoomPrompt(
     AppendLabelValue(&text, "move_count: ", std::to_string(hard_state.move_count).c_str());
     AppendLabelValue(&text, "score: ", std::to_string(hard_state.score).c_str());
     AppendLabelValue(&text, "alert_level: ", std::to_string(hard_state.alert_level).c_str());
+    AppendLabelValue(
+        &text,
+        "datacenter_temperature_c: ",
+        std::to_string(hard_state.datacenter_temperature_c).c_str());
     AppendLabelValue(&text, "cooling_state: ", ResourceStateToString(hard_state.cooling_state));
     AppendLabelValue(&text, "water_state: ", ResourceStateToString(hard_state.water_state));
     AppendLabelValue(&text, "power_state: ", ResourceStateToString(hard_state.power_state));
