@@ -269,6 +269,33 @@ static std::string ToLowerAsciiCopy(const std::string& text)
     return lower;
 }
 
+static void AppendSearchTerms(std::string* text, const std::vector<std::string>& values)
+{
+    if (!text) {
+        return;
+    }
+
+    for (size_t index = 0; index < values.size(); ++index) {
+        if (!values[index].empty()) {
+            text->push_back(' ');
+            text->append(values[index]);
+        }
+    }
+}
+
+static std::string BuildSpatialSemanticText(const SpatialState& spatial_state)
+{
+    std::string text =
+        spatial_state.room_title + " " +
+        spatial_state.room_summary + " " +
+        spatial_state.location_archetype + " " +
+        spatial_state.canonical_fixture;
+    AppendSearchTerms(&text, spatial_state.anchors);
+    AppendSearchTerms(&text, spatial_state.visible_objects);
+    AppendSearchTerms(&text, spatial_state.scene_constraints);
+    return ToLowerAsciiCopy(text);
+}
+
 static bool ContainsSubstring(const std::string& lower_text, const char* pattern)
 {
     return pattern && lower_text.find(pattern) != std::string::npos;
@@ -276,14 +303,15 @@ static bool ContainsSubstring(const std::string& lower_text, const char* pattern
 
 static bool SpatialFeelsExterior(const SpatialState& state)
 {
-    const std::string combined = ToLowerAsciiCopy(
-        state.room_title + " " + state.room_summary + " " + state.location_archetype + " " + state.canonical_fixture);
+    const std::string combined = BuildSpatialSemanticText(state);
     const bool hard_exterior = ContainsSubstring(combined, "exterior") ||
         ContainsSubstring(combined, "roof") ||
         ContainsSubstring(combined, "yard") ||
         ContainsSubstring(combined, "desert") ||
         ContainsSubstring(combined, "watch") ||
         ContainsSubstring(combined, "parapet") ||
+        ContainsSubstring(combined, "horizon") ||
+        ContainsSubstring(combined, "sky") ||
         ContainsSubstring(combined, "outside");
     if (hard_exterior) {
         return true;
@@ -321,8 +349,7 @@ static uint32_t HashTextSeed(const std::string& text)
 
 static LayoutArchetype InferLayoutArchetype(const SpatialState& spatial_state)
 {
-    const std::string combined = ToLowerAsciiCopy(
-        spatial_state.room_title + " " + spatial_state.room_summary + " " + spatial_state.location_archetype);
+    const std::string combined = BuildSpatialSemanticText(spatial_state);
     const bool exterior = SpatialFeelsExterior(spatial_state);
 
     if (ContainsSubstring(combined, "server") || ContainsSubstring(combined, "aisle") || ContainsSubstring(combined, "rack")) {

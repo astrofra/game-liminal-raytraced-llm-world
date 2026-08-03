@@ -865,6 +865,53 @@ static void DrawExitCompass(
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest));
 }
 
+static void DrawTemperatureHud(
+    SDL_Renderer* renderer,
+    const UiFonts& fonts,
+    const SessionState& session_state,
+    const SDL_FRect& scene_rect)
+{
+    if (!renderer) {
+        return;
+    }
+
+    char label_buffer[64];
+    snprintf(
+        label_buffer,
+        sizeof(label_buffer),
+        "TEMP %dC",
+        session_state.hard_state.datacenter_temperature_c);
+    const std::string label_text = label_buffer;
+
+    const int label_width = MeasureTextWidth(fonts.regular, label_text);
+    const int label_height = std::max(TTF_GetFontHeight(fonts.regular), 1);
+    const float padding_x = 10.0f;
+    const float padding_y = 6.0f;
+    const SDL_FRect rect = {
+        scene_rect.x + 14.0f,
+        scene_rect.y + scene_rect.h - static_cast<float>(label_height) - padding_y * 2.0f - 14.0f,
+        static_cast<float>(label_width) + padding_x * 2.0f,
+        static_cast<float>(label_height) + padding_y * 2.0f};
+    const SDL_FRect outer_rect = {rect.x - 2.0f, rect.y - 2.0f, rect.w + 4.0f, rect.h + 4.0f};
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderFillRect(renderer, &outer_rect);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderFillRect(renderer, &rect);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderRect(renderer, &rect);
+
+    DrawTextSpan(
+        renderer,
+        fonts.regular,
+        label_text,
+        rect.x + padding_x,
+        rect.y + (rect.h - static_cast<float>(label_height)) * 0.5f - 1.0f,
+        label_height,
+        SDL_Color{255, 255, 255, 255},
+        0);
+}
+
 static void UploadSceneTexture(
     const std::vector<unsigned char>& rgb_pixels,
     int width,
@@ -1369,10 +1416,9 @@ static void DrawTitleBar(
     snprintf(
         stats_buffer,
         sizeof(stats_buffer),
-        "Moves %d   Score %d   Temp %dC",
+        "Moves %d   Score %d",
         session_state.hard_state.move_count,
-        session_state.hard_state.score,
-        session_state.hard_state.datacenter_temperature_c);
+        session_state.hard_state.score);
     const std::string stats_text = stats_buffer;
 
     const int stats_width = MeasureTextWidth(fonts.regular, stats_text);
@@ -1786,6 +1832,7 @@ bool RunSdlFrontend(
         SDL_RenderTexture(renderer, scene_texture, 0, &scene_rect);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderRect(renderer, &scene_frame);
+        DrawTemperatureHud(renderer, ui_fonts, current_session_state, scene_rect);
         DrawExitCompass(renderer, ui_fonts, current_session_state, scene_rect);
         DrawConsoleText(renderer, ui_fonts, console_rect, transcript_lines, console_line_capacity);
 

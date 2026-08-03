@@ -273,6 +273,7 @@ struct SessionState {
     SoftState soft_state;
     SpatialState spatial_state;
     std::vector<SessionTurnRecord> history;
+    std::string origin_place_id;
     std::string current_place_id;
     int next_generated_room_index;
     std::vector<GeneratedRoom> generated_rooms;
@@ -311,6 +312,8 @@ std::string DescribeCurrentPlaceLabel(const SessionState& state);
 HardState MakeInitialHardState();
 SoftState MakeInitialSoftState();
 void NormalizeSessionState(SessionState* state);
+int ComputeRoomGraphDistance(const SessionState& state, const std::string& from_place_id, const std::string& to_place_id);
+int ComputeDistanceFromOriginPlace(const SessionState& state, const std::string& place_id);
 bool SerializeSessionStateToJsonString(const SessionState& state, std::string* json_text);
 bool ParseSessionStateFromJson(
     const char* json_text,

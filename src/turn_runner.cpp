@@ -630,6 +630,55 @@ static std::string ToLowerAsciiCopy(const std::string& text)
     return lower;
 }
 
+static void AppendSearchTerms(std::string* text, const std::vector<std::string>& values)
+{
+    if (!text) {
+        return;
+    }
+
+    for (size_t index = 0; index < values.size(); ++index) {
+        if (!values[index].empty()) {
+            text->push_back(' ');
+            text->append(values[index]);
+        }
+    }
+}
+
+static std::string BuildSpatialSemanticText(const SpatialState& spatial_state)
+{
+    std::string text =
+        spatial_state.room_title + " " +
+        spatial_state.room_summary + " " +
+        spatial_state.location_archetype + " " +
+        spatial_state.canonical_fixture;
+    AppendSearchTerms(&text, spatial_state.anchors);
+    AppendSearchTerms(&text, spatial_state.visible_objects);
+    AppendSearchTerms(&text, spatial_state.scene_constraints);
+    return ToLowerAsciiCopy(text);
+}
+
+static void AppendShortSentenceIfMissing(std::string* text, const char* sentence)
+{
+    if (!text || !sentence || !sentence[0]) {
+        return;
+    }
+
+    const std::string lower_text = ToLowerAsciiCopy(*text);
+    const std::string lower_sentence = ToLowerAsciiCopy(sentence);
+    if (lower_text.find(lower_sentence) != std::string::npos) {
+        return;
+    }
+
+    if (!text->empty()) {
+        const char last = (*text)[text->size() - 1];
+        if (last != '.' && last != '!' && last != '?') {
+            text->push_back('.');
+        }
+        text->push_back(' ');
+    }
+    text->append(sentence);
+}
+
 static bool ListContainsSubstring(const std::vector<std::string>& values, const char* pattern);
 
 static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
@@ -638,15 +687,17 @@ static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
         return;
     }
 
-    const std::string combined =
-        ToLowerAsciiCopy(spatial_state->room_title + " " + spatial_state->room_summary + " " + spatial_state->location_archetype);
+    const std::string combined = BuildSpatialSemanticText(*spatial_state);
     const bool exterior =
         combined.find("exterior") != std::string::npos ||
         combined.find("roof") != std::string::npos ||
         combined.find("gate") != std::string::npos ||
         combined.find("desert") != std::string::npos ||
         combined.find("watch") != std::string::npos ||
-        combined.find("perimeter") != std::string::npos;
+        combined.find("perimeter") != std::string::npos ||
+        combined.find("parapet") != std::string::npos ||
+        combined.find("horizon") != std::string::npos ||
+        combined.find("sky") != std::string::npos;
 
     if (exterior) {
         AddUniqueString(&spatial_state->visible_objects, "warning placard");
@@ -821,8 +872,7 @@ static void AddGeneratedRoomUnique(std::vector<GeneratedRoom>* rooms, const Gene
 
 static bool SpatialFeelsExterior(const SpatialState& state)
 {
-    const std::string combined = ToLowerAsciiCopy(
-        state.room_title + " " + state.room_summary + " " + state.location_archetype + " " + state.canonical_fixture);
+    const std::string combined = BuildSpatialSemanticText(state);
     return combined.find("exterior") != std::string::npos ||
         combined.find("roof") != std::string::npos ||
         combined.find("gate") != std::string::npos ||
@@ -830,7 +880,10 @@ static bool SpatialFeelsExterior(const SpatialState& state)
         combined.find("perimeter") != std::string::npos ||
         combined.find("desert") != std::string::npos ||
         combined.find("threshold") != std::string::npos ||
-        combined.find("watch") != std::string::npos;
+        combined.find("watch") != std::string::npos ||
+        combined.find("parapet") != std::string::npos ||
+        combined.find("horizon") != std::string::npos ||
+        combined.find("sky") != std::string::npos;
 }
 
 static bool ListContainsSubstring(const std::vector<std::string>& values, const char* pattern)
@@ -849,11 +902,110 @@ static bool ListContainsSubstring(const std::vector<std::string>& values, const 
     return false;
 }
 
-static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(const SessionState& initial_session_state, CardinalDirection direction)
+static bool SpatialHasAiServerCue(const SpatialState& spatial_state)
+{
+    return ListContainsSubstring(spatial_state.visible_objects, "ai server") ||
+        ListContainsSubstring(spatial_state.visible_objects, "mainframe") ||
+        ListContainsSubstring(spatial_state.visible_objects, "gpu") ||
+        ListContainsSubstring(spatial_state.visible_objects, "accelerator") ||
+        ListContainsSubstring(spatial_state.visible_objects, "inference") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "ai server") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "mainframe") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "gpu") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "accelerator") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "inference");
+}
+
+static bool SpatialSuggestsAiServer(const SpatialState& spatial_state)
+{
+    const std::string combined = BuildSpatialSemanticText(spatial_state);
+    const bool strong_ai =
+        combined.find("inference") != std::string::npos ||
+        combined.find("mainframe") != std::string::npos ||
+        combined.find("accelerator") != std::string::npos ||
+        combined.find("gpu") != std::string::npos ||
+        combined.find("tensor") != std::string::npos ||
+        combined.find("model") != std::string::npos ||
+        combined.find("neural") != std::string::npos ||
+        combined.find("compute") != std::string::npos ||
+        combined.find("cluster") != std::string::npos ||
+        combined.find("training") != std::string::npos;
+    const bool compute_space =
+        strong_ai ||
+        combined.find("server") != std::string::npos ||
+        combined.find("vault") != std::string::npos ||
+        combined.find("backup") != std::string::npos ||
+        combined.find("control") != std::string::npos ||
+        combined.find("switch") != std::string::npos;
+    const bool cooling_dominant =
+        combined.find("cooling") != std::string::npos ||
+        combined.find("vent") != std::string::npos ||
+        combined.find("chiller") != std::string::npos ||
+        combined.find("hvac") != std::string::npos ||
+        combined.find("trench") != std::string::npos;
+    return compute_space && !cooling_dominant;
+}
+
+static void ApplyAiServerBiasToDraft(GeneratedRoomDraft* draft)
+{
+    if (!draft || SpatialFeelsExterior(draft->spatial_state) || SpatialHasAiServerCue(draft->spatial_state)) {
+        return;
+    }
+    if (!SpatialSuggestsAiServer(draft->spatial_state)) {
+        return;
+    }
+
+    AddUniqueString(&draft->spatial_state.visible_objects, "inference mainframe");
+    AddUniqueString(&draft->spatial_state.visible_objects, "diagnostic console");
+    AddUniqueString(&draft->spatial_state.scene_constraints, "hero ai server");
+    AppendShortSentenceIfMissing(&draft->summary, "A dark inference mainframe dominates one side.");
+    AppendShortSentenceIfMissing(&draft->arrival_narration, "A dark inference mainframe dominates one side.");
+}
+
+static void ApplyFarFieldSkyBiasToDraft(GeneratedRoomDraft* draft)
+{
+    if (!draft) {
+        return;
+    }
+
+    draft->spatial_state.location_archetype = "roof parapet exterior";
+    draft->spatial_state.interior_density = kInteriorSparse;
+    AddUniqueString(&draft->spatial_state.anchors, "parapet");
+    AddUniqueString(&draft->spatial_state.anchors, "horizon");
+    AddUniqueString(&draft->spatial_state.anchors, "roof_edge");
+    AddUniqueString(&draft->spatial_state.visible_objects, "roof hatch");
+    AddUniqueString(&draft->spatial_state.visible_objects, "beacon switch");
+    AddUniqueString(&draft->spatial_state.scene_constraints, "open horizon");
+    AddUniqueString(&draft->spatial_state.scene_constraints, "roof parapet");
+    RemoveString(&draft->spatial_state.scene_constraints, "keep corridor clear");
+    AppendShortSentenceIfMissing(&draft->summary, "The parapet opens to a strip of sky and horizon.");
+    AppendShortSentenceIfMissing(&draft->arrival_narration, "Beyond the concrete lip, the sky and horizon are visible.");
+}
+
+static void ApplyGeneratedRoomWorldBiases(
+    GeneratedRoomDraft* draft,
+    CardinalDirection direction,
+    int generated_room_distance_from_origin)
+{
+    if (!draft) {
+        return;
+    }
+
+    ApplyAiServerBiasToDraft(draft);
+    if (generated_room_distance_from_origin > 5) {
+        ApplyFarFieldSkyBiasToDraft(draft);
+    }
+    FinalizeGeneratedRoomDraft(draft, direction);
+}
+
+static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(
+    const SessionState& initial_session_state,
+    CardinalDirection direction,
+    int generated_room_distance_from_origin)
 {
     GeneratedRoomDraft draft;
     const SpatialState& origin = initial_session_state.spatial_state;
-    const bool exterior = SpatialFeelsExterior(origin);
+    const bool exterior = SpatialFeelsExterior(origin) || generated_room_distance_from_origin > 5;
 
     draft.spatial_state.location_id = kLocationUnknown;
     draft.spatial_state.canonical_fixture.clear();
@@ -916,7 +1068,7 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(const SessionState& ini
         draft.spatial_state.scene_constraints.push_back("keep corridor clear");
         draft.spatial_state.scene_constraints.push_back("rack bank");
     }
-    FinalizeGeneratedRoomDraft(&draft, direction);
+    ApplyGeneratedRoomWorldBiases(&draft, direction, generated_room_distance_from_origin);
     return draft;
 }
 
@@ -1413,6 +1565,7 @@ bool InitializeSessionState(
     session_state->hard_state = MakeInitialHardState();
     session_state->soft_state = MakeInitialSoftState();
     session_state->hard_state.current_location_id = initial_location_id;
+    session_state->origin_place_id = BuildCanonicalPlaceId(initial_location_id);
     session_state->current_place_id = BuildCanonicalPlaceId(initial_location_id);
     if (!BuildCanonicalSpatialState(initial_location_id, &session_state->spatial_state)) {
         SetError(error_buffer, error_buffer_size, "Cannot build canonical spatial state: %s", LocationIdToString(initial_location_id));
@@ -1571,12 +1724,18 @@ bool RunHeadlessTurnFromState(
             return true;
         }
 
+        const int current_distance_from_origin =
+            ComputeDistanceFromOriginPlace(initial_session_state, result->initial_place_id);
+        const int generated_room_distance_from_origin =
+            current_distance_from_origin < 0 ? 1 : current_distance_from_origin + 1;
+
         const std::string room_prompt = BuildGeneratedRoomPrompt(
             result->initial_hard_state,
             result->initial_soft_state,
             result->initial_spatial_state,
             &initial_session_state.history,
-            traversal_direction);
+            traversal_direction,
+            generated_room_distance_from_origin);
 
         std::vector<LlmPromptMessage> room_messages;
         room_messages.push_back(LlmPromptMessage());
@@ -1617,13 +1776,19 @@ bool RunHeadlessTurnFromState(
                     &draft,
                     metadata_error,
                     sizeof(metadata_error))) {
-                draft = MakeFallbackGeneratedRoomDraft(initial_session_state, traversal_direction);
+                draft = MakeFallbackGeneratedRoomDraft(
+                    initial_session_state,
+                    traversal_direction,
+                    generated_room_distance_from_origin);
                 used_room_metadata_fallback = true;
                 result->used_turn_fallback = true;
                 result->turn_result.clarification = std::string("Generated room metadata fallback was used: ") + metadata_error;
             }
         } else {
-            draft = MakeFallbackGeneratedRoomDraft(initial_session_state, traversal_direction);
+            draft = MakeFallbackGeneratedRoomDraft(
+                initial_session_state,
+                traversal_direction,
+                generated_room_distance_from_origin);
             used_room_metadata_fallback = true;
             result->used_turn_fallback = true;
             result->turn_result.clarification =
@@ -1659,6 +1824,7 @@ bool RunHeadlessTurnFromState(
                 ? std::string("You move ") + CardinalDirectionToString(traversal_direction) + " into " + draft.spatial_state.room_title + "."
                 : draft.summary;
         }
+        ApplyGeneratedRoomWorldBiases(&draft, traversal_direction, generated_room_distance_from_origin);
 
         std::string generated_scene_text;
         Scene generated_scene;

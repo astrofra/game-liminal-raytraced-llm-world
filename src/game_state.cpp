@@ -360,6 +360,39 @@ static void ParseRoomLinksNode(const json& node, std::vector<RoomLink>* links)
     }
 }
 
+static bool VectorContainsString(const std::vector<std::string>& values, const std::string& value)
+{
+    for (size_t index = 0; index < values.size(); ++index) {
+        if (values[index] == value) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool IsKnownPlaceIdInSession(const SessionState& state, const std::string& place_id)
+{
+    if (place_id.empty()) {
+        return false;
+    }
+
+    LocationId location_id = kLocationUnknown;
+    if (ParseCanonicalPlaceId(place_id, &location_id)) {
+        return true;
+    }
+
+    if (!IsGeneratedPlaceId(place_id)) {
+        return false;
+    }
+
+    for (size_t index = 0; index < state.generated_rooms.size(); ++index) {
+        if (state.generated_rooms[index].room_id == place_id) {
+            return true;
+        }
+    }
+    return false;
+}
+
 }  // namespace
 
 int ClampDatacenterTemperatureC(int value)
@@ -753,20 +786,20 @@ void NormalizeSessionState(SessionState* state)
         }
     }
 
-    bool current_place_exists = state->current_place_id.empty();
-    LocationId current_place_location = kLocationUnknown;
-    if (ParseCanonicalPlaceId(state->current_place_id, &current_place_location)) {
-        current_place_exists = true;
-    } else if (IsGeneratedPlaceId(state->current_place_id)) {
-        for (size_t index = 0; index < state->generated_rooms.size(); ++index) {
-            if (state->generated_rooms[index].room_id == state->current_place_id) {
-                current_place_exists = true;
-                break;
-            }
-        }
-    }
-    if (!current_place_exists) {
+    if (!state->current_place_id.empty() && !IsKnownPlaceIdInSession(*state, state->current_place_id)) {
         state->current_place_id.clear();
+    }
+    if (!state->origin_place_id.empty() && !IsKnownPlaceIdInSession(*state, state->origin_place_id)) {
+        state->origin_place_id.clear();
+    }
+    if (state->origin_place_id.empty()) {
+        if (!state->current_place_id.empty()) {
+            state->origin_place_id = state->current_place_id;
+        } else if (state->spatial_state.location_id != kLocationUnknown) {
+            state->origin_place_id = BuildCanonicalPlaceId(state->spatial_state.location_id);
+        } else if (state->hard_state.current_location_id != kLocationUnknown) {
+            state->origin_place_id = BuildCanonicalPlaceId(state->hard_state.current_location_id);
+        }
     }
 
     const bool in_generated_room = IsGeneratedPlaceId(state->current_place_id);
@@ -837,6 +870,7 @@ bool SerializeSessionStateToJsonString(const SessionState& state, std::string* j
     root["soft_state"] = MakeSoftStateJson(state.soft_state);
     root["spatial_state"] = MakeSpatialStateJson(state.spatial_state);
     root["history"] = MakeSessionHistoryJson(state.history);
+    root["origin_place_id"] = state.origin_place_id;
     root["current_place_id"] = state.current_place_id;
     root["next_generated_room_index"] = state.next_generated_room_index;
     root["generated_rooms"] = MakeGeneratedRoomsJson(state.generated_rooms);
@@ -876,6 +910,7 @@ bool ParseSessionStateFromJson(
         if (root.contains("history")) {
             ParseHistoryNode(root["history"], &state->history);
         }
+        state->origin_place_id = ReadStringNode(root, "origin_place_id");
         state->current_place_id = ReadStringNode(root, "current_place_id");
         state->next_generated_room_index = ReadIntNode(root, "next_generated_room_index", state->next_generated_room_index);
         if (root.contains("generated_rooms")) {
@@ -946,6 +981,7 @@ void PrintSessionStateSummary(const SessionState& state, FILE* stream)
 {
     FILE* out = stream ? stream : stdout;
     fprintf(out, "SessionState\n");
+    fprintf(out, "  origin_place_id: %s\n", state.origin_place_id.empty() ? "(empty)" : state.origin_place_id.c_str());
     fprintf(out, "  current_place_id: %s\n", state.current_place_id.empty() ? "(empty)" : state.current_place_id.c_str());
     fprintf(out, "  current_place_label: %s\n", DescribeCurrentPlaceLabel(state).c_str());
     fprintf(out, "  generated_rooms: %zu\n", state.generated_rooms.size());
@@ -979,6 +1015,60 @@ void PrintSessionHistory(const SessionState& state, FILE* stream)
             fprintf(out, "    clarification: %s\n", record.clarification.c_str());
         }
     }
+}
+
+int ComputeRoomGraphDistance(const SessionState& state, const std::string& from_place_id, const std::string& to_place_id)
+{
+    if (from_place_id.empty() || to_place_id.empty()) {
+        return -1;
+    }
+    if (from_place_id == to_place_id) {
+        return 0;
+    }
+
+    std::vector<std::string> visited;
+    std::vector<std::string> frontier;
+    visited.push_back(from_place_id);
+    frontier.push_back(from_place_id);
+
+    int distance = 0;
+    while (!frontier.empty()) {
+        ++distance;
+        std::vector<std::string> next_frontier;
+        for (size_t frontier_index = 0; frontier_index < frontier.size(); ++frontier_index) {
+            const std::string& current_place_id = frontier[frontier_index];
+            for (size_t link_index = 0; link_index < state.room_links.size(); ++link_index) {
+                const RoomLink& link = state.room_links[link_index];
+                if (link.from_place_id != current_place_id || link.to_place_id.empty()) {
+                    continue;
+                }
+                if (link.to_place_id == to_place_id) {
+                    return distance;
+                }
+                if (!VectorContainsString(visited, link.to_place_id)) {
+                    visited.push_back(link.to_place_id);
+                    next_frontier.push_back(link.to_place_id);
+                }
+            }
+        }
+        frontier.swap(next_frontier);
+    }
+
+    return -1;
+}
+
+int ComputeDistanceFromOriginPlace(const SessionState& state, const std::string& place_id)
+{
+    if (place_id.empty()) {
+        return -1;
+    }
+
+    const std::string origin_place_id = state.origin_place_id.empty() ? state.current_place_id : state.origin_place_id;
+    if (origin_place_id.empty()) {
+        return -1;
+    }
+
+    return ComputeRoomGraphDistance(state, origin_place_id, place_id);
 }
 
 }  // namespace liminal

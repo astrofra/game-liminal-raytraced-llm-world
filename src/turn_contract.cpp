@@ -287,7 +287,8 @@ std::string BuildGeneratedRoomPrompt(
     const SoftState& soft_state,
     const SpatialState& current_spatial_state,
     const std::vector<SessionTurnRecord>* recent_history,
-    CardinalDirection direction)
+    CardinalDirection direction,
+    int generated_room_distance_from_origin)
 {
     std::string text;
     text += "You invent one neighboring room for a local interactive-fiction prototype.\n";
@@ -303,10 +304,18 @@ std::string BuildGeneratedRoomPrompt(
     text += "Set score_delta conservatively. Use 0 unless entering this room meaningfully advances progress or reveals something important.\n";
     text += "visible_objects must contain 3 to 5 concrete actionable objects or interfaces, not vague scenery only.\n";
     text += "Include at least two directly usable things such as a hatch, crate, keypad, badge reader, placard, switch, cabinet, console, lockbox or intercom.\n";
+    text += "When the room suggests compute, model storage, restricted inference, accelerator hardware or machine authority, include a concrete machine-scale cue such as inference mainframe, ai server column, accelerator cabinet or tensor stack.\n";
+    text += "If such a machine dominates the room, prefer scene_constraints containing hero ai server.\n";
     text += "scene_constraints should contain 1 to 4 short decor cues for the engine, describing dominant masses or layout bias, never coordinates.\n";
     text += "Good scene_constraints examples: hero ai server, rack bank, cooling flank, central console, rear hatch, service crate, checkpoint gate, open horizon, keep corridor clear.\n";
     text += "datacenter_temperature_c should shape title, summary, and arrival_narration through heat, air, hum, or strain, without turning it directly into scene geometry.\n";
     text += "Set next_datacenter_temperature_c to the temperature that should remain on the HUD after entering the room. Keep it close to the current value unless the room is materially hotter or colder.\n";
+    if (generated_room_distance_from_origin > 5) {
+        text += "This room will sit more than five room-transitions away from the starting room.\n";
+        text += "It should begin opening toward the datacenter perimeter or parapet, with some sky or horizon perceptible.\n";
+        text += "Prefer exterior or semi-exterior cues such as parapet, outer walk, roof edge, exposed service deck or perimeter seam.\n";
+        text += "Include open horizon in scene_constraints unless there is a very strong reason not to.\n";
+    }
     text += "Use blocked_exits to mark closed directions explicitly; directions not listed there will be treated as traversable.\n";
     text += "For every new room, decide all four cardinal directions. blocked_exits must list every blocked direction explicitly.\n";
     text += "The reverse direction back to the source room should usually stay open, so it should usually be absent from blocked_exits.\n";
@@ -334,6 +343,10 @@ std::string BuildGeneratedRoomPrompt(
 
     text += "\nTraversal request\n";
     AppendLabelValue(&text, "direction: ", CardinalDirectionToString(direction));
+    AppendLabelValue(
+        &text,
+        "distance_from_origin_after_move: ",
+        std::to_string(generated_room_distance_from_origin).c_str());
 
     text += "\nGenerated room schema\n";
     text += BuildGeneratedRoomSchemaText();

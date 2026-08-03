@@ -552,6 +552,10 @@ int main(int argc, char** argv)
                     true)
                     .c_str());
         } else if (dump_generated_room_prompt) {
+            const int current_distance_from_origin =
+                liminal::ComputeDistanceFromOriginPlace(session_state, session_state.current_place_id);
+            const int generated_room_distance_from_origin =
+                current_distance_from_origin < 0 ? 1 : current_distance_from_origin + 1;
             printf(
                 "%s\n",
                 liminal::BuildGeneratedRoomPrompt(
@@ -559,7 +563,8 @@ int main(int argc, char** argv)
                     session_state.soft_state,
                     session_state.spatial_state,
                     &session_state.history,
-                    generated_room_direction)
+                    generated_room_direction,
+                    generated_room_distance_from_origin)
                     .c_str());
         } else {
             printf("%s\n", liminal::BuildSceneAuditPrompt(session_state.spatial_state).c_str());

@@ -2,69 +2,47 @@
   "current_place_id": "generated:room_0002",
   "generated_rooms": [
     {
+      "metadata_fallback_used": false,
       "room_id": "generated:room_0001",
-      "scene_text": "room \"generated room\"\ncamera eye(0.0,1.82,-8.4) target(0.0,1.20,8.2) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(72.0)\nsky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(91)\nplane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(18.0,30.0) gray(0.13)\nbox \"wall_back\" pos(0.0,2.1,10.4) size(18.0,4.2,0.8) gray(0.18)\nbox \"parapet_left\" pos(-7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\nbox \"parapet_right\" pos(7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\nbox \"parapet_front\" pos(0.0,0.65,1.9) size(14.0,1.3,0.8) gray(0.26)\nprefab_crate \"service_crate\" pos(2.6,0.55,-1.8) size(1.8,1.1,1.5) gray(0.20) detail(0.31)\nprefab_cooling_unit \"vent_stack\" pos(-4.1,1.0,-2.8) size(1.0,2.0,1.0) gray(0.30) detail(0.39)\n",
+      "scene_fallback_used": false,
+      "scene_source": "hybrid",
+      "scene_text": "room \"Inference Core\"\ncamera eye(0.0,1.78,-8.10) target(0.0,1.20,9.60) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(80.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(13.6,28.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.30,0.0) normal(0.0,-1.0,0.0) size(13.6,28.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.65,14.00) size(13.6,3.3,0.60) gray(0.18)\nbox \"wall_left\" pos(-6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nbox \"wall_right\" pos(6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nplane \"light_strip\" pos(0.0,3.29,2.4) normal(0.0,-1.0,0.0) size(1.2,7.8) gray(0.45) emit(1.6)\nprefab_ai_server \"inference_mainframe_01\" pos(-3.67,1.40,-2.46) size(1.70,2.80,1.70) gray(0.16) detail(0.28)\nprefab_crate \"service_crate_02\" pos(3.67,0.55,-2.24) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"keypad_03\" pos(0.00,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"data_cable_spool_04\" pos(-4.31,0.55,0.36) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"warning_placard_05\" pos(-6.67,1.38,-0.22) size(0.14,0.65,0.90) gray(0.39)\nbox \"emergency_intercom_06\" pos(6.67,1.38,7.70) size(0.14,0.65,0.90) gray(0.39)\nprefab_cooling_unit \"cooling_grille_07\" pos(-3.67,1.17,2.56) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\nbox \"service_panel_08\" pos(-1.50,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"maintenance_crate_09\" pos(3.67,0.55,0.36) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"cooling_keypad_10\" pos(6.67,1.72,5.90) size(0.14,0.65,0.90) gray(0.39)\nprefab_gate \"rack_access_door_11\" pos(1.50,1.72,13.78) size(2.20,2.50,0.28) gray(0.23) detail(0.42)\nprefab_rack \"rack_bank_222\" pos(-2.48,1.25,-0.36) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nbox \"central_console_264\" pos(0.40,0.50,1.12) size(1.70,1.00,0.80) gray(0.25)\n",
       "spatial_state": {
         "alert_level": 2,
         "anchors": [
-          "console",
-          "ventilation_hatch",
-          "security_keypad",
-          "status_board"
+          "inference_mainframe",
+          "service_crate",
+          "cooling_flank",
+          "rear_hatch"
         ],
         "blocked_exits": [],
         "canonical_fixture": "",
-        "desert_state": "still",
+        "desert_state": "dusty",
         "interior_density": "sparse",
-        "location_archetype": "utility_junction",
+        "location_archetype": "restricted_compute",
         "location_id": "unknown",
-        "room_summary": "A reinforced junction box for the datacenter’s perimeter systems, housing environmental and security interfaces.",
-        "room_title": "Control Hub",
-        "spatial_anomalies": [],
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "maintenance console (interface, locked)",
-          "ventilation hatch (floor, requires tool)",
-          "security keypad (input, numeric)",
-          "metal cabinet (drawer, partially open)",
-          "flickering status board (displays cooling/power)",
-          "warning placard",
+        "room_summary": "A sealed chamber housing a high-capacity AI inference mainframe, its cooling systems humming under the weight of constant computation.",
+        "room_title": "Inference Core",
+        "scene_constraints": [
+          "hero ai server",
+          "rack bank",
+          "cooling flank",
+          "central console",
           "service crate",
-          "intercom post",
-          "badge reader",
-          "maintenance hatch"
-        ]
-      }
-    },
-    {
-      "room_id": "generated:room_0002",
-      "scene_text": "room \"generated room\"\ncamera eye(0.0,1.78,-7.8) target(0.0,1.20,8.4) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(14.0,24.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.2,0.0) normal(0.0,-1.0,0.0) size(14.0,24.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.6,11.4) size(14.0,3.2,0.6) gray(0.20)\nbox \"wall_left\" pos(-6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"wall_right\" pos(6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\nbox \"threshold_frame\" pos(0.0,1.5,8.8) size(3.6,3.0,0.45) gray(0.24)\nprefab_rack \"rack_left\" pos(-3.0,1.25,2.8) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_rack \"rack_right\" pos(3.0,1.25,4.4) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\nprefab_cooling_unit \"cooling_block\" pos(-4.4,1.0,-2.5) size(1.1,2.0,1.1) gray(0.31) detail(0.39)\nprefab_crate \"maintenance_crate\" pos(2.4,0.55,-1.6) size(1.7,1.0,1.4) gray(0.20) detail(0.30)\n",
-      "spatial_state": {
-        "alert_level": 2,
-        "anchors": [
-          "backup console",
-          "manual override switch",
-          "locked data crate",
-          "ventilation grate"
+          "access door",
+          "keep corridor clear"
         ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "desert_state": "still",
-        "interior_density": "sparse",
-        "location_archetype": "archival_junction",
-        "location_id": "unknown",
-        "room_summary": "A reinforced chamber housing redundant systems and archival data modules.",
-        "room_title": "Backup Vault",
         "spatial_anomalies": [],
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
+        "time_of_day": "night",
+        "visibility_level": "clear",
         "visible_objects": [
-          "backup console (interface, flickering, data streams)",
-          "manual override switch (floor, red handle, requires force)",
-          "locked data crate (metal, stamped 'CLASSIFIED', requires keycard)",
-          "ventilation grate (ajar, exposed wiring)",
-          "flickering emergency light (ceiling, dim)",
+          "inference mainframe",
+          "service crate",
+          "keypad",
+          "data cable spool",
+          "warning placard",
+          "emergency intercom",
+          "cooling grille",
           "service panel",
           "maintenance crate",
           "cooling keypad",
@@ -72,20 +50,71 @@
           "cabinet latch"
         ]
       }
+    },
+    {
+      "metadata_fallback_used": false,
+      "room_id": "generated:room_0002",
+      "scene_fallback_used": false,
+      "scene_source": "hybrid",
+      "scene_text": "room \"Cooling Nexus\"\ncamera eye(0.0,1.78,-8.10) target(0.0,1.20,9.60) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(80.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(13.6,28.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.30,0.0) normal(0.0,-1.0,0.0) size(13.6,28.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.65,14.00) size(13.6,3.3,0.60) gray(0.18)\nbox \"wall_left\" pos(-6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nbox \"wall_right\" pos(6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nplane \"light_strip\" pos(0.0,3.29,2.4) normal(0.0,-1.0,0.0) size(1.2,7.8) gray(0.45) emit(1.6)\nprefab_ai_server \"accelerator_cabinet_01\" pos(-3.67,1.40,-2.24) size(1.70,2.80,1.70) gray(0.16) detail(0.28)\nprefab_ai_server \"tensor_stack_02\" pos(3.67,1.40,-2.24) size(1.70,2.80,1.70) gray(0.16) detail(0.28)\nbox \"central_console_03\" pos(-0.40,0.50,-0.58) size(1.70,1.00,0.80) gray(0.25)\nprefab_cooling_unit \"cooling_grille_04\" pos(-3.67,1.17,0.16) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\nbox \"emergency_intercom_05\" pos(0.00,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"service_crate_06\" pos(4.31,0.55,0.36) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"cooling_keypad_07\" pos(-6.67,1.38,-0.22) size(0.14,0.65,0.90) gray(0.39)\nbox \"service_panel_08\" pos(6.67,1.38,7.70) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"maintenance_crate_09\" pos(-3.67,0.55,2.96) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nprefab_gate \"rack_access_door_10\" pos(-1.50,1.42,13.78) size(2.20,2.50,0.28) gray(0.23) detail(0.42)\nbox \"cabinet_latch_11\" pos(1.50,1.72,13.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_rack \"rack_bank_222\" pos(2.48,1.25,1.12) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\n",
+      "spatial_state": {
+        "alert_level": 2,
+        "anchors": [
+          "accelerator_cabinet",
+          "central_console",
+          "cooling_flank",
+          "service_crate",
+          "rear_hatch"
+        ],
+        "blocked_exits": [],
+        "canonical_fixture": "",
+        "desert_state": "still",
+        "interior_density": "sparse",
+        "location_archetype": "restricted_infrastructure",
+        "location_id": "unknown",
+        "room_summary": "A junction of recirculated air and redundant cooling loops, where heat is funneled away from critical compute nodes.",
+        "room_title": "Cooling Nexus",
+        "scene_constraints": [
+          "hero ai server",
+          "rack bank",
+          "cooling flank",
+          "central console",
+          "keep corridor clear",
+          "service crate",
+          "access door"
+        ],
+        "spatial_anomalies": [],
+        "time_of_day": "night",
+        "visibility_level": "clear",
+        "visible_objects": [
+          "accelerator cabinet",
+          "tensor stack",
+          "central console",
+          "cooling grille",
+          "emergency intercom",
+          "service crate",
+          "cooling keypad",
+          "service panel",
+          "maintenance crate",
+          "rack access door",
+          "cabinet latch"
+        ]
+      }
     }
   ],
   "hard_state": {
-    "alert_level": 1,
+    "alert_level": 2,
     "cooling_state": "stable",
     "current_location_id": "unknown",
+    "datacenter_temperature_c": 21,
     "inventory_items": [],
-    "move_count": 5,
+    "move_count": 2,
     "named_entities": [
       "duty_officer"
     ],
     "power_state": "stable",
-    "score": 1,
-    "turn_number": 11,
+    "score": 0,
+    "turn_number": 3,
     "unresolved_threats": [
       "possible_external_attack"
     ],
@@ -93,105 +122,34 @@
   },
   "history": [
     {
-      "clarification": "Generated room scene fallback was used.",
-      "intent": "move_north_generated_room",
+      "clarification": "",
+      "intent": "move_east_generated_room",
       "location_id": "unknown",
-      "location_label": "Control Hub",
-      "narration": "The sliding gate seals behind you with a hiss. Inside, a dimly lit alcove hums with equipment: a **maintenance console** mounted on the wall, a **ventilation hatch** set into the floor, and a **security keypad** embedded in a metal cabinet. A **flickering...",
-      "player_command": "north",
+      "location_label": "Inference Core",
+      "narration": "The sliding gate hisses shut behind you as you step into a cavernous chamber. The air is thick with the low, rhythmic whir of cooling fans and the faint metallic tang of overheated circuits. A towering **inference mainframe** dominates the space, its front.",
+      "player_command": "EAST",
       "turn_number": 1
     },
     {
       "clarification": "",
-      "intent": "move_south_known_room",
-      "location_id": "gate",
-      "location_label": "gate",
-      "narration": "You go south and enter gate.",
-      "player_command": "south",
-      "turn_number": 2
-    },
-    {
-      "clarification": "",
-      "intent": "move_north_known_room",
-      "location_id": "unknown",
-      "location_label": "Control Hub",
-      "narration": "You go north and enter Control Hub. A reinforced junction box for the datacenter’s perimeter systems, housing environmental and security interfaces.",
-      "player_command": "north",
-      "turn_number": 3
-    },
-    {
-      "clarification": "Generated room scene fallback was used for interfaces. No new objects or actions discovered beyond existing anchors.",
-      "intent": "inspect_interfaces",
-      "location_id": "unknown",
-      "location_label": "Control Hub",
-      "narration": "The **maintenance console** glows faintly with diagnostic codes. The **status board** flickers red, showing cooling at 87% and power at 92%. The **security keypad** beeps weakly, its screen blank.",
-      "player_command": "look at interfaces",
-      "turn_number": 4
-    },
-    {
-      "clarification": "Generated room scene fallback was used.",
       "intent": "move_north_generated_room",
       "location_id": "unknown",
-      "location_label": "Backup Vault",
-      "narration": "The gate seals behind you with a metallic *clang*. Inside, a dimly lit vault hums with redundant equipment: a **backup console** mounted on the wall, its screen displaying fragmented data streams. A **manual override switch** is embedded in the floor, and a...",
-      "player_command": "north",
-      "turn_number": 5
-    },
-    {
-      "clarification": "The switch was not locked or guarded. Activation stabilizes cooling and power states.",
-      "intent": "activate_manual_override_switch",
-      "location_id": "unknown",
-      "location_label": "Backup Vault",
-      "narration": "The **manual override switch** groans as you pull it upward. A hydraulic hiss fills the vault—cooling fans roar to life, and the **emergency light** brightens slightly. The **status board** now reads cooling at 98% and power at 94%.",
-      "player_command": "press manual override switch",
-      "turn_number": 6
-    },
-    {
-      "clarification": "Temperature is derived from the cooling state (98% efficiency) and ambient readings inferred from emergency lighting. No direct thermometer is visible; this is an inferred estimate.",
-      "intent": "query_system_status",
-      "location_id": "unknown",
-      "location_label": "Backup Vault",
-      "narration": "The **status board** displays **cooling at 98%** and **power at 94%**. A small thermometer icon beside the cooling gauge reads **22°C**—stable but slightly elevated. The **emergency light**’s warmth suggests ambient temperature is rising.",
-      "player_command": "what is the current temperature level ?",
-      "turn_number": 7
-    },
-    {
-      "clarification": "Temperature is inferred from cooling efficiency (98%) and emergency lighting warmth. No direct thermometer exists; this is a contextual estimate.",
-      "intent": "query_system_status",
-      "location_id": "unknown",
-      "location_label": "Backup Vault",
-      "narration": "The **cooling keypad** confirms **22°C**—ambient heat lingers despite stabilization. The **locked data crate** remains warm to the touch, hinting at residual system heat. The **ventilation grate**’s exposed wiring suggests a potential short-circuit risk if inspected further.",
-      "player_command": "what is the current temperature level ?",
-      "turn_number": 8
-    },
-    {
-      "clarification": "Waiting in a stable environment with no immediate threats or state changes. The **ventilation grate**’s wiring remains a potential hazard if further inspected, but no new anomalies emerge.",
-      "intent": "wait",
-      "location_id": "unknown",
-      "location_label": "Backup Vault",
-      "narration": "The **emergency light** flickers once, casting shifting shadows over the **ventilation grate**’s exposed wiring. The **locked data crate**’s residual warmth pulses faintly against your palm. Time feels suspended—like the vault itself is holding its breath.",
-      "player_command": "wait",
-      "turn_number": 9
-    },
-    {
-      "clarification": "Temperature is inferred from cooling efficiency (98%) and emergency lighting warmth. No direct thermometer exists; this is a contextual estimate.",
-      "intent": "query_system_status",
-      "location_id": "unknown",
-      "location_label": "Backup Vault",
-      "narration": "The **cooling keypad** glows green, confirming **22°C**—ambient heat persists despite stabilization. The **locked data crate**’s warmth suggests residual system heat, while the **ventilation grate**’s exposed wiring hums faintly, hinting at latent instability.",
-      "player_command": "what is the current temperature level ?",
-      "turn_number": 10
+      "location_label": "Cooling Nexus",
+      "narration": "The gate seals behind you with a hiss. A vast **cooling nexus** sprawls ahead—towering **accelerator cabinets** line either side, their fronts laced with **tensor stacks** pulsing faintly blue. A **central console** hums at the far end, its screens.",
+      "player_command": "NORTH",
+      "turn_number": 2
     }
   ],
   "next_generated_room_index": 3,
+  "origin_place_id": "canonical:gate",
   "room_links": [
     {
-      "direction": "north",
+      "direction": "east",
       "from_place_id": "canonical:gate",
       "to_place_id": "generated:room_0001"
     },
     {
-      "direction": "south",
+      "direction": "west",
       "from_place_id": "generated:room_0001",
       "to_place_id": "canonical:gate"
     },
@@ -212,49 +170,50 @@
       "the institution may be manufacturing the threat"
     ],
     "atmosphere": "administrative, dry, watchful",
-    "rolling_summary": "The **cooling keypad** glows green, confirming **22°C**—ambient heat persists despite stabilization. The **locked data crate**’s warmth suggests residual system heat, while the **ventilation grate**’s exposed wiring hums faintly, hinting at latent instability.",
-    "tolerated_incoherences": [
-      "Temperature remains inferred via cooling keypad and emergency light cues. No new anomalies detected."
-    ]
+    "rolling_summary": "The gate seals behind you with a hiss. A vast **cooling nexus** sprawls ahead—towering **accelerator cabinets** line either side, their fronts laced with **tensor stacks** pulsing faintly blue. A **central console** hums at the far end, its screens.",
+    "tolerated_incoherences": []
   },
   "spatial_state": {
     "alert_level": 2,
     "anchors": [
-      "backup console",
-      "manual override switch",
-      "locked data crate",
-      "ventilation grate",
-      "emergency light",
-      "cooling keypad",
-      "service panel",
-      "maintenance crate",
-      "rack access door",
-      "cabinet latch"
+      "accelerator_cabinet",
+      "central_console",
+      "cooling_flank",
+      "service_crate",
+      "rear_hatch"
     ],
     "blocked_exits": [],
     "canonical_fixture": "",
     "desert_state": "still",
     "interior_density": "sparse",
-    "location_archetype": "archival_junction",
+    "location_archetype": "restricted_infrastructure",
     "location_id": "unknown",
-    "room_summary": "A reinforced chamber housing redundant systems and archival data modules.",
-    "room_title": "Backup Vault",
+    "room_summary": "A junction of recirculated air and redundant cooling loops, where heat is funneled away from critical compute nodes.",
+    "room_title": "Cooling Nexus",
+    "scene_constraints": [
+      "hero ai server",
+      "rack bank",
+      "cooling flank",
+      "central console",
+      "keep corridor clear",
+      "service crate",
+      "access door"
+    ],
     "spatial_anomalies": [],
-    "time_of_day": "dusk",
-    "visibility_level": "dusty",
+    "time_of_day": "night",
+    "visibility_level": "clear",
     "visible_objects": [
-      "backup console (interface, now stable data streams)",
-      "manual override switch (floor, red handle, engaged)",
-      "locked data crate (metal, stamped 'CLASSIFIED', warm)",
-      "ventilation grate (ajar, exposed wiring)",
-      "emergency light (ceiling, brighter, ambient warmth)",
-      "cooling keypad (green, temperature gauge: 22°C)",
-      "service panel (metal, no visible labels)",
+      "accelerator cabinet",
+      "tensor stack",
+      "central console",
+      "cooling grille",
+      "emergency intercom",
+      "service crate",
+      "cooling keypad",
+      "service panel",
       "maintenance crate",
       "rack access door",
-      "cabinet latch",
-      "service panel",
-      "cooling keypad"
+      "cabinet latch"
     ]
   }
 }
