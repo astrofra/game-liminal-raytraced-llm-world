@@ -4,6 +4,37 @@ Derniere mise a jour : 2026-08-03
 
 ## Ouverts
 
+### 2026-08-03 - La derive cachee du monde reste locale et ne reconcilie pas encore les boucles spatiales
+
+Statut :
+
+Ouvert.
+
+Description :
+
+Le runtime maintient maintenant une pose cachee `world_x/world_z` et des bandes qualitatives (`central core`, `perimeter seam`, `outer parapet`, `open desert`) pour guider la generation de salles et la transition vers l'exterieur.
+
+Cette derive reste volontairement simple :
+
+- elle se propage de proche en proche via les liens cardinaux
+- elle permet deja de distinguer le cote de l'entree du cote oppose
+- elle ne tente pas encore de fusionner proprement deux chemins differents qui devraient retomber sur une meme zone physique
+
+Impact :
+
+- l'impression spatiale est meilleure qu'un simple arbre de salles abstrait
+- mais la coherence globale reste seulement "vaguement euclidienne"
+- a moyen terme, deux branches eloignees pourraient encore decrire des voisinages incompatibles sans mecanisme de reconciliation
+
+Piste :
+
+Si le projet a besoin plus tard d'un vrai monde continu :
+
+- ajouter une couche de contraintes topologiques ou de relaxation globale
+- autoriser des collisions / fusions de salles quand deux trajectoires convergent
+- distinguer plus explicitement le coeur du datacenter, son enveloppe, le chemin de ronde et le desert ouvert
+- benchmarker l'impact de cette coherence supplementaire sur les prompts et sur la stabilite du compilateur hybride
+
 ### 2026-08-03 - Le vocabulaire de `scene_constraints` reste trop libre
 
 Statut :

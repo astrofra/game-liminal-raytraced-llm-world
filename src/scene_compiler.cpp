@@ -14,6 +14,7 @@ enum LayoutArchetype {
     kLayoutArchetypeThresholdExterior,
     kLayoutArchetypeRoofExterior,
     kLayoutArchetypeYardExterior,
+    kLayoutArchetypeDesertExterior,
     kLayoutArchetypeServerAisles,
     kLayoutArchetypeControlHub,
     kLayoutArchetypeBackupVault,
@@ -28,6 +29,13 @@ enum ScenePrimitive {
     kScenePrimitivePrefabCrate,
     kScenePrimitivePrefabCoolingUnit,
     kScenePrimitivePrefabAiServer,
+    kScenePrimitivePrefabCactusSentinel,
+    kScenePrimitivePrefabCactusFork,
+    kScenePrimitivePrefabCactusCluster,
+    kScenePrimitivePrefabRockLow,
+    kScenePrimitivePrefabRockWide,
+    kScenePrimitivePrefabRockTall,
+    kScenePrimitivePrefabRockSpire,
 };
 
 enum LayoutMount {
@@ -301,8 +309,27 @@ static bool ContainsSubstring(const std::string& lower_text, const char* pattern
     return pattern && lower_text.find(pattern) != std::string::npos;
 }
 
+static bool SpatialFeelsOpenDesert(const SpatialState& state)
+{
+    return strcmp(DescribeSpatialWorldBand(state), "open desert") == 0;
+}
+
+static bool SpatialFeelsOuterParapet(const SpatialState& state)
+{
+    return strcmp(DescribeSpatialWorldBand(state), "outer parapet") == 0;
+}
+
+static bool SpatialFeelsPerimeterSeam(const SpatialState& state)
+{
+    return strcmp(DescribeSpatialWorldBand(state), "perimeter seam") == 0;
+}
+
 static bool SpatialFeelsExterior(const SpatialState& state)
 {
+    if (SpatialFeelsOpenDesert(state) || SpatialFeelsOuterParapet(state)) {
+        return true;
+    }
+
     const std::string combined = BuildSpatialSemanticText(state);
     const bool hard_exterior = ContainsSubstring(combined, "exterior") ||
         ContainsSubstring(combined, "roof") ||
@@ -352,6 +379,12 @@ static LayoutArchetype InferLayoutArchetype(const SpatialState& spatial_state)
     const std::string combined = BuildSpatialSemanticText(spatial_state);
     const bool exterior = SpatialFeelsExterior(spatial_state);
 
+    if (SpatialFeelsOpenDesert(spatial_state) ||
+        ContainsSubstring(combined, "cactus") ||
+        (ContainsSubstring(combined, "rock") && ContainsSubstring(combined, "desert"))) {
+        return kLayoutArchetypeDesertExterior;
+    }
+
     if (ContainsSubstring(combined, "server") || ContainsSubstring(combined, "aisle") || ContainsSubstring(combined, "rack")) {
         return kLayoutArchetypeServerAisles;
     }
@@ -365,6 +398,9 @@ static LayoutArchetype InferLayoutArchetype(const SpatialState& spatial_state)
         return kLayoutArchetypeControlHub;
     }
     if (ContainsSubstring(combined, "roof") || ContainsSubstring(combined, "parapet") || ContainsSubstring(combined, "watch")) {
+        return kLayoutArchetypeRoofExterior;
+    }
+    if (SpatialFeelsOuterParapet(spatial_state) || SpatialFeelsPerimeterSeam(spatial_state)) {
         return kLayoutArchetypeRoofExterior;
     }
     if (exterior && (ContainsSubstring(combined, "gate") || ContainsSubstring(combined, "checkpoint") || ContainsSubstring(combined, "threshold") ||
@@ -437,6 +473,24 @@ static RoomShell BuildRoomShell(const SpatialState& spatial_state)
         shell.floor_gray = 0.12f;
         shell.wall_gray = 0.19f;
         shell.trim_gray = 0.25f;
+        break;
+    case kLayoutArchetypeDesertExterior:
+        shell.exterior = true;
+        shell.half_width = 11.5f;
+        shell.half_depth = 17.0f;
+        shell.height = 3.8f;
+        shell.corridor_half_width = 0.0f;
+        shell.front_margin = 3.6f;
+        shell.camera_eye_y = 1.82f;
+        shell.camera_eye_z = -9.8f;
+        shell.camera_target_y = 1.20f;
+        shell.camera_target_z = 10.6f;
+        shell.camera_fov = 48.0f;
+        shell.spotlight_range = 36.0f;
+        shell.spotlight_intensity = 60.0f;
+        shell.floor_gray = 0.13f;
+        shell.wall_gray = 0.17f;
+        shell.trim_gray = 0.23f;
         break;
     case kLayoutArchetypeServerAisles:
         shell.exterior = false;
@@ -690,6 +744,42 @@ static void AddAiServerSpec(std::vector<LayoutObjectSpec>* specs, const std::str
     AddObjectSpec(specs, spec);
 }
 
+static void AddCactusSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
+{
+    LayoutObjectSpec spec;
+    const int variant = index % 3;
+    spec.primitive =
+        variant == 0 ? kScenePrimitivePrefabCactusSentinel
+        : (variant == 1 ? kScenePrimitivePrefabCactusFork : kScenePrimitivePrefabCactusCluster);
+    spec.mount = kLayoutMountFloor;
+    spec.zone = zone;
+    spec.name = SanitizeIdentifier(label, "cactus", index);
+    spec.size = variant == 2 ? Vec3(1.20f, 2.10f, 1.20f) : Vec3(1.10f, 2.45f, 1.10f);
+    spec.gray = 0.25f;
+    spec.blocks_corridor = false;
+    AddObjectSpec(specs, spec);
+}
+
+static void AddRockSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
+{
+    LayoutObjectSpec spec;
+    const int variant = index % 4;
+    spec.primitive =
+        variant == 0 ? kScenePrimitivePrefabRockLow
+        : (variant == 1 ? kScenePrimitivePrefabRockWide
+        : (variant == 2 ? kScenePrimitivePrefabRockTall : kScenePrimitivePrefabRockSpire));
+    spec.mount = kLayoutMountFloor;
+    spec.zone = zone;
+    spec.name = SanitizeIdentifier(label, "rock", index);
+    spec.size =
+        variant == 0 ? Vec3(1.60f, 1.00f, 1.30f)
+        : (variant == 1 ? Vec3(2.10f, 1.20f, 1.70f)
+        : (variant == 2 ? Vec3(1.30f, 1.90f, 1.20f) : Vec3(1.00f, 2.30f, 0.95f)));
+    spec.gray = 0.23f;
+    spec.blocks_corridor = false;
+    AddObjectSpec(specs, spec);
+}
+
 static void AddCrateSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
 {
     LayoutObjectSpec spec;
@@ -757,6 +847,8 @@ static void BuildVisibleObjectSpecs(
     int ai_server_objects = 0;
     int crate_objects = 0;
     int gate_objects = 0;
+    int cactus_objects = 0;
+    int rock_objects = 0;
 
     for (size_t index = 0; index < spatial_state.visible_objects.size(); ++index) {
         const std::string label = spatial_state.visible_objects[index];
@@ -781,9 +873,28 @@ static void BuildVisibleObjectSpecs(
             continue;
         }
 
-        if (ContainsSubstring(lower, "beacon") || ContainsSubstring(lower, "lamp") || ContainsSubstring(lower, "light")) {
+        if (ContainsSubstring(lower, "beacon") || ContainsSubstring(lower, "lamp") || ContainsSubstring(lower, "light") ||
+            ContainsSubstring(lower, "marker")) {
             if (floor_objects < 9) {
                 AddBeaconSpec(specs, label, kLayoutZoneBack, static_cast<int>(index));
+                ++floor_objects;
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "cactus")) {
+            if (cactus_objects < 4 && floor_objects < 10) {
+                AddCactusSpec(specs, label, cactus_objects % 2 == 0 ? kLayoutZoneLeft : kLayoutZoneRight, static_cast<int>(index));
+                ++cactus_objects;
+                ++floor_objects;
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "rock") || ContainsSubstring(lower, "outcrop") || ContainsSubstring(lower, "boulder")) {
+            if (rock_objects < 5 && floor_objects < 10) {
+                AddRockSpec(specs, label, rock_objects % 2 == 0 ? kLayoutZoneLeft : kLayoutZoneRight, static_cast<int>(index));
+                ++rock_objects;
                 ++floor_objects;
             }
             continue;
@@ -853,7 +964,7 @@ static void BuildVisibleObjectSpecs(
         }
 
         if (ContainsSubstring(lower, "crate") || ContainsSubstring(lower, "box") || ContainsSubstring(lower, "lockbox") ||
-            ContainsSubstring(lower, "case") || ContainsSubstring(lower, "spool")) {
+            ContainsSubstring(lower, "case") || ContainsSubstring(lower, "spool") || ContainsSubstring(lower, "cache")) {
             if (crate_objects < 4 && floor_objects < 10) {
                 const LayoutZone zone = crate_objects % 2 == 0 ? kLayoutZoneRight : kLayoutZoneLeft;
                 AddCrateSpec(specs, label, zone, static_cast<int>(index));
@@ -965,7 +1076,8 @@ static void AddConstraintDrivenSpecs(
         }
 
         if (ContainsSubstring(lower, "crate") || ContainsSubstring(lower, "lockbox") ||
-            ContainsSubstring(lower, "case") || ContainsSubstring(lower, "spool")) {
+            ContainsSubstring(lower, "case") || ContainsSubstring(lower, "spool") ||
+            ContainsSubstring(lower, "cache")) {
             if (!HasPrimitive(*specs, kScenePrimitivePrefabCrate)) {
                 AddCrateSpec(specs, label, zone, static_cast<int>(300 + index));
             }
@@ -986,9 +1098,24 @@ static void AddConstraintDrivenSpecs(
             continue;
         }
 
-        if (ContainsSubstring(lower, "beacon") || ContainsSubstring(lower, "lamp") || ContainsSubstring(lower, "light")) {
+        if (ContainsSubstring(lower, "beacon") || ContainsSubstring(lower, "lamp") || ContainsSubstring(lower, "light") ||
+            ContainsSubstring(lower, "marker")) {
             if (!HasSpecNameContaining(*specs, "beacon") && !HasSpecNameContaining(*specs, "lamp") && !HasSpecNameContaining(*specs, "light")) {
                 AddBeaconSpec(specs, label, zone, static_cast<int>(360 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "cactus")) {
+            if (!HasSpecNameContaining(*specs, "cactus")) {
+                AddCactusSpec(specs, label, zone, static_cast<int>(380 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "rock") || ContainsSubstring(lower, "outcrop") || ContainsSubstring(lower, "boulder")) {
+            if (!HasSpecNameContaining(*specs, "rock")) {
+                AddRockSpec(specs, label, zone, static_cast<int>(400 + index));
             }
             continue;
         }
@@ -1033,6 +1160,20 @@ static void AddArchetypeDefaults(
         }
         if (!HasPrimitive(*specs, kScenePrimitivePrefabCoolingUnit)) {
             AddCoolingSpec(specs, "vent stack", kLayoutZoneRight, 121);
+        }
+        break;
+    case kLayoutArchetypeDesertExterior:
+        if (!HasSpecNameContaining(*specs, "cactus")) {
+            AddCactusSpec(specs, "cactus watch", kLayoutZoneLeft, 125);
+            AddCactusSpec(specs, "cactus watch east", kLayoutZoneRight, 126);
+        }
+        if (!HasSpecNameContaining(*specs, "rock")) {
+            AddRockSpec(specs, "rock outcrop west", kLayoutZoneLeft, 127);
+            AddRockSpec(specs, "rock outcrop east", kLayoutZoneRight, 128);
+            AddRockSpec(specs, "rock outcrop rear", kLayoutZoneBack, 129);
+        }
+        if (!HasSpecNameContaining(*specs, "marker")) {
+            AddBeaconSpec(specs, "range marker", kLayoutZoneBack, 130);
         }
         break;
     case kLayoutArchetypeServerAisles:
@@ -1391,7 +1532,25 @@ static void AppendExteriorShell(const RoomShell& shell, const SpatialState& spat
         shell.half_depth * 2.2f,
         shell.floor_gray);
 
-    if (shell.archetype == kLayoutArchetypeRoofExterior) {
+    if (shell.archetype == kLayoutArchetypeDesertExterior) {
+        AppendLine(
+            scene_text,
+            "box \"desert_ridge_left\" pos(%.2f,0.55,7.6) size(2.8,1.10,8.6) gray(%.2f)\n",
+            -shell.half_width * 0.52f,
+            shell.floor_gray + 0.01f);
+        AppendLine(
+            scene_text,
+            "box \"desert_ridge_right\" pos(%.2f,0.50,8.4) size(3.2,1.00,8.2) gray(%.2f)\n",
+            shell.half_width * 0.50f,
+            shell.floor_gray + 0.02f);
+        AppendLine(
+            scene_text,
+            "box \"desert_back_ridge\" pos(0.0,0.70,%.2f) size(%.1f,1.40,4.8) gray(%.2f)\n",
+            shell.half_depth * 0.78f,
+            shell.half_width * 1.45f,
+            shell.floor_gray + 0.03f);
+        return;
+    } else if (shell.archetype == kLayoutArchetypeRoofExterior) {
         AppendLine(
             scene_text,
             "box \"roof_slab\" pos(0.0,0.28,1.0) size(%.1f,0.56,%.1f) gray(%.2f)\n",
@@ -1615,6 +1774,97 @@ static void AppendPlacedObject(std::string* scene_text, const PlacedLayoutObject
             AppendLine(scene_text, " detail(%.2f)", object.spec.detail);
         }
         AppendLine(scene_text, "\n");
+        break;
+    case kScenePrimitivePrefabCactusSentinel:
+        AppendLine(
+            scene_text,
+            "prefab_cactus_sentinel \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray);
+        break;
+    case kScenePrimitivePrefabCactusFork:
+        AppendLine(
+            scene_text,
+            "prefab_cactus_fork \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray);
+        break;
+    case kScenePrimitivePrefabCactusCluster:
+        AppendLine(
+            scene_text,
+            "prefab_cactus_cluster \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray);
+        break;
+    case kScenePrimitivePrefabRockLow:
+        AppendLine(
+            scene_text,
+            "prefab_rock_low \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray);
+        break;
+    case kScenePrimitivePrefabRockWide:
+        AppendLine(
+            scene_text,
+            "prefab_rock_wide \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray);
+        break;
+    case kScenePrimitivePrefabRockTall:
+        AppendLine(
+            scene_text,
+            "prefab_rock_tall \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray);
+        break;
+    case kScenePrimitivePrefabRockSpire:
+        AppendLine(
+            scene_text,
+            "prefab_rock_spire \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray);
         break;
     case kScenePrimitiveBox:
     default:

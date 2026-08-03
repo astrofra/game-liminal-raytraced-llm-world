@@ -146,7 +146,7 @@ std::string BuildSceneFormatRuleText()
     text += "- one directive per line\n";
     text += "- do not use indented property blocks; every directive must be complete on one line\n";
     text += "- names must be quoted like \"roof\" or \"service_crate\"\n";
-    text += "- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit, prefab_ai_server\n";
+    text += "- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit, prefab_ai_server, prefab_cactus_sentinel, prefab_cactus_fork, prefab_cactus_cluster, prefab_rock_low, prefab_rock_wide, prefab_rock_tall, prefab_rock_spire\n";
     text += "- every scene must declare one room and one camera\n";
     text += "- keep geometry sparse and legible\n";
     text += "- prefer stable repeated objects through prefab_* directives\n";
@@ -166,6 +166,8 @@ std::string BuildSceneFormatRuleText()
     text += "  prefab_crate \"service_crate\" pos(2.4,0.55,-1.8) size(1.7,1.1,1.4) gray(0.20) detail(0.31)\n";
     text += "  prefab_cooling_unit \"vent_stack_left\" pos(-4.3,1.0,-3.2) size(1.0,2.0,1.0) gray(0.30) detail(0.39)\n";
     text += "  prefab_ai_server \"inference_mainframe\" pos(4.1,1.40,-2.2) size(1.7,2.8,1.7) gray(0.16) detail(0.28)\n";
+    text += "  prefab_cactus_fork \"cactus_watch\" pos(-5.4,1.2,7.8) size(1.2,2.4,1.2) gray(0.25)\n";
+    text += "  prefab_rock_wide \"rock_shelf\" pos(4.6,0.7,6.8) size(2.0,1.4,1.6) gray(0.23)\n";
     return text;
 }
 
@@ -193,6 +195,9 @@ std::string BuildSpatialBriefText(const SpatialState& spatial_state)
     AppendLabelValue(&text, "visibility_level: ", VisibilityLevelToString(spatial_state.visibility_level));
     AppendLabelValue(&text, "desert_state: ", DesertStateToString(spatial_state.desert_state));
     AppendLabelValue(&text, "interior_density: ", InteriorDensityToString(spatial_state.interior_density));
+    AppendLabelValue(&text, "world_band: ", DescribeSpatialWorldBand(spatial_state));
+    AppendLabelValue(&text, "gate_relation: ", DescribeSpatialGateRelation(spatial_state));
+    AppendLabelValue(&text, "sky_exposure: ", DescribeSpatialSkyExposure(spatial_state));
 
     char alert_buffer[64];
     snprintf(alert_buffer, sizeof(alert_buffer), "%d", spatial_state.alert_level);
@@ -286,9 +291,9 @@ std::string BuildGeneratedRoomPrompt(
     const HardState& hard_state,
     const SoftState& soft_state,
     const SpatialState& current_spatial_state,
+    const SpatialState& prospective_spatial_state,
     const std::vector<SessionTurnRecord>* recent_history,
-    CardinalDirection direction,
-    int generated_room_distance_from_origin)
+    CardinalDirection direction)
 {
     std::string text;
     text += "You invent one neighboring room for a local interactive-fiction prototype.\n";
@@ -310,12 +315,11 @@ std::string BuildGeneratedRoomPrompt(
     text += "Good scene_constraints examples: hero ai server, rack bank, cooling flank, central console, rear hatch, service crate, checkpoint gate, open horizon, keep corridor clear.\n";
     text += "datacenter_temperature_c should shape title, summary, and arrival_narration through heat, air, hum, or strain, without turning it directly into scene geometry.\n";
     text += "Set next_datacenter_temperature_c to the temperature that should remain on the HUD after entering the room. Keep it close to the current value unless the room is materially hotter or colder.\n";
-    if (generated_room_distance_from_origin > 5) {
-        text += "This room will sit more than five room-transitions away from the starting room.\n";
-        text += "It should begin opening toward the datacenter perimeter or parapet, with some sky or horizon perceptible.\n";
-        text += "Prefer exterior or semi-exterior cues such as parapet, outer walk, roof edge, exposed service deck or perimeter seam.\n";
-        text += "Include open horizon in scene_constraints unless there is a very strong reason not to.\n";
-    }
+    text += "The engine maintains a hidden spatial drift map around the datacenter. Treat the qualitative world cues below as ground truth.\n";
+    text += "If the target world band suggests outer parapet or open desert, avoid inventing a sealed ceiling.\n";
+    text += "If the target world band suggests central core or inner technical ring, prefer enclosed datacenter rooms unless there is a strong reason not to.\n";
+    text += "At the perimeter seam, partial openings, vents, service decks, broken roofs, or side exposures are plausible.\n";
+    text += "When the target world band is open desert, use desert-facing objects and cues, not only interior datacenter interfaces.\n";
     text += "Use blocked_exits to mark closed directions explicitly; directions not listed there will be treated as traversable.\n";
     text += "For every new room, decide all four cardinal directions. blocked_exits must list every blocked direction explicitly.\n";
     text += "The reverse direction back to the source room should usually stay open, so it should usually be absent from blocked_exits.\n";
@@ -343,10 +347,8 @@ std::string BuildGeneratedRoomPrompt(
 
     text += "\nTraversal request\n";
     AppendLabelValue(&text, "direction: ", CardinalDirectionToString(direction));
-    AppendLabelValue(
-        &text,
-        "distance_from_origin_after_move: ",
-        std::to_string(generated_room_distance_from_origin).c_str());
+    text += "\nTarget room world cues\n";
+    text += BuildSpatialBriefText(prospective_spatial_state);
 
     text += "\nGenerated room schema\n";
     text += BuildGeneratedRoomSchemaText();

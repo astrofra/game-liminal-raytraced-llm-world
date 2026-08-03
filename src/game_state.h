@@ -102,6 +102,9 @@ struct SpatialState {
     std::string room_summary;
     std::string location_archetype;
     std::string canonical_fixture;
+    bool world_pose_known;
+    float world_x;
+    float world_z;
     TimeOfDay time_of_day;
     VisibilityLevel visibility_level;
     DesertState desert_state;
@@ -115,6 +118,9 @@ struct SpatialState {
 
     SpatialState()
         : location_id(kLocationUnknown)
+        , world_pose_known(false)
+        , world_x(0.0f)
+        , world_z(0.0f)
         , time_of_day(kTimeUnknown)
         , visibility_level(kVisibilityUnknown)
         , desert_state(kDesertUnknown)
@@ -314,6 +320,19 @@ SoftState MakeInitialSoftState();
 void NormalizeSessionState(SessionState* state);
 int ComputeRoomGraphDistance(const SessionState& state, const std::string& from_place_id, const std::string& to_place_id);
 int ComputeDistanceFromOriginPlace(const SessionState& state, const std::string& place_id);
+bool GetCanonicalWorldPose(LocationId location_id, float* world_x, float* world_z);
+void SetSpatialWorldPose(SpatialState* state, float world_x, float world_z);
+bool ResolvePlaceWorldPose(const SessionState& state, const std::string& place_id, float* world_x, float* world_z);
+bool AssignWorldPoseFromTraversal(
+    const SessionState& state,
+    const std::string& from_place_id,
+    CardinalDirection direction,
+    SpatialState* spatial_state);
+float ComputeSpatialWorldRadius(const SpatialState& state);
+float ComputeSpatialWorldAngleDegrees(const SpatialState& state);
+const char* DescribeSpatialWorldBand(const SpatialState& state);
+const char* DescribeSpatialGateRelation(const SpatialState& state);
+const char* DescribeSpatialSkyExposure(const SpatialState& state);
 bool SerializeSessionStateToJsonString(const SessionState& state, std::string* json_text);
 bool ParseSessionStateFromJson(
     const char* json_text,

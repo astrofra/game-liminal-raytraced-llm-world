@@ -552,19 +552,29 @@ int main(int argc, char** argv)
                     true)
                     .c_str());
         } else if (dump_generated_room_prompt) {
-            const int current_distance_from_origin =
-                liminal::ComputeDistanceFromOriginPlace(session_state, session_state.current_place_id);
-            const int generated_room_distance_from_origin =
-                current_distance_from_origin < 0 ? 1 : current_distance_from_origin + 1;
+            liminal::SpatialState prospective_spatial_state;
+            prospective_spatial_state.location_id = liminal::kLocationUnknown;
+            prospective_spatial_state.time_of_day = session_state.spatial_state.time_of_day;
+            prospective_spatial_state.visibility_level = session_state.spatial_state.visibility_level;
+            prospective_spatial_state.desert_state = session_state.spatial_state.desert_state;
+            prospective_spatial_state.interior_density = session_state.spatial_state.interior_density;
+            prospective_spatial_state.alert_level = session_state.spatial_state.alert_level > 0
+                ? session_state.spatial_state.alert_level
+                : session_state.hard_state.alert_level;
+            liminal::AssignWorldPoseFromTraversal(
+                session_state,
+                session_state.current_place_id,
+                generated_room_direction,
+                &prospective_spatial_state);
             printf(
                 "%s\n",
                 liminal::BuildGeneratedRoomPrompt(
                     session_state.hard_state,
                     session_state.soft_state,
                     session_state.spatial_state,
+                    prospective_spatial_state,
                     &session_state.history,
-                    generated_room_direction,
-                    generated_room_distance_from_origin)
+                    generated_room_direction)
                     .c_str());
         } else {
             printf("%s\n", liminal::BuildSceneAuditPrompt(session_state.spatial_state).c_str());

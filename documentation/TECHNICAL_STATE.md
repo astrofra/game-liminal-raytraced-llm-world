@@ -1,6 +1,6 @@
 # Technical State
 
-Derniere mise a jour : 2026-08-02
+Derniere mise a jour : 2026-08-03
 
 ## Resume
 
@@ -59,6 +59,13 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - `prefab_crate`
   - `prefab_cooling_unit`
   - `prefab_ai_server`
+  - `prefab_cactus_sentinel`
+  - `prefab_cactus_fork`
+  - `prefab_cactus_cluster`
+  - `prefab_rock_low`
+  - `prefab_rock_wide`
+  - `prefab_rock_tall`
+  - `prefab_rock_spire`
 - Conversion des primitives `plane` et `box` vers le backend triangle/BVH existant.
 - Premiere scene liminale handcraftee dans `assets/scenes/liminal_service_corridor.scene`.
 - Trois scenes canoniques de validation spatiale handcraftees :
@@ -109,6 +116,19 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
   - cache persistant du `scene_text` et des liens cardinaux en session
   - retour possible vers une salle deja decouverte sans repasser par le LLM
   - coexistence entre lieux canoniques et lieux generes dans la meme session
+- Premier etat cache de monde "vaguement euclidien" pour les salles improvisees :
+  - pose cachee `world_x/world_z` stockee dans `SpatialState`
+  - derives publics `world_band`, `gate_relation` et `sky_exposure`
+  - bandes qualitatives `central core`, `inner technical ring`, `perimeter seam`, `outer parapet`, `open desert`
+  - propagation de la pose a travers les liens cardinaux et conservation en session JSON
+- Generation de salles maintenant guidee par cette derive cachee :
+  - le prompt de metadata ne recoit plus un simple seuil de distance
+  - il recoit des cues qualitatifs sur la bande du monde, le cote du datacenter et l'ouverture vers le ciel
+  - les salles lointaines peuvent donc tendre vers parapet puis desert sans plafond, plutot que rester des interieurs fermes
+- Compilateur hybride `SpatialState -> .scene` etendu :
+  - bascule entre interieur, parapet et desert ouvert selon l'etat cache et les cues semantiques
+  - shells desertiques sans masse de datacenter ni plafond
+  - injection procedurale de cactus, rochers et marqueurs de desert
 - Premiere HMI `SDL3` desktop :
   - event loop non bloquante
   - worker thread dedie a l'inference et au raytracing
@@ -163,11 +183,11 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
 - [../src/sdl_frontend.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/sdl_frontend.cpp:1) : fenetre, transcript, saisie texte, worker thread et presentation streaming.
 - [../src/main.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/main.cpp:76) : point d'entree CLI, parsing des options, telemetrie basique et premieres commandes de debug fonctionnel.
 - [../src/game_state.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/game_state.h:1) : structures du monde, des deltas et du contrat de tour.
-- [../src/game_state.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/game_state.cpp:1) : enums, etats initiaux et resumes de debug.
+- [../src/game_state.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/game_state.cpp:1) : enums, etats initiaux, pose cachee du monde et resumes de debug.
 - [../src/turn_contract.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/turn_contract.h:1) : interface de generation des prompts structure et audit.
 - [../src/turn_contract.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/turn_contract.cpp:1) : texte du schema de sortie, brief spatial et prompts v1.
 - [../src/scene_compiler.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene_compiler.h:1) : interface de compilation d'un `SpatialState` vers une scene rendable.
-- [../src/scene_compiler.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene_compiler.cpp:1) : mapping des lieux canoniques et audit memoire d'une scene candidate.
+- [../src/scene_compiler.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene_compiler.cpp:1) : mapping des lieux canoniques, compilation hybride interior/parapet/desert et audit memoire d'une scene candidate.
 - [../src/llm_runtime.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/llm_runtime.h:1) : interface minimale du runtime `llama.cpp`.
 - [../src/llm_runtime.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/llm_runtime.cpp:1) : initialisation backend, generation texte `llama.cpp`, introspection GPU et configuration de l'inference.
 - [../src/turn_runner.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/turn_runner.h:1) : interface de la boucle headless d'un tour.

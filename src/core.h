@@ -161,6 +161,7 @@ inline bool IsNearBlack(const Vec3& value)
 enum MaterialSemantic {
     kMaterialSemanticNeutral = 0,
     kMaterialSemanticDesert,
+    kMaterialSemanticCactus,
     kMaterialSemanticRackLed,
 };
 

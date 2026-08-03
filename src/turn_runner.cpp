@@ -681,6 +681,21 @@ static void AppendShortSentenceIfMissing(std::string* text, const char* sentence
 
 static bool ListContainsSubstring(const std::vector<std::string>& values, const char* pattern);
 
+static bool SpatialFeelsOpenDesert(const SpatialState& state)
+{
+    return strcmp(DescribeSpatialWorldBand(state), "open desert") == 0;
+}
+
+static bool SpatialFeelsOuterParapet(const SpatialState& state)
+{
+    return strcmp(DescribeSpatialWorldBand(state), "outer parapet") == 0;
+}
+
+static bool SpatialFeelsPerimeterSeam(const SpatialState& state)
+{
+    return strcmp(DescribeSpatialWorldBand(state), "perimeter seam") == 0;
+}
+
 static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
 {
     if (!spatial_state) {
@@ -697,9 +712,20 @@ static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
         combined.find("perimeter") != std::string::npos ||
         combined.find("parapet") != std::string::npos ||
         combined.find("horizon") != std::string::npos ||
-        combined.find("sky") != std::string::npos;
+        combined.find("sky") != std::string::npos ||
+        SpatialFeelsOuterParapet(*spatial_state) ||
+        SpatialFeelsOpenDesert(*spatial_state);
+    const bool desert = SpatialFeelsOpenDesert(*spatial_state);
+    const bool perimeter = SpatialFeelsPerimeterSeam(*spatial_state) || SpatialFeelsOuterParapet(*spatial_state);
 
-    if (exterior) {
+    if (desert) {
+        AddUniqueString(&spatial_state->visible_objects, "survey cache");
+        AddUniqueString(&spatial_state->visible_objects, "range marker");
+        AddUniqueString(&spatial_state->visible_objects, "buried service hatch");
+        AddUniqueString(&spatial_state->visible_objects, "wind-torn sign");
+        AddUniqueString(&spatial_state->visible_objects, "rock outcrop");
+        AddUniqueString(&spatial_state->visible_objects, "cactus cluster");
+    } else if (exterior || perimeter) {
         AddUniqueString(&spatial_state->visible_objects, "warning placard");
         AddUniqueString(&spatial_state->visible_objects, "service crate");
         AddUniqueString(&spatial_state->visible_objects, "intercom post");
@@ -751,8 +777,15 @@ static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
         ListContainsSubstring(spatial_state->visible_objects, "portal")) {
         AddUniqueString(&spatial_state->scene_constraints, exterior ? "checkpoint gate" : "access door");
     }
-    if (exterior) {
+    if (desert) {
         AddUniqueString(&spatial_state->scene_constraints, "open horizon");
+        AddUniqueString(&spatial_state->scene_constraints, "desert scatter");
+        AddUniqueString(&spatial_state->scene_constraints, "rock outcrop");
+    } else if (exterior || perimeter) {
+        AddUniqueString(&spatial_state->scene_constraints, "open horizon");
+        if (perimeter) {
+            AddUniqueString(&spatial_state->scene_constraints, "perimeter seam");
+        }
     } else {
         AddUniqueString(&spatial_state->scene_constraints, "keep corridor clear");
     }
@@ -797,6 +830,24 @@ static std::string BuildGeneratedPlaceId(int room_index)
     char buffer[64];
     snprintf(buffer, sizeof(buffer), "generated:room_%04d", room_index > 0 ? room_index : 1);
     return buffer;
+}
+
+static SpatialState BuildProspectiveSpatialStateForTraversal(
+    const SessionState& session_state,
+    const std::string& from_place_id,
+    CardinalDirection direction)
+{
+    SpatialState prospective;
+    prospective.location_id = kLocationUnknown;
+    prospective.time_of_day = session_state.spatial_state.time_of_day;
+    prospective.visibility_level = session_state.spatial_state.visibility_level;
+    prospective.desert_state = session_state.spatial_state.desert_state;
+    prospective.interior_density = session_state.spatial_state.interior_density;
+    prospective.alert_level = session_state.spatial_state.alert_level > 0
+        ? session_state.spatial_state.alert_level
+        : session_state.hard_state.alert_level;
+    AssignWorldPoseFromTraversal(session_state, from_place_id, direction, &prospective);
+    return prospective;
 }
 
 static const GeneratedRoom* FindGeneratedRoomById(const SessionState& session_state, const std::string& room_id)
@@ -872,6 +923,10 @@ static void AddGeneratedRoomUnique(std::vector<GeneratedRoom>* rooms, const Gene
 
 static bool SpatialFeelsExterior(const SpatialState& state)
 {
+    if (SpatialFeelsOuterParapet(state) || SpatialFeelsOpenDesert(state)) {
+        return true;
+    }
+
     const std::string combined = BuildSpatialSemanticText(state);
     return combined.find("exterior") != std::string::npos ||
         combined.find("roof") != std::string::npos ||
@@ -962,7 +1017,7 @@ static void ApplyAiServerBiasToDraft(GeneratedRoomDraft* draft)
     AppendShortSentenceIfMissing(&draft->arrival_narration, "A dark inference mainframe dominates one side.");
 }
 
-static void ApplyFarFieldSkyBiasToDraft(GeneratedRoomDraft* draft)
+static void ApplyPerimeterSkyBiasToDraft(GeneratedRoomDraft* draft)
 {
     if (!draft) {
         return;
@@ -982,18 +1037,41 @@ static void ApplyFarFieldSkyBiasToDraft(GeneratedRoomDraft* draft)
     AppendShortSentenceIfMissing(&draft->arrival_narration, "Beyond the concrete lip, the sky and horizon are visible.");
 }
 
-static void ApplyGeneratedRoomWorldBiases(
-    GeneratedRoomDraft* draft,
-    CardinalDirection direction,
-    int generated_room_distance_from_origin)
+static void ApplyOpenDesertBiasToDraft(GeneratedRoomDraft* draft)
+{
+    if (!draft) {
+        return;
+    }
+
+    draft->spatial_state.location_archetype = "desert perimeter exterior";
+    draft->spatial_state.interior_density = kInteriorSparse;
+    AddUniqueString(&draft->spatial_state.anchors, "desert");
+    AddUniqueString(&draft->spatial_state.anchors, "horizon");
+    AddUniqueString(&draft->spatial_state.anchors, "open_sky");
+    AddUniqueString(&draft->spatial_state.visible_objects, "survey cache");
+    AddUniqueString(&draft->spatial_state.visible_objects, "range marker");
+    AddUniqueString(&draft->spatial_state.visible_objects, "buried service hatch");
+    AddUniqueString(&draft->spatial_state.visible_objects, "rock outcrop");
+    AddUniqueString(&draft->spatial_state.visible_objects, "cactus cluster");
+    AddUniqueString(&draft->spatial_state.scene_constraints, "open horizon");
+    AddUniqueString(&draft->spatial_state.scene_constraints, "desert scatter");
+    AddUniqueString(&draft->spatial_state.scene_constraints, "rock outcrop");
+    RemoveString(&draft->spatial_state.scene_constraints, "keep corridor clear");
+    AppendShortSentenceIfMissing(&draft->summary, "The datacenter falls away into exposed desert and open sky.");
+    AppendShortSentenceIfMissing(&draft->arrival_narration, "Wind crosses open ground beyond the datacenter edge.");
+}
+
+static void ApplyGeneratedRoomWorldBiases(GeneratedRoomDraft* draft, CardinalDirection direction)
 {
     if (!draft) {
         return;
     }
 
     ApplyAiServerBiasToDraft(draft);
-    if (generated_room_distance_from_origin > 5) {
-        ApplyFarFieldSkyBiasToDraft(draft);
+    if (SpatialFeelsOpenDesert(draft->spatial_state)) {
+        ApplyOpenDesertBiasToDraft(draft);
+    } else if (SpatialFeelsOuterParapet(draft->spatial_state) || SpatialFeelsPerimeterSeam(draft->spatial_state)) {
+        ApplyPerimeterSkyBiasToDraft(draft);
     }
     FinalizeGeneratedRoomDraft(draft, direction);
 }
@@ -1001,14 +1079,21 @@ static void ApplyGeneratedRoomWorldBiases(
 static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(
     const SessionState& initial_session_state,
     CardinalDirection direction,
-    int generated_room_distance_from_origin)
+    const SpatialState& prospective_spatial_state)
 {
     GeneratedRoomDraft draft;
     const SpatialState& origin = initial_session_state.spatial_state;
-    const bool exterior = SpatialFeelsExterior(origin) || generated_room_distance_from_origin > 5;
+    const bool desert = SpatialFeelsOpenDesert(prospective_spatial_state);
+    const bool exterior =
+        desert || SpatialFeelsOuterParapet(prospective_spatial_state) ||
+        SpatialFeelsPerimeterSeam(prospective_spatial_state) ||
+        SpatialFeelsExterior(origin);
 
     draft.spatial_state.location_id = kLocationUnknown;
     draft.spatial_state.canonical_fixture.clear();
+    draft.spatial_state.world_pose_known = prospective_spatial_state.world_pose_known;
+    draft.spatial_state.world_x = prospective_spatial_state.world_x;
+    draft.spatial_state.world_z = prospective_spatial_state.world_z;
     draft.spatial_state.time_of_day = origin.time_of_day;
     draft.spatial_state.visibility_level = origin.visibility_level;
     draft.spatial_state.desert_state = origin.desert_state;
@@ -1017,45 +1102,62 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(
 
     switch (direction) {
     case kDirectionNorth:
-        draft.title = exterior ? "North Perimeter Walk" : "North Service Bay";
-        draft.summary = exterior
+        draft.title = desert ? "North Desert Reach" : (exterior ? "North Perimeter Walk" : "North Service Bay");
+        draft.summary = desert
+            ? "Open ground stretching away from the datacenter, with wind, markers and scattered rock."
+            : (exterior
             ? "A narrow exterior walk skirting the datacenter shell, open to dust and horizon."
-            : "A service bay beyond the main route, lined with maintenance hardware and heavy shadow.";
+            : "A service bay beyond the main route, lined with maintenance hardware and heavy shadow.");
         break;
     case kDirectionEast:
-        draft.title = exterior ? "East Service Yard" : "East Switching Hall";
-        draft.summary = exterior
+        draft.title = desert ? "East Desert Margin" : (exterior ? "East Service Yard" : "East Switching Hall");
+        draft.summary = desert
+            ? "A dry flank where the compound gives way to sand, range markers and sparse cover."
+            : (exterior
             ? "An exposed yard of crates, conduit and service fixtures at the edge of the compound."
-            : "A lateral switching hall with conduit runs, racks and a hard industrial silence.";
+            : "A lateral switching hall with conduit runs, racks and a hard industrial silence.");
         break;
     case kDirectionSouth:
-        draft.title = exterior ? "South Ramp" : "South Cooling Trench";
-        draft.summary = exterior
+        draft.title = desert ? "South Dune Cut" : (exterior ? "South Ramp" : "South Cooling Trench");
+        draft.summary = desert
+            ? "A shallow cut in the sand near buried service hardware and a half-lost warning sign."
+            : (exterior
             ? "A sloped service ramp where the compound thins toward the outer ground."
-            : "A cooling trench and access lane where airflow and machinery dominate the room.";
+            : "A cooling trench and access lane where airflow and machinery dominate the room.");
         break;
     case kDirectionWest:
-        draft.title = exterior ? "West Maintenance Apron" : "West Access Lane";
-        draft.summary = exterior
+        draft.title = desert ? "West Wind Margin" : (exterior ? "West Maintenance Apron" : "West Access Lane");
+        draft.summary = desert
+            ? "A wind-scoured margin of stone, cactus silhouettes and abandoned service traces."
+            : (exterior
             ? "A maintenance apron of parapets, housings and scattered equipment facing the darkening desert."
-            : "An access lane between utility blocks, with spare equipment stacked against the walls.";
+            : "An access lane between utility blocks, with spare equipment stacked against the walls.");
         break;
     default:
-        draft.title = exterior ? "Peripheral Exterior" : "Utility Interior";
-        draft.summary = exterior
+        draft.title = desert ? "Outer Desert" : (exterior ? "Peripheral Exterior" : "Utility Interior");
+        draft.summary = desert
+            ? "Open desert beyond the datacenter perimeter."
+            : (exterior
             ? "A sparse exterior threshold around the datacenter perimeter."
-            : "A utility interior neighboring the current room.";
+            : "A utility interior neighboring the current room.");
         break;
     }
 
     draft.arrival_narration = std::string("You move ") + CardinalDirectionToString(direction) + ". " + draft.summary;
     draft.spatial_state.room_title = draft.title;
     draft.spatial_state.room_summary = draft.summary;
-    draft.spatial_state.location_archetype = exterior ? "generated_perimeter_space" : "generated_service_interior";
-    draft.spatial_state.anchors.push_back(exterior ? "perimeter" : "service_lane");
-    draft.spatial_state.anchors.push_back(exterior ? "compound_wall" : "utility_wall");
-    draft.spatial_state.anchors.push_back(exterior ? "equipment_pad" : "maintenance_lane");
-    if (exterior) {
+    draft.spatial_state.location_archetype =
+        desert ? "generated_desert_exterior" : (exterior ? "generated_perimeter_space" : "generated_service_interior");
+    draft.spatial_state.anchors.push_back(desert ? "desert" : (exterior ? "perimeter" : "service_lane"));
+    draft.spatial_state.anchors.push_back(desert ? "horizon" : (exterior ? "compound_wall" : "utility_wall"));
+    draft.spatial_state.anchors.push_back(desert ? "open_sky" : (exterior ? "equipment_pad" : "maintenance_lane"));
+    if (desert) {
+        draft.spatial_state.visible_objects.push_back("survey cache");
+        draft.spatial_state.visible_objects.push_back("range marker");
+        draft.spatial_state.visible_objects.push_back("rock outcrop");
+        draft.spatial_state.scene_constraints.push_back("open horizon");
+        draft.spatial_state.scene_constraints.push_back("desert scatter");
+    } else if (exterior) {
         draft.spatial_state.visible_objects.push_back("service crate");
         draft.spatial_state.visible_objects.push_back("badge reader");
         draft.spatial_state.visible_objects.push_back("warning placard");
@@ -1068,12 +1170,13 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(
         draft.spatial_state.scene_constraints.push_back("keep corridor clear");
         draft.spatial_state.scene_constraints.push_back("rack bank");
     }
-    ApplyGeneratedRoomWorldBiases(&draft, direction, generated_room_distance_from_origin);
+    ApplyGeneratedRoomWorldBiases(&draft, direction);
     return draft;
 }
 
 static std::string BuildFallbackGeneratedRoomSceneText(const SpatialState& spatial_state)
 {
+    const bool desert = SpatialFeelsOpenDesert(spatial_state);
     const bool exterior = SpatialFeelsExterior(spatial_state);
     const bool wants_gate =
         ListContainsSubstring(spatial_state.visible_objects, "gate") ||
@@ -1092,7 +1195,20 @@ static std::string BuildFallbackGeneratedRoomSceneText(const SpatialState& spati
     std::string text;
     text += "room \"generated room\"\n";
 
-    if (exterior) {
+    if (desert) {
+        text += "camera eye(0.0,1.82,-9.6) target(0.0,1.18,9.8) up(0.0,1.0,0.0) fov(48.0)\n";
+        text += "spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\n";
+        text += "sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(97)\n";
+        text += "plane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(24.0,34.0) gray(0.13)\n";
+        text += "box \"desert_ridge_left\" pos(-5.2,0.55,7.0) size(3.0,1.10,8.2) gray(0.14)\n";
+        text += "box \"desert_ridge_right\" pos(5.4,0.50,8.2) size(3.4,1.00,7.8) gray(0.15)\n";
+        text += "box \"desert_back_ridge\" pos(0.0,0.72,12.6) size(12.6,1.44,4.8) gray(0.16)\n";
+        text += "prefab_cactus_fork \"cactus_watch\" pos(-4.8,1.2,6.4) size(1.2,2.4,1.2) gray(0.25)\n";
+        text += "prefab_cactus_cluster \"cactus_patch\" pos(4.2,1.0,8.1) size(1.4,2.0,1.4) gray(0.24)\n";
+        text += "prefab_rock_wide \"rock_shelf\" pos(2.8,0.7,5.8) size(2.0,1.4,1.6) gray(0.23)\n";
+        text += "prefab_rock_low \"rock_low\" pos(-2.4,0.5,9.2) size(1.6,1.0,1.3) gray(0.22)\n";
+        text += "prefab_crate \"survey_cache\" pos(0.6,0.55,3.8) size(1.5,1.0,1.2) gray(0.20) detail(0.30)\n";
+    } else if (exterior) {
         text += "camera eye(0.0,1.82,-8.4) target(0.0,1.20,8.2) up(0.0,1.0,0.0) fov(46.0)\n";
         text += "spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(72.0)\n";
         text += "sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(91)\n";
@@ -1453,6 +1569,11 @@ static bool ApplyPlaceToState(
             SetError(error_buffer, error_buffer_size, "Cannot build canonical place: %s", place_id.c_str());
             return false;
         }
+        float world_x = 0.0f;
+        float world_z = 0.0f;
+        if (GetCanonicalWorldPose(location_id, &world_x, &world_z)) {
+            SetSpatialWorldPose(spatial_state, world_x, world_z);
+        }
         EnsureActionableVisibleObjects(spatial_state);
         hard_state->current_location_id = location_id;
         if (spatial_state->alert_level > 0) {
@@ -1724,18 +1845,18 @@ bool RunHeadlessTurnFromState(
             return true;
         }
 
-        const int current_distance_from_origin =
-            ComputeDistanceFromOriginPlace(initial_session_state, result->initial_place_id);
-        const int generated_room_distance_from_origin =
-            current_distance_from_origin < 0 ? 1 : current_distance_from_origin + 1;
+        const SpatialState prospective_spatial_state = BuildProspectiveSpatialStateForTraversal(
+            initial_session_state,
+            result->initial_place_id,
+            traversal_direction);
 
         const std::string room_prompt = BuildGeneratedRoomPrompt(
             result->initial_hard_state,
             result->initial_soft_state,
             result->initial_spatial_state,
+            prospective_spatial_state,
             &initial_session_state.history,
-            traversal_direction,
-            generated_room_distance_from_origin);
+            traversal_direction);
 
         std::vector<LlmPromptMessage> room_messages;
         room_messages.push_back(LlmPromptMessage());
@@ -1779,7 +1900,7 @@ bool RunHeadlessTurnFromState(
                 draft = MakeFallbackGeneratedRoomDraft(
                     initial_session_state,
                     traversal_direction,
-                    generated_room_distance_from_origin);
+                    prospective_spatial_state);
                 used_room_metadata_fallback = true;
                 result->used_turn_fallback = true;
                 result->turn_result.clarification = std::string("Generated room metadata fallback was used: ") + metadata_error;
@@ -1788,7 +1909,7 @@ bool RunHeadlessTurnFromState(
             draft = MakeFallbackGeneratedRoomDraft(
                 initial_session_state,
                 traversal_direction,
-                generated_room_distance_from_origin);
+                prospective_spatial_state);
             used_room_metadata_fallback = true;
             result->used_turn_fallback = true;
             result->turn_result.clarification =
@@ -1813,6 +1934,11 @@ bool RunHeadlessTurnFromState(
         if (draft.spatial_state.interior_density == kInteriorUnknown) {
             draft.spatial_state.interior_density = result->initial_spatial_state.interior_density;
         }
+        if (!draft.spatial_state.world_pose_known) {
+            draft.spatial_state.world_pose_known = prospective_spatial_state.world_pose_known;
+            draft.spatial_state.world_x = prospective_spatial_state.world_x;
+            draft.spatial_state.world_z = prospective_spatial_state.world_z;
+        }
         if (draft.spatial_state.room_title.empty()) {
             draft.spatial_state.room_title = draft.title.empty() ? "Generated Room" : draft.title;
         }
@@ -1824,7 +1950,7 @@ bool RunHeadlessTurnFromState(
                 ? std::string("You move ") + CardinalDirectionToString(traversal_direction) + " into " + draft.spatial_state.room_title + "."
                 : draft.summary;
         }
-        ApplyGeneratedRoomWorldBiases(&draft, traversal_direction, generated_room_distance_from_origin);
+        ApplyGeneratedRoomWorldBiases(&draft, traversal_direction);
 
         std::string generated_scene_text;
         Scene generated_scene;

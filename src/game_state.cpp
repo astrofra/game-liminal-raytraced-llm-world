@@ -1,5 +1,6 @@
 #include "game_state.h"
 
+#include <math.h>
 #include <string.h>
 
 #include "nlohmann/json.hpp"
@@ -89,6 +90,14 @@ static bool ReadBoolNode(const json& object, const char* key, bool default_value
     return object[key].get<bool>();
 }
 
+static float ReadFloatNode(const json& object, const char* key, float default_value)
+{
+    if (!object.is_object() || !object.contains(key) || !object[key].is_number()) {
+        return default_value;
+    }
+    return object[key].get<float>();
+}
+
 static void SetError(char* buffer, size_t buffer_size, const char* format, const char* argument)
 {
     if (!buffer || buffer_size == 0) {
@@ -109,6 +118,66 @@ static std::string BuildPlaceLabelFromSpatialState(const SpatialState& state)
         return state.location_archetype;
     }
     return "unknown";
+}
+
+static const float kHiddenWorldStep = 3.0f;
+static const float kHiddenWorldCoreRadius = 2.5f;
+static const float kHiddenWorldInnerRingRadius = 6.5f;
+static const float kHiddenWorldPerimeterRadius = 10.5f;
+static const float kHiddenWorldParapetRadius = 13.5f;
+static const float kPiDegrees = 57.2957795130823208768f;
+
+enum HiddenWorldBand {
+    kHiddenWorldBandUnknown = 0,
+    kHiddenWorldBandCentralCore,
+    kHiddenWorldBandInnerTechnicalRing,
+    kHiddenWorldBandPerimeterSeam,
+    kHiddenWorldBandOuterParapet,
+    kHiddenWorldBandOpenDesert,
+};
+
+static void ApplyTraversalStep(CardinalDirection direction, float* world_x, float* world_z)
+{
+    if (!world_x || !world_z) {
+        return;
+    }
+
+    switch (direction) {
+    case kDirectionNorth:
+        *world_z += kHiddenWorldStep;
+        break;
+    case kDirectionEast:
+        *world_x += kHiddenWorldStep;
+        break;
+    case kDirectionSouth:
+        *world_z -= kHiddenWorldStep;
+        break;
+    case kDirectionWest:
+        *world_x -= kHiddenWorldStep;
+        break;
+    default:
+        break;
+    }
+}
+
+static HiddenWorldBand ClassifyHiddenWorldBandFromRadius(float radius)
+{
+    if (radius < 0.0f) {
+        return kHiddenWorldBandUnknown;
+    }
+    if (radius <= kHiddenWorldCoreRadius) {
+        return kHiddenWorldBandCentralCore;
+    }
+    if (radius <= kHiddenWorldInnerRingRadius) {
+        return kHiddenWorldBandInnerTechnicalRing;
+    }
+    if (radius <= kHiddenWorldPerimeterRadius) {
+        return kHiddenWorldBandPerimeterSeam;
+    }
+    if (radius <= kHiddenWorldParapetRadius) {
+        return kHiddenWorldBandOuterParapet;
+    }
+    return kHiddenWorldBandOpenDesert;
 }
 
 static json MakeHardStateJson(const HardState& state)
@@ -147,6 +216,9 @@ static json MakeSpatialStateJson(const SpatialState& state)
     node["room_summary"] = state.room_summary;
     node["location_archetype"] = state.location_archetype;
     node["canonical_fixture"] = state.canonical_fixture;
+    node["world_pose_known"] = state.world_pose_known;
+    node["world_x"] = state.world_x;
+    node["world_z"] = state.world_z;
     node["time_of_day"] = TimeOfDayToString(state.time_of_day);
     node["visibility_level"] = VisibilityLevelToString(state.visibility_level);
     node["desert_state"] = DesertStateToString(state.desert_state);
@@ -262,6 +334,9 @@ static void ParseSpatialStateNode(const json& node, SpatialState* state)
     state->room_summary = ReadStringNode(node, "room_summary");
     state->location_archetype = ReadStringNode(node, "location_archetype");
     state->canonical_fixture = ReadStringNode(node, "canonical_fixture");
+    state->world_pose_known = ReadBoolNode(node, "world_pose_known", state->world_pose_known);
+    state->world_x = ReadFloatNode(node, "world_x", state->world_x);
+    state->world_z = ReadFloatNode(node, "world_z", state->world_z);
     ParseTimeOfDay(ReadStringNode(node, "time_of_day").c_str(), &state->time_of_day);
     ParseVisibilityLevel(ReadStringNode(node, "visibility_level").c_str(), &state->visibility_level);
     ParseDesertState(ReadStringNode(node, "desert_state").c_str(), &state->desert_state);
@@ -390,6 +465,33 @@ static bool IsKnownPlaceIdInSession(const SessionState& state, const std::string
             return true;
         }
     }
+    return false;
+}
+
+static bool TryInferWorldPoseFromLinks(const SessionState& state, const std::string& place_id, float* world_x, float* world_z)
+{
+    if (!world_x || !world_z || place_id.empty()) {
+        return false;
+    }
+
+    for (size_t index = 0; index < state.room_links.size(); ++index) {
+        const RoomLink& link = state.room_links[index];
+        float base_x = 0.0f;
+        float base_z = 0.0f;
+        if (link.to_place_id == place_id && ResolvePlaceWorldPose(state, link.from_place_id, &base_x, &base_z)) {
+            ApplyTraversalStep(link.direction, &base_x, &base_z);
+            *world_x = base_x;
+            *world_z = base_z;
+            return true;
+        }
+        if (link.from_place_id == place_id && ResolvePlaceWorldPose(state, link.to_place_id, &base_x, &base_z)) {
+            ApplyTraversalStep(OppositeCardinalDirection(link.direction), &base_x, &base_z);
+            *world_x = base_x;
+            *world_z = base_z;
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -740,6 +842,159 @@ std::string DescribeCurrentPlaceLabel(const SessionState& state)
     return DescribePlaceLabel(state, state.current_place_id);
 }
 
+bool GetCanonicalWorldPose(LocationId location_id, float* world_x, float* world_z)
+{
+    if (!world_x || !world_z) {
+        return false;
+    }
+
+    switch (location_id) {
+    case kLocationGate:
+        *world_x = 0.0f;
+        *world_z = -6.0f;
+        return true;
+    case kLocationServerAisles:
+        *world_x = 0.0f;
+        *world_z = -1.5f;
+        return true;
+    case kLocationRoofWatch:
+        *world_x = 0.0f;
+        *world_z = 0.0f;
+        return true;
+    default:
+        break;
+    }
+
+    return false;
+}
+
+void SetSpatialWorldPose(SpatialState* state, float world_x, float world_z)
+{
+    if (!state) {
+        return;
+    }
+
+    state->world_pose_known = true;
+    state->world_x = world_x;
+    state->world_z = world_z;
+}
+
+bool ResolvePlaceWorldPose(const SessionState& state, const std::string& place_id, float* world_x, float* world_z)
+{
+    if (!world_x || !world_z || place_id.empty()) {
+        return false;
+    }
+
+    if (!state.current_place_id.empty() && place_id == state.current_place_id && state.spatial_state.world_pose_known) {
+        *world_x = state.spatial_state.world_x;
+        *world_z = state.spatial_state.world_z;
+        return true;
+    }
+
+    LocationId location_id = kLocationUnknown;
+    if (ParseCanonicalPlaceId(place_id, &location_id)) {
+        return GetCanonicalWorldPose(location_id, world_x, world_z);
+    }
+
+    for (size_t index = 0; index < state.generated_rooms.size(); ++index) {
+        if (state.generated_rooms[index].room_id == place_id && state.generated_rooms[index].spatial_state.world_pose_known) {
+            *world_x = state.generated_rooms[index].spatial_state.world_x;
+            *world_z = state.generated_rooms[index].spatial_state.world_z;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool AssignWorldPoseFromTraversal(
+    const SessionState& state,
+    const std::string& from_place_id,
+    CardinalDirection direction,
+    SpatialState* spatial_state)
+{
+    if (!spatial_state || direction == kDirectionUnknown) {
+        return false;
+    }
+
+    float world_x = 0.0f;
+    float world_z = 0.0f;
+    if (!ResolvePlaceWorldPose(state, from_place_id, &world_x, &world_z)) {
+        return false;
+    }
+
+    ApplyTraversalStep(direction, &world_x, &world_z);
+    SetSpatialWorldPose(spatial_state, world_x, world_z);
+    return true;
+}
+
+float ComputeSpatialWorldRadius(const SpatialState& state)
+{
+    if (!state.world_pose_known) {
+        return -1.0f;
+    }
+    return sqrtf(state.world_x * state.world_x + state.world_z * state.world_z);
+}
+
+float ComputeSpatialWorldAngleDegrees(const SpatialState& state)
+{
+    if (!state.world_pose_known) {
+        return 0.0f;
+    }
+    return atan2f(state.world_x, -state.world_z) * kPiDegrees;
+}
+
+const char* DescribeSpatialWorldBand(const SpatialState& state)
+{
+    switch (ClassifyHiddenWorldBandFromRadius(ComputeSpatialWorldRadius(state))) {
+    case kHiddenWorldBandCentralCore:
+        return "central core";
+    case kHiddenWorldBandInnerTechnicalRing:
+        return "inner technical ring";
+    case kHiddenWorldBandPerimeterSeam:
+        return "perimeter seam";
+    case kHiddenWorldBandOuterParapet:
+        return "outer parapet";
+    case kHiddenWorldBandOpenDesert:
+        return "open desert";
+    default:
+        return "unknown";
+    }
+}
+
+const char* DescribeSpatialGateRelation(const SpatialState& state)
+{
+    if (!state.world_pose_known) {
+        return "unknown";
+    }
+
+    const float abs_x = fabsf(state.world_x);
+    if (state.world_z <= -abs_x * 0.75f) {
+        return "entry-facing side";
+    }
+    if (state.world_z >= abs_x * 0.75f) {
+        return "far side opposite the entry gate";
+    }
+    return state.world_x >= 0.0f ? "east flank" : "west flank";
+}
+
+const char* DescribeSpatialSkyExposure(const SpatialState& state)
+{
+    switch (ClassifyHiddenWorldBandFromRadius(ComputeSpatialWorldRadius(state))) {
+    case kHiddenWorldBandCentralCore:
+    case kHiddenWorldBandInnerTechnicalRing:
+        return "sealed interior likely";
+    case kHiddenWorldBandPerimeterSeam:
+        return "partial openings plausible";
+    case kHiddenWorldBandOuterParapet:
+        return "open sky likely";
+    case kHiddenWorldBandOpenDesert:
+        return "fully open desert";
+    default:
+        return "unknown";
+    }
+}
+
 HardState MakeInitialHardState()
 {
     HardState state;
@@ -846,6 +1101,40 @@ void NormalizeSessionState(SessionState* state)
 
     if (state->spatial_state.room_title.empty()) {
         state->spatial_state.room_title = BuildPlaceLabelFromSpatialState(state->spatial_state);
+    }
+
+    if (!in_generated_room && !state->spatial_state.world_pose_known) {
+        float world_x = 0.0f;
+        float world_z = 0.0f;
+        if (GetCanonicalWorldPose(state->spatial_state.location_id, &world_x, &world_z)) {
+            SetSpatialWorldPose(&state->spatial_state, world_x, world_z);
+        }
+    }
+
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (size_t index = 0; index < state->generated_rooms.size(); ++index) {
+            SpatialState* room_state = &state->generated_rooms[index].spatial_state;
+            if (room_state->world_pose_known) {
+                continue;
+            }
+
+            float world_x = 0.0f;
+            float world_z = 0.0f;
+            if (TryInferWorldPoseFromLinks(*state, state->generated_rooms[index].room_id, &world_x, &world_z)) {
+                SetSpatialWorldPose(room_state, world_x, world_z);
+                changed = true;
+            }
+        }
+    }
+
+    if (in_generated_room && !state->spatial_state.world_pose_known) {
+        float world_x = 0.0f;
+        float world_z = 0.0f;
+        if (ResolvePlaceWorldPose(*state, state->current_place_id, &world_x, &world_z)) {
+            SetSpatialWorldPose(&state->spatial_state, world_x, world_z);
+        }
     }
 
     for (size_t index = 0; index < state->history.size(); ++index) {
@@ -965,6 +1254,20 @@ void PrintSpatialStateSummary(const SpatialState& state, FILE* stream)
     fprintf(out, "  room_summary: %s\n", state.room_summary.empty() ? "(empty)" : state.room_summary.c_str());
     fprintf(out, "  location_archetype: %s\n", state.location_archetype.empty() ? "(empty)" : state.location_archetype.c_str());
     fprintf(out, "  canonical_fixture: %s\n", state.canonical_fixture.empty() ? "(empty)" : state.canonical_fixture.c_str());
+    if (state.world_pose_known) {
+        fprintf(
+            out,
+            "  world_pose: (%.2f, %.2f) radius=%.2f angle=%.1f band=%s gate_relation=%s sky=%s\n",
+            state.world_x,
+            state.world_z,
+            ComputeSpatialWorldRadius(state),
+            ComputeSpatialWorldAngleDegrees(state),
+            DescribeSpatialWorldBand(state),
+            DescribeSpatialGateRelation(state),
+            DescribeSpatialSkyExposure(state));
+    } else {
+        fprintf(out, "  world_pose: (unknown)\n");
+    }
     fprintf(out, "  time_of_day: %s\n", TimeOfDayToString(state.time_of_day));
     fprintf(out, "  visibility_level: %s\n", VisibilityLevelToString(state.visibility_level));
     fprintf(out, "  desert_state: %s\n", DesertStateToString(state.desert_state));

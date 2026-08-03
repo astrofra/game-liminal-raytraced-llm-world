@@ -176,6 +176,10 @@ static MaterialSemantic InferMaterialSemantic(const std::string& name)
         return kMaterialSemanticRackLed;
     }
 
+    if (lower.find("cactus") != std::string::npos) {
+        return kMaterialSemanticCactus;
+    }
+
     if (lower == "ground" ||
         lower.find("desert") != std::string::npos ||
         lower.find("dune") != std::string::npos ||
@@ -198,6 +202,8 @@ static Vec3 BuildSemanticAlbedo(float gray_value, MaterialSemantic semantic)
     switch (semantic) {
         case kMaterialSemanticDesert:
             return ClampColor(ScaleColorToLuminance(Vec3(0.92f, 0.67f, 0.24f), luminance), 0.0f, 0.95f);
+        case kMaterialSemanticCactus:
+            return ClampColor(ScaleColorToLuminance(Vec3(0.38f, 0.47f, 0.34f), luminance), 0.0f, 0.95f);
         case kMaterialSemanticRackLed:
             return ClampColor(ScaleColorToLuminance(Vec3(0.95f, 0.18f, 0.14f), luminance), 0.0f, 0.95f);
         case kMaterialSemanticNeutral:
@@ -216,6 +222,7 @@ static Vec3 BuildSemanticEmission(float emission_value, MaterialSemantic semanti
     switch (semantic) {
         case kMaterialSemanticRackLed:
             return ScaleColorToLuminance(Vec3(1.00f, 0.12f, 0.08f), intensity);
+        case kMaterialSemanticCactus:
         case kMaterialSemanticNeutral:
         case kMaterialSemanticDesert:
         default:
@@ -973,6 +980,264 @@ static void AddAiServerPrefab(
     }
 }
 
+static void AddCapsulePrimitive(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    float radius,
+    float straight_height,
+    const Vec3& rotation_degrees,
+    float gray_value,
+    float emission_value)
+{
+    const float safe_radius = std::max(radius, 0.02f);
+    const float cylinder_height = std::max(straight_height, 0.0f);
+    const float cylinder_half = cylinder_height * 0.5f;
+    const int radial_segments = 12;
+    const int hemisphere_segments = 4;
+    const int material_index = AddPrimitiveMaterial(scene, name, gray_value, emission_value);
+
+    struct CapsuleRing {
+        float y;
+        float r;
+    };
+
+    std::vector<CapsuleRing> profile;
+    profile.push_back(CapsuleRing{cylinder_half + safe_radius, 0.0f});
+    for (int index = 1; index <= hemisphere_segments; ++index) {
+        const float theta = (static_cast<float>(index) / static_cast<float>(hemisphere_segments)) * (kPi * 0.5f);
+        profile.push_back(CapsuleRing{cylinder_half + cosf(theta) * safe_radius, sinf(theta) * safe_radius});
+    }
+    if (cylinder_half > kEpsilon) {
+        profile.push_back(CapsuleRing{-cylinder_half, safe_radius});
+    }
+    for (int index = hemisphere_segments - 1; index >= 1; --index) {
+        const float theta = (static_cast<float>(index) / static_cast<float>(hemisphere_segments)) * (kPi * 0.5f);
+        profile.push_back(CapsuleRing{-cylinder_half - cosf(theta) * safe_radius, sinf(theta) * safe_radius});
+    }
+    profile.push_back(CapsuleRing{-cylinder_half - safe_radius, 0.0f});
+
+    for (size_t ring_index = 0; ring_index + 1 < profile.size(); ++ring_index) {
+        const CapsuleRing& ring0 = profile[ring_index];
+        const CapsuleRing& ring1 = profile[ring_index + 1];
+
+        for (int segment = 0; segment < radial_segments; ++segment) {
+            const float angle0 = (static_cast<float>(segment) / static_cast<float>(radial_segments)) * (kPi * 2.0f);
+            const float angle1 =
+                (static_cast<float>(segment + 1) / static_cast<float>(radial_segments)) * (kPi * 2.0f);
+            const float cos0 = cosf(angle0);
+            const float sin0 = sinf(angle0);
+            const float cos1 = cosf(angle1);
+            const float sin1 = sinf(angle1);
+
+            const Vec3 p00 = RotateEulerDegrees(Vec3(ring0.r * cos0, ring0.y, ring0.r * sin0), rotation_degrees) + center;
+            const Vec3 p01 = RotateEulerDegrees(Vec3(ring0.r * cos1, ring0.y, ring0.r * sin1), rotation_degrees) + center;
+            const Vec3 p10 = RotateEulerDegrees(Vec3(ring1.r * cos0, ring1.y, ring1.r * sin0), rotation_degrees) + center;
+            const Vec3 p11 = RotateEulerDegrees(Vec3(ring1.r * cos1, ring1.y, ring1.r * sin1), rotation_degrees) + center;
+
+            const float mid_angle = (angle0 + angle1) * 0.5f;
+            const float mid_radius = (ring0.r + ring1.r) * 0.5f;
+            const float mid_y = (ring0.y + ring1.y) * 0.5f;
+            const float cap_anchor_y =
+                mid_y > cylinder_half ? cylinder_half : (mid_y < -cylinder_half ? -cylinder_half : mid_y);
+            const Vec3 expected =
+                Normalize(
+                    RotateEulerDegrees(
+                        Vec3(cosf(mid_angle) * std::max(mid_radius, 0.02f), mid_y - cap_anchor_y, sinf(mid_angle) * std::max(mid_radius, 0.02f)),
+                        rotation_degrees));
+
+            if (ring0.r <= kEpsilon) {
+                AddTriangle(scene, MakeTriangleFacing(p00, p11, p10, material_index, expected));
+            } else if (ring1.r <= kEpsilon) {
+                AddTriangle(scene, MakeTriangleFacing(p00, p01, p10, material_index, expected));
+            } else {
+                AddQuad(scene, p00, p01, p11, p10, material_index, expected);
+            }
+        }
+    }
+}
+
+static void AddPrefabChildCapsule(
+    Scene* scene,
+    const std::string& base_name,
+    const char* suffix,
+    const Vec3& prefab_center,
+    const Vec3& local_center,
+    const Vec3& size,
+    const Vec3& rotation_degrees,
+    float gray_value,
+    float emission_value = 0.0f)
+{
+    const float radius = std::max(std::min(size.x, size.z) * 0.5f, 0.02f);
+    const float straight_height = std::max(size.y - radius * 2.0f, 0.0f);
+    AddCapsulePrimitive(
+        scene,
+        PrefabChildName(base_name, suffix),
+        prefab_center + local_center,
+        radius,
+        straight_height,
+        rotation_degrees,
+        gray_value,
+        emission_value);
+}
+
+static float SeedSignedUnit(unsigned int seed)
+{
+    unsigned int x = seed;
+    x ^= x >> 17;
+    x *= 0xed5ad4bbu;
+    x ^= x >> 11;
+    x *= 0xac4c1b51u;
+    x ^= x >> 15;
+    return static_cast<float>(x & 0xffffu) / 32767.5f - 1.0f;
+}
+
+static void AddRockPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float gray_value,
+    unsigned int variant_seed)
+{
+    const int material_index = AddPrimitiveMaterial(scene, name, gray_value, 0.0f);
+    const Vec3 half = size * 0.5f;
+    const float jitter_x = half.x * 0.22f;
+    const float jitter_y = half.y * 0.18f;
+    const float jitter_z = half.z * 0.22f;
+
+    Vec3 vertices[6];
+    vertices[0] = center + Vec3(
+        SeedSignedUnit(variant_seed + 11u) * jitter_x * 0.35f,
+        half.y + SeedSignedUnit(variant_seed + 13u) * jitter_y,
+        SeedSignedUnit(variant_seed + 17u) * jitter_z * 0.35f);
+    vertices[1] = center + Vec3(
+        SeedSignedUnit(variant_seed + 19u) * jitter_x * 0.35f,
+        -half.y + SeedSignedUnit(variant_seed + 23u) * jitter_y,
+        SeedSignedUnit(variant_seed + 29u) * jitter_z * 0.35f);
+    vertices[2] = center + Vec3(
+        -half.x + SeedSignedUnit(variant_seed + 31u) * jitter_x,
+        SeedSignedUnit(variant_seed + 37u) * jitter_y,
+        SeedSignedUnit(variant_seed + 41u) * jitter_z);
+    vertices[3] = center + Vec3(
+        half.x + SeedSignedUnit(variant_seed + 43u) * jitter_x,
+        SeedSignedUnit(variant_seed + 47u) * jitter_y,
+        SeedSignedUnit(variant_seed + 53u) * jitter_z);
+    vertices[4] = center + Vec3(
+        SeedSignedUnit(variant_seed + 59u) * jitter_x,
+        SeedSignedUnit(variant_seed + 61u) * jitter_y,
+        -half.z + SeedSignedUnit(variant_seed + 67u) * jitter_z);
+    vertices[5] = center + Vec3(
+        SeedSignedUnit(variant_seed + 71u) * jitter_x,
+        SeedSignedUnit(variant_seed + 73u) * jitter_y,
+        half.z + SeedSignedUnit(variant_seed + 79u) * jitter_z);
+
+    const int faces[8][3] = {
+        {0, 2, 4}, {0, 4, 3}, {0, 3, 5}, {0, 5, 2},
+        {1, 4, 2}, {1, 3, 4}, {1, 5, 3}, {1, 2, 5},
+    };
+
+    for (int face_index = 0; face_index < 8; ++face_index) {
+        const Vec3 face_center =
+            (vertices[faces[face_index][0]] + vertices[faces[face_index][1]] + vertices[faces[face_index][2]]) / 3.0f;
+        AddTriangle(
+            scene,
+            MakeTriangleFacing(
+                vertices[faces[face_index][0]],
+                vertices[faces[face_index][1]],
+                vertices[faces[face_index][2]],
+                material_index,
+                Normalize(face_center - center)));
+    }
+}
+
+static void AddCactusSentinelPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray)
+{
+    const Vec3 trunk_size(std::max(size.x * 0.32f, 0.16f), size.y, std::max(size.z * 0.32f, 0.16f));
+    const Vec3 arm_size(std::max(size.x * 0.20f, 0.12f), std::max(size.y * 0.46f, 0.32f), std::max(size.z * 0.20f, 0.12f));
+    AddPrefabChildCapsule(scene, name, "trunk", center, Vec3(0.0f, 0.0f, 0.0f), trunk_size, Vec3(0.0f), body_gray);
+    AddPrefabChildCapsule(
+        scene,
+        name,
+        "arm_left",
+        center,
+        Vec3(-size.x * 0.22f, size.y * 0.06f, 0.0f),
+        arm_size,
+        Vec3(0.0f, 0.0f, 88.0f),
+        Clamp(body_gray * 0.94f, 0.0f, 0.95f));
+}
+
+static void AddCactusForkPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray)
+{
+    const Vec3 trunk_size(std::max(size.x * 0.30f, 0.14f), size.y, std::max(size.z * 0.30f, 0.14f));
+    const Vec3 arm_size(std::max(size.x * 0.18f, 0.10f), std::max(size.y * 0.40f, 0.28f), std::max(size.z * 0.18f, 0.10f));
+    AddPrefabChildCapsule(scene, name, "trunk", center, Vec3(0.0f, 0.0f, 0.0f), trunk_size, Vec3(0.0f), body_gray);
+    AddPrefabChildCapsule(
+        scene,
+        name,
+        "arm_left",
+        center,
+        Vec3(-size.x * 0.20f, size.y * 0.08f, 0.0f),
+        arm_size,
+        Vec3(0.0f, 0.0f, 92.0f),
+        Clamp(body_gray * 0.95f, 0.0f, 0.95f));
+    AddPrefabChildCapsule(
+        scene,
+        name,
+        "arm_right",
+        center,
+        Vec3(size.x * 0.20f, size.y * 0.00f, 0.0f),
+        arm_size,
+        Vec3(0.0f, 0.0f, -92.0f),
+        Clamp(body_gray * 0.90f, 0.0f, 0.95f));
+}
+
+static void AddCactusClusterPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray)
+{
+    AddPrefabChildCapsule(
+        scene,
+        name,
+        "trunk_center",
+        center,
+        Vec3(0.0f, 0.0f, 0.0f),
+        Vec3(std::max(size.x * 0.28f, 0.14f), size.y * 0.95f, std::max(size.z * 0.28f, 0.14f)),
+        Vec3(0.0f),
+        body_gray);
+    AddPrefabChildCapsule(
+        scene,
+        name,
+        "trunk_left",
+        center,
+        Vec3(-size.x * 0.22f, -size.y * 0.08f, 0.0f),
+        Vec3(std::max(size.x * 0.22f, 0.10f), size.y * 0.62f, std::max(size.z * 0.22f, 0.10f)),
+        Vec3(0.0f),
+        Clamp(body_gray * 0.92f, 0.0f, 0.95f));
+    AddPrefabChildCapsule(
+        scene,
+        name,
+        "trunk_right",
+        center,
+        Vec3(size.x * 0.24f, -size.y * 0.12f, size.z * 0.04f),
+        Vec3(std::max(size.x * 0.20f, 0.10f), size.y * 0.56f, std::max(size.z * 0.20f, 0.10f)),
+        Vec3(0.0f),
+        Clamp(body_gray * 0.88f, 0.0f, 0.95f));
+}
+
 static int LargestAxis(const Vec3& extent)
 {
     if (extent.x > extent.y && extent.x > extent.z) {
@@ -1415,6 +1680,202 @@ static bool ParseSceneV1Directive(
             detail_value = Clamp(gray_value + 0.12f, 0.0f, 0.95f);
         }
         AddAiServerPrefab(scene, name, position, size, gray_value, detail_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_cactus_sentinel ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_cactus_sentinel requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_cactus_sentinel has invalid size");
+            return false;
+        }
+
+        AddCactusSentinelPrefab(scene, name, position, size, gray_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_cactus_fork ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_cactus_fork requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_cactus_fork has invalid size");
+            return false;
+        }
+
+        AddCactusForkPrefab(scene, name, position, size, gray_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_cactus_cluster ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_cactus_cluster requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_cactus_cluster has invalid size");
+            return false;
+        }
+
+        AddCactusClusterPrefab(scene, name, position, size, gray_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_rock_low ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_rock_low requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_rock_low has invalid size");
+            return false;
+        }
+
+        AddRockPrefab(scene, name, position, size, gray_value, 101u);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_rock_wide ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_rock_wide requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_rock_wide has invalid size");
+            return false;
+        }
+
+        AddRockPrefab(scene, name, position, size, gray_value, 211u);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_rock_tall ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_rock_tall requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_rock_tall has invalid size");
+            return false;
+        }
+
+        AddRockPrefab(scene, name, position, size, gray_value, 307u);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_rock_spire ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+
+        if (!ExtractQuotedString(line, &name) ||
+            !ExtractVec3Property(line, "pos(", &position) ||
+            !ExtractVec3Property(line, "size(", &size) ||
+            !ExtractFloatProperty(line, "gray(", &gray_value)) {
+            SetLineError(
+                error_buffer,
+                error_buffer_size,
+                scene_name,
+                line_number,
+                "prefab_rock_spire requires name, pos(), size(), and gray()");
+            return false;
+        }
+
+        if (size.x <= 0.0f || size.y <= 0.0f || size.z <= 0.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "prefab_rock_spire has invalid size");
+            return false;
+        }
+
+        AddRockPrefab(scene, name, position, size, gray_value, 401u);
         return true;
     }
 
