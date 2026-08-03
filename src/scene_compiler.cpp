@@ -324,6 +324,80 @@ static bool SpatialFeelsPerimeterSeam(const SpatialState& state)
     return strcmp(DescribeSpatialWorldBand(state), "perimeter seam") == 0;
 }
 
+static bool LabelLooksInteriorOnly(const std::string& lower)
+{
+    return ContainsSubstring(lower, "ai server") ||
+        ContainsSubstring(lower, "mainframe") ||
+        ContainsSubstring(lower, "accelerator") ||
+        ContainsSubstring(lower, "gpu") ||
+        ContainsSubstring(lower, "tensor") ||
+        ContainsSubstring(lower, "inference") ||
+        ContainsSubstring(lower, "rack") ||
+        ContainsSubstring(lower, "server") ||
+        ContainsSubstring(lower, "pod") ||
+        ContainsSubstring(lower, "cooling") ||
+        ContainsSubstring(lower, "vent") ||
+        ContainsSubstring(lower, "chiller") ||
+        ContainsSubstring(lower, "hvac") ||
+        ContainsSubstring(lower, "console") ||
+        ContainsSubstring(lower, "pedestal") ||
+        ContainsSubstring(lower, "desk") ||
+        ContainsSubstring(lower, "cabinet") ||
+        ContainsSubstring(lower, "locker") ||
+        ContainsSubstring(lower, "service panel") ||
+        ContainsSubstring(lower, "cooling keypad") ||
+        ContainsSubstring(lower, "cabinet latch") ||
+        ContainsSubstring(lower, "intercom") ||
+        ContainsSubstring(lower, "badge reader") ||
+        ContainsSubstring(lower, "reader");
+}
+
+static bool LabelLooksOpenExteriorSafe(const std::string& lower)
+{
+    return ContainsSubstring(lower, "gate") ||
+        ContainsSubstring(lower, "door") ||
+        ContainsSubstring(lower, "portal") ||
+        ContainsSubstring(lower, "shutter") ||
+        ContainsSubstring(lower, "hatch") ||
+        ContainsSubstring(lower, "crate") ||
+        ContainsSubstring(lower, "box") ||
+        ContainsSubstring(lower, "lockbox") ||
+        ContainsSubstring(lower, "case") ||
+        ContainsSubstring(lower, "spool") ||
+        ContainsSubstring(lower, "cache") ||
+        ContainsSubstring(lower, "beacon") ||
+        ContainsSubstring(lower, "lamp") ||
+        ContainsSubstring(lower, "light") ||
+        ContainsSubstring(lower, "marker") ||
+        ContainsSubstring(lower, "placard") ||
+        ContainsSubstring(lower, "sign") ||
+        ContainsSubstring(lower, "cactus") ||
+        ContainsSubstring(lower, "rock") ||
+        ContainsSubstring(lower, "outcrop") ||
+        ContainsSubstring(lower, "boulder");
+}
+
+static bool ShouldSkipLabelForShell(const RoomShell& shell, const std::string& lower)
+{
+    if (!shell.exterior) {
+        return false;
+    }
+
+    if (shell.archetype == kLayoutArchetypeThresholdExterior) {
+        return false;
+    }
+
+    if (shell.archetype == kLayoutArchetypeDesertExterior) {
+        return !LabelLooksOpenExteriorSafe(lower);
+    }
+
+    if (LabelLooksInteriorOnly(lower)) {
+        return true;
+    }
+
+    return false;
+}
+
 static bool SpatialFeelsExterior(const SpatialState& state)
 {
     if (SpatialFeelsOpenDesert(state) || SpatialFeelsOuterParapet(state)) {
@@ -858,6 +932,10 @@ static void BuildVisibleObjectSpecs(
             break;
         }
 
+        if (ShouldSkipLabelForShell(shell, lower)) {
+            continue;
+        }
+
         if (ContainsSubstring(lower, "reader") || ContainsSubstring(lower, "keypad") || ContainsSubstring(lower, "intercom") ||
             ContainsSubstring(lower, "switch") || ContainsSubstring(lower, "placard") || ContainsSubstring(lower, "panel") ||
             ContainsSubstring(lower, "board") || ContainsSubstring(lower, "display") ||
@@ -1036,6 +1114,10 @@ static void AddConstraintDrivenSpecs(
         const std::string lower = ToLowerAsciiCopy(label);
         const LayoutZone zone = InferConstraintZone(lower, shell.exterior ? kLayoutZoneBack : kLayoutZoneCenter);
 
+        if (ShouldSkipLabelForShell(shell, lower)) {
+            continue;
+        }
+
         if (ContainsSubstring(lower, "ai server") || ContainsSubstring(lower, "mainframe") ||
             ContainsSubstring(lower, "gpu") || ContainsSubstring(lower, "accelerator") ||
             ContainsSubstring(lower, "tensor") || ContainsSubstring(lower, "inference")) {
@@ -1158,8 +1240,11 @@ static void AddArchetypeDefaults(
         if (!HasPrimitive(*specs, kScenePrimitivePrefabCrate)) {
             AddCrateSpec(specs, "yard crate", kLayoutZoneLeft, 120);
         }
-        if (!HasPrimitive(*specs, kScenePrimitivePrefabCoolingUnit)) {
-            AddCoolingSpec(specs, "vent stack", kLayoutZoneRight, 121);
+        if (!HasSpecNameContaining(*specs, "beacon")) {
+            AddBeaconSpec(specs, "warning beacon", kLayoutZoneRight, 121);
+        }
+        if (!HasSpecNameContaining(*specs, "hatch")) {
+            AddHatchSpec(specs, "maintenance hatch", kLayoutZoneBack, 122);
         }
         break;
     case kLayoutArchetypeDesertExterior:
@@ -1528,8 +1613,8 @@ static void AppendExteriorShell(const RoomShell& shell, const SpatialState& spat
     AppendLine(
         scene_text,
         "plane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(%.1f,%.1f) gray(%.2f)\n",
-        shell.half_width * 2.2f,
-        shell.half_depth * 2.2f,
+        shell.half_width * 11.0f,
+        shell.half_depth * 11.0f,
         shell.floor_gray);
 
     if (shell.archetype == kLayoutArchetypeDesertExterior) {

@@ -696,6 +696,95 @@ static bool SpatialFeelsPerimeterSeam(const SpatialState& state)
     return strcmp(DescribeSpatialWorldBand(state), "perimeter seam") == 0;
 }
 
+static bool ContainsAnySubstring(const std::string& lower_text, const char* const* patterns, size_t pattern_count)
+{
+    for (size_t index = 0; index < pattern_count; ++index) {
+        if (patterns[index] && lower_text.find(patterns[index]) != std::string::npos) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void RemoveStringsMatchingAny(
+    std::vector<std::string>* values,
+    const char* const* patterns,
+    size_t pattern_count)
+{
+    if (!values || !patterns || pattern_count == 0) {
+        return;
+    }
+
+    for (size_t index = 0; index < values->size();) {
+        const std::string lower = ToLowerAsciiCopy((*values)[index]);
+        if (ContainsAnySubstring(lower, patterns, pattern_count)) {
+            values->erase(values->begin() + index);
+            continue;
+        }
+        ++index;
+    }
+}
+
+static void EnforceSpatialObjectEnvironmentRules(
+    SpatialState* spatial_state,
+    bool exterior,
+    bool desert,
+    bool threshold_like)
+{
+    if (!spatial_state) {
+        return;
+    }
+
+    static const char* kExteriorInteriorObjectPatterns[] = {
+        "ai server", "mainframe", "accelerator", "gpu", "tensor", "inference",
+        "rack", "server", "pod",
+        "cooling keypad", "service panel", "cabinet latch", "console", "pedestal", "desk",
+        "locker", "cabinet"
+    };
+    static const char* kExteriorInteriorConstraintPatterns[] = {
+        "hero ai server", "rack bank", "cooling flank", "central console", "keep corridor clear", "access door"
+    };
+    static const char* kOpenExteriorAccessControlPatterns[] = {
+        "badge reader", "intercom", "keypad", "service panel", "cabinet latch", "reader"
+    };
+    static const char* kDesertRemovalPatterns[] = {
+        "badge reader", "intercom", "keypad", "service panel", "cabinet latch", "reader",
+        "cooling", "vent", "chiller", "hvac", "switch", "gate"
+    };
+    static const char* kDesertConstraintRemovalPatterns[] = {
+        "checkpoint gate", "roof parapet", "perimeter seam"
+    };
+
+    if (exterior) {
+        RemoveStringsMatchingAny(
+            &spatial_state->visible_objects,
+            kExteriorInteriorObjectPatterns,
+            sizeof(kExteriorInteriorObjectPatterns) / sizeof(kExteriorInteriorObjectPatterns[0]));
+        RemoveStringsMatchingAny(
+            &spatial_state->scene_constraints,
+            kExteriorInteriorConstraintPatterns,
+            sizeof(kExteriorInteriorConstraintPatterns) / sizeof(kExteriorInteriorConstraintPatterns[0]));
+
+        if (!threshold_like) {
+            RemoveStringsMatchingAny(
+                &spatial_state->visible_objects,
+                kOpenExteriorAccessControlPatterns,
+                sizeof(kOpenExteriorAccessControlPatterns) / sizeof(kOpenExteriorAccessControlPatterns[0]));
+        }
+    }
+
+    if (desert) {
+        RemoveStringsMatchingAny(
+            &spatial_state->visible_objects,
+            kDesertRemovalPatterns,
+            sizeof(kDesertRemovalPatterns) / sizeof(kDesertRemovalPatterns[0]));
+        RemoveStringsMatchingAny(
+            &spatial_state->scene_constraints,
+            kDesertConstraintRemovalPatterns,
+            sizeof(kDesertConstraintRemovalPatterns) / sizeof(kDesertConstraintRemovalPatterns[0]));
+    }
+}
+
 static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
 {
     if (!spatial_state) {
@@ -717,6 +806,12 @@ static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
         SpatialFeelsOpenDesert(*spatial_state);
     const bool desert = SpatialFeelsOpenDesert(*spatial_state);
     const bool perimeter = SpatialFeelsPerimeterSeam(*spatial_state) || SpatialFeelsOuterParapet(*spatial_state);
+    const bool threshold_like =
+        combined.find("gate") != std::string::npos ||
+        combined.find("threshold") != std::string::npos ||
+        combined.find("checkpoint") != std::string::npos ||
+        combined.find("portal") != std::string::npos ||
+        combined.find("entry") != std::string::npos;
 
     if (desert) {
         AddUniqueString(&spatial_state->visible_objects, "survey cache");
@@ -728,8 +823,6 @@ static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
     } else if (exterior || perimeter) {
         AddUniqueString(&spatial_state->visible_objects, "warning placard");
         AddUniqueString(&spatial_state->visible_objects, "service crate");
-        AddUniqueString(&spatial_state->visible_objects, "intercom post");
-        AddUniqueString(&spatial_state->visible_objects, "badge reader");
         AddUniqueString(&spatial_state->visible_objects, "maintenance hatch");
     } else {
         AddUniqueString(&spatial_state->visible_objects, "service panel");
@@ -789,6 +882,8 @@ static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
     } else {
         AddUniqueString(&spatial_state->scene_constraints, "keep corridor clear");
     }
+
+    EnforceSpatialObjectEnvironmentRules(spatial_state, exterior || perimeter, desert, threshold_like);
 }
 
 static bool TryParseTraversalCommand(const char* player_command, CardinalDirection* direction)
@@ -1029,7 +1124,7 @@ static void ApplyPerimeterSkyBiasToDraft(GeneratedRoomDraft* draft)
     AddUniqueString(&draft->spatial_state.anchors, "horizon");
     AddUniqueString(&draft->spatial_state.anchors, "roof_edge");
     AddUniqueString(&draft->spatial_state.visible_objects, "roof hatch");
-    AddUniqueString(&draft->spatial_state.visible_objects, "beacon switch");
+    AddUniqueString(&draft->spatial_state.visible_objects, "warning beacon");
     AddUniqueString(&draft->spatial_state.scene_constraints, "open horizon");
     AddUniqueString(&draft->spatial_state.scene_constraints, "roof parapet");
     RemoveString(&draft->spatial_state.scene_constraints, "keep corridor clear");
@@ -1159,10 +1254,10 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(
         draft.spatial_state.scene_constraints.push_back("desert scatter");
     } else if (exterior) {
         draft.spatial_state.visible_objects.push_back("service crate");
-        draft.spatial_state.visible_objects.push_back("badge reader");
         draft.spatial_state.visible_objects.push_back("warning placard");
+        draft.spatial_state.visible_objects.push_back("maintenance hatch");
         draft.spatial_state.scene_constraints.push_back("open horizon");
-        draft.spatial_state.scene_constraints.push_back("checkpoint gate");
+        draft.spatial_state.scene_constraints.push_back("perimeter seam");
     } else {
         draft.spatial_state.visible_objects.push_back("rack access door");
         draft.spatial_state.visible_objects.push_back("service panel");
@@ -1199,7 +1294,7 @@ static std::string BuildFallbackGeneratedRoomSceneText(const SpatialState& spati
         text += "camera eye(0.0,1.82,-9.6) target(0.0,1.18,9.8) up(0.0,1.0,0.0) fov(48.0)\n";
         text += "spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\n";
         text += "sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(97)\n";
-        text += "plane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(24.0,34.0) gray(0.13)\n";
+        text += "plane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(120.0,170.0) gray(0.13)\n";
         text += "box \"desert_ridge_left\" pos(-5.2,0.55,7.0) size(3.0,1.10,8.2) gray(0.14)\n";
         text += "box \"desert_ridge_right\" pos(5.4,0.50,8.2) size(3.4,1.00,7.8) gray(0.15)\n";
         text += "box \"desert_back_ridge\" pos(0.0,0.72,12.6) size(12.6,1.44,4.8) gray(0.16)\n";
@@ -1212,7 +1307,7 @@ static std::string BuildFallbackGeneratedRoomSceneText(const SpatialState& spati
         text += "camera eye(0.0,1.82,-8.4) target(0.0,1.20,8.2) up(0.0,1.0,0.0) fov(46.0)\n";
         text += "spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(72.0)\n";
         text += "sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(91)\n";
-        text += "plane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(18.0,30.0) gray(0.13)\n";
+        text += "plane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(90.0,150.0) gray(0.13)\n";
         text += "box \"wall_back\" pos(0.0,2.1,10.4) size(18.0,4.2,0.8) gray(0.18)\n";
         text += "box \"parapet_left\" pos(-7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\n";
         text += "box \"parapet_right\" pos(7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\n";
@@ -1221,7 +1316,8 @@ static std::string BuildFallbackGeneratedRoomSceneText(const SpatialState& spati
             text += "prefab_gate \"aux_gate\" pos(0.0,1.4,7.2) size(4.6,2.8,0.5) gray(0.28) detail(0.40)\n";
         }
         text += "prefab_crate \"service_crate\" pos(2.6,0.55,-1.8) size(1.8,1.1,1.5) gray(0.20) detail(0.31)\n";
-        text += "prefab_cooling_unit \"vent_stack\" pos(-4.1,1.0,-2.8) size(1.0,2.0,1.0) gray(0.30) detail(0.39)\n";
+        text += "box \"warning_beacon\" pos(-4.1,1.15,-2.8) size(0.40,2.30,0.40) gray(0.30) emit(2.4)\n";
+        text += "box \"maintenance_hatch\" pos(-0.8,0.12,5.8) size(1.8,0.24,1.8) gray(0.22)\n";
     } else {
         text += "camera eye(0.0,1.78,-7.8) target(0.0,1.20,8.4) up(0.0,1.0,0.0) fov(46.0)\n";
         text += "spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)\n";
