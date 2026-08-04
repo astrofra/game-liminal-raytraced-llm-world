@@ -676,6 +676,7 @@ int main(int argc, char** argv)
 
         printf("Headless turn completed.\n");
         PrintTurnSummary(turn_result, dump_raw_turn);
+        liminal::PrintHeadlessTurnDebugTrace(turn_result, stdout);
         if (dump_session_state) {
             printf("\n");
             liminal::PrintSessionStateSummary(session_state, stdout);
@@ -722,6 +723,7 @@ int main(int argc, char** argv)
 
             printf("\n=== Session Turn %zu / %zu ===\n", index + 1, session_commands.size());
             PrintTurnSummary(turn_result, dump_raw_turn);
+            liminal::PrintHeadlessTurnDebugTrace(turn_result, stdout);
 
             total_prompt_tokens += turn_result.prompt_tokens;
             total_generated_tokens += turn_result.generated_tokens;

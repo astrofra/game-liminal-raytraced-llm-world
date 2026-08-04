@@ -2,6 +2,7 @@
 #define LIMINAL_RENDERER_TURN_RUNNER_H
 
 #include <stddef.h>
+#include <stdio.h>
 #include <string>
 
 #include "game_state.h"
@@ -39,10 +40,13 @@ struct HeadlessTurnConfig {
 };
 
 struct HeadlessTurnResult {
+    std::string request_text;
     std::string prompt_text;
     std::string raw_response_text;
     std::string repair_response_text;
     std::string raw_scene_audit_response_text;
+    std::string rendered_scene_text;
+    std::string rendered_scene_debug_text;
     std::string initial_place_id;
     std::string updated_place_id;
     TurnResult turn_result;
@@ -54,6 +58,10 @@ struct HeadlessTurnResult {
     SpatialState updated_spatial_state;
     Scene rendered_scene;
     Scene candidate_scene;
+    SpatialState prospective_spatial_state;
+    CardinalDirection traversal_direction;
+    bool traversal_requested;
+    bool prospective_spatial_state_known;
     bool candidate_scene_valid;
     bool used_candidate_scene_for_render;
     bool used_turn_repair;
@@ -71,7 +79,10 @@ struct HeadlessTurnResult {
     double inference_time_ms;
 
     HeadlessTurnResult()
-        : candidate_scene_valid(false)
+        : traversal_direction(kDirectionUnknown)
+        , traversal_requested(false)
+        , prospective_spatial_state_known(false)
+        , candidate_scene_valid(false)
         , used_candidate_scene_for_render(false)
         , used_turn_repair(false)
         , used_turn_fallback(false)
@@ -112,6 +123,7 @@ bool RunHeadlessTurnFromState(
     HeadlessTurnResult* result,
     char* error_buffer,
     size_t error_buffer_size);
+void PrintHeadlessTurnDebugTrace(const HeadlessTurnResult& result, FILE* stream);
 bool RunHeadlessTurn(
     LocationId initial_location_id,
     const char* player_command,

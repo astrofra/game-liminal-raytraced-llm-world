@@ -1,6 +1,6 @@
 # Hybrid Scene Layout Plan
 
-Derniere mise a jour : 2026-08-02
+Derniere mise a jour : 2026-08-03
 
 ## Role du document
 
@@ -30,6 +30,12 @@ Le meilleur compromis v1 est donc :
 - **LLM** pour les decisions semantiques
 - **procedural** pour le layout spatial
 - **compilateur deterministe** pour la scene finale
+
+La nuance ajoutee depuis le 3 aout 2026 est la suivante :
+
+- la geographie cachee du monde (`distance + angle` autour du datacenter) ne doit pas piloter la geometrie directement
+- elle doit d'abord etre **verbalisee** en un guide de derive cache
+- ce guide pousse ensuite le LLM a choisir une famille lexicale, des objets et des asymetries differentes d'une room a l'autre
 
 Le LLM ne doit pas choisir des coordonnees exactes. Il doit choisir :
 
@@ -227,6 +233,8 @@ La bounding box de layout n'est pas obligee d'etre identique a la geometrie rend
 ```text
 brief spatial
     ->
+guide textuel cache de derive (distance + angle -> motifs, dissymetrie, vocabulaire)
+    ->
 LLM layout contract
     ->
 validation semantique
@@ -247,6 +255,32 @@ scene v1 finale
 ```
 
 ## Algorithme sur papier
+
+### Etape 0 - Guide textuel cache
+
+Avant meme que le LLM ne choisisse les objets, le moteur derive un petit guide textuel a partir de la pose cachee du monde :
+
+- bande radiale : `central core`, `inner technical ring`, `perimeter seam`, `outer parapet`, `open desert`
+- relation au portail : `entry-facing side`, `east flank`, `west flank`, `far side opposite the entry gate`
+- ouverture probable : interieur ferme, ouvertures partielles, ciel ouvert, desert ouvert
+- quelques motifs preferes
+- quelques motifs a eviter
+- une pression de dissymetrie verbale : `east hatch`, `rear beacon`, `west crate`, etc.
+
+Ce guide n'est pas un contrat geometrique.
+
+Il sert a faire diverger les sorties JSON du LLM sur le plan :
+
+- du titre
+- du `location_archetype`
+- des `anchors`
+- des `visible_objects`
+- des `scene_constraints`
+
+Autrement dit :
+
+- la variation doit naitre d'abord du langage
+- le solveur spatial ne fait qu'incarner ce langage de facon stable
 
 ### Etape 1 - Coque de salle
 

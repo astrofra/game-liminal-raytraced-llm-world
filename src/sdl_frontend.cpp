@@ -1187,6 +1187,7 @@ static void RunTurnWorker(
         std::lock_guard<std::mutex> lock(shared_state->mutex);
         CloseTerminalStreamLocked(shared_state);
         PrintTurnProvenance(updated_session_state, turn_result);
+        PrintHeadlessTurnDebugTrace(turn_result, stdout);
         shared_state->activity = kWorkerActivityRenderer;
         shared_state->status_text = "Raytracing scene...";
     }

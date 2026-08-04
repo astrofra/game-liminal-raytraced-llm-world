@@ -133,6 +133,100 @@ struct PlacedLayoutObject {
     Vec3 pos;
 };
 
+static const char* LayoutArchetypeToString(LayoutArchetype archetype)
+{
+    switch (archetype) {
+    case kLayoutArchetypeThresholdExterior:
+        return "threshold_exterior";
+    case kLayoutArchetypeRoofExterior:
+        return "roof_exterior";
+    case kLayoutArchetypeYardExterior:
+        return "yard_exterior";
+    case kLayoutArchetypeDesertExterior:
+        return "desert_exterior";
+    case kLayoutArchetypeServerAisles:
+        return "server_aisles";
+    case kLayoutArchetypeControlHub:
+        return "control_hub";
+    case kLayoutArchetypeBackupVault:
+        return "backup_vault";
+    case kLayoutArchetypeCoolingBay:
+        return "cooling_bay";
+    case kLayoutArchetypeServiceInterior:
+        return "service_interior";
+    default:
+        return "unknown";
+    }
+}
+
+static const char* ScenePrimitiveToString(ScenePrimitive primitive)
+{
+    switch (primitive) {
+    case kScenePrimitiveBox:
+        return "box";
+    case kScenePrimitivePrefabGate:
+        return "prefab_gate";
+    case kScenePrimitivePrefabRack:
+        return "prefab_rack";
+    case kScenePrimitivePrefabCrate:
+        return "prefab_crate";
+    case kScenePrimitivePrefabCoolingUnit:
+        return "prefab_cooling_unit";
+    case kScenePrimitivePrefabAiServer:
+        return "prefab_ai_server";
+    case kScenePrimitivePrefabCactusSentinel:
+        return "prefab_cactus_sentinel";
+    case kScenePrimitivePrefabCactusFork:
+        return "prefab_cactus_fork";
+    case kScenePrimitivePrefabCactusCluster:
+        return "prefab_cactus_cluster";
+    case kScenePrimitivePrefabRockLow:
+        return "prefab_rock_low";
+    case kScenePrimitivePrefabRockWide:
+        return "prefab_rock_wide";
+    case kScenePrimitivePrefabRockTall:
+        return "prefab_rock_tall";
+    case kScenePrimitivePrefabRockSpire:
+        return "prefab_rock_spire";
+    default:
+        return "unknown";
+    }
+}
+
+static const char* LayoutMountToString(LayoutMount mount)
+{
+    switch (mount) {
+    case kLayoutMountFloor:
+        return "floor";
+    case kLayoutMountWallLeft:
+        return "wall_left";
+    case kLayoutMountWallRight:
+        return "wall_right";
+    case kLayoutMountWallBack:
+        return "wall_back";
+    default:
+        return "unknown";
+    }
+}
+
+static const char* LayoutZoneToString(LayoutZone zone)
+{
+    switch (zone) {
+    case kLayoutZoneLeft:
+        return "left";
+    case kLayoutZoneRight:
+        return "right";
+    case kLayoutZoneCenter:
+        return "center";
+    case kLayoutZoneFront:
+        return "front";
+    case kLayoutZoneBack:
+        return "back";
+    default:
+        return "unknown";
+    }
+}
+
 static void SetError(char* buffer, size_t buffer_size, const char* format, const char* argument)
 {
     if (!buffer || buffer_size == 0) {
@@ -358,6 +452,9 @@ static bool LabelLooksOpenExteriorSafe(const std::string& lower)
         ContainsSubstring(lower, "door") ||
         ContainsSubstring(lower, "portal") ||
         ContainsSubstring(lower, "shutter") ||
+        ContainsSubstring(lower, "barrier") ||
+        ContainsSubstring(lower, "fence") ||
+        ContainsSubstring(lower, "rail") ||
         ContainsSubstring(lower, "hatch") ||
         ContainsSubstring(lower, "crate") ||
         ContainsSubstring(lower, "box") ||
@@ -368,11 +465,16 @@ static bool LabelLooksOpenExteriorSafe(const std::string& lower)
         ContainsSubstring(lower, "beacon") ||
         ContainsSubstring(lower, "lamp") ||
         ContainsSubstring(lower, "light") ||
+        ContainsSubstring(lower, "post") ||
+        ContainsSubstring(lower, "mast") ||
+        ContainsSubstring(lower, "pylon") ||
         ContainsSubstring(lower, "marker") ||
         ContainsSubstring(lower, "placard") ||
         ContainsSubstring(lower, "sign") ||
         ContainsSubstring(lower, "cactus") ||
         ContainsSubstring(lower, "rock") ||
+        ContainsSubstring(lower, "ridge") ||
+        ContainsSubstring(lower, "berm") ||
         ContainsSubstring(lower, "outcrop") ||
         ContainsSubstring(lower, "boulder");
 }
@@ -952,6 +1054,7 @@ static void BuildVisibleObjectSpecs(
         }
 
         if (ContainsSubstring(lower, "beacon") || ContainsSubstring(lower, "lamp") || ContainsSubstring(lower, "light") ||
+            ContainsSubstring(lower, "post") || ContainsSubstring(lower, "mast") || ContainsSubstring(lower, "pylon") ||
             ContainsSubstring(lower, "marker")) {
             if (floor_objects < 9) {
                 AddBeaconSpec(specs, label, kLayoutZoneBack, static_cast<int>(index));
@@ -969,7 +1072,8 @@ static void BuildVisibleObjectSpecs(
             continue;
         }
 
-        if (ContainsSubstring(lower, "rock") || ContainsSubstring(lower, "outcrop") || ContainsSubstring(lower, "boulder")) {
+        if (ContainsSubstring(lower, "rock") || ContainsSubstring(lower, "ridge") || ContainsSubstring(lower, "berm") ||
+            ContainsSubstring(lower, "outcrop") || ContainsSubstring(lower, "boulder")) {
             if (rock_objects < 5 && floor_objects < 10) {
                 AddRockSpec(specs, label, rock_objects % 2 == 0 ? kLayoutZoneLeft : kLayoutZoneRight, static_cast<int>(index));
                 ++rock_objects;
@@ -979,7 +1083,8 @@ static void BuildVisibleObjectSpecs(
         }
 
         if (ContainsSubstring(lower, "gate") || ContainsSubstring(lower, "door") || ContainsSubstring(lower, "portal") ||
-            ContainsSubstring(lower, "shutter")) {
+            ContainsSubstring(lower, "shutter") || ContainsSubstring(lower, "barrier") ||
+            ContainsSubstring(lower, "fence") || ContainsSubstring(lower, "rail")) {
             if (gate_objects < 1) {
                 AddGateSpec(specs, shell, label, static_cast<int>(index));
                 ++gate_objects;
@@ -1024,7 +1129,8 @@ static void BuildVisibleObjectSpecs(
         }
 
         if (ContainsSubstring(lower, "cooling") || ContainsSubstring(lower, "vent") || ContainsSubstring(lower, "chiller") ||
-            ContainsSubstring(lower, "hvac")) {
+            ContainsSubstring(lower, "hvac") || ContainsSubstring(lower, "duct") ||
+            ContainsSubstring(lower, "conduit") || ContainsSubstring(lower, "pipe") || ContainsSubstring(lower, "trench")) {
             if (cooling_objects < 4 && floor_objects < 10) {
                 AddCoolingSpec(specs, label, cooling_objects % 2 == 0 ? kLayoutZoneLeft : kLayoutZoneRight, static_cast<int>(index));
                 ++cooling_objects;
@@ -1136,7 +1242,9 @@ static void AddConstraintDrivenSpecs(
         }
 
         if (ContainsSubstring(lower, "cooling") || ContainsSubstring(lower, "vent") ||
-            ContainsSubstring(lower, "chiller") || ContainsSubstring(lower, "hvac")) {
+            ContainsSubstring(lower, "chiller") || ContainsSubstring(lower, "hvac") ||
+            ContainsSubstring(lower, "duct") || ContainsSubstring(lower, "conduit") ||
+            ContainsSubstring(lower, "pipe") || ContainsSubstring(lower, "trench")) {
             if (!HasPrimitive(*specs, kScenePrimitivePrefabCoolingUnit)) {
                 AddCoolingSpec(specs, label, zone, static_cast<int>(240 + index));
             }
@@ -1173,7 +1281,8 @@ static void AddConstraintDrivenSpecs(
             continue;
         }
 
-        if (ContainsSubstring(lower, "gate") || ContainsSubstring(lower, "door") || ContainsSubstring(lower, "portal")) {
+        if (ContainsSubstring(lower, "gate") || ContainsSubstring(lower, "door") || ContainsSubstring(lower, "portal") ||
+            ContainsSubstring(lower, "barrier") || ContainsSubstring(lower, "fence") || ContainsSubstring(lower, "rail")) {
             if (!HasPrimitive(*specs, kScenePrimitivePrefabGate)) {
                 AddGateSpec(specs, shell, label, static_cast<int>(340 + index));
             }
@@ -1181,6 +1290,7 @@ static void AddConstraintDrivenSpecs(
         }
 
         if (ContainsSubstring(lower, "beacon") || ContainsSubstring(lower, "lamp") || ContainsSubstring(lower, "light") ||
+            ContainsSubstring(lower, "post") || ContainsSubstring(lower, "mast") || ContainsSubstring(lower, "pylon") ||
             ContainsSubstring(lower, "marker")) {
             if (!HasSpecNameContaining(*specs, "beacon") && !HasSpecNameContaining(*specs, "lamp") && !HasSpecNameContaining(*specs, "light")) {
                 AddBeaconSpec(specs, label, zone, static_cast<int>(360 + index));
@@ -1195,7 +1305,8 @@ static void AddConstraintDrivenSpecs(
             continue;
         }
 
-        if (ContainsSubstring(lower, "rock") || ContainsSubstring(lower, "outcrop") || ContainsSubstring(lower, "boulder")) {
+        if (ContainsSubstring(lower, "rock") || ContainsSubstring(lower, "ridge") || ContainsSubstring(lower, "berm") ||
+            ContainsSubstring(lower, "outcrop") || ContainsSubstring(lower, "boulder")) {
             if (!HasSpecNameContaining(*specs, "rock")) {
                 AddRockSpec(specs, label, zone, static_cast<int>(400 + index));
             }
@@ -2025,6 +2136,112 @@ static bool BuildProceduralSceneText(
     return true;
 }
 
+static bool BuildProceduralSceneDebugReport(
+    const SpatialState& spatial_state,
+    std::string* report_text,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (!report_text) {
+        SetError(error_buffer, error_buffer_size, "Invalid scene debug target: %s", "(null)");
+        return false;
+    }
+
+    const RoomShell shell = BuildRoomShell(spatial_state);
+    std::vector<LayoutObjectSpec> specs;
+    BuildVisibleObjectSpecs(spatial_state, shell, &specs);
+    AddConstraintDrivenSpecs(spatial_state, shell, &specs);
+    AddArchetypeDefaults(spatial_state, shell, &specs);
+
+    std::vector<PlacedLayoutObject> objects;
+    objects.reserve(specs.size());
+    for (size_t index = 0; index < specs.size(); ++index) {
+        PlacedLayoutObject object;
+        object.spec = specs[index];
+        if (object.spec.mount == kLayoutMountFloor) {
+            object.pos = ComputeFloorInitialPosition(shell, specs, index);
+        } else {
+            object.pos = ComputeMountedPosition(shell, specs, index);
+        }
+        objects.push_back(object);
+    }
+    SolveFloorLayout(shell, &objects);
+
+    report_text->clear();
+    AppendLine(report_text, "Scene compiler source: procedural\n");
+    AppendLine(
+        report_text,
+        "Shell: archetype=%s exterior=%s size=(%.2f, %.2f, %.2f) corridor_half_width=%.2f front_margin=%.2f camera_fov=%.2f\n",
+        LayoutArchetypeToString(shell.archetype),
+        shell.exterior ? "yes" : "no",
+        shell.half_width,
+        shell.half_depth,
+        shell.height,
+        shell.corridor_half_width,
+        shell.front_margin,
+        shell.camera_fov);
+    AppendLine(
+        report_text,
+        "Materials: floor=%.2f ceiling=%.2f wall=%.2f trim=%.2f spotlight(range=%.2f intensity=%.2f)\n",
+        shell.floor_gray,
+        shell.ceiling_gray,
+        shell.wall_gray,
+        shell.trim_gray,
+        shell.spotlight_range,
+        shell.spotlight_intensity);
+
+    AppendLine(report_text, "Spatial inputs:\n");
+    AppendLine(report_text, "  room_title=%s\n", spatial_state.room_title.empty() ? "(empty)" : spatial_state.room_title.c_str());
+    AppendLine(report_text, "  location_archetype=%s\n", spatial_state.location_archetype.empty() ? "(empty)" : spatial_state.location_archetype.c_str());
+    AppendLine(report_text, "  world_band=%s\n", DescribeSpatialWorldBand(spatial_state));
+    AppendLine(report_text, "  gate_relation=%s\n", DescribeSpatialGateRelation(spatial_state));
+    AppendLine(report_text, "  sky_exposure=%s\n", DescribeSpatialSkyExposure(spatial_state));
+
+    AppendLine(report_text, "Resolved specs: %zu\n", specs.size());
+    for (size_t index = 0; index < specs.size(); ++index) {
+        const LayoutObjectSpec& spec = specs[index];
+        AppendLine(
+            report_text,
+            "  [%02zu] name=%s primitive=%s mount=%s zone=%s size=(%.2f, %.2f, %.2f) gray=%.2f detail=%s%.2f emissive=%s emit=%.2f bars=%d blocks_corridor=%s\n",
+            index,
+            spec.name.c_str(),
+            ScenePrimitiveToString(spec.primitive),
+            LayoutMountToString(spec.mount),
+            LayoutZoneToString(spec.zone),
+            spec.size.x,
+            spec.size.y,
+            spec.size.z,
+            spec.gray,
+            spec.has_detail ? "" : "(none) ",
+            spec.has_detail ? spec.detail : 0.0f,
+            spec.emissive ? "yes" : "no",
+            spec.emit,
+            spec.bars,
+            spec.blocks_corridor ? "yes" : "no");
+    }
+
+    AppendLine(report_text, "Placed objects: %zu\n", objects.size());
+    for (size_t index = 0; index < objects.size(); ++index) {
+        const PlacedLayoutObject& object = objects[index];
+        AppendLine(
+            report_text,
+            "  [%02zu] name=%s primitive=%s mount=%s zone=%s pos=(%.2f, %.2f, %.2f) size=(%.2f, %.2f, %.2f)\n",
+            index,
+            object.spec.name.c_str(),
+            ScenePrimitiveToString(object.spec.primitive),
+            LayoutMountToString(object.spec.mount),
+            LayoutZoneToString(object.spec.zone),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z);
+    }
+
+    return true;
+}
+
 }  // namespace
 
 bool BuildCanonicalSpatialState(LocationId location_id, SpatialState* spatial_state)
@@ -2071,6 +2288,35 @@ bool BuildSceneTextFromSpatialState(
     }
 
     return BuildProceduralSceneText(spatial_state, scene_text, error_buffer, error_buffer_size);
+}
+
+bool BuildSceneDebugReportFromSpatialState(
+    const SpatialState& spatial_state,
+    std::string* report_text,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (!report_text) {
+        SetError(error_buffer, error_buffer_size, "Invalid scene debug target: %s", "(null)");
+        return false;
+    }
+
+    const char* fixture_path = spatial_state.canonical_fixture.empty()
+        ? CanonicalFixturePath(spatial_state.location_id)
+        : spatial_state.canonical_fixture.c_str();
+    if (fixture_path && fixture_path[0]) {
+        report_text->clear();
+        AppendLine(report_text, "Scene compiler source: canonical fixture\n");
+        AppendLine(report_text, "Fixture path: %s\n", fixture_path);
+        AppendLine(report_text, "Room title: %s\n", spatial_state.room_title.empty() ? "(empty)" : spatial_state.room_title.c_str());
+        AppendLine(report_text, "Location archetype: %s\n", spatial_state.location_archetype.empty() ? "(empty)" : spatial_state.location_archetype.c_str());
+        AppendLine(report_text, "World band: %s\n", DescribeSpatialWorldBand(spatial_state));
+        AppendLine(report_text, "Gate relation: %s\n", DescribeSpatialGateRelation(spatial_state));
+        AppendLine(report_text, "Sky exposure: %s\n", DescribeSpatialSkyExposure(spatial_state));
+        return true;
+    }
+
+    return BuildProceduralSceneDebugReport(spatial_state, report_text, error_buffer, error_buffer_size);
 }
 
 bool CompileSpatialStateToScene(const SpatialState& spatial_state, Scene* scene, char* error_buffer, size_t error_buffer_size)

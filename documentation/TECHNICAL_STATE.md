@@ -124,11 +124,15 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
 - Generation de salles maintenant guidee par cette derive cachee :
   - le prompt de metadata ne recoit plus un simple seuil de distance
   - il recoit des cues qualitatifs sur la bande du monde, le cote du datacenter et l'ouverture vers le ciel
+  - un **guide de derive textuel cache** traduit maintenant distance + angle en pression narrative, asymetries laterales, motifs preferes et vocabulaire a eviter
+  - le LLM est explicitement pousse a laisser ces cues contaminer `title`, `location_archetype`, `anchors`, `visible_objects` et `scene_constraints`
+  - les `scene_constraints` peuvent maintenant porter plus clairement une dissymetrie verbale (`east hatch`, `rear beacon`, `west crate`, etc.)
   - les salles lointaines peuvent donc tendre vers parapet puis desert sans plafond, plutot que rester des interieurs fermes
 - Compilateur hybride `SpatialState -> .scene` etendu :
   - bascule entre interieur, parapet et desert ouvert selon l'etat cache et les cues semantiques
   - shells desertiques sans masse de datacenter ni plafond
   - injection procedurale de cactus, rochers et marqueurs de desert
+  - reconnaissance lexicale un peu plus large pour convertir des cues verbaux comme `barrier`, `fence`, `rail`, `post`, `mast`, `pylon`, `duct`, `conduit`, `pipe`, `trench`, `ridge` ou `berm` vers les familles de prefabs existantes
 - Premiere HMI `SDL3` desktop :
   - event loop non bloquante
   - worker thread dedie a l'inference et au raytracing

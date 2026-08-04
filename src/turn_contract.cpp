@@ -1,6 +1,9 @@
 #include "turn_contract.h"
 
+#include <math.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <string.h>
 
 namespace liminal {
 
@@ -52,6 +55,221 @@ static void AppendRecentHistory(std::string* text, const std::vector<SessionTurn
             AppendLabelValue(text, "clarification: ", record.clarification.c_str());
         }
     }
+}
+
+static void AppendWorldMotif(std::vector<std::string>* values, const char* value)
+{
+    if (!values || !value || !value[0]) {
+        return;
+    }
+
+    for (size_t index = 0; index < values->size(); ++index) {
+        if ((*values)[index] == value) {
+            return;
+        }
+    }
+    values->push_back(value);
+}
+
+static uint32_t HashSpatialVariationSeed(const SpatialState& spatial_state)
+{
+    uint32_t hash = 2166136261u;
+    if (spatial_state.world_pose_known) {
+        const int world_x = static_cast<int>(floorf(spatial_state.world_x * 10.0f + (spatial_state.world_x >= 0.0f ? 0.5f : -0.5f)));
+        const int world_z = static_cast<int>(floorf(spatial_state.world_z * 10.0f + (spatial_state.world_z >= 0.0f ? 0.5f : -0.5f)));
+        hash ^= static_cast<uint32_t>(world_x);
+        hash *= 16777619u;
+        hash ^= static_cast<uint32_t>(world_z);
+        hash *= 16777619u;
+    }
+
+    const std::string basis = spatial_state.location_archetype + "|" + spatial_state.room_title + "|" + spatial_state.room_summary;
+    for (size_t index = 0; index < basis.size(); ++index) {
+        hash ^= static_cast<uint32_t>(static_cast<unsigned char>(basis[index]));
+        hash *= 16777619u;
+    }
+    return hash ? hash : 1u;
+}
+
+static float NormalizeDegrees(float degrees)
+{
+    while (degrees < 0.0f) {
+        degrees += 360.0f;
+    }
+    while (degrees >= 360.0f) {
+        degrees -= 360.0f;
+    }
+    return degrees;
+}
+
+static int ComputeSpatialOctant(const SpatialState& spatial_state)
+{
+    if (!spatial_state.world_pose_known) {
+        return 0;
+    }
+
+    const float normalized = NormalizeDegrees(ComputeSpatialWorldAngleDegrees(spatial_state));
+    const int octant = static_cast<int>(floorf((normalized + 22.5f) / 45.0f)) % 8;
+    return octant < 0 ? octant + 8 : octant;
+}
+
+static const char* DescribeSpatialBearingNarrative(const SpatialState& spatial_state)
+{
+    if (!spatial_state.world_pose_known) {
+        return "Its bearing around the datacenter is unknown, so distinguish it with one clear local motif instead of generic filler.";
+    }
+
+    switch (ComputeSpatialOctant(spatial_state)) {
+    case 0:
+        return "It sits on the direct gate approach, so frontal threshold silhouettes, inspection cues and road-facing hardware make sense.";
+    case 1:
+        return "It sits between the gate approach and the east side, favoring oblique service traces, offset fixtures and a slight lateral lean.";
+    case 2:
+        return "It sits on the east service flank, so side-running infrastructure and asymmetry pulling east are a good fit.";
+    case 3:
+        return "It sits between the east flank and the datacenter rear, where crosswind exposure and rearward service masses should start to dominate.";
+    case 4:
+        return "It sits on the far side opposite the entry gate, where rear bastions, exhaust masses and long horizon cuts are plausible.";
+    case 5:
+        return "It sits between the rear line and the west flank, favoring shadowed recesses, oblique cover and weather-worn service remains.";
+    case 6:
+        return "It sits on the west weather flank, so wind-shadow details, rough cover and laterally offset maintenance cues fit best.";
+    case 7:
+        return "It sits between the west flank and the gate approach, where caution hardware and drifting exterior traces can mix with threshold leftovers.";
+    default:
+        return "Its bearing is ambiguous; prefer a strong side bias instead of a mirrored room.";
+    }
+}
+
+static const char* DescribeSpatialBandNarrative(const SpatialState& spatial_state)
+{
+    const char* world_band = DescribeSpatialWorldBand(spatial_state);
+    if (strcmp(world_band, "central core") == 0) {
+        return "Treat it as buried inside the datacenter mass: enclosed, technical, compressed, and dominated by hard infrastructure.";
+    }
+    if (strcmp(world_band, "inner technical ring") == 0) {
+        return "Treat it as service-heavy datacenter territory: enclosed but uneven, with technical clutter, airflow, and machine-scale hints.";
+    }
+    if (strcmp(world_band, "perimeter seam") == 0) {
+        return "Treat it as a mixed threshold where the datacenter shell starts leaking exterior cues through vents, slits, decks or broken edges.";
+    }
+    if (strcmp(world_band, "outer parapet") == 0) {
+        return "Treat it as exposed perimeter architecture: open sky, warning hardware, roof access, and one strong datacenter mass against the horizon.";
+    }
+    if (strcmp(world_band, "open desert") == 0) {
+        return "Treat it as open desert margin: sparse cover, buried infrastructure remnants, navigation cues, and no generic sealed ceiling.";
+    }
+    return "Treat it as a liminal neighboring space and distinguish it through a single dominant architectural or desert-facing mass.";
+}
+
+static void BuildSpatialVariationMotifs(
+    const SpatialState& spatial_state,
+    std::vector<std::string>* favor_terms,
+    std::vector<std::string>* avoid_terms)
+{
+    if (!favor_terms || !avoid_terms) {
+        return;
+    }
+
+    const char* world_band = DescribeSpatialWorldBand(spatial_state);
+    if (strcmp(world_band, "central core") == 0) {
+        AppendWorldMotif(favor_terms, "service panel");
+        AppendWorldMotif(favor_terms, "maintenance hatch");
+        AppendWorldMotif(favor_terms, "relay cabinet");
+        AppendWorldMotif(favor_terms, "warning placard");
+        AppendWorldMotif(favor_terms, "cooling vent");
+        AppendWorldMotif(avoid_terms, "open horizon");
+        AppendWorldMotif(avoid_terms, "cactus cluster");
+        AppendWorldMotif(avoid_terms, "rock outcrop");
+    } else if (strcmp(world_band, "inner technical ring") == 0) {
+        AppendWorldMotif(favor_terms, "service crate");
+        AppendWorldMotif(favor_terms, "cooling vent");
+        AppendWorldMotif(favor_terms, "relay cabinet");
+        AppendWorldMotif(favor_terms, "maintenance hatch");
+        AppendWorldMotif(favor_terms, "ai server column");
+        AppendWorldMotif(avoid_terms, "open horizon");
+        AppendWorldMotif(avoid_terms, "cactus cluster");
+    } else if (strcmp(world_band, "perimeter seam") == 0) {
+        AppendWorldMotif(favor_terms, "roof hatch");
+        AppendWorldMotif(favor_terms, "warning beacon");
+        AppendWorldMotif(favor_terms, "service crate");
+        AppendWorldMotif(favor_terms, "maintenance hatch");
+        AppendWorldMotif(favor_terms, "warning placard");
+        AppendWorldMotif(avoid_terms, "dense rack maze");
+        AppendWorldMotif(avoid_terms, "sealed vault");
+    } else if (strcmp(world_band, "outer parapet") == 0) {
+        AppendWorldMotif(favor_terms, "roof hatch");
+        AppendWorldMotif(favor_terms, "warning beacon");
+        AppendWorldMotif(favor_terms, "service crate");
+        AppendWorldMotif(favor_terms, "maintenance hatch");
+        AppendWorldMotif(favor_terms, "open horizon");
+        AppendWorldMotif(avoid_terms, "sealed ceiling");
+        AppendWorldMotif(avoid_terms, "dense rack maze");
+    } else if (strcmp(world_band, "open desert") == 0) {
+        AppendWorldMotif(favor_terms, "range marker");
+        AppendWorldMotif(favor_terms, "survey cache");
+        AppendWorldMotif(favor_terms, "buried service hatch");
+        AppendWorldMotif(favor_terms, "rock outcrop");
+        AppendWorldMotif(favor_terms, "cactus cluster");
+        AppendWorldMotif(avoid_terms, "badge reader");
+        AppendWorldMotif(avoid_terms, "dense rack maze");
+        AppendWorldMotif(avoid_terms, "sealed ceiling");
+    }
+
+    const char* gate_relation = DescribeSpatialGateRelation(spatial_state);
+    if (strcmp(gate_relation, "entry-facing side") == 0) {
+        AppendWorldMotif(favor_terms, "checkpoint gate");
+        AppendWorldMotif(favor_terms, "warning placard");
+        AppendWorldMotif(favor_terms, "service crate");
+    } else if (strcmp(gate_relation, "east flank") == 0) {
+        AppendWorldMotif(favor_terms, "east service cabinet");
+        AppendWorldMotif(favor_terms, "east warning beacon");
+        AppendWorldMotif(favor_terms, "east maintenance hatch");
+    } else if (strcmp(gate_relation, "west flank") == 0) {
+        AppendWorldMotif(favor_terms, "west service crate");
+        AppendWorldMotif(favor_terms, "west warning placard");
+        AppendWorldMotif(favor_terms, "west rock outcrop");
+    } else if (strcmp(gate_relation, "far side opposite the entry gate") == 0) {
+        AppendWorldMotif(favor_terms, "rear hatch");
+        AppendWorldMotif(favor_terms, "rear warning beacon");
+        AppendWorldMotif(favor_terms, "rear service cabinet");
+    }
+
+    static const char* const kOctantVariants[8][3] = {
+        { "front inspection placard", "approach-side service crate", "front maintenance hatch" },
+        { "angled warning beacon", "east-leaning service crate", "lateral placard" },
+        { "east relay cabinet", "east maintenance hatch", "east warning marker" },
+        { "rear-east beacon", "crosswind hatch", "offset service cabinet" },
+        { "rear service crate", "rear hatch", "backline warning beacon" },
+        { "rear-west outcrop", "shadowed service crate", "west rear marker" },
+        { "west warning placard", "west maintenance hatch", "wind-shadow rock outcrop" },
+        { "gate-west barrier", "angled service crate", "west-front beacon" },
+    };
+    const int octant = ComputeSpatialOctant(spatial_state);
+    const uint32_t seed = HashSpatialVariationSeed(spatial_state);
+    AppendWorldMotif(favor_terms, kOctantVariants[octant][seed % 3u]);
+}
+
+static std::string BuildSpatialVariationGuideText(const SpatialState& spatial_state)
+{
+    std::string text;
+    text += "Hidden spatial drift guide\n";
+    AppendLabelValue(&text, "world_band: ", DescribeSpatialWorldBand(spatial_state));
+    AppendLabelValue(&text, "gate_relation: ", DescribeSpatialGateRelation(spatial_state));
+    AppendLabelValue(&text, "sky_exposure: ", DescribeSpatialSkyExposure(spatial_state));
+
+    AppendLabelValue(&text, "radial_narrative: ", DescribeSpatialBandNarrative(spatial_state));
+    AppendLabelValue(&text, "bearing_narrative: ", DescribeSpatialBearingNarrative(spatial_state));
+
+    std::vector<std::string> favor_terms;
+    std::vector<std::string> avoid_terms;
+    BuildSpatialVariationMotifs(spatial_state, &favor_terms, &avoid_terms);
+    AppendStringList(&text, "favor_terms: ", favor_terms);
+    AppendStringList(&text, "avoid_terms: ", avoid_terms);
+    text += "metadata_pressure: let title, location_archetype, anchors, visible_objects and scene_constraints echo at least two favor_terms.\n";
+    text += "layout_pressure: prefer one dominant asymmetry and side-qualified constraints such as east hatch, rear beacon, west crate or central console.\n";
+    text += "anti_repetition: do not collapse unrelated rooms into the same generic room family if the drift guide points elsewhere.\n";
+    return text;
 }
 
 }  // namespace
@@ -320,6 +538,9 @@ std::string BuildGeneratedRoomPrompt(
     text += "If the target world band suggests central core or inner technical ring, prefer enclosed datacenter rooms unless there is a strong reason not to.\n";
     text += "At the perimeter seam, partial openings, vents, service decks, broken roofs, or side exposures are plausible.\n";
     text += "When the target world band is open desert, use desert-facing objects and cues, not only interior datacenter interfaces.\n";
+    text += "Do not reuse a generic location_archetype across unrelated rooms. Let the hidden drift cues change the lexical family of the room.\n";
+    text += "If the drift guide suggests east, west, front or rear asymmetry, reflect it verbally in anchors or scene_constraints.\n";
+    text += "Scene constraints may include side words such as east, west, rear, front or central; keep them qualitative, not numeric.\n";
     text += "Use blocked_exits to mark closed directions explicitly; directions not listed there will be treated as traversable.\n";
     text += "For every new room, decide all four cardinal directions. blocked_exits must list every blocked direction explicitly.\n";
     text += "The reverse direction back to the source room should usually stay open, so it should usually be absent from blocked_exits.\n";
@@ -349,6 +570,8 @@ std::string BuildGeneratedRoomPrompt(
     AppendLabelValue(&text, "direction: ", CardinalDirectionToString(direction));
     text += "\nTarget room world cues\n";
     text += BuildSpatialBriefText(prospective_spatial_state);
+    text += "\nTarget room drift guide\n";
+    text += BuildSpatialVariationGuideText(prospective_spatial_state);
 
     text += "\nGenerated room schema\n";
     text += BuildGeneratedRoomSchemaText();
@@ -370,6 +593,8 @@ std::string BuildGeneratedRoomScenePrompt(
     AppendLabelValue(&text, "direction: ", CardinalDirectionToString(direction));
     text += "\nNew room brief\n";
     text += BuildSpatialBriefText(generated_spatial_state);
+    text += "\nNew room drift guide\n";
+    text += BuildSpatialVariationGuideText(generated_spatial_state);
     return text;
 }
 
@@ -381,6 +606,8 @@ std::string BuildSceneAuditPrompt(const SpatialState& spatial_state)
     text += BuildSceneFormatRuleText();
     text += "\nSpatial brief\n";
     text += BuildSpatialBriefText(spatial_state);
+    text += "\nHidden spatial drift guide\n";
+    text += BuildSpatialVariationGuideText(spatial_state);
     return text;
 }
 

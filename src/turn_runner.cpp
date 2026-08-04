@@ -317,6 +317,78 @@ static TurnResult MakeFallbackTurnResult(const std::string& raw_response_text)
     return turn_result;
 }
 
+static void CaptureSceneDebugArtifacts(
+    const SpatialState& spatial_state,
+    const std::string* preferred_scene_text,
+    std::string* scene_text,
+    std::string* scene_debug_text)
+{
+    if (scene_text) {
+        scene_text->clear();
+    }
+    if (scene_debug_text) {
+        scene_debug_text->clear();
+    }
+
+    char debug_error[512];
+    debug_error[0] = '\0';
+
+    if (scene_text) {
+        if (preferred_scene_text) {
+            *scene_text = *preferred_scene_text;
+        } else {
+            std::string generated_text;
+            if (BuildSceneTextFromSpatialState(
+                    spatial_state,
+                    &generated_text,
+                    debug_error,
+                    sizeof(debug_error))) {
+                *scene_text = generated_text;
+            }
+        }
+    }
+
+    if (scene_debug_text) {
+        std::string report_text;
+        if (BuildSceneDebugReportFromSpatialState(
+                spatial_state,
+                &report_text,
+                debug_error,
+                sizeof(debug_error))) {
+            *scene_debug_text = report_text;
+        } else if (debug_error[0]) {
+            *scene_debug_text = std::string("Scene debug report unavailable: ") + debug_error;
+        }
+    }
+}
+
+static void PrintDebugBlock(FILE* stream, const char* title, const std::string& text)
+{
+    FILE* out = stream ? stream : stdout;
+    if (!title || !title[0]) {
+        return;
+    }
+
+    fprintf(out, "\n=== %s ===\n", title);
+    if (text.empty()) {
+        fprintf(out, "(empty)\n");
+        return;
+    }
+
+    fputs(text.c_str(), out);
+    if (text[text.size() - 1] != '\n') {
+        fputc('\n', out);
+    }
+}
+
+static const GeneratedRoom* FindResultGeneratedRoom(const HeadlessTurnResult& result)
+{
+    if (result.generated_rooms_to_add.empty()) {
+        return 0;
+    }
+    return &result.generated_rooms_to_add[result.generated_rooms_to_add.size() - 1];
+}
+
 static bool ExtractFirstJsonObject(const char* text, std::string* object_text)
 {
     if (!text || !object_text) {
@@ -1455,6 +1527,11 @@ static bool RefreshGeneratedRoomCache(
     result->generated_room_scene_fallback_used = scene_fallback_used;
     result->generated_room_scene_source = scene_source;
     result->raw_scene_audit_response_text = refreshed_room.scene_text;
+    CaptureSceneDebugArtifacts(
+        refreshed_room.spatial_state,
+        &refreshed_room.scene_text,
+        &result->rendered_scene_text,
+        &result->rendered_scene_debug_text);
     result->rendered_scene = refreshed_scene;
     result->used_candidate_scene_for_render = false;
     return true;
@@ -1906,12 +1983,20 @@ bool RunHeadlessTurnFromState(
 
     CardinalDirection traversal_direction = kDirectionUnknown;
     if (TryParseTraversalCommand(player_command, &traversal_direction)) {
+        result->traversal_requested = true;
+        result->traversal_direction = traversal_direction;
+
         if (SpatialStateBlocksDirection(result->initial_spatial_state, traversal_direction)) {
             result->turn_result.intent = std::string("move_") + CardinalDirectionToString(traversal_direction) + "_blocked";
             result->turn_result.narration = BuildBlockedTraversalNarration(result->initial_spatial_state, traversal_direction);
             result->turn_result.clarification = "No new room was generated because the current spatial brief marks that exit as blocked.";
             result->updated_soft_state.rolling_summary = result->turn_result.narration;
             ++result->updated_hard_state.turn_number;
+            CaptureSceneDebugArtifacts(
+                result->updated_spatial_state,
+                0,
+                &result->rendered_scene_text,
+                &result->rendered_scene_debug_text);
             if (!LoadSceneForPlace(initial_session_state, result->updated_place_id, &result->rendered_scene, error_buffer, error_buffer_size)) {
                 return false;
             }
@@ -1935,6 +2020,12 @@ bool RunHeadlessTurnFromState(
             result->updated_soft_state.rolling_summary = result->turn_result.narration;
             ++result->updated_hard_state.move_count;
             ++result->updated_hard_state.turn_number;
+            const GeneratedRoom* linked_room = FindGeneratedRoomById(initial_session_state, linked_place_id);
+            CaptureSceneDebugArtifacts(
+                result->updated_spatial_state,
+                linked_room ? &linked_room->scene_text : 0,
+                &result->rendered_scene_text,
+                &result->rendered_scene_debug_text);
             if (!LoadSceneForPlace(initial_session_state, linked_place_id, &result->rendered_scene, error_buffer, error_buffer_size)) {
                 return false;
             }
@@ -1945,6 +2036,8 @@ bool RunHeadlessTurnFromState(
             initial_session_state,
             result->initial_place_id,
             traversal_direction);
+        result->prospective_spatial_state = prospective_spatial_state;
+        result->prospective_spatial_state_known = true;
 
         const std::string room_prompt = BuildGeneratedRoomPrompt(
             result->initial_hard_state,
@@ -1953,6 +2046,7 @@ bool RunHeadlessTurnFromState(
             prospective_spatial_state,
             &initial_session_state.history,
             traversal_direction);
+        result->request_text = room_prompt;
 
         std::vector<LlmPromptMessage> room_messages;
         room_messages.push_back(LlmPromptMessage());
@@ -2077,6 +2171,11 @@ bool RunHeadlessTurnFromState(
         result->generated_room_metadata_fallback_used = used_room_metadata_fallback;
         result->generated_room_scene_fallback_used = used_room_scene_fallback;
         result->generated_room_scene_source = generated_scene_source;
+        CaptureSceneDebugArtifacts(
+            generated_room.spatial_state,
+            &generated_scene_text,
+            &result->rendered_scene_text,
+            &result->rendered_scene_debug_text);
         AddRoomLinkUnique(&result->room_links_to_add, result->initial_place_id, traversal_direction, generated_room.room_id);
         AddRoomLinkUnique(
             &result->room_links_to_add,
@@ -2129,6 +2228,7 @@ bool RunHeadlessTurnFromState(
         &initial_session_state.history,
         player_command,
         false);
+    result->request_text = user_prompt;
 
     std::vector<LlmPromptMessage> messages;
     messages.push_back(LlmPromptMessage());
@@ -2233,6 +2333,11 @@ bool RunHeadlessTurnFromState(
     if (config.prefer_candidate_scene && result->candidate_scene_valid) {
         result->rendered_scene = result->candidate_scene;
         result->used_candidate_scene_for_render = true;
+        CaptureSceneDebugArtifacts(
+            result->updated_spatial_state,
+            &result->turn_result.candidate_scene_text,
+            &result->rendered_scene_text,
+            &result->rendered_scene_debug_text);
         return true;
     }
 
@@ -2246,6 +2351,11 @@ bool RunHeadlessTurnFromState(
     if (!LoadSceneForPlace(initial_session_state, result->updated_place_id, &result->rendered_scene, error_buffer, error_buffer_size)) {
         return false;
     }
+    CaptureSceneDebugArtifacts(
+        result->updated_spatial_state,
+        0,
+        &result->rendered_scene_text,
+        &result->rendered_scene_debug_text);
 
     return true;
 }
@@ -2263,6 +2373,62 @@ bool RunHeadlessTurn(
         return false;
     }
     return RunHeadlessTurnFromState(session_state, player_command, config, result, error_buffer, error_buffer_size);
+}
+
+void PrintHeadlessTurnDebugTrace(const HeadlessTurnResult& result, FILE* stream)
+{
+    FILE* out = stream ? stream : stdout;
+    fprintf(out, "\n=== Turn Debug Trace ===\n");
+    fprintf(out, "Initial place: %s\n", result.initial_place_id.empty() ? "(empty)" : result.initial_place_id.c_str());
+    fprintf(out, "Updated place: %s\n", result.updated_place_id.empty() ? "(empty)" : result.updated_place_id.c_str());
+    fprintf(out, "Intent: %s\n", result.turn_result.intent.empty() ? "(empty)" : result.turn_result.intent.c_str());
+    fprintf(out, "Traversal requested: %s\n", result.traversal_requested ? "yes" : "no");
+    if (result.traversal_requested) {
+        fprintf(out, "Traversal direction: %s\n", CardinalDirectionToString(result.traversal_direction));
+    }
+    fprintf(out, "Generated room created: %s\n", result.generated_room_created ? "yes" : "no");
+    fprintf(out, "Generated room cache refreshed: %s\n", result.generated_room_cache_refreshed ? "yes" : "no");
+    fprintf(out, "Turn fallback: %s\n", result.used_turn_fallback ? "yes" : "no");
+    fprintf(out, "Turn repair: %s\n", result.used_turn_repair ? "yes" : "no");
+    fprintf(out, "Prompt tokens: %d\n", result.prompt_tokens);
+    fprintf(out, "Generated tokens: %d\n", result.generated_tokens);
+    fprintf(out, "Inference time: %.2f ms\n", result.inference_time_ms);
+
+    fprintf(out, "\n--- Initial Spatial State ---\n");
+    PrintSpatialStateSummary(result.initial_spatial_state, out);
+
+    if (result.prospective_spatial_state_known) {
+        fprintf(out, "\n--- Prospective Spatial State ---\n");
+        PrintSpatialStateSummary(result.prospective_spatial_state, out);
+    }
+
+    PrintDebugBlock(out, "Engine Request", result.request_text);
+    PrintDebugBlock(out, "Runtime Prompt", result.prompt_text);
+    PrintDebugBlock(out, "Raw LLM Response", result.raw_response_text);
+    if (!result.repair_response_text.empty()) {
+        PrintDebugBlock(out, "Repair LLM Response", result.repair_response_text);
+    }
+
+    if (result.generated_room_created || result.generated_room_cache_refreshed) {
+        const GeneratedRoom* generated_room = FindResultGeneratedRoom(result);
+        if (generated_room) {
+            fprintf(out, "\n--- Generated Room Spatial State ---\n");
+            PrintSpatialStateSummary(generated_room->spatial_state, out);
+            fprintf(out, "Generated room metadata source: %s\n", generated_room->metadata_fallback_used ? "fallback" : "llm");
+            fprintf(out, "Generated room scene source: %s\n", generated_room->scene_source.empty() ? "(empty)" : generated_room->scene_source.c_str());
+        }
+    }
+
+    PrintDebugBlock(out, "Scene Program", result.rendered_scene_text.empty() ? result.raw_scene_audit_response_text : result.rendered_scene_text);
+    PrintDebugBlock(out, "Scene Compiler Report", result.rendered_scene_debug_text);
+
+    fprintf(out, "\n--- Updated Spatial State ---\n");
+    PrintSpatialStateSummary(result.updated_spatial_state, out);
+    fprintf(out, "\n--- Updated Hard State ---\n");
+    PrintHardStateSummary(result.updated_hard_state, out);
+    fprintf(out, "\n--- Updated Soft State ---\n");
+    PrintSoftStateSummary(result.updated_soft_state, out);
+    fflush(out);
 }
 
 }  // namespace liminal

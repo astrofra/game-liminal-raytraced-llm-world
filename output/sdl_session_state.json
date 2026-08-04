@@ -1,99 +1,56 @@
 {
-  "current_place_id": "generated:room_0009",
+  "current_place_id": "generated:room_0007",
   "generated_rooms": [
     {
       "metadata_fallback_used": false,
       "room_id": "generated:room_0001",
       "scene_fallback_used": false,
       "scene_source": "hybrid",
-      "scene_text": "room \"Cooling Vault\"\ncamera eye(0.0,1.78,-8.10) target(0.0,1.20,9.60) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(80.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(13.6,28.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.30,0.0) normal(0.0,-1.0,0.0) size(13.6,28.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.65,14.00) size(13.6,3.3,0.60) gray(0.18)\nbox \"wall_left\" pos(-6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nbox \"wall_right\" pos(6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nplane \"light_strip\" pos(0.0,3.29,2.4) normal(0.0,-1.0,0.0) size(1.2,7.8) gray(0.45) emit(1.6)\nbox \"emergency_cooling_hatch_red_triangle_marked_slightly_ajar_01\" pos(-1.20,1.15,7.00) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"control_panel_status_lights_amber_red_labeled_chiller_bank_3_02\" pos(0.00,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"service_crate_locked_stamped_nuclear_grade_sealant_04\" pos(3.67,0.55,-2.24) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nprefab_rack \"cooling_unit_single_rack_labeled_redundant_loop_a_05\" pos(-3.67,1.25,-2.46) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nbox \"warning_placard_06\" pos(-6.67,1.38,-0.22) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"service_crate_07\" pos(-4.68,0.55,0.36) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"intercom_post_08\" pos(6.67,1.38,7.70) size(0.14,0.65,0.90) gray(0.39)\nbox \"badge_reader_09\" pos(-1.50,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"maintenance_hatch_10\" pos(1.20,0.12,5.30) size(1.80,0.24,1.80) gray(0.22)\nprefab_ai_server \"hero_ai_server_201\" pos(-2.65,1.40,-0.36) size(1.70,2.80,1.70) gray(0.16) detail(0.28)\nprefab_cooling_unit \"cooling_flank_243\" pos(2.40,1.17,1.12) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\n",
+      "scene_text": "room \"Front Maintenance Deck\"\ncamera eye(0.0,1.90,-9.40) target(0.0,1.20,9.80) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(64.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(237)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(96.8,170.5) gray(0.13)\nbox \"roof_slab\" pos(0.0,0.28,1.0) size(16.7,0.56,24.0) gray(0.15)\nbox \"parapet_left\" pos(-7.22,0.78,1.0) size(0.65,1.56,23.6) gray(0.27)\nbox \"parapet_right\" pos(7.22,0.78,1.0) size(0.65,1.56,23.6) gray(0.27)\nbox \"parapet_back\" pos(0.0,0.78,13.33) size(14.4,1.56,0.65) gray(0.27)\nbox \"warning_beacon_01\" pos(-1.20,1.15,7.75) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"maintenance_hatch_02\" pos(1.20,0.12,6.05) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"service_crate_03\" pos(4.75,0.55,-2.48) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"rusted_access_panel_05\" pos(0.00,1.42,15.35) size(0.90,0.65,0.14) gray(0.39)\nbox \"warning_placard_06\" pos(-8.67,1.38,-0.04) size(0.14,0.65,0.90) gray(0.39)\nbox \"roof_hatch_07\" pos(-1.20,0.12,4.35) size(1.80,0.24,1.80) gray(0.22)\n",
       "spatial_state": {
         "alert_level": 2,
         "anchors": [
-          "access_hatch",
-          "control_panel",
-          "pumping_station",
-          "steam_vent"
-        ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "desert_state": "dusty",
-        "interior_density": "sparse",
-        "location_archetype": "utility_chamber",
-        "location_id": "unknown",
-        "room_summary": "A reinforced chamber housing redundant chillers and emergency cooling loops, with exposed piping and a single access hatch.",
-        "room_title": "Cooling Vault",
-        "scene_constraints": [
-          "hero ai server",
-          "rack bank",
-          "cooling flank",
-          "open horizon",
-          "rear hatch",
-          "service crate"
-        ],
-        "spatial_anomalies": [],
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "emergency cooling hatch (red-triangle marked, slightly ajar)",
-          "control panel (status lights: amber/red, labeled 'CHILLER BANK 3')",
-          "loose pipe (hissing steam, rusted flange)",
-          "service crate (locked, stamped 'NUCLEAR GRADE SEALANT')",
-          "cooling unit (single rack, labeled 'REDUNDANT LOOP A')",
-          "warning placard",
+          "ventilation slit",
+          "warning beacon",
+          "maintenance hatch",
           "service crate",
-          "intercom post",
-          "badge reader",
-          "maintenance hatch"
-        ],
-        "world_pose_known": true,
-        "world_x": 0.0,
-        "world_z": -3.0
-      }
-    },
-    {
-      "metadata_fallback_used": true,
-      "room_id": "generated:room_0002",
-      "scene_fallback_used": false,
-      "scene_source": "hybrid",
-      "scene_text": "room \"South Ramp\"\ncamera eye(0.0,1.90,-9.40) target(0.0,1.20,9.80) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(64.0)\nsky zenith(0.01) horizon(0.28) nadir(0.00) band(0.37) curve(1.95) noise(0.15) stars(0.0030,1.30,0.095) seed(971)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(19.4,34.1) gray(0.13)\nbox \"roof_slab\" pos(0.0,0.28,1.0) size(16.7,0.56,24.0) gray(0.15)\nbox \"parapet_left\" pos(-7.22,0.78,1.0) size(0.65,1.56,23.6) gray(0.27)\nbox \"parapet_right\" pos(7.22,0.78,1.0) size(0.65,1.56,23.6) gray(0.27)\nbox \"parapet_back\" pos(0.0,0.78,13.33) size(14.4,1.56,0.65) gray(0.27)\nprefab_crate \"service_crate_01\" pos(4.75,0.55,-2.48) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"badge_reader_02\" pos(0.00,1.42,15.35) size(0.90,0.65,0.14) gray(0.39)\nbox \"warning_placard_03\" pos(-8.67,1.38,-0.04) size(0.14,0.65,0.90) gray(0.39)\nbox \"roof_hatch_04\" pos(-1.20,0.12,7.75) size(1.80,0.24,1.80) gray(0.22)\nbox \"beacon_switch_05\" pos(8.67,1.38,8.53) size(0.14,0.65,0.90) gray(0.39)\nbox \"intercom_post_06\" pos(-1.50,1.42,15.35) size(0.90,0.65,0.14) gray(0.39)\nbox \"maintenance_hatch_07\" pos(1.20,0.12,6.05) size(1.80,0.24,1.80) gray(0.22)\nprefab_gate \"checkpoint_gate_342\" pos(1.50,1.72,15.21) size(4.60,2.90,0.42) gray(0.30) detail(0.42) bars(5)\n",
-      "spatial_state": {
-        "alert_level": 1,
-        "anchors": [
-          "perimeter",
-          "compound_wall",
-          "equipment_pad",
+          "road edge",
           "parapet",
           "horizon",
           "roof_edge"
         ],
         "blocked_exits": [],
         "canonical_fixture": "",
-        "desert_state": "dusty",
+        "desert_state": "windy",
         "interior_density": "sparse",
         "location_archetype": "roof parapet exterior",
         "location_id": "unknown",
-        "room_summary": "A sloped service ramp where the compound thins toward the outer ground. The parapet opens to a strip of sky and horizon.",
-        "room_title": "South Ramp",
+        "room_summary": "A narrow service deck jutting from the datacenter’s front wall, where ventilation slits and exposed wiring meet the desert road. The parapet opens to a strip...",
+        "room_title": "Front Maintenance Deck",
         "scene_constraints": [
+          "front maintenance hatch",
+          "east ventilation slit",
+          "road-facing beacon",
           "open horizon",
-          "checkpoint gate",
-          "roof parapet",
           "rear hatch",
           "service crate",
+          "roof parapet",
           "perimeter seam"
         ],
-        "spatial_anomalies": [],
+        "spatial_anomalies": [
+          "uneven deck plating",
+          "flickering beacon glow"
+        ],
         "time_of_day": "dusk",
         "visibility_level": "dusty",
         "visible_objects": [
+          "warning beacon",
+          "maintenance hatch",
           "service crate",
-          "badge reader",
+          "exposed wiring loom",
+          "rusted access panel",
           "warning placard",
-          "roof hatch",
-          "beacon switch",
-          "intercom post",
-          "maintenance hatch"
+          "roof hatch"
         ],
         "world_pose_known": true,
         "world_x": 0.0,
@@ -102,18 +59,18 @@
     },
     {
       "metadata_fallback_used": false,
-      "room_id": "generated:room_0003",
+      "room_id": "generated:room_0002",
       "scene_fallback_used": false,
       "scene_source": "hybrid",
-      "scene_text": "room \"Dust Gate\"\ncamera eye(0.0,1.78,-8.10) target(0.0,1.20,9.60) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(80.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(13.6,28.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.30,0.0) normal(0.0,-1.0,0.0) size(13.6,28.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.65,14.00) size(13.6,3.3,0.60) gray(0.18)\nbox \"wall_left\" pos(-6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nbox \"wall_right\" pos(6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nplane \"light_strip\" pos(0.0,3.29,2.4) normal(0.0,-1.0,0.0) size(1.2,7.8) gray(0.45) emit(1.6)\nbox \"corroded_access_panel_01\" pos(0.00,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"half_buried_keypad_02\" pos(-6.67,1.38,-0.22) size(0.14,0.65,0.90) gray(0.39)\nbox \"broken_intercom_speaker_03\" pos(6.67,1.38,7.70) size(0.14,0.65,0.90) gray(0.39)\nbox \"warning_placard_06\" pos(-1.50,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"service_crate_07\" pos(3.67,0.55,-2.24) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"intercom_post_08\" pos(6.67,1.72,5.90) size(0.14,0.65,0.90) gray(0.39)\nbox \"maintenance_hatch_10\" pos(-1.20,0.12,7.00) size(1.80,0.24,1.80) gray(0.22)\nbox \"roof_hatch_11\" pos(1.20,0.12,5.30) size(1.80,0.24,1.80) gray(0.22)\nprefab_ai_server \"hero_ai_server_shadow_201\" pos(-2.65,1.40,-0.36) size(1.70,2.80,1.70) gray(0.16) detail(0.28)\nprefab_cooling_unit \"cooling_flank_242\" pos(2.40,1.17,1.12) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\nprefab_gate \"checkpoint_gate_344\" pos(1.50,1.72,13.78) size(2.20,2.50,0.28) gray(0.23) detail(0.42)\nprefab_rack \"rack_block_left_131\" pos(-3.67,1.25,-2.46) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_right_132\" pos(4.02,1.25,0.66) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_left_rear_133\" pos(-4.52,1.25,0.66) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_right_rear_134\" pos(3.67,1.25,3.56) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\n",
+      "scene_text": "room \"Rusted Inspection Tower\"\ncamera eye(0.0,1.78,-8.10) target(0.0,1.20,9.60) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(80.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(13.6,28.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.30,0.0) normal(0.0,-1.0,0.0) size(13.6,28.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.65,14.00) size(13.6,3.3,0.60) gray(0.18)\nbox \"wall_left\" pos(-6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nbox \"wall_right\" pos(6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nplane \"light_strip\" pos(0.0,3.29,2.4) normal(0.0,-1.0,0.0) size(1.2,7.8) gray(0.45) emit(1.6)\nbox \"inspection_hatch_locked_01\" pos(-1.20,0.12,7.00) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"service_crate_half_open_empty_03\" pos(3.67,0.55,-2.24) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"warning_placard_04\" pos(0.00,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"service_crate_05\" pos(-3.67,0.55,-2.24) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"maintenance_hatch_06\" pos(1.20,0.12,5.30) size(1.80,0.24,1.80) gray(0.22)\nbox \"roof_hatch_07\" pos(-1.20,0.12,3.60) size(1.80,0.24,1.80) gray(0.22)\nbox \"warning_beacon_08\" pos(1.20,1.15,1.90) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nprefab_rack \"rack_block_left_131\" pos(-3.67,1.25,0.66) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_right_132\" pos(3.67,1.25,0.66) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_left_rear_133\" pos(-3.67,1.25,3.34) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_right_rear_134\" pos(3.67,1.25,3.56) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_cooling_unit \"cooling_block_135\" pos(-3.67,1.17,5.18) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\n",
       "spatial_state": {
-        "alert_level": 2,
+        "alert_level": 3,
         "anchors": [
-          "concrete barrier",
-          "wind exposure",
-          "corroded wiring",
-          "service gate",
-          "desert horizon",
+          "open inspection hatch",
+          "cracked warning placard",
+          "metal lattice framework",
+          "locked access hatch",
+          "road-facing observation slit",
           "parapet",
           "horizon",
           "roof_edge"
@@ -124,37 +81,36 @@
         "interior_density": "sparse",
         "location_archetype": "roof parapet exterior",
         "location_id": "unknown",
-        "room_summary": "A narrow service gate where the desert wind presses against the compound’s last concrete barrier. The air hums with static from exposed wiring.",
-        "room_title": "Dust Gate",
+        "room_summary": "A skeletal observation post jutting above the road, its metal lattice warped by heat. The tower’s single hatch is locked, but a cracked placard warns of.",
+        "room_title": "Rusted Inspection Tower",
         "scene_constraints": [
-          "hero ai server shadow",
-          "cooling flank",
-          "open horizon",
-          "checkpoint gate",
+          "hero inspection tower",
+          "front observation slit",
+          "east access hatch",
+          "central warning placard",
+          "road-facing lattice",
           "rear hatch",
           "service crate",
+          "open horizon",
           "roof parapet",
           "perimeter seam"
         ],
         "spatial_anomalies": [
-          "frayed wiring",
-          "uneven concrete lip"
+          "uneven stair treads",
+          "flickering beacon glow (distant)",
+          "rusted handrail"
         ],
         "time_of_day": "dusk",
         "visibility_level": "dusty",
         "visible_objects": [
-          "corroded access panel",
-          "half-buried keypad",
-          "broken intercom speaker",
-          "exposed wiring",
-          "rust-stained concrete",
+          "inspection hatch (locked)",
+          "exposed wiring loom (frayed)",
+          "service crate (half-open, empty)",
           "warning placard",
           "service crate",
-          "intercom post",
-          "badge reader",
           "maintenance hatch",
           "roof hatch",
-          "beacon switch"
+          "warning beacon"
         ],
         "world_pose_known": true,
         "world_x": 0.0,
@@ -163,71 +119,127 @@
     },
     {
       "metadata_fallback_used": false,
-      "room_id": "generated:room_0004",
+      "room_id": "generated:room_0003",
       "scene_fallback_used": false,
       "scene_source": "hybrid",
-      "scene_text": "room \"Solar Scorch\"\ncamera eye(0.0,1.82,-9.80) target(0.0,1.20,10.60) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(120)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(25.3,37.4) gray(0.13)\nbox \"desert_ridge_left\" pos(-5.98,0.55,7.6) size(2.8,1.10,8.6) gray(0.14)\nbox \"desert_ridge_right\" pos(5.75,0.50,8.4) size(3.2,1.00,8.2) gray(0.15)\nbox \"desert_back_ridge\" pos(0.0,0.70,13.26) size(16.7,1.40,4.8) gray(0.16)\nbox \"rusted_solar_panel_frayed_wiring_01\" pos(0.00,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"collapsed_maintenance_hatch_partially_buried_02\" pos(-1.20,0.12,8.50) size(1.80,0.24,1.80) gray(0.22)\nbox \"wind_chipped_placard_authorization_required_03\" pos(-11.37,1.38,0.14) size(0.14,0.65,0.90) gray(0.39)\nbox \"warning_placard_06\" pos(11.37,1.38,9.35) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"service_crate_07\" pos(6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"intercom_post_08\" pos(-1.50,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"badge_reader_09\" pos(11.37,1.72,7.55) size(0.14,0.65,0.90) gray(0.39)\nbox \"maintenance_hatch_10\" pos(1.20,0.12,6.80) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"survey_cache_11\" pos(-6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"range_marker_12\" pos(-1.20,1.15,5.10) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"buried_service_hatch_13\" pos(1.20,0.12,3.40) size(1.80,0.24,1.80) gray(0.22)\nprefab_rock_wide \"rock_outcrop_14\" pos(-6.21,0.60,0.18) size(2.10,1.20,1.70) gray(0.23)\nprefab_cactus_cluster \"cactus_cluster_15\" pos(-6.21,1.05,2.08) size(1.20,2.10,1.20) gray(0.25)\nprefab_gate \"checkpoint_gate_shadow_344\" pos(1.50,1.72,16.71) size(4.60,2.90,0.42) gray(0.30) detail(0.42) bars(5)\n",
+      "scene_text": "room \"West Approach Gatehouse\"\ncamera eye(0.0,1.78,-8.10) target(0.0,1.20,9.60) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(80.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(13.6,28.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.30,0.0) normal(0.0,-1.0,0.0) size(13.6,28.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.65,14.00) size(13.6,3.3,0.60) gray(0.18)\nbox \"wall_left\" pos(-6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nbox \"wall_right\" pos(6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nplane \"light_strip\" pos(0.0,3.29,2.4) normal(0.0,-1.0,0.0) size(1.2,7.8) gray(0.45) emit(1.6)\nbox \"intercom_panel_active_buzzing_01\" pos(0.00,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"badge_reader_rusted_no_response_02\" pos(-6.67,1.38,-0.22) size(0.14,0.65,0.90) gray(0.39)\nbox \"sealed_access_hatch_metal_no_handle_03\" pos(-1.20,0.12,7.00) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"service_crate_front_left_half_open_empty_04\" pos(3.67,0.55,-2.24) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"warning_beacon_rear_right_dim_05\" pos(1.20,1.15,5.30) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"warning_placard_06\" pos(6.67,1.38,7.70) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"service_crate_07\" pos(-3.67,0.55,-2.24) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"maintenance_hatch_08\" pos(-1.20,0.12,3.60) size(1.80,0.24,1.80) gray(0.22)\nbox \"roof_hatch_09\" pos(1.20,0.12,1.90) size(1.80,0.24,1.80) gray(0.22)\nbox \"warning_beacon_10\" pos(-1.20,1.15,0.20) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nprefab_gate \"checkpoint_gate_344\" pos(-1.50,1.42,13.78) size(2.20,2.50,0.28) gray(0.23) detail(0.42)\nprefab_rack \"rack_block_left_131\" pos(-3.67,1.25,0.66) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_right_132\" pos(3.67,1.25,0.66) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_left_rear_133\" pos(-3.67,1.25,3.34) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_rack \"rack_block_right_rear_134\" pos(3.67,1.25,3.56) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_cooling_unit \"cooling_block_135\" pos(-3.67,1.17,5.18) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\n",
       "spatial_state": {
         "alert_level": 3,
         "anchors": [
-          "cracked concrete slab",
-          "solar panel ruins",
-          "collapsed maintenance hatch",
-          "wind-chipped placard",
-          "desert horizon",
-          "scorched metal debris",
-          "desert",
+          "cracked windshield (desert view)",
+          "intercom panel (flickering)",
+          "rusted badge reader (idle)",
+          "sealed access hatch (rear wall)",
+          "cooling vent (left wall)",
+          "parapet",
           "horizon",
-          "open_sky"
+          "roof_edge"
         ],
         "blocked_exits": [],
         "canonical_fixture": "",
         "desert_state": "windy",
         "interior_density": "sparse",
-        "location_archetype": "desert perimeter exterior",
+        "location_archetype": "roof parapet exterior",
         "location_id": "unknown",
-        "room_summary": "A flat, sun-baked expanse where the desert wind carries heat and dust over cracked concrete slabs. The last remnants of the compound’s outer wall lie in.",
-        "room_title": "Solar Scorch",
+        "room_summary": "A reinforced metal gatehouse with a cracked windshield and a single operational intercom panel, its rear wall lined with a rusted badge reader and a sealed..",
+        "room_title": "West Approach Gatehouse",
         "scene_constraints": [
-          "open horizon",
-          "scorched metal debris",
-          "perimeter seam",
-          "checkpoint gate shadow",
-          "desert-facing objects",
+          "hero intercom panel",
+          "rear badge reader",
+          "front service crate",
+          "checkpoint gate",
           "rear hatch",
           "service crate",
-          "desert scatter",
-          "rock outcrop"
+          "open horizon",
+          "roof parapet",
+          "perimeter seam"
         ],
         "spatial_anomalies": [
-          "uneven concrete slab",
-          "frayed wiring strands",
-          "placard partially embedded in sand",
-          "solar panel half-collapsed"
+          "intercom panel emits faint static",
+          "badge reader’s slot is warped",
+          "cooling vent hisses intermittently",
+          "uneven concrete floor (minor slope)"
         ],
         "time_of_day": "dusk",
         "visibility_level": "dusty",
         "visible_objects": [
-          "rusted solar panel (frayed wiring)",
-          "collapsed maintenance hatch (partially buried)",
-          "wind-chipped placard ('AUTHORIZATION REQUIRED')",
-          "scorched concrete slab (uneven surface)",
-          "exposed wiring bundle (loose connections)",
+          "intercom panel (active, buzzing)",
+          "badge reader (rusted, no response)",
+          "sealed access hatch (metal, no handle)",
+          "service crate (front-left, half-open, empty)",
+          "warning beacon (rear-right, dim)",
           "warning placard",
           "service crate",
-          "intercom post",
-          "badge reader",
           "maintenance hatch",
-          "survey cache",
-          "range marker",
-          "buried service hatch",
-          "rock outcrop",
-          "cactus cluster",
-          "wind-torn sign"
+          "roof hatch",
+          "warning beacon"
         ],
         "world_pose_known": true,
-        "world_x": 0.0,
-        "world_z": -15.0
+        "world_x": -3.0,
+        "world_z": -12.0
+      }
+    },
+    {
+      "metadata_fallback_used": false,
+      "room_id": "generated:room_0004",
+      "scene_fallback_used": false,
+      "scene_source": "hybrid",
+      "scene_text": "room \"West Barrier Outpost\"\ncamera eye(0.0,1.78,-8.10) target(0.0,1.20,9.60) up(0.0,1.0,0.0) fov(46.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(80.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(13.6,28.0) gray(0.12)\nplane \"ceiling\" pos(0.0,3.30,0.0) normal(0.0,-1.0,0.0) size(13.6,28.0) gray(0.19)\nbox \"wall_back\" pos(0.0,1.65,14.00) size(13.6,3.3,0.60) gray(0.18)\nbox \"wall_left\" pos(-6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nbox \"wall_right\" pos(6.80,1.65,0.0) size(0.60,3.3,28.0) gray(0.18)\nplane \"light_strip\" pos(0.0,3.29,2.4) normal(0.0,-1.0,0.0) size(1.2,7.8) gray(0.45) emit(1.6)\nbox \"flickering_perimeter_beacon_active_dim_01\" pos(-1.20,1.15,7.00) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"half_open_maintenance_hatch_metal_no_handle_02\" pos(1.20,0.12,5.30) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"service_crate_front_left_empty_dented_04\" pos(3.67,0.55,-2.24) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"warning_placard_05\" pos(0.00,1.42,13.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"service_crate_06\" pos(-3.67,0.55,-2.38) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"maintenance_hatch_07\" pos(-1.20,0.12,3.60) size(1.80,0.24,1.80) gray(0.22)\nbox \"roof_hatch_08\" pos(1.20,0.12,1.90) size(1.80,0.24,1.80) gray(0.22)\nbox \"warning_beacon_09\" pos(-1.20,1.15,0.20) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nprefab_rack \"cracked_console_224\" pos(-2.48,1.25,-0.44) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_gate \"checkpoint_gate_partial_345\" pos(-1.50,1.42,13.78) size(2.20,2.50,0.28) gray(0.23) detail(0.42)\nprefab_cooling_unit \"cooling_block_135\" pos(-4.09,1.17,0.16) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\n",
+      "spatial_state": {
+        "alert_level": 3,
+        "anchors": [
+          "flickering perimeter beacon (left wall, pulsing)",
+          "cracked console (embedded, humming)",
+          "half-open maintenance hatch (right wall, warped edges)",
+          "rusted access ladder (rear wall, leaning)",
+          "small vent (above console, howling)",
+          "parapet",
+          "horizon",
+          "roof_edge"
+        ],
+        "blocked_exits": [],
+        "canonical_fixture": "",
+        "desert_state": "windy",
+        "interior_density": "sparse",
+        "location_archetype": "roof parapet exterior",
+        "location_id": "unknown",
+        "room_summary": "A reinforced concrete outpost jutting from the parapet, its walls lined with a flickering perimeter beacon and a half-open maintenance hatch leading to a...",
+        "room_title": "West Barrier Outpost",
+        "scene_constraints": [
+          "hero perimeter beacon",
+          "rear access ladder",
+          "front service crate",
+          "cracked console",
+          "checkpoint gate (partial)",
+          "rear hatch",
+          "service crate",
+          "open horizon",
+          "roof parapet",
+          "perimeter seam"
+        ],
+        "spatial_anomalies": [
+          "console emits faint electrical hum",
+          "vent howls with desert wind",
+          "ladder’s rungs are uneven",
+          "console’s screen flickers between static and a blurred warning",
+          "uneven concrete floor (minor slope toward hatch)"
+        ],
+        "time_of_day": "dusk",
+        "visibility_level": "dusty",
+        "visible_objects": [
+          "flickering perimeter beacon (active, dim)",
+          "half-open maintenance hatch (metal, no handle)",
+          "rusted access ladder (unstable, no grip)",
+          "service crate (front-left, empty, dented)",
+          "warning placard",
+          "service crate",
+          "maintenance hatch",
+          "roof hatch",
+          "warning beacon"
+        ],
+        "world_pose_known": true,
+        "world_x": -6.0,
+        "world_z": -12.0
       }
     },
     {
@@ -235,15 +247,15 @@
       "room_id": "generated:room_0005",
       "scene_fallback_used": false,
       "scene_source": "hybrid",
-      "scene_text": "room \"Rusted Relay Outpost\"\ncamera eye(0.0,1.82,-9.80) target(0.0,1.20,10.60) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(938)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(25.3,37.4) gray(0.13)\nbox \"desert_ridge_left\" pos(-5.98,0.55,7.6) size(2.8,1.10,8.6) gray(0.14)\nbox \"desert_ridge_right\" pos(5.75,0.50,8.4) size(3.2,1.00,8.2) gray(0.15)\nbox \"desert_back_ridge\" pos(0.0,0.70,13.26) size(16.7,1.40,4.8) gray(0.16)\nbox \"intercom_post_speaker_rusted_antenna_bent_01\" pos(0.00,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"corroded_badge_reader_flickering_red_light_02\" pos(-11.37,1.38,0.14) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"service_crate_label_emergency_power_03\" pos(6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"scorched_control_panel_cracked_buttons_wiring_exposed_04\" pos(11.37,1.38,9.35) size(0.14,0.65,0.90) gray(0.39)\nbox \"warning_placard_06\" pos(-1.50,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"service_crate_07\" pos(-6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"intercom_post_08\" pos(11.37,1.72,7.55) size(0.14,0.65,0.90) gray(0.39)\nbox \"maintenance_hatch_10\" pos(-1.20,0.12,8.50) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"survey_cache_11\" pos(6.21,0.55,-0.12) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"range_marker_12\" pos(1.20,1.15,6.80) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"buried_service_hatch_13\" pos(-1.20,0.12,5.10) size(1.80,0.24,1.80) gray(0.22)\nprefab_rock_wide \"rock_outcrop_14\" pos(-6.21,0.60,0.18) size(2.10,1.20,1.70) gray(0.23)\nprefab_cactus_cluster \"cactus_cluster_15\" pos(-6.21,1.05,2.08) size(1.20,2.10,1.20) gray(0.25)\nprefab_rack \"rack_bank_shadow_222\" pos(1.20,1.25,3.40) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_cooling_unit \"cooling_flank_residual_heat_243\" pos(-1.20,1.17,1.70) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\n",
+      "scene_text": "room \"Front Threshold Inspection\"\ncamera eye(0.0,1.82,-9.80) target(0.0,1.20,10.60) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(475)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(126.5,187.0) gray(0.13)\nbox \"desert_ridge_left\" pos(-5.98,0.55,7.6) size(2.8,1.10,8.6) gray(0.14)\nbox \"desert_ridge_right\" pos(5.75,0.50,8.4) size(3.2,1.00,8.2) gray(0.15)\nbox \"desert_back_ridge\" pos(0.0,0.70,13.26) size(16.7,1.40,4.8) gray(0.16)\nbox \"buried_service_hatch_half_covered_by_sand_no_handle_01\" pos(-1.20,0.12,8.50) size(1.80,0.24,1.80) gray(0.22)\nbox \"range_marker_post_faded_markings_mounted_on_post_02\" pos(1.20,1.15,6.80) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"warning_beacon_flickering_mounted_on_deck_edge_03\" pos(-1.20,1.15,5.10) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nprefab_crate \"service_crate_front_left_half_buried_empty_04\" pos(6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"warning_placard_05\" pos(0.00,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"service_crate_06\" pos(-6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"maintenance_hatch_07\" pos(1.20,0.12,3.40) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"survey_cache_08\" pos(6.21,0.55,-0.12) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"range_marker_09\" pos(-1.20,1.15,1.70) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"buried_service_hatch_10\" pos(1.20,0.12,0.00) size(1.80,0.24,1.80) gray(0.22)\nprefab_rock_tall \"rock_outcrop_11\" pos(-6.21,0.95,-0.32) size(1.30,1.90,1.20) gray(0.23)\nbox \"wind_torn_sign_13\" pos(-11.37,1.38,0.14) size(0.14,0.65,0.90) gray(0.39)\nprefab_cactus_cluster \"cactus_watch_126\" pos(-6.21,1.05,2.08) size(1.20,2.10,1.20) gray(0.25)\nprefab_cactus_sentinel \"cactus_watch_east_127\" pos(6.21,1.23,1.88) size(1.10,2.45,1.10) gray(0.25)\n",
       "spatial_state": {
         "alert_level": 3,
         "anchors": [
-          "intercom post (partially buried)",
-          "corroded badge reader (wall-mounted)",
-          "service crate (half-sandfilled)",
-          "scorched control panel (face-down)",
-          "concrete depression (slope upward)",
+          "front-facing checkpoint gate (half-open, rusted)",
+          "buried service hatch (sand-covered, warped lid)",
+          "range marker post (faded numbers, near edge)",
+          "flickering warning beacon (desert-facing)",
+          "cactus cluster (distant, swaying)",
           "desert",
           "horizon",
           "open_sky"
@@ -254,255 +266,33 @@
         "interior_density": "sparse",
         "location_archetype": "desert perimeter exterior",
         "location_id": "unknown",
-        "room_summary": "A half-collapsed concrete bunker with exposed wiring and a single operational intercom, its metal walls pockmarked by desert erosion. The datacenter falls away...",
-        "room_title": "Rusted Relay Outpost",
+        "room_summary": "A concrete inspection deck jutting into the desert, lined with a front-facing checkpoint gate, a buried service hatch, and a range marker post. The datacenter...",
+        "room_title": "Front Threshold Inspection",
         "scene_constraints": [
-          "hero intercom post",
-          "rack bank shadow",
-          "cooling flank (residual heat)",
-          "desert-facing objects",
+          "front service hatch",
+          "range marker post",
+          "desert-facing beacon",
           "open horizon",
-          "rack bank",
           "rear hatch",
           "service crate",
           "desert scatter",
           "rock outcrop"
         ],
         "spatial_anomalies": [
-          "intercom post tilted at 15-degree angle",
-          "badge reader’s screen flickers intermittently",
-          "control panel’s display reads 'SYSTEM OVERLOAD'",
-          "service crate’s lid slightly ajar, revealing dust"
+          "uneven concrete deck (minor slope toward desert)",
+          "warning beacon emits faint crackling static",
+          "service hatch lid warped upward",
+          "range marker post slightly tilted"
         ],
         "time_of_day": "dusk",
         "visibility_level": "dusty",
         "visible_objects": [
-          "intercom post (speaker rusted, antenna bent)",
-          "corroded badge reader (flickering red light)",
-          "service crate (label: 'EMERGENCY POWER')",
-          "scorched control panel (cracked buttons, wiring exposed)",
-          "exposed wiring bundle (loose connections, sand-caked)",
+          "buried service hatch (half-covered by sand, no handle)",
+          "range marker post (faded markings, mounted on post)",
+          "warning beacon (flickering, mounted on deck edge)",
+          "service crate (front-left, half-buried, empty)",
           "warning placard",
           "service crate",
-          "intercom post",
-          "badge reader",
-          "maintenance hatch",
-          "survey cache",
-          "range marker",
-          "buried service hatch",
-          "rock outcrop",
-          "cactus cluster",
-          "wind-torn sign"
-        ],
-        "world_pose_known": true,
-        "world_x": 0.0,
-        "world_z": -18.0
-      }
-    },
-    {
-      "metadata_fallback_used": false,
-      "room_id": "generated:room_0006",
-      "scene_fallback_used": false,
-      "scene_source": "hybrid",
-      "scene_text": "room \"Solar Bleedout\"\ncamera eye(0.0,1.82,-9.80) target(0.0,1.20,10.60) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(337)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(25.3,37.4) gray(0.13)\nbox \"desert_ridge_left\" pos(-5.98,0.55,7.6) size(2.8,1.10,8.6) gray(0.14)\nbox \"desert_ridge_right\" pos(5.75,0.50,8.4) size(3.2,1.00,8.2) gray(0.15)\nbox \"desert_back_ridge\" pos(0.0,0.70,13.26) size(16.7,1.40,4.8) gray(0.16)\nprefab_ai_server \"cracked_inference_mainframe_exposed_core_residual_heat_01\" pos(-6.21,1.40,-2.72) size(1.70,2.80,1.70) gray(0.16) detail(0.28)\nbox \"rusted_access_hatch_slightly_ajar_sand_inside_02\" pos(-1.20,1.15,8.50) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"warning_placard_yellowed_peeling_edges_04\" pos(0.00,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"warning_placard_06\" pos(-11.37,1.38,0.14) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"service_crate_07\" pos(6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"intercom_post_08\" pos(11.37,1.38,9.35) size(0.14,0.65,0.90) gray(0.39)\nbox \"badge_reader_09\" pos(-1.50,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"maintenance_hatch_10\" pos(1.20,0.12,6.80) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"survey_cache_11\" pos(-6.21,0.55,-0.12) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"range_marker_12\" pos(-1.20,1.15,5.10) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"buried_service_hatch_13\" pos(1.20,0.12,3.40) size(1.80,0.24,1.80) gray(0.22)\nprefab_rock_wide \"rock_outcrop_14\" pos(-6.21,0.60,2.86) size(2.10,1.20,1.70) gray(0.23)\nprefab_cactus_cluster \"cactus_cluster_15\" pos(-6.21,1.05,4.71) size(1.20,2.10,1.20) gray(0.25)\nbox \"wind_torn_sign_16\" pos(11.37,1.72,7.55) size(0.14,0.65,0.90) gray(0.39)\nprefab_cooling_unit \"cooling_flank_residual_heat_haze_242\" pos(-1.20,1.17,1.70) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\nprefab_rack \"rack_bank_226\" pos(1.20,1.25,0.00) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\n",
-      "spatial_state": {
-        "alert_level": 3,
-        "anchors": [
-          "cracked inference mainframe (half-buried, cooling fans spinning)",
-          "rusted access hatch (wedged open, sand-caked)",
-          "frayed power cable (trailing into trench)",
-          "warning placard ('DO NOT REBOOT: THERMAL RUNWAY RISK')",
-          "half-buried vent (cooling air escaping)",
-          "desert",
-          "horizon",
-          "open_sky"
-        ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "desert_state": "windy",
-        "interior_density": "sparse",
-        "location_archetype": "desert perimeter exterior",
-        "location_id": "unknown",
-        "room_summary": "A collapsed solar array shelter with a cracked mainframe core exposed to the desert wind, its cooling fans still spinning under a half-buried vent. The...",
-        "room_title": "Solar Bleedout",
-        "scene_constraints": [
-          "hero ai server (cracked core exposed)",
-          "cooling flank (residual heat haze)",
-          "desert-facing objects (sand-caked, wind-scoured)",
-          "open horizon (visible through vent)",
-          "hero ai server",
-          "rack bank",
-          "rear hatch",
-          "service crate",
-          "open horizon",
-          "desert scatter",
-          "rock outcrop"
-        ],
-        "spatial_anomalies": [
-          "inference mainframe’s display flickers with 'TEMP: 42°C'",
-          "access hatch’s latch is frozen shut from the inside",
-          "power cable’s insulation is melted in places",
-          "warning placard’s edges curl upward from heat",
-          "cooling fans spin unevenly, one blade bent"
-        ],
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "cracked inference mainframe (exposed core, residual heat)",
-          "rusted access hatch (slightly ajar, sand inside)",
-          "frayed power cable (loose connections, humming)",
-          "warning placard (yellowed, peeling edges)",
-          "desert wind (carrying sand into trench)",
-          "warning placard",
-          "service crate",
-          "intercom post",
-          "badge reader",
-          "maintenance hatch",
-          "survey cache",
-          "range marker",
-          "buried service hatch",
-          "rock outcrop",
-          "cactus cluster",
-          "wind-torn sign"
-        ],
-        "world_pose_known": true,
-        "world_x": 0.0,
-        "world_z": -21.0
-      }
-    },
-    {
-      "metadata_fallback_used": false,
-      "room_id": "generated:room_0007",
-      "scene_fallback_used": false,
-      "scene_source": "hybrid",
-      "scene_text": "room \"Thermal Runway\"\ncamera eye(0.0,1.82,-9.80) target(0.0,1.20,10.60) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(543)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(25.3,37.4) gray(0.13)\nbox \"desert_ridge_left\" pos(-5.98,0.55,7.6) size(2.8,1.10,8.6) gray(0.14)\nbox \"desert_ridge_right\" pos(5.75,0.50,8.4) size(3.2,1.00,8.2) gray(0.15)\nbox \"desert_back_ridge\" pos(0.0,0.70,13.26) size(16.7,1.40,4.8) gray(0.16)\nprefab_ai_server \"tensor_stack_exposed_core_residual_heat_haze_01\" pos(-6.21,1.40,-2.72) size(1.70,2.80,1.70) gray(0.16) detail(0.28)\nprefab_gate \"checkpoint_gate_rusted_half_sealed_02\" pos(-1.50,1.42,16.71) size(4.60,2.90,0.42) gray(0.30) detail(0.42) bars(5)\nprefab_crate \"service_crate_half_open_emergency_power_cell_inside_03\" pos(6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"rear_hatch_scorched_slightly_ajar_05\" pos(-1.20,1.15,8.50) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"warning_placard_06\" pos(0.00,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"service_crate_07\" pos(-6.21,0.55,-0.12) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"intercom_post_08\" pos(-11.37,1.38,0.14) size(0.14,0.65,0.90) gray(0.39)\nbox \"badge_reader_09\" pos(11.37,1.38,9.35) size(0.14,0.65,0.90) gray(0.39)\nbox \"maintenance_hatch_10\" pos(1.20,0.12,6.80) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"survey_cache_11\" pos(6.21,0.55,-0.12) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"range_marker_12\" pos(-1.20,1.15,5.10) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"buried_service_hatch_13\" pos(1.20,0.12,3.40) size(1.80,0.24,1.80) gray(0.22)\nprefab_rock_wide \"rock_outcrop_14\" pos(-6.21,0.60,2.86) size(2.10,1.20,1.70) gray(0.23)\nprefab_cactus_cluster \"cactus_cluster_15\" pos(-6.21,1.05,4.71) size(1.20,2.10,1.20) gray(0.25)\nbox \"wind_torn_sign_16\" pos(1.50,1.72,16.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_cooling_unit \"cooling_flank_failed_residual_heat_radiating_242\" pos(-1.20,1.17,1.70) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\n",
-      "spatial_state": {
-        "alert_level": 4,
-        "anchors": [
-          "tensor stack (exposed, heat haze, cooling fans dead)",
-          "checkpoint gate (half-sealed, rusted hinges)",
-          "service crate (near rear hatch, contains emergency power cell)",
-          "emergency power cell (pulsing, unstable energy)",
-          "rear hatch (slightly ajar, scorched wiring visible)",
-          "desert",
-          "horizon",
-          "open_sky"
-        ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "desert_state": "windy",
-        "interior_density": "sparse",
-        "location_archetype": "desert perimeter exterior",
-        "location_id": "unknown",
-        "room_summary": "A collapsed cooling chamber where a **tensor stack** lies exposed to the desert, its heat radiating outward. A **checkpoint gate** is half-sealed with rusted.",
-        "room_title": "Thermal Runway",
-        "scene_constraints": [
-          "hero ai server (exposed tensor stack, heat haze)",
-          "cooling flank (failed, residual heat radiating)",
-          "checkpoint gate (rusted, half-sealed)",
-          "service crate (near rear hatch, emergency power cell)",
-          "rear hatch",
-          "service crate",
-          "checkpoint gate",
-          "open horizon",
-          "desert scatter",
-          "rock outcrop"
-        ],
-        "spatial_anomalies": [
-          "tensor stack’s heat distorts air like a mirage",
-          "checkpoint gate’s hinges catch on rusted debris",
-          "emergency power cell’s glow flickers erratically",
-          "rear hatch’s wiring shows signs of thermal stress",
-          "service crate’s lid is warped from heat exposure"
-        ],
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "tensor stack (exposed core, residual heat haze)",
-          "checkpoint gate (rusted, half-sealed)",
-          "service crate (half-open, emergency power cell inside)",
-          "emergency power cell (pulsing, unstable glow)",
-          "rear hatch (scorched, slightly ajar)",
-          "warning placard",
-          "service crate",
-          "intercom post",
-          "badge reader",
-          "maintenance hatch",
-          "survey cache",
-          "range marker",
-          "buried service hatch",
-          "rock outcrop",
-          "cactus cluster",
-          "wind-torn sign"
-        ],
-        "world_pose_known": true,
-        "world_x": 0.0,
-        "world_z": -24.0
-      }
-    },
-    {
-      "metadata_fallback_used": false,
-      "room_id": "generated:room_0008",
-      "scene_fallback_used": false,
-      "scene_source": "hybrid",
-      "scene_text": "room \"Scorched Inference Nexus\"\ncamera eye(0.0,1.82,-9.80) target(0.0,1.20,10.60) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(312)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(25.3,37.4) gray(0.13)\nbox \"desert_ridge_left\" pos(-5.98,0.55,7.6) size(2.8,1.10,8.6) gray(0.14)\nbox \"desert_ridge_right\" pos(5.75,0.50,8.4) size(3.2,1.00,8.2) gray(0.15)\nbox \"desert_back_ridge\" pos(0.0,0.70,13.26) size(16.7,1.40,4.8) gray(0.16)\nprefab_rack \"rack_bank_exposed_servers_cooling_fans_dead_01\" pos(-6.21,1.25,-2.72) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nbox \"central_console_flickering_screens_corrupted_data_02\" pos(-0.52,0.50,-0.34) size(1.70,1.00,0.80) gray(0.25)\nbox \"warning_placard_near_console_barely_legible_text_04\" pos(0.00,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"buried_access_hatch_partially_exposed_rusted_05\" pos(-1.20,0.12,8.50) size(1.80,0.24,1.80) gray(0.22)\nprefab_rack \"emergency_power_cell_pulsing_faintly_in_a_cracked_cabinet_06\" pos(6.21,1.25,-2.72) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nbox \"corroded_badge_reader_mounted_on_a_warped_wall_panel_07\" pos(-11.37,1.38,0.14) size(0.14,0.65,0.90) gray(0.39)\nbox \"warning_placard_08\" pos(11.37,1.38,9.35) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"service_crate_09\" pos(6.21,0.55,-0.12) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"intercom_post_10\" pos(-1.50,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"badge_reader_11\" pos(11.37,1.72,7.55) size(0.14,0.65,0.90) gray(0.39)\nbox \"maintenance_hatch_12\" pos(1.20,0.12,6.80) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"survey_cache_13\" pos(-6.21,0.55,-0.12) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"range_marker_14\" pos(-1.20,1.15,5.10) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"buried_service_hatch_15\" pos(1.20,0.12,3.40) size(1.80,0.24,1.80) gray(0.22)\nprefab_ai_server \"hero_ai_server_rack_bank_corrupted_data_201\" pos(-1.20,1.40,1.70) size(1.70,2.80,1.70) gray(0.16) detail(0.28)\nprefab_cooling_unit \"cooling_flank_failed_residual_heat_radiating_242\" pos(1.33,1.17,0.00) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\nprefab_rock_low \"rock_outcrop_413\" pos(-1.20,0.50,-1.70) size(1.60,1.00,1.30) gray(0.23)\nprefab_cactus_cluster \"cactus_watch_126\" pos(-6.21,1.05,2.08) size(1.20,2.10,1.20) gray(0.25)\nprefab_cactus_sentinel \"cactus_watch_east_127\" pos(6.21,1.23,1.88) size(1.10,2.45,1.10) gray(0.25)\n",
-      "spatial_state": {
-        "alert_level": 5,
-        "anchors": [
-          "rack bank (leaning, cooling fans dead, servers exposed)",
-          "central console (flickering screens, corrupted data)",
-          "service deck (half-collapsed, scorched edges)",
-          "warning placard (near console, barely legible text)",
-          "buried access hatch (partially exposed, rusted)",
-          "desert",
-          "horizon",
-          "open_sky"
-        ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "desert_state": "windy",
-        "interior_density": "sparse",
-        "location_archetype": "desert perimeter exterior",
-        "location_id": "unknown",
-        "room_summary": "A collapsed server bay where a **rack bank** leans precariously against a **central console**, its screens flickering with corrupted data. A **service deck**.",
-        "room_title": "Scorched Inference Nexus",
-        "scene_constraints": [
-          "hero ai server (rack bank, corrupted data)",
-          "cooling flank (failed, residual heat radiating)",
-          "central console (flickering, corrupted screens)",
-          "service deck (half-collapsed, scorched edges)",
-          "open horizon (desert exposure)",
-          "rack bank",
-          "cooling flank",
-          "central console",
-          "rear hatch",
-          "service crate",
-          "open horizon",
-          "desert scatter",
-          "rock outcrop"
-        ],
-        "spatial_anomalies": [
-          "rack bank leans precariously, risk of collapse",
-          "central console’s screens flicker with corrupted data",
-          "service deck’s metal edges are scorched black",
-          "warning placard’s text is barely legible",
-          "buried access hatch is partially exposed but rusted shut",
-          "emergency power cell’s glow flickers weakly in a cracked cabinet"
-        ],
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "rack bank (exposed servers, cooling fans dead)",
-          "central console (flickering screens, corrupted data)",
-          "service deck (half-collapsed, scorched edges)",
-          "warning placard (near console, barely legible text)",
-          "buried access hatch (partially exposed, rusted)",
-          "emergency power cell (pulsing faintly in a cracked cabinet)",
-          "corroded badge reader (mounted on a warped wall panel)",
-          "warning placard",
-          "service crate",
-          "intercom post",
-          "badge reader",
           "maintenance hatch",
           "survey cache",
           "range marker",
@@ -513,23 +303,23 @@
         ],
         "world_pose_known": true,
         "world_x": -3.0,
-        "world_z": -24.0
+        "world_z": -15.0
       }
     },
     {
       "metadata_fallback_used": false,
-      "room_id": "generated:room_0009",
+      "room_id": "generated:room_0006",
       "scene_fallback_used": false,
       "scene_source": "hybrid",
-      "scene_text": "room \"Overheated Accelerator Flank\"\ncamera eye(0.0,1.82,-9.80) target(0.0,1.20,10.60) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(100)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(25.3,37.4) gray(0.13)\nbox \"desert_ridge_left\" pos(-5.98,0.55,7.6) size(2.8,1.10,8.6) gray(0.14)\nbox \"desert_ridge_right\" pos(5.75,0.50,8.4) size(3.2,1.00,8.2) gray(0.15)\nbox \"desert_back_ridge\" pos(0.0,0.70,13.26) size(16.7,1.40,4.8) gray(0.16)\nprefab_ai_server \"tensor_stack_exposed_gpus_cooling_fans_dead_residual_heat_radiating_01\" pos(-6.21,1.40,-2.72) size(1.70,2.80,1.70) gray(0.16) detail(0.28)\nbox \"rear_hatch_rusted_partially_open_cooling_flank_exposure_02\" pos(-1.20,0.12,8.50) size(1.80,0.24,1.80) gray(0.22)\nbox \"corroded_intercom_humming_with_static_cracked_speaker_03\" pos(0.00,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"scorched_access_panel_wedged_open_melted_cables_04\" pos(-11.37,1.38,0.14) size(0.14,0.65,0.90) gray(0.39)\nprefab_rack \"emergency_power_cell_pulsing_faintly_in_a_cracked_cabinet_half_buried_in_sand_05\" pos(-6.21,1.25,0.18) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nbox \"desert_facing_badge_reader_mounted_on_warped_wall_panel_corroded_06\" pos(11.37,1.38,9.35) size(0.14,0.65,0.90) gray(0.39)\nbox \"warning_placard_07\" pos(-1.50,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_crate \"service_crate_08\" pos(6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"intercom_post_09\" pos(11.37,1.72,7.55) size(0.14,0.65,0.90) gray(0.39)\nbox \"maintenance_hatch_11\" pos(1.20,0.12,6.80) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"survey_cache_12\" pos(-6.21,0.55,2.48) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"range_marker_13\" pos(-1.20,1.15,5.10) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"buried_service_hatch_14\" pos(1.20,0.12,3.40) size(1.80,0.24,1.80) gray(0.22)\nprefab_rock_tall \"rock_outcrop_15\" pos(-6.21,0.95,4.48) size(1.30,1.90,1.20) gray(0.23)\nprefab_cooling_unit \"cooling_flank_failed_rear_hatch_exposure_scorched_edges_242\" pos(-1.20,1.17,1.70) size(1.20,2.35,1.20) gray(0.29) detail(0.38)\nbox \"central_console_absent_but_intercom_suggests_remote_monitoring_263\" pos(-0.40,0.50,-0.34) size(1.70,1.00,0.80) gray(0.25)\nprefab_cactus_cluster \"cactus_watch_126\" pos(-6.21,1.05,6.88) size(1.20,2.10,1.20) gray(0.25)\nprefab_cactus_sentinel \"cactus_watch_east_127\" pos(6.21,1.23,-0.42) size(1.10,2.45,1.10) gray(0.25)\n",
+      "scene_text": "room \"West Roadside Cache\"\ncamera eye(0.0,1.82,-9.80) target(0.0,1.20,10.60) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(423)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(126.5,187.0) gray(0.13)\nbox \"desert_ridge_left\" pos(-5.98,0.55,7.6) size(2.8,1.10,8.6) gray(0.14)\nbox \"desert_ridge_right\" pos(5.75,0.50,8.4) size(3.2,1.00,8.2) gray(0.15)\nbox \"desert_back_ridge\" pos(0.0,0.70,13.26) size(16.7,1.40,4.8) gray(0.16)\nbox \"collapsed_inspection_placard_faded_markings_partially_buried_01\" pos(0.00,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"rusted_hatch_warped_lid_slightly_ajar_03\" pos(-1.20,1.15,8.50) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nprefab_crate \"sealed_survey_crate_rusted_lid_stamped_with_faded_symbols_04\" pos(6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"wind_torn_sign_fragment_buried_in_sand_partial_text_05\" pos(-11.37,1.38,0.14) size(0.14,0.65,0.90) gray(0.39)\nbox \"warning_placard_06\" pos(11.37,1.38,9.35) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"service_crate_07\" pos(-6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"maintenance_hatch_08\" pos(1.20,0.12,6.80) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"survey_cache_09\" pos(6.21,0.55,-0.12) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"range_marker_10\" pos(-1.20,1.15,5.10) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"buried_service_hatch_11\" pos(1.20,0.12,3.40) size(1.80,0.24,1.80) gray(0.22)\nprefab_rock_spire \"rock_outcrop_12\" pos(-6.21,1.15,-0.57) size(1.00,2.30,0.95) gray(0.23)\nprefab_cactus_sentinel \"cactus_cluster_13\" pos(-6.21,1.23,1.88) size(1.10,2.45,1.10) gray(0.25)\nbox \"wind_torn_sign_14\" pos(-1.50,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\n",
       "spatial_state": {
-        "alert_level": 6,
+        "alert_level": 3,
         "anchors": [
-          "tensor stack (leaning, exposed GPUs glowing faintly, cooling fans dead)",
-          "rear hatch (rusted, partially open, cooling flank exposure)",
-          "corroded intercom (mounted on wall, humming with static)",
-          "scorched access panel (wedged open, melted cables visible)",
-          "desert exposure (open horizon, wind-torn signage)",
+          "collapsed inspection placard (faded text, face-down)",
+          "buried access ladder (leading to rusted hatch)",
+          "scorched survey crate (cracked open, half-buried)",
+          "sealed survey crate (rusted lid, stamped with faded symbols)",
+          "broken vent grille (metallic hum, desert-facing)",
           "desert",
           "horizon",
           "open_sky"
@@ -540,17 +330,14 @@
         "interior_density": "sparse",
         "location_archetype": "desert perimeter exterior",
         "location_id": "unknown",
-        "room_summary": "A collapsed cooling flank where a **tensor stack** leans against a **rear hatch**, its exposed GPUs glowing faintly. A **corroded intercom** hums with static,.",
-        "room_title": "Overheated Accelerator Flank",
+        "room_summary": "A shallow concrete trench lined with buried survey crates, a collapsed inspection placard, and a rusted access ladder leading to a half-buried hatch. The...",
+        "room_title": "West Roadside Cache",
         "scene_constraints": [
-          "hero ai server (tensor stack, exposed GPUs, residual heat)",
-          "cooling flank (failed, rear hatch exposure, scorched edges)",
-          "central console (absent, but intercom suggests remote monitoring)",
-          "open horizon (desert exposure, wind-torn signage)",
-          "desert scatter (half-buried emergency power cell, badge reader)",
-          "hero ai server",
-          "rack bank",
-          "cooling flank",
+          "west-facing rock outcrop",
+          "buried access ladder",
+          "scorched crate flank",
+          "desert-facing vent grille",
+          "collapsed placard anchor",
           "rear hatch",
           "service crate",
           "open horizon",
@@ -558,25 +345,22 @@
           "rock outcrop"
         ],
         "spatial_anomalies": [
-          "tensor stack leans precariously against rear hatch, risk of collapse",
-          "intercom hums with static, possible signal interference",
-          "scorched access panel reveals melted cables, recent forced entry",
-          "emergency power cell’s glow flickers weakly in cracked cabinet",
-          "badge reader is desert-facing, likely non-functional"
+          "trench floor slopes downward toward west-facing rock outcrop",
+          "broken vent grille emits faint metallic hum",
+          "scorched survey crate lid warped upward",
+          "inspection placard partially buried in sand",
+          "access ladder rungs unevenly rusted"
         ],
         "time_of_day": "dusk",
         "visibility_level": "dusty",
         "visible_objects": [
-          "tensor stack (exposed GPUs, cooling fans dead, residual heat radiating)",
-          "rear hatch (rusted, partially open, cooling flank exposure)",
-          "corroded intercom (humming with static, cracked speaker)",
-          "scorched access panel (wedged open, melted cables)",
-          "emergency power cell (pulsing faintly in a cracked cabinet, half-buried in sand)",
-          "desert-facing badge reader (mounted on warped wall panel, corroded)",
+          "collapsed inspection placard (faded markings, partially buried)",
+          "buried access ladder (rusted rungs, half-covered in sand)",
+          "rusted hatch (warped lid, slightly ajar)",
+          "sealed survey crate (rusted lid, stamped with faded symbols)",
+          "wind-torn sign fragment (buried in sand, partial text)",
           "warning placard",
           "service crate",
-          "intercom post",
-          "badge reader",
           "maintenance hatch",
           "survey cache",
           "range marker",
@@ -587,23 +371,88 @@
         ],
         "world_pose_known": true,
         "world_x": -6.0,
-        "world_z": -24.0
+        "world_z": -15.0
+      }
+    },
+    {
+      "metadata_fallback_used": false,
+      "room_id": "generated:room_0007",
+      "scene_fallback_used": false,
+      "scene_source": "hybrid",
+      "scene_text": "room \"Gate-West Barrier\"\ncamera eye(0.0,1.82,-9.80) target(0.0,1.20,10.60) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(444)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(126.5,187.0) gray(0.13)\nbox \"desert_ridge_left\" pos(-5.98,0.55,7.6) size(2.8,1.10,8.6) gray(0.14)\nbox \"desert_ridge_right\" pos(5.75,0.50,8.4) size(3.2,1.00,8.2) gray(0.15)\nbox \"desert_back_ridge\" pos(0.0,0.70,13.26) size(16.7,1.40,4.8) gray(0.16)\nbox \"rusted_access_hatch_warped_lid_slightly_ajar_01\" pos(-1.20,1.15,8.50) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nprefab_crate \"service_crate_half_buried_lid_missing_02\" pos(6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"warning_placard_faded_half_buried_in_sand_03\" pos(0.00,1.42,16.85) size(0.90,0.65,0.14) gray(0.39)\nbox \"warning_placard_04\" pos(-11.37,1.38,0.14) size(0.14,0.65,0.90) gray(0.39)\nprefab_crate \"service_crate_05\" pos(-6.21,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"maintenance_hatch_06\" pos(1.20,0.12,6.80) size(1.80,0.24,1.80) gray(0.22)\nprefab_crate \"survey_cache_07\" pos(6.21,0.55,-0.12) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"range_marker_08\" pos(-1.20,1.15,5.10) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"buried_service_hatch_09\" pos(1.20,0.12,3.40) size(1.80,0.24,1.80) gray(0.22)\nprefab_rock_wide \"rock_outcrop_10\" pos(-6.21,0.60,0.18) size(2.10,1.20,1.70) gray(0.23)\nprefab_cactus_fork \"cactus_cluster_11\" pos(-6.21,1.23,1.88) size(1.10,2.45,1.10) gray(0.25)\nbox \"wind_torn_sign_12\" pos(11.37,1.38,9.35) size(0.14,0.65,0.90) gray(0.39)\nprefab_gate \"wind_scoured_barrier_flank_342\" pos(-1.50,1.42,16.71) size(4.60,2.90,0.42) gray(0.30) detail(0.42) bars(5)\n",
+      "spatial_state": {
+        "alert_level": 3,
+        "anchors": [
+          "rear-facing checkpoint gate (half-collapsed, rusted),",
+          "buried range marker post (faded numbers, half-buried),",
+          "rusted access hatch (slightly ajar, leading downward),",
+          "broken vent grille (hissing, desert-facing),",
+          "concrete barrier (sloped upward, wind-scoured)",
+          "desert",
+          "horizon",
+          "open_sky"
+        ],
+        "blocked_exits": [],
+        "canonical_fixture": "",
+        "desert_state": "windy",
+        "interior_density": "sparse",
+        "location_archetype": "desert perimeter exterior",
+        "location_id": "unknown",
+        "room_summary": "A half-sunken concrete barrier with a rear-facing checkpoint gate, a buried range marker post, and a rusted access hatch leading to a narrow crawlspace. The.",
+        "room_title": "Gate-West Barrier",
+        "scene_constraints": [
+          "buried range marker post",
+          "wind-scoured barrier flank",
+          "service crate anchor",
+          "open desert horizon",
+          "rear hatch",
+          "service crate",
+          "open horizon",
+          "desert scatter",
+          "rock outcrop"
+        ],
+        "spatial_anomalies": [
+          "checkpoint gate hinges groan in the wind,",
+          "range marker post numbers are partially obscured by sand,",
+          "vent grille emits a faint metallic hum,",
+          "access hatch lid is warped upward,",
+          "service crate lid is missing, revealing empty interior"
+        ],
+        "time_of_day": "dusk",
+        "visibility_level": "dusty",
+        "visible_objects": [
+          "rusted access hatch (warped lid, slightly ajar),",
+          "service crate (half-buried, lid missing),",
+          "warning placard (faded, half-buried in sand)",
+          "warning placard",
+          "service crate",
+          "maintenance hatch",
+          "survey cache",
+          "range marker",
+          "buried service hatch",
+          "rock outcrop",
+          "cactus cluster",
+          "wind-torn sign"
+        ],
+        "world_pose_known": true,
+        "world_x": -9.0,
+        "world_z": -15.0
       }
     }
   ],
   "hard_state": {
-    "alert_level": 6,
+    "alert_level": 3,
     "cooling_state": "stable",
     "current_location_id": "unknown",
-    "datacenter_temperature_c": 45,
+    "datacenter_temperature_c": 26,
     "inventory_items": [],
-    "move_count": 10,
+    "move_count": 18,
     "named_entities": [
       "duty_officer"
     ],
     "power_state": "stable",
     "score": 0,
-    "turn_number": 11,
+    "turn_number": 19,
     "unresolved_threats": [
       "possible_external_attack"
     ],
@@ -612,73 +461,73 @@
   "history": [
     {
       "clarification": "",
-      "intent": "move_north_generated_room",
+      "intent": "move_south_generated_room",
       "location_id": "unknown",
-      "location_label": "Cooling Vault",
-      "narration": "The air shifts as you step into a cavernous chamber where the scent of ozone and damp metal clings to your skin. Fluorescent strips flicker weakly along the walls, casting long shadows over rows of cooling units. A single access hatch—marked with a red.",
-      "player_command": "NORTH",
+      "location_label": "Front Maintenance Deck",
+      "narration": "The gate’s edge drops away beneath you as you step onto a thin metal deck, its surface warped by heat. A rusted ventilation slit hisses faintly, and the desert wind carries the scent of ozone and dust. A flickering warning beacon mounted on the wall pulses.",
+      "player_command": "SOUTH",
       "turn_number": 1
     },
     {
       "clarification": "",
-      "intent": "move_south_known_room",
-      "location_id": "gate",
-      "location_label": "gate",
-      "narration": "You go south and enter gate.",
+      "intent": "move_south_generated_room",
+      "location_id": "unknown",
+      "location_label": "Rusted Inspection Tower",
+      "narration": "The deck tilts downward as you step into a narrow metal stairwell, its steps groaning underfoot. At the top, a rusted inspection tower looms, its open hatch revealing a cracked warning placard inside: *'Unauthorized entry triggers perimeter lockdown.'* The.",
       "player_command": "SOUTH",
       "turn_number": 2
     },
     {
-      "clarification": "Generated room metadata fallback was used: Failed to parse generated room JSON: [json.exception.parse_error.101] parse error at line 20, column 3: syntax error while parsing array - unexpected '}'; expected ']'",
-      "intent": "move_south_generated_room",
+      "clarification": "",
+      "intent": "move_west_generated_room",
       "location_id": "unknown",
-      "location_label": "South Ramp",
-      "narration": "You move south. A sloped service ramp where the compound thins toward the outer ground. Beyond the concrete lip, the sky and horizon are visible.",
-      "player_command": "SOUTH",
+      "location_label": "West Approach Gatehouse",
+      "narration": "The tower’s west side opens into a small, boxy gatehouse, its walls humming with residual heat. A flickering intercom panel mounted on the wall buzzes faintly, and the scent of ozone lingers from a nearby cooling vent. A cracked windshield frames the desert.",
+      "player_command": "WEST",
       "turn_number": 3
     },
     {
       "clarification": "",
-      "intent": "move_south_generated_room",
+      "intent": "move_west_generated_room",
       "location_id": "unknown",
-      "location_label": "Dust Gate",
-      "narration": "You step through the gate into a narrow passage where the desert wind howls past, carrying grit against your skin. The concrete walls here are scored with rust stains, and a single flickering emergency light casts long shadows over a **corroded access...",
-      "player_command": "SOUTH",
+      "location_label": "West Barrier Outpost",
+      "narration": "The gatehouse’s west wall gives way to a narrow concrete outpost, its surface scorched by the desert sun. A **flickering perimeter beacon** mounted on the left wall pulses weakly, casting long shadows across a **cracked console** embedded in the wall. The.",
+      "player_command": "WEST",
       "turn_number": 4
     },
     {
       "clarification": "",
-      "intent": "move_south_generated_room",
+      "intent": "move_east_known_room",
       "location_id": "unknown",
-      "location_label": "Solar Scorch",
-      "narration": "The gate seals behind you with a groan. The desert stretches endlessly, the air thick with the scent of scorched metal and dry earth. A single **rusted solar panel** lies half-buried in the sand, its wiring frayed.",
-      "player_command": "SOUTH",
+      "location_label": "West Approach Gatehouse",
+      "narration": "You go east and enter West Approach Gatehouse. A reinforced metal gatehouse with a cracked windshield and a single operational intercom panel, its rear wall lined with a rusted badge reader and a sealed..",
+      "player_command": "EAST",
       "turn_number": 5
     },
     {
       "clarification": "",
-      "intent": "move_south_generated_room",
+      "intent": "move_west_known_room",
       "location_id": "unknown",
-      "location_label": "Rusted Relay Outpost",
-      "narration": "The wind dies as you step into a shallow depression where the concrete floor slopes upward toward a **partially buried intercom post**, its speaker rusted but intact. A **corroded badge reader** is mounted on the wall beside a **service crate** half-filled..",
-      "player_command": "SOUTH",
+      "location_label": "West Barrier Outpost",
+      "narration": "You go west and enter West Barrier Outpost. A reinforced concrete outpost jutting from the parapet, its walls lined with a flickering perimeter beacon and a half-open maintenance hatch leading to a..",
+      "player_command": "WEST",
       "turn_number": 6
     },
     {
       "clarification": "",
-      "intent": "move_south_generated_room",
+      "intent": "move_east_known_room",
       "location_id": "unknown",
-      "location_label": "Solar Bleedout",
-      "narration": "The ground slopes downward into a shallow trench where the last remnants of a solar array shelter lie. A **cracked inference mainframe** sits half-buried in sand, its cooling fans still whirring weakly. A **rusted access hatch** is wedged open beside a.",
-      "player_command": "SOUTH",
+      "location_label": "West Approach Gatehouse",
+      "narration": "You go east and enter West Approach Gatehouse. A reinforced metal gatehouse with a cracked windshield and a single operational intercom panel, its rear wall lined with a rusted badge reader and a sealed..",
+      "player_command": "EAST",
       "turn_number": 7
     },
     {
       "clarification": "",
       "intent": "move_south_generated_room",
       "location_id": "unknown",
-      "location_label": "Thermal Runway",
-      "narration": "The ground drops into a shallow pit where the air shimmers with heat. A **massive tensor stack** hums ominously, its cooling fans dead, but residual heat warps the air like a mirage. A **checkpoint gate** groans slightly as you step inside, its rusted hinges.",
+      "location_label": "Front Threshold Inspection",
+      "narration": "The gatehouse’s south exit opens into a narrow concrete deck exposed to the desert wind. A **front-facing checkpoint gate** stands half-open, its metal frame pitted by rust. To your left, a **buried service hatch** is half-covered by sand, its lid warped.",
       "player_command": "SOUTH",
       "turn_number": 8
     },
@@ -686,113 +535,165 @@
       "clarification": "",
       "intent": "move_west_generated_room",
       "location_id": "unknown",
-      "location_label": "Scorched Inference Nexus",
-      "narration": "The checkpoint gate groans shut behind you as you step into a cavernous chamber where the air is thick with the scent of burnt plastic. A **rack bank** of dead servers leans at an angle, its cooling fans silent. A **central console** hums weakly, its screens.",
+      "location_label": "West Roadside Cache",
+      "narration": "You step off the inspection deck and into a narrow, sunken trench—part of the original roadside inspection trench, now half-filled with sand. A **collapsed inspection placard** lies face-down near the edge, its faded text barely legible. To your left, a.",
       "player_command": "WEST",
       "turn_number": 9
     },
     {
       "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "unknown",
+      "location_label": "Front Threshold Inspection",
+      "narration": "You go east and enter Front Threshold Inspection. A concrete inspection deck jutting into the desert, lined with a front-facing checkpoint gate, a buried service hatch, and a range marker post. The datacenter.",
+      "player_command": "EAST",
+      "turn_number": 10
+    },
+    {
+      "clarification": "",
+      "intent": "move_west_known_room",
+      "location_id": "unknown",
+      "location_label": "West Roadside Cache",
+      "narration": "You go west and enter West Roadside Cache. A shallow concrete trench lined with buried survey crates, a collapsed inspection placard, and a rusted access ladder leading to a half-buried hatch. The.",
+      "player_command": "WEST",
+      "turn_number": 11
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "unknown",
+      "location_label": "Front Threshold Inspection",
+      "narration": "You go east and enter Front Threshold Inspection. A concrete inspection deck jutting into the desert, lined with a front-facing checkpoint gate, a buried service hatch, and a range marker post. The datacenter.",
+      "player_command": "EAST",
+      "turn_number": 12
+    },
+    {
+      "clarification": "",
+      "intent": "move_west_known_room",
+      "location_id": "unknown",
+      "location_label": "West Roadside Cache",
+      "narration": "You go west and enter West Roadside Cache. A shallow concrete trench lined with buried survey crates, a collapsed inspection placard, and a rusted access ladder leading to a half-buried hatch. The.",
+      "player_command": "WEST",
+      "turn_number": 13
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "unknown",
+      "location_label": "Front Threshold Inspection",
+      "narration": "You go east and enter Front Threshold Inspection. A concrete inspection deck jutting into the desert, lined with a front-facing checkpoint gate, a buried service hatch, and a range marker post. The datacenter.",
+      "player_command": "EAST",
+      "turn_number": 14
+    },
+    {
+      "clarification": "",
+      "intent": "move_west_known_room",
+      "location_id": "unknown",
+      "location_label": "West Roadside Cache",
+      "narration": "You go west and enter West Roadside Cache. A shallow concrete trench lined with buried survey crates, a collapsed inspection placard, and a rusted access ladder leading to a half-buried hatch. The.",
+      "player_command": "WEST",
+      "turn_number": 15
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "unknown",
+      "location_label": "Front Threshold Inspection",
+      "narration": "You go east and enter Front Threshold Inspection. A concrete inspection deck jutting into the desert, lined with a front-facing checkpoint gate, a buried service hatch, and a range marker post. The datacenter.",
+      "player_command": "EAST",
+      "turn_number": 16
+    },
+    {
+      "clarification": "",
+      "intent": "move_west_known_room",
+      "location_id": "unknown",
+      "location_label": "West Roadside Cache",
+      "narration": "You go west and enter West Roadside Cache. A shallow concrete trench lined with buried survey crates, a collapsed inspection placard, and a rusted access ladder leading to a half-buried hatch. The.",
+      "player_command": "WEST",
+      "turn_number": 17
+    },
+    {
+      "clarification": "",
       "intent": "move_west_generated_room",
       "location_id": "unknown",
-      "location_label": "Overheated Accelerator Flank",
-      "narration": "The checkpoint gate groans shut behind you as you step into a narrow, scorched corridor where the air is thick with the scent of ozone and burnt wiring. A **massive tensor stack** leans precariously against a **rear hatch**, its cooling fans dead but...",
+      "location_label": "Gate-West Barrier",
+      "narration": "You step over the trench’s lip and into a shallow depression where the ground slopes upward toward a concrete barrier. The rear-facing checkpoint gate is half-collapsed, its hinges groaning in the wind. A rusted access hatch, slightly ajar, sits in the.",
       "player_command": "WEST",
-      "turn_number": 10
+      "turn_number": 18
     }
   ],
-  "next_generated_room_index": 10,
+  "next_generated_room_index": 8,
   "origin_place_id": "canonical:gate",
   "room_links": [
     {
-      "direction": "north",
+      "direction": "south",
       "from_place_id": "canonical:gate",
       "to_place_id": "generated:room_0001"
     },
     {
-      "direction": "south",
+      "direction": "north",
       "from_place_id": "generated:room_0001",
       "to_place_id": "canonical:gate"
     },
     {
       "direction": "south",
-      "from_place_id": "canonical:gate",
+      "from_place_id": "generated:room_0001",
       "to_place_id": "generated:room_0002"
     },
     {
       "direction": "north",
       "from_place_id": "generated:room_0002",
-      "to_place_id": "canonical:gate"
+      "to_place_id": "generated:room_0001"
     },
     {
-      "direction": "south",
+      "direction": "west",
       "from_place_id": "generated:room_0002",
       "to_place_id": "generated:room_0003"
     },
     {
-      "direction": "north",
+      "direction": "east",
       "from_place_id": "generated:room_0003",
       "to_place_id": "generated:room_0002"
     },
     {
-      "direction": "south",
+      "direction": "west",
       "from_place_id": "generated:room_0003",
       "to_place_id": "generated:room_0004"
     },
     {
-      "direction": "north",
+      "direction": "east",
       "from_place_id": "generated:room_0004",
       "to_place_id": "generated:room_0003"
     },
     {
       "direction": "south",
-      "from_place_id": "generated:room_0004",
+      "from_place_id": "generated:room_0003",
       "to_place_id": "generated:room_0005"
     },
     {
       "direction": "north",
       "from_place_id": "generated:room_0005",
-      "to_place_id": "generated:room_0004"
+      "to_place_id": "generated:room_0003"
     },
     {
-      "direction": "south",
+      "direction": "west",
       "from_place_id": "generated:room_0005",
       "to_place_id": "generated:room_0006"
     },
     {
-      "direction": "north",
+      "direction": "east",
       "from_place_id": "generated:room_0006",
       "to_place_id": "generated:room_0005"
     },
     {
-      "direction": "south",
+      "direction": "west",
       "from_place_id": "generated:room_0006",
       "to_place_id": "generated:room_0007"
     },
     {
-      "direction": "north",
+      "direction": "east",
       "from_place_id": "generated:room_0007",
       "to_place_id": "generated:room_0006"
-    },
-    {
-      "direction": "west",
-      "from_place_id": "generated:room_0007",
-      "to_place_id": "generated:room_0008"
-    },
-    {
-      "direction": "east",
-      "from_place_id": "generated:room_0008",
-      "to_place_id": "generated:room_0007"
-    },
-    {
-      "direction": "west",
-      "from_place_id": "generated:room_0008",
-      "to_place_id": "generated:room_0009"
-    },
-    {
-      "direction": "east",
-      "from_place_id": "generated:room_0009",
-      "to_place_id": "generated:room_0008"
     }
   ],
   "soft_state": {
@@ -801,17 +702,17 @@
       "the institution may be manufacturing the threat"
     ],
     "atmosphere": "administrative, dry, watchful",
-    "rolling_summary": "The checkpoint gate groans shut behind you as you step into a narrow, scorched corridor where the air is thick with the scent of ozone and burnt wiring. A **massive tensor stack** leans precariously against a **rear hatch**, its cooling fans dead but...",
+    "rolling_summary": "You step over the trench’s lip and into a shallow depression where the ground slopes upward toward a concrete barrier. The rear-facing checkpoint gate is half-collapsed, its hinges groaning in the wind. A rusted access hatch, slightly ajar, sits in the.",
     "tolerated_incoherences": []
   },
   "spatial_state": {
-    "alert_level": 6,
+    "alert_level": 3,
     "anchors": [
-      "tensor stack (leaning, exposed GPUs glowing faintly, cooling fans dead)",
-      "rear hatch (rusted, partially open, cooling flank exposure)",
-      "corroded intercom (mounted on wall, humming with static)",
-      "scorched access panel (wedged open, melted cables visible)",
-      "desert exposure (open horizon, wind-torn signage)",
+      "rear-facing checkpoint gate (half-collapsed, rusted),",
+      "buried range marker post (faded numbers, half-buried),",
+      "rusted access hatch (slightly ajar, leading downward),",
+      "broken vent grille (hissing, desert-facing),",
+      "concrete barrier (sloped upward, wind-scoured)",
       "desert",
       "horizon",
       "open_sky"
@@ -822,17 +723,13 @@
     "interior_density": "sparse",
     "location_archetype": "desert perimeter exterior",
     "location_id": "unknown",
-    "room_summary": "A collapsed cooling flank where a **tensor stack** leans against a **rear hatch**, its exposed GPUs glowing faintly. A **corroded intercom** hums with static,.",
-    "room_title": "Overheated Accelerator Flank",
+    "room_summary": "A half-sunken concrete barrier with a rear-facing checkpoint gate, a buried range marker post, and a rusted access hatch leading to a narrow crawlspace. The.",
+    "room_title": "Gate-West Barrier",
     "scene_constraints": [
-      "hero ai server (tensor stack, exposed GPUs, residual heat)",
-      "cooling flank (failed, rear hatch exposure, scorched edges)",
-      "central console (absent, but intercom suggests remote monitoring)",
-      "open horizon (desert exposure, wind-torn signage)",
-      "desert scatter (half-buried emergency power cell, badge reader)",
-      "hero ai server",
-      "rack bank",
-      "cooling flank",
+      "buried range marker post",
+      "wind-scoured barrier flank",
+      "service crate anchor",
+      "open desert horizon",
       "rear hatch",
       "service crate",
       "open horizon",
@@ -840,25 +737,20 @@
       "rock outcrop"
     ],
     "spatial_anomalies": [
-      "tensor stack leans precariously against rear hatch, risk of collapse",
-      "intercom hums with static, possible signal interference",
-      "scorched access panel reveals melted cables, recent forced entry",
-      "emergency power cell’s glow flickers weakly in cracked cabinet",
-      "badge reader is desert-facing, likely non-functional"
+      "checkpoint gate hinges groan in the wind,",
+      "range marker post numbers are partially obscured by sand,",
+      "vent grille emits a faint metallic hum,",
+      "access hatch lid is warped upward,",
+      "service crate lid is missing, revealing empty interior"
     ],
     "time_of_day": "dusk",
     "visibility_level": "dusty",
     "visible_objects": [
-      "tensor stack (exposed GPUs, cooling fans dead, residual heat radiating)",
-      "rear hatch (rusted, partially open, cooling flank exposure)",
-      "corroded intercom (humming with static, cracked speaker)",
-      "scorched access panel (wedged open, melted cables)",
-      "emergency power cell (pulsing faintly in a cracked cabinet, half-buried in sand)",
-      "desert-facing badge reader (mounted on warped wall panel, corroded)",
+      "rusted access hatch (warped lid, slightly ajar),",
+      "service crate (half-buried, lid missing),",
+      "warning placard (faded, half-buried in sand)",
       "warning placard",
       "service crate",
-      "intercom post",
-      "badge reader",
       "maintenance hatch",
       "survey cache",
       "range marker",
@@ -868,7 +760,7 @@
       "wind-torn sign"
     ],
     "world_pose_known": true,
-    "world_x": -6.0,
-    "world_z": -24.0
+    "world_x": -9.0,
+    "world_z": -15.0
   }
 }
