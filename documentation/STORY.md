@@ -65,7 +65,7 @@ current interactive LLM work
 
 ### 1. Literary invisible space
 
-H. P. Lovecraft and Kenneth J. Sterling's *In the Walls of Eryx* provides the conceptual matrix: Venus as an extractive frontier, valuable crystals, a prospector trapped by invisible architecture, failed mapping, and the progressive loss of spatial certainty.
+H. P. Lovecraft and Kenneth J. Sterling's [*In the Walls of Eryx*](./IN_THE_WALLS_OF_ERYX.md) provides the conceptual matrix: Venus as an extractive frontier, valuable crystals, a prospector trapped by invisible architecture, failed mapping, and the progressive loss of spatial certainty.
 
 The project credits and reinterprets these motifs. It does not reproduce the story scene by scene or imitate its prose.
 

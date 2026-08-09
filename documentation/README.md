@@ -15,6 +15,10 @@ La réorientation est d'abord documentaire. Le runtime courant conserve encore s
 - [`ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md`](./ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md) : brief source de la migration documentaire du 2026-08-09.
 - [`AMBIANCE_MOODBOARD.md`](./AMBIANCE_MOODBOARD.md) : lecture du corpus visuel comme espace incomplet mais opératoire, de la micro-informatique au labyrinthe génératif.
 
+## Source littéraire
+
+- [`IN_THE_WALLS_OF_ERYX.md`](./IN_THE_WALLS_OF_ERYX.md) : transcription Markdown attribuée du texte publié en 1939, avec provenance, statut de reproduction et note de contenu historique.
+
 ## Architecture et plans actifs
 
 - [`FUNCTIONAL_PIPELINE_V1.md`](./FUNCTIONAL_PIPELINE_V1.md) : chaîne autoritative `commande -> résultat structuré -> état spatial -> compilation -> rendu` et cible de mutation topologique.

@@ -1060,3 +1060,25 @@ Aucun code, prompt runtime, prefab, fixture ou résultat de benchmark n'a été 
 Prochaine étape recommandée :
 
 Définir puis implémenter le plus petit contrat de barrière invisible et de proposition topologique, tout en remplaçant progressivement les prompts et archétypes datacenter par la sémantique de prospection/extraction. Régénérer les catalogues et benchmarks seulement après ces changements source.
+
+## 2026-08-09 - Iteration 0023 - Transcription Markdown de *In the Walls of Eryx*
+
+Objectif :
+
+Conserver dans le dossier documentaire une version de travail locale et attribuée de la source littéraire centrale du projet.
+
+Travail effectué :
+
+- conversion de l'e-text de The H. P. Lovecraft Archive vers `documentation/IN_THE_WALLS_OF_ERYX.md`
+- suppression de la navigation, des ornements et des pixels d'indentation propres à la page web
+- conservation du texte, des paragraphes, des italiques, des sections datées et de l'orthographe de la source électronique
+- ajout des liens de provenance, de la publication originale et du statut public-domain signalé pour l'édition américaine de 1939
+- ajout d'une note sur le langage colonial et racialisant du texte historique
+- ajout du fichier à l'index documentaire et lien depuis `STORY.md`
+
+Validation :
+
+- début et fin du récit contrôlés après conversion
+- rapport final de Wesley P. Miller présent
+- aucun élément HTML ou pixel de mise en page résiduel
+- liens Markdown relatifs vérifiés
