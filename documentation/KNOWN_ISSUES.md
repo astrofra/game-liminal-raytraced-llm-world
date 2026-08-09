@@ -1,8 +1,100 @@
 # Known Issues
 
-Derniere mise a jour : 2026-08-03
+Derniere mise a jour : 2026-08-09
 
 ## Ouverts
+
+### 2026-08-09 - La réorientation Eryx n'est pas encore implémentée dans les prompts et le runtime
+
+Statut :
+
+Ouvert.
+
+Description :
+
+La documentation active situe désormais le projet dans une zone d'extraction vénusienne et un labyrinthe invisible. Le code et les contenus runtime restent centrés sur la phase *Le Désert des tokens* :
+
+- prompts et cues qualitatifs datacenter / désert
+- identifiants `gate`, `server_aisles`, `roof_watch`
+- champ de hard state et HUD `datacenter_temperature_c`
+- bandes `central core`, `perimeter seam`, `outer parapet`, `open desert`
+- fixtures et cas de benchmark datacenter
+- commandes d'exemple liées aux racks, au refroidissement et au toit de surveillance
+
+Impact :
+
+- le binaire actuel ne réalise pas encore la fiction décrite par `STORY.md` et `SPEC.md`
+- une démonstration du build ne doit pas être présentée comme une validation d'Eryx
+- une réécriture seulement cosmétique des prompts risquerait de conserver les structures de l'ancien récit
+
+Piste :
+
+Migrer explicitement le vocabulaire, les archétypes, les états initiaux, les briefs de benchmark et les fallbacks. Préserver les fixtures historiques comme baselines techniques plutôt que les renommer silencieusement.
+
+### 2026-08-09 - Le spatial state ne distingue pas encore les barrières invisibles des sorties bloquées
+
+Statut :
+
+Ouvert.
+
+Description :
+
+Le graphe courant conserve des liens cardinaux et des scènes de salles, mais il ne possède pas de type dédié pour :
+
+- barrière invisible rencontrée ou supposée
+- preuve de contact ou résultat de scanner
+- proposition de mutation topologique
+- décision `accepted`, `adjusted`, `rejected` ou `deferred`
+- historique des relations anciennes et nouvelles
+
+Impact :
+
+- le moteur ne peut pas encore distinguer proprement la fiction du labyrinthe d'un mouvement simplement impossible
+- une contradiction produite aujourd'hui serait accidentelle, pas contrôlée ni auditable
+- le joueur risquerait de confondre collision, parser failure et mutation
+
+Piste :
+
+Ajouter le plus petit contrat topologique séparé du layout visible, puis le tester avec EV-002 et EV-003 dans `SPATIAL_VALIDATION_PLAN.md` avant d'autoriser des reconnexions plus complexes.
+
+### 2026-08-09 - Les prefabs et leur catalogue restent sémantiquement liés au datacenter
+
+Statut :
+
+Ouvert.
+
+Description :
+
+Les prefabs implémentés sont notamment `prefab_gate`, `prefab_rack`, `prefab_crate`, `prefab_cooling_unit` et `prefab_ai_server`. Le catalogue généré du 2026-08-02 reflète correctement ces sources et ne contient pas encore de beacon, scanner, cristal, rig, shelter ou quarry marker.
+
+Impact :
+
+- les salles générées continuent à lire comme infrastructure informatique
+- renommer uniquement les descriptions du catalogue falsifierait l'état des assets
+- l'ajout de nombreux objets décoratifs augmenterait rapidement le coût géométrique
+
+Piste :
+
+Tester d'abord les réinterprétations crédibles de la géométrie existante, implémenter un petit nombre de nouveaux prefabs à forte valeur sémantique, puis régénérer `PREFAB_CATALOG.md` depuis les sources.
+
+### 2026-08-09 - Des noms de scripts et d'exécution conservent l'ancien titre de travail
+
+Statut :
+
+Ouvert, non bloquant.
+
+Description :
+
+Le helper Windows `play_desert_des_tokens.bat` et des exemples associés emploient toujours le nom de l'ancienne fiction.
+
+Impact :
+
+- confusion possible entre direction artistique active et état du runtime
+- coût de migration sur scripts, documentation, habitudes locales et éventuels liens externes
+
+Piste :
+
+Conserver le nom comme legacy tant qu'une tâche de refactor dédiée n'a pas défini un nouveau nom stable. Ne pas inventer de titre final dans une migration technique.
 
 ### 2026-08-03 - La derive cachee du monde reste locale et ne reconcilie pas encore les boucles spatiales
 
@@ -12,7 +104,7 @@ Ouvert.
 
 Description :
 
-Le runtime maintient maintenant une pose cachee `world_x/world_z` et des bandes qualitatives (`central core`, `perimeter seam`, `outer parapet`, `open desert`) pour guider la generation de salles et la transition vers l'exterieur.
+Le runtime maintient maintenant une pose cachee `world_x/world_z` et des bandes qualitatives (`central core`, `perimeter seam`, `outer parapet`, `open desert`) pour guider la generation de salles et la transition vers l'exterieur. Ce mécanisme appartient encore à la sémantique datacenter/désert.
 
 Cette derive reste volontairement simple :
 
@@ -28,12 +120,13 @@ Impact :
 
 Piste :
 
-Si le projet a besoin plus tard d'un vrai monde continu :
+Ne pas chercher automatiquement à rétablir un monde globalement euclidien. Pour Eryx :
 
-- ajouter une couche de contraintes topologiques ou de relaxation globale
-- autoriser des collisions / fusions de salles quand deux trajectoires convergent
-- distinguer plus explicitement le coeur du datacenter, son enveloppe, le chemin de ronde et le desert ouvert
-- benchmarker l'impact de cette coherence supplementaire sur les prompts et sur la stabilite du compilateur hybride
+- remplacer les bandes datacenter par des relations de prospection, carrière, plateau et proximité du labyrinthe
+- rendre les contradictions explicites dans un état topologique et un historique de mutation
+- préserver la cohérence locale et les repères d'un lieu revisité
+- benchmarker le seuil auquel les boucles incompatibles deviennent frustrantes
+- réserver la relaxation ou fusion globale aux relations que le hard state exige réellement
 
 ### 2026-08-03 - Le vocabulaire de `scene_constraints` reste trop libre
 
@@ -382,7 +475,7 @@ Piste :
 
 Introduire ensuite soit des materiaux partages, soit une repetition modulaire plus compacte, soit une couche d'instanciation plus sobre.
 
-### 2026-07-31 - Le contrat de tour et le pont entre etat du monde, narration et scene sont formalises mais pas encore executes de bout en bout
+### 2026-07-31 - La boucle de tour existe mais son contrat reste fragile et incomplet
 
 Statut :
 
@@ -390,22 +483,23 @@ Ouvert.
 
 Description :
 
-Le projet sait maintenant decrire ce maillon et en poser les premiers structs et prompts, mais il ne dispose pas encore d'une boucle runtime complete qui relie de facon robuste :
+La boucle runtime `commande -> prompt -> resultat structure -> etat -> compilation de scene -> rendu` est maintenant executee en headless et dans SDL3. Elle possede une reparation JSON et un fallback no-op, mais le contrat ne relie pas encore de facon assez robuste :
 
 - l'etat actionnable du monde
 - la prose retournee au joueur
-- la description spatiale utile
+- la description spatiale et topologique utile
 - la scene effectivement rendue
 
 Impact :
 
 - la generation directe de scene complete par le LLM reste trop fragile comme voie principale
-- la continuite inter-tour n'est pas encore executee ni testee
-- la validation du schema structure et l'application des deltas restent a implementer
+- la continuite inter-tour fonctionne sur une premiere tranche, mais les JSON mal formes declenchent encore des fallbacks
+- `scene_constraints` reste trop libre
+- le contrat ne sait pas encore exprimer ni valider les mutations topologiques Eryx
 
 Piste :
 
-Brancher la premiere boucle headless `commande -> prompt -> resultat structure -> mise a jour d'etat -> compilation de scene -> rendu`, puis auditer la qualite des scenes `.scene` candidates generees en memoire.
+Resserrer le schema et ses vocabulaires, conserver la compilation hybride comme voie principale, puis ajouter un contrat topologique separe avec validation et provenance explicites.
 
 ### 2026-07-29 - Telemetrie encore insuffisante
 

@@ -1,307 +1,330 @@
 # Functional Pipeline V1
 
-Derniere mise a jour : 2026-07-31
+Dernière mise à jour : 2026-08-09
 
-## Role du document
+## Rôle du document
 
-Ce document formalise la prochaine grande inconnue du projet :
-
-- comment l'espace du jeu est maintenu en memoire
-- comment cet etat est projete vers le LLM
-- comment le LLM produit a la fois du recit et des changements de monde
-- comment ces changements deviennent une scene 3D rendable
-
-Le point difficile n'est pas seulement de faire parler `Ministral`, mais de garder une chaine de transformation debuggable entre :
+Ce document formalise la chaîne entre commande, modèle de langage, état spatial et image. L'architecture reste celle qui a été validée avant la réorientation Eryx :
 
 ```text
-etat de jeu
-    ->
-texte de tour
-    ->
-etat spatial
-    ->
-scene v1
-    ->
-rendu
+état de jeu autoritatif
+    -> résultat structuré du LLM
+    -> état spatial intermédiaire
+    -> compilation déterministe / hybride
+    -> scène v1
+    -> rendu
 ```
 
-## Cadrage pour la preuve de concept
+La réorientation ne justifie pas un retour à la génération libre d'une scène `.scene`. Elle précise le rôle du modèle : en plus d'interpréter et de raconter, il pourra proposer des mutations topologiques limitées représentant le labyrinthe invisible.
 
-Pour la phase actuelle, les priorites de performance sont :
+## Statut d'implémentation
 
-- la latence d'inference du LLM
-- le temps de rendu CPU par tour
+La chaîne suivante existe déjà :
 
-En revanche, les points suivants restent secondaires tant qu'ils ne degradent pas visiblement la cadence de jeu :
+- structures `HardState`, `SoftState`, `SpatialState` et `TurnResult`
+- appel local à `Ministral` via `llama.cpp`
+- résultat JSON, tentative de réparation et fallback no-op
+- application de deltas aux états
+- compilation déterministe des lieux canoniques
+- génération de salles par metadata JSON et compilateur hybride
+- cache de scènes et graphe cardinal persistant
+- rendu headless et interface SDL3
+- audit `.scene` séparé
 
-- le temps de fabrication runtime des scenes
-- l'occupation RAM de la scene
-- les optimisations de structure memoire tres fines
+La chaîne actuelle emploie encore des prompts, états, archétypes, prefabs et identifiants liés au datacenter et au désert. Elle ne représente pas encore explicitement :
 
-Autrement dit : il est premature d'investir lourdement dans une architecture sophistiquee d'instanciation ou de compaction memoire si le vrai blocage se situe d'abord dans la boucle fonctionnelle.
+- une barrière invisible distincte d'une sortie simplement bloquée
+- une proposition de mutation topologique avec décision de validation
+- un historique des mutations acceptées
+- les archétypes et objets de prospection Eryx
+- des règles de préservation de repères locaux lors d'un changement de connectivité
 
-## Hypothese directrice
+Les sections Eryx ci-dessous décrivent donc la cible fonctionnelle, pas l'état actuel du binaire. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) reste la référence factuelle.
 
-La generation libre d'une scene `.scene` complete par `Ministral` a `temperature 0` est trop fragile comme voie principale.
+## Hypothèse directrice
 
-`temperature 0` peut aider a regulariser une sortie structuree, mais ne garantit ni :
+`Ministral` ne doit pas posséder seul la carte, l'inventaire ou la géométrie finale. Une sortie stable en apparence peut rester fausse spatialement, et `temperature 0` ne garantit ni continuité ni validité.
 
-- la coherence spatiale
-- la continuite inter-tour
-- la stabilite d'echelle
-- la validite semantique d'une geometrie complete
+La voie de production est :
 
-La voie recommandee pour le v1 est donc :
+1. conserver l'état autoritatif hors du modèle ;
+2. projeter uniquement le contexte nécessaire au tour ;
+3. demander au LLM un résultat structuré et borné ;
+4. valider séparément les deltas de hard state et les propositions topologiques ;
+5. mettre à jour un état spatial sémantique ;
+6. compiler cet état vers `scene v1` de manière déterministe ;
+7. garder la génération `.scene` libre comme audit expérimental.
 
-1. conserver un etat de jeu autoritatif hors du modele
-2. demander au LLM un resultat structure tres contraint
-3. maintenir un **etat spatial intermediaire** distinct de la geometrie finale
-4. compiler cet etat spatial vers une scene `v1` de facon deterministe
-5. garder la generation libre de `.scene` comme **canal d'audit separe**, pas comme sortie principale du tour
+Cette séparation transforme l'instabilité spatiale en décision inspectable plutôt qu'en corruption implicite.
 
-## Trois niveaux d'etat
+## Niveaux d'état
 
 ### 1. Hard state
 
-Etat fiable, persistant, actionnable.
-
-Il devrait contenir au minimum :
+État fiable, persistant et actionnable :
 
 - `turn_number`
-- `current_location_id`
-- inventaire
-- objets manipulables immediatement pertinents
-- entites nommees persistantes
-- alarmes, promesses ou menaces non resolues
-- etat materiel du datacenter
-  - alimentation
-  - refroidissement
-  - eau
-  - niveau d'alerte
-- metadonnees de session et du modele
+- position physique autoritative du joueur dans le graphe
+- inventaire, outils, cristaux ou échantillons collectés
+- ressources de survie si elles sont retenues
+- entités nommées et découvertes majeures
+- engagements et conséquences mécaniques déjà établis
+- métadonnées de session, du modèle et de validation
 
-Cet etat ne doit pas dependre de la formulation prose du dernier tour.
+Le hard state ne dépend jamais uniquement de la prose du dernier tour. Une mutation topologique ne peut pas faire disparaître un objet collecté ni déplacer arbitrairement la position autoritative.
 
 ### 2. Soft state
 
-Etat interpretable, compressible, partiellement instable.
+État compressible et partiellement instable :
 
-Il peut contenir :
+- résumé récent
+- atmosphère et interprétations locales
+- hypothèses du joueur ou du système
+- confiance dans la carte
+- explications historiques non actionnables
+- contradictions tolérées qui ne modifient pas encore la navigation
 
-- resume recent
-- atmosphere
-- hypotheses en cours
-- incoherences tolerees
-- topologie large du monde
-- explications historiques non directement actionnables
-
-Cet etat sert surtout a nourrir la couleur narrative sans devenir la seule source de verite.
+Le soft state donne une couleur narrative sans devenir la seule source de vérité.
 
 ### 3. Spatial state
 
-Etat intermediaire entre fiction et rendu.
+État sémantique entre fiction et rendu :
 
-C'est la piece manquante la plus importante pour le v1.
+- `location_id` stable
+- archétype local
+- repères visuels persistants
+- sorties et adjacences courantes
+- obstacles visibles
+- barrières invisibles connues ou supposées
+- orientation et longueur de route inférées
+- ouvertures vers le ciel ou le terrain
+- objets visibles et actionnables
+- contraintes de composition
+- anomalies et preuves indirectes
+- provenance et historique des mutations acceptées
 
-Il devrait decrire un lieu par elements symboliques et visuels, sans encore tomber dans les primitives finales du renderer.
+Le `SpatialState` ne doit pas devenir une scène 3D générale. Il décrit ce que le moteur doit rendre, conserver, autoriser ou interdire.
 
-Exemples de champs utiles :
+### 4. Topologie souple
 
-- `location_id`
-- `location_archetype`
-- `canonical_fixture`
-- `camera_mode`
-- `time_of_day`
-- `visibility_level`
-- `desert_state`
-- `interior_density`
-- `alert_level`
-- `lighting_mood`
-- `anchors`
-  - portail
-  - travees
-  - parapet
-  - horizon
-- `visible_objects`
-  - racks
-  - caisse
-  - groupe froid
-  - console
-- `blocked_exits`
-- `spatial_anomalies`
+La topologie mutable est une partie contrôlée du spatial state. Elle peut porter sur :
 
-Le `spatial_state` ne doit pas essayer d'etre une mini-scene 3D generale. Son role est de faire le pont entre :
+- une relation d'adjacence
+- l'état traversable d'une sortie
+- une barrière invisible
+- la direction par laquelle un lieu est rejoint
+- la compatibilité de deux chemins connus
+- la distance ou le nombre d'étapes supposé entre deux repères
 
-- ce que le LLM comprend
-- ce que le moteur peut valider
-- ce que le compilateur de scene sait effectivement rendre
+La position physique courante du joueur reste autoritative, même si la relation qui l'a conduit au lieu devient impossible à réconcilier avec la carte précédente.
 
-## Chaine fonctionnelle recommandee pour le v1
+## Chaîne fonctionnelle cible
 
 ```text
-commande joueur
+commande du joueur
     ->
-projection de contexte utile
+projection du contexte utile
     ->
 appel LLM contraint
     ->
-resultat de tour structure
+validation syntaxique / réparation
     ->
-validation / reparation
+validation des deltas de hard state
     ->
-mise a jour du hard state
+validation de la proposition topologique
     ->
-mise a jour du soft state
+commit hard + soft + spatial
     ->
-mise a jour du spatial state
+compilateur de scène déterministe / hybride
     ->
-compilateur de scene deterministe
-    ->
-scene v1
+audit de scene v1 ou fallback sûr
     ->
 renderer
+    ->
+texte, image et feedback de traversal
 ```
 
-## Contrat de tour recommande
+Chaque étape doit produire une provenance ou un diagnostic suffisant pour distinguer une erreur de parser, une sortie LLM invalide, un rejet de mutation, un fallback de scène et une contradiction intentionnelle.
 
-Le LLM ne devrait pas etre sollicite pour renvoyer seulement du texte libre.
+## Contrat de tour cible
 
-Le minimum utile pour un tour v1 est plutot :
-
-- interpretation d'intention
-- narration courte
-- deltas de hard state
-- deltas de spatial state
-- demande de clarification optionnelle
-- notes de continuite optionnelles
-
-Schema indicatif :
+Le résultat minimal devrait contenir :
 
 ```text
 intent
 narration
 clarification
 hard_state_delta
+soft_state_delta
 spatial_delta
+topology_proposal
 continuity_notes
 ```
 
-Le point important est que la narration et la scene ne doivent pas etre la seule memoire du monde.
+Une proposition topologique ne doit pas être dissimulée dans `narration` ou dans un champ libre de contraintes de scène. Elle doit être typée et validable.
 
-## Pourquoi ne pas demander une scene complete a chaque tour
+Forme indicative :
 
-Demander au LLM de produire directement une scene `v1` complete a chaque tour pose plusieurs problemes :
+```text
+topology_proposal
+  mutation_type
+  source_location_id
+  source_exit
+  previous_relation
+  proposed_relation
+  player_evidence
+  narrative_reason
+  confidence
+```
 
-- la syntaxe peut etre correcte mais la scene spatialement absurde
-- une petite derive de texte peut provoquer une grosse derive geometrique
-- la continuite entre deux tours devient difficile a inspecter
-- le debug est mauvais : on ne sait plus si l'erreur vient du recit, du monde, du format ou du rendu
-- `temperature 0` aide la regularite de forme, pas la verite spatiale
+Les noms exacts restent un choix d'implémentation. Les propriétés importantes sont la séparation, l'inspectabilité et la possibilité de refuser la proposition sans perdre le reste du tour.
 
-La generation directe de scene complete peut rester :
+## Mutations que le LLM peut proposer
 
-- un mode experimental
-- un outil de recherche
-- un test de stress
+Le vocabulaire v1 peut rester très réduit :
 
-Dans la pratique, le v1 peut utilement separer deux appels :
+- `block_exit_invisible`
+- `unblock_exit_invisible`
+- `reconnect_exit`
+- `impossible_return_direction`
+- `divide_open_area`
+- `restore_previous_relation`
 
-1. un appel `JSON` pour le tour narratif et les deltas de monde
-2. un appel `.scene` independant pour auditer ce que le modele ferait s'il devait spatialiser librement le lieu
+Le modèle ne propose pas des coordonnées de murs ni une nouvelle carte complète. Il désigne une relation locale et fournit les indices que le joueur peut recevoir.
 
-Cette separation est plus robuste qu'un JSON contenant une scene multi-ligne echappee, car elle evite :
+## Validation des mutations
 
-- les fences Markdown autour du JSON
-- les erreurs d'echappement
-- la confusion entre schema de donnees et mini-langage `.scene`
+Le moteur décide si une proposition est acceptée, modifiée ou rejetée.
 
-Mais elle ne devrait pas etre la voie de production du v1.
+### Invariants durs
 
-## Role recommande de `Ministral` a temperature zero
+Une mutation ne doit pas :
 
-`Ministral` a `temperature 0` est plus defendable pour :
+- effacer ou dupliquer inventaire et découvertes
+- invalider l'identité du lieu courant
+- laisser le joueur sans action utile, sauf séquence explicitement conçue et récupérable
+- rendre une affordance critique définitivement inaccessible sans règle narrative dédiée
+- corrompre la sérialisation ou le graphe
+- produire une scène locale non rendable
 
-- interpreter une commande
-- choisir parmi des etiquettes, archetypes et deltas
-- produire une narration courte et stable
-- decider quels objets ou signes doivent etre visibles
+### Contrôles de lisibilité
 
-Il est moins defendable, en premiere intention, pour :
+Le validateur devrait aussi pouvoir limiter :
 
-- inventer toute la geometrie d'un lieu a chaque tour
-- gerer seul la continuite spatiale globale
-- placer librement des primitives nombreuses sans compilateur ni reparateur
+- le nombre de mutations sur une fenêtre de tours
+- deux changements successifs portant sur la même sortie
+- la disparition simultanée de tous les repères locaux
+- une contradiction qui n'a aucun feedback textuel, traversal ou instrumental
+- une accumulation de chemins impossibles sans possibilité de remapper
 
-## Strategie scene v1 recommandee
+### Résultats possibles
 
-Le compilateur de scene doit rester cote moteur, pas cote modele.
+- `accepted` : proposition commise telle quelle
+- `adjusted` : type conservé mais cible, fréquence ou conséquence limitée
+- `rejected` : monde inchangé, avec narration réparée si nécessaire
+- `deferred` : proposition mémorisée comme possibilité mais non commise
 
-Approche recommandee :
+Le résultat doit être journalisé.
 
-1. le `spatial_state` choisit une base de lieu
-2. cette base pointe vers une fixture canonique ou un archetype stable
-3. des modificateurs deterministes ajoutent ou retirent certains objets
-4. le compilateur produit une scene `v1` finale
+## Barrières invisibles et rendu
 
-Exemples :
+Une barrière invisible est d'abord une contrainte de traversal. Elle ne doit pas devenir automatiquement un `box` opaque.
 
-- `location_id = gate` + `alert_level = high` + `desert_state = dusty`
-- `location_id = server_aisles` + `interior_density = dense` + `cooling_state = degraded`
-- `location_id = roof_watch` + `time_of_day = dusk` + `visibility_level = low`
+Le joueur doit recevoir une information actionnable quand un mouvement échoue : contact, distance estimée, orientation de la surface, résultat du scanner, ou changement dans la poussière et le faisceau.
 
-Autrement dit, le LLM ne pose pas chaque mur. Il selectionne et inflechit un lieu.
+Le compilateur peut éventuellement produire des preuves indirectes :
 
-## Premier perimetre fonctionnel conseille
+- trace de scanner temporaire
+- poussière ou vapeur arrêtée sur un plan
+- objet semblant s'appuyer sur le vide
+- discontinuité d'ombre ou de lumière
 
-Pour la premiere boucle verticale headless, il est raisonnable de limiter le monde a trois lieux canoniques :
+Ces effets sont incrémentaux et ne sont pas requis pour la première implémentation. Le texte et le feedback de déplacement restent suffisants pour un test initial, à condition de ne pas ressembler à un échec silencieux.
 
-- `gate`
-- `server_aisles`
-- `roof_watch`
+## Pourquoi ne pas demander une scène complète à chaque tour
 
-Avec ces contraintes :
+Une scène générée librement peut être syntaxiquement valide mais spatialement absurde, dériver d'échelle, inventer des propriétés, contredire les sorties ou être tronquée. Elle mélange alors trop de responsabilités : narration, mémoire, topologie, placement et syntaxe de rendu.
 
-- pas de generation libre de nouveaux lieux au debut
-- pas de topologie ouverte du datacenter entier
-- pas de scene complete libre par tour
-- temperature tres basse pour la partie structuree
-- narration courte
-- listes et enums bornes
+La génération directe `.scene` doit rester :
 
-## Fallbacks a prevoir
+- un benchmark de la liberté syntaxique du modèle
+- un outil de comparaison avec la voie hybride
+- un mode d'audit ou de recherche
 
-Si la sortie de tour n'est pas exploitable, le moteur doit pouvoir :
+Elle ne doit ni constituer l'état du monde ni décider seule de la collision.
 
-- conserver le dernier `hard_state` stable
-- conserver le dernier `spatial_state` stable
-- regenerer la derniere scene valide
-- produire une narration de doute, d'obscurite ou d'ambiguite plutot qu'un crash
+## Stratégie de scène
 
-Le but n'est pas de prouver une omnipotence du modele, mais de garder la machine jouable.
+Le compilateur de scène reste côté moteur :
 
-## Etapes concretes recommandees
+1. choisir une coque ou une fixture locale ;
+2. préserver les repères persistants du lieu ;
+3. placer les masses et objets sémantiques ;
+4. réserver la circulation visible ;
+5. traduire les contraintes acceptées ;
+6. produire et auditer une scène v1.
 
-1. Definir les structs C++ du `hard_state`, `soft_state`, `spatial_state` et `turn_result`.
-2. Definir un premier schema de sortie contraint pour `Ministral`.
-3. Ecrire un validateur / reparateur minimal du `turn_result`.
-4. Ecrire un compilateur de scene deterministe a partir du `spatial_state`.
-5. Brancher une boucle headless `commande -> tour -> scene -> rendu`.
-6. Ajouter un deuxieme appel headless `spatial_state -> prompt d'audit -> .scene candidate -> audit memoire`.
-7. Seulement ensuite ouvrir la generation assistee de nouveaux lieux au-dela des trois fixtures canoniques.
+Exemples de cibles Eryx planifiées :
 
-## Critere de reussite du v1
+- `quarry_threshold` + portail de prospection + ciel ouvert
+- `scanner_station` + beacon + spécimen + grande zone apparemment libre
+- `prospecting_shelter` + unité atmosphérique + sortie de service
+- `extraction_field` + rig + pylônes + horizon
+- `venus_plateau` + repères locaux rares + sous-structure invisible
 
-Le v1 sera deja convaincant si :
+Ces archétypes et prefabs ne sont pas encore implémentés. Les identifiants courants `gate`, `server_aisles`, `roof_watch` et les salles datacenter restent des fixtures legacy utiles pour vérifier le pipeline.
 
-- le joueur peut se deplacer entre quelques lieux
-- le texte reste court et lisible
-- l'etat actionnable reste coherent sur quelques tours
-- l'image change de facon interpretable
-- les derives du monde restent locales et poetiques, pas purement cassantes
+## Fallbacks
 
-Ce n'est qu'apres cette validation qu'il sera rationnel de reouvrir :
+Si la sortie de tour est inexploitable :
 
-- les optimisations profondes de scene / RAM
-- l'instanciation sophistiquee
-- la generation spatiale plus libre
-- les lieux non canoniques
+- conserver le dernier hard state valide
+- conserver la dernière topologie validée
+- conserver ou reconstruire la dernière scène locale valide
+- appliquer un no-op explicite et journalisé
+- produire un feedback joueur qui ne prétend pas qu'une mutation a eu lieu
+
+Si seule la proposition topologique est invalide, le reste du tour peut être accepté après réparation de la narration. Une erreur technique ne doit pas être automatiquement fictionnalisée comme un pouvoir du labyrinthe.
+
+## Température
+
+Une température d'échantillonnage basse reste adaptée aux résultats structurés. Une variation liée à l'environnement, au stress ou à l'entropie spatiale peut être étudiée plus tard pour la narration.
+
+La température ne doit jamais :
+
+- être la seule source de changement topologique
+- s'appliquer au validateur ou au compilateur déterministe
+- permettre au modèle de contourner le hard state
+
+## Première tranche Eryx recommandée
+
+Limiter la première expérience à quelques lieux localement distincts et à un petit vocabulaire de mutation :
+
+1. seuil du champ d'extraction
+2. station de scanner
+3. abri de prospection
+4. plateau ou carrière ouverte
+5. seuil du labyrinthe invisible
+
+La tranche doit permettre :
+
+- observation et déplacement
+- marquage d'un trajet
+- rencontre d'une barrière invisible
+- détour
+- retracement
+- une contradiction topologique acceptée
+- conservation des objets et découvertes
+- remapping ou récupération
+
+## Critère de réussite
+
+Le pipeline sera convaincant si :
+
+- l'état actionnable reste cohérent sur toute la tranche
+- le joueur comprend quoi tenter après un contact invisible
+- une mutation peut rendre la carte fausse sans rendre la session injouable
+- un lieu revisité conserve assez de repères pour être reconnu
+- le texte, la traversal et l'image peuvent diverger sans devenir indifférenciables d'un bug
+- chaque mutation et fallback reste inspectable dans les logs
+- la scène finale provient toujours d'un état validé et d'un compilateur déterministe ou hybride

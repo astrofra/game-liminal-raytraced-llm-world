@@ -2,7 +2,13 @@
 
 ![alt text](img/liminal-room.png)
 
-Initial bootstrap for the rendering side of the project.
+## About
+
+This repository is a native, local-first interactive fiction and raytracing research prototype. It asks what happens when most of a game's computational budget is spent on language inference, interpretation, and world structure while a deliberately constrained CPU raytracer produces the image.
+
+The active artistic direction follows a four-stage lineage from Lovecraft and Kenneth J. Sterling's *In the Walls of Eryx*, through ASD's *Beyond the Walls of Eryx* and Mandarine's *Within the Mesh*, to an interactive generative labyrinth. The intended player explores Venusian extraction infrastructure while an invisible topology can change through LLM proposals validated by an authoritative engine.
+
+This direction is currently documentation-first. The working runtime still uses the earlier *Le Désert des tokens* datacenter/desert prompts, locations, prefabs, fixtures, and helper names. Eryx-specific invisible barriers and controlled topology mutations are planned, not implemented. See [`documentation/README.md`](documentation/README.md) for the active design and [`documentation/TECHNICAL_STATE.md`](documentation/TECHNICAL_STATE.md) for the exact implementation boundary.
 
 Current state:
 
@@ -20,6 +26,8 @@ Current state:
 - optional OpenMP line-parallel rendering in CMake
 - first SDL3 interactive frontend with streaming LLM output
 - first generated-room graph for improvised cardinal navigation
+- authoritative hard/soft/spatial state with deterministic and hybrid scene compilation
+- legacy datacenter/desert semantic content pending the Eryx migration
 - Python helper to download `Ministral 3 8B Instruct 2512` GGUF
 - first headless `Ministral` turn pipeline wired to the renderer
 - explicit provenance for the reused 2003 raytracer ideas
@@ -44,6 +52,8 @@ download_ministral.bat
 ask_ministral.bat
 play_desert_des_tokens.bat
 ```
+
+`play_desert_des_tokens.bat` retains the previous working title as a legacy runtime name. No final replacement title has been selected.
 
 If you want the vendorized `llama.cpp` build with CUDA enabled, keep the default CMake options:
 
@@ -89,6 +99,8 @@ play_desert_des_tokens.bat
 play_desert_des_tokens.bat --location roof_watch
 play_desert_des_tokens.bat --load-state output\sdl_session_state.json
 ```
+
+These commands launch the currently implemented datacenter/desert build, not the planned Eryx content.
 
 ## Run
 

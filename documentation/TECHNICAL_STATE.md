@@ -1,23 +1,39 @@
 # Technical State
 
-Derniere mise a jour : 2026-08-03
+Derniere mise a jour : 2026-08-09
 
 ## Resume
 
-Le depot contient actuellement un premier module de rendu natif en C++11 centre sur une Cornell Box en niveaux de gris.
+Le depot contient actuellement un runtime natif C++11 avec renderer a scenes proprietaires, boucle locale `llama.cpp`, et frontend SDL3. La Cornell Box en niveaux de gris reste une scene de reference du sous-systeme de rendu, mais elle n'est plus le centre fonctionnel du depot.
 
-Ce module constitue un bootstrap du futur sous-systeme de rendu. Il ne s'agit pas encore du renderer final du jeu, mais d'une premiere base executable, compilable et documentee.
+Le renderer et l'interface constituent encore une base de prototype plutot qu'un produit final, mais la chaine executable est maintenant suffisamment complete pour des sessions headless et interactives.
 
 Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cpp` avec acceleration CUDA autour de `Ministral 3 8B`.
 
 Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat -> scene -> rendu`, disponible en mode headless et dans une premiere HMI `SDL3`.
+
+## Frontiere entre reorientation et implementation
+
+La documentation artistique active est maintenant orientee vers une zone d'extraction venusienne et un labyrinthe invisible dont certaines relations topologiques pourront changer.
+
+Cette reorientation n'est pas encore implementee dans le runtime. L'etat factuel du depot reste celui decrit ci-dessous :
+
+- prompts et vocabulaire de monde encore centres sur le datacenter et le desert
+- lieux canoniques `gate`, `server_aisles` et `roof_watch`
+- hard state et HUD encore exposes via `datacenter_temperature_c`
+- graphe cardinal persistant et pose cachee vaguement euclidienne, sans mutation topologique explicite
+- pas de distinction typee entre une barriere invisible et une sortie ordinaire bloquee
+- prefabs et benchmarks encore lies a la semantique datacenter
+- helper `play_desert_des_tokens.bat` conserve sous son nom legacy
+
+Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun benchmark ou rendu existant ne constitue une validation de cette cible.
 
 ## Verrous d'architecture actes
 
 - runtime narratif local : `llama.cpp`
 - acceleration principale de developpement : `CUDA`
 - modele cible v1 : `Ministral 3 8B Instruct 2512`
-- future couche multimedia multi-OS : `SDL3`
+- couche multimedia multi-OS : `SDL3`
 
 ## Fonctionnalites presentes
 
@@ -28,7 +44,7 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
 - Helper Windows `run_cornell_test.bat` a la racine pour compiler puis lancer le rendu de verification Cornell Box.
 - Helper Windows `download_ministral.bat` pour telecharger le modele cible.
 - Helper Windows `ask_ministral.bat` pour lancer une question libre contre le modele local via `llama-cli`.
-- Helper Windows `play_desert_des_tokens.bat` pour lancer directement la premiere boucle SDL3.
+- Helper Windows legacy `play_desert_des_tokens.bat` pour lancer directement la premiere boucle SDL3. Son nom reflete la fiction precedente.
 - Helper Windows `generate_prefab_catalog.bat` pour regenerer le catalogue visuel des prefabs.
 - Helper Windows `run_scene_generation_benchmark.bat` pour executer une batterie fixe de generations `.scene` via `Ministral`, puis auditer et rendre chaque cas.
 - Helper Windows `run_hybrid_scene_generation_benchmark.bat` pour executer la chaine runtime `room JSON -> compilateur hybride -> rendu` sur une batterie fixe de briefs source.
@@ -445,8 +461,8 @@ Observation importante :
 - pas d'API integrable propre pour un futur runtime de jeu
 - pas d'accumulation progressive du raytracing pendant qu'un tour s'execute
 - le frontend `SDL3` reste minimaliste :
-  - texte via `SDL_RenderDebugText`
-  - pas encore de police bitmap custom
+  - transcript et saisie via `SDL3_ttf` et les fontes Zilla Slab
+  - titre et statut debug via `SDL_RenderDebugText`
   - pas encore de layout plus riche ou de widgets dedies
 - le streaming actuel expose le flux brut du modele pendant la fabrication du JSON, pas encore une narration incrementalement parsee
 - la generation de metadata de salle improvisee reste fragile :
@@ -464,6 +480,12 @@ Observation importante :
 - les prefabs actuels augmentent fortement le nombre de triangles et de materiaux
 - pas de telemetrie CPU/GPU/memoire
 - pas de tests automatises
+- pas encore de semantique runtime Eryx :
+  - pas d'archetypes quarry / extraction / prospecting
+  - pas de proposition de mutation topologique separee des deltas spatiaux ordinaires
+  - pas de validateur de frequence, recuperation ou preservation des reperes locaux
+  - pas de barriere invisible typee avec feedback de traversal
+  - pas de prefabs de survey beacon, scanner, cristal, rig, shelter ou quarry marker
 
 ## Ecart assume par rapport a la spec longue
 

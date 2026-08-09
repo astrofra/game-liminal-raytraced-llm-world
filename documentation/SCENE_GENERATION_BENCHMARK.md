@@ -2,6 +2,8 @@
 
 Genere le 2026-08-02 16:08:36.
 
+> **Historical baseline:** This report predates the Eryx reorientation. Its datacenter cases, prompts, responses, measurements, and images are preserved as evidence of the direct `brief -> LLM .scene` experiment. They are not active story or asset requirements. A new Eryx benchmark must be generated from updated source cases after the semantic migration is implemented; the results below must not be extrapolated or renamed.
+
 Ce document audite la generation directe de `.scene` par `Ministral` a partir de briefs spatiaux fixes.
 
 Pipeline :

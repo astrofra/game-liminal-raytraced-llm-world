@@ -2,6 +2,18 @@
 
 Genere le 2026-08-02 18:15:47.
 
+> **Migration status (2026-08-09):** This is the source-generated catalog of the currently implemented, datacenter-era prefabs. Its images and per-prefab descriptions remain factual records of that implementation; they have not been relabeled as Eryx assets. The active direction is to reuse convincing geometry selectively and add a small prospecting/extraction set in source before regenerating this document.
+
+Planned source work, not represented by the renders below:
+
+- retain `prefab_gate` as a perimeter, pressure, or survey threshold
+- retain `prefab_crate` as cargo, sample, oxygen, or equipment storage
+- evaluate `prefab_rack` as field instrumentation rather than assume the reinterpretation works
+- evaluate `prefab_cooling_unit` as atmospheric processing, pumping, or drilling support
+- add a survey beacon, crystal scanner, crystal specimen, extraction rig, shelter module, and quarry pylon only where each provides high semantic value
+
+After those changes exist in code, regenerate this file with the existing catalog pipeline. Do not manually fabricate new directives or images here.
+
 Ce document rassemble le premier catalogue visuel des prefabs `scene v1` dans un seul Markdown.
 
 Notes :

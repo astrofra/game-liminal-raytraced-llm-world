@@ -2,6 +2,8 @@
 
 Genere le 2026-08-02 16:19:10.
 
+> **Historical baseline:** This report predates the Eryx reorientation. It remains the measured baseline for the implemented datacenter-era hybrid pipeline and its `10/10` result. It does not demonstrate invisible barriers, topological mutation, or Eryx-specific layouts. A new benchmark should be generated only after those semantics and source cases exist.
+
 Ce document audite la nouvelle chaine runtime :
 - room brief source
 - commande cardinale

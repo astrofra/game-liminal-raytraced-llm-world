@@ -2,725 +2,553 @@
 
 ## Artistic, Research, and Technical Specification
 
+Status: active direction as of 2026-08-09. The project has no final public title. *Le Désert des tokens* is the previous working title.
+
 ## 1. Premise
 
 This project starts from a counterfactual question about the history of video games:
 
 > What if video games had spent their computational power on narrative plasticity rather than on graphical sophistication?
 
-Instead of dedicating most of the machine budget to high-fidelity rendering while keeping narrative logic relatively fixed, the project deliberately inverts the allocation of computation. Most of the expensive work should happen in local language-model inference: interpreting player intent, updating a partial world model, and producing short-form narrative responses. Visual rendering should remain intentionally poor, geometric, grayscale, noisy, and visibly synthetic.
+The project inverts the dominant allocation of computation. Expensive work happens primarily in local language-model inference: interpreting player intent, updating a partial world model, and proposing selected changes to the player's field of movement. A deliberately inexpensive CPU raytracer produces sparse, noisy, low-information images.
 
-The resulting prototype is both a playable interactive fiction system and an executable counterfactual machine. It should not merely describe an alternate media history; it should make a fragment of that alternate history run.
+The active fiction makes this inversion spatially concrete. The player explores a Venusian extraction zone containing human quarry and survey infrastructure and an alien labyrinth whose walls are ordinarily invisible. Local places remain readable; selected global connections, orientations, and traversal constraints can change.
 
-The player interacts through a keyboard-first parser interface in the tradition of *Zork* and Infocom, but command interpretation is delegated to a local LLM rather than a deterministic verb parser. The result should feel like a compelling but unstable game master: suggestive, locally coherent, globally fragile, and sometimes contradictory in productive ways.
+The result should be both a playable interactive system and an executable counterfactual machine. It should not merely describe an alternate media history; it should make a fragment of that history run.
 
-Each turn should produce:
+## 2. Artistic and research positioning
 
-- a short narrative response
-- an interpretation of the player's action
-- an updated local world state
-- a renderable scene description
-- a rendered grayscale image of the current place
+### 2.1 Central research questions
 
-The world is expected to remain only relatively stable. Places may recur, mutate, contradict themselves, or connect through weak topology. This instability is not a defect as long as short-term play remains legible and actionable.
+The project is not primarily an argument about literary quality. Its principal questions are:
 
-## 2. Artistic and Research Positioning
-
-### 2.1 Image-Centered Research Question
-
-The project is not primarily an argument about literary quality. Its central research question is instead:
+> How can an AI-driven interactive work extend a demoscene lineage by turning the spatial inconsistency of generative models into an expressive, navigable constraint?
 
 > What becomes of the video-game image when computational expense, technical innovation, and cultural prestige no longer concentrate on it?
 
+> What must remain stable for a changing maze to feel uncanny rather than merely broken?
+
 The prototype should help observe:
 
-- what an image becomes when it is no longer the main site of calculation
-- how generated text is translated into visible space
-- what is lost between narrative description, world state, geometry, and rendering
-- how a poor image activates the player's imagination
-- how players reconcile contradictions between text and image
+- how generated language and structured state become visible space
+- what is lost between player command, interpretation, topology, geometry, rendering, and perception
+- how a poor image activates projection rather than merely withholding information
+- how players distinguish an invisible barrier or deliberate contradiction from parser or engine failure
+- how inference latency changes the rhythm of parser-like play
+- how computational allocation becomes perceptible as an aesthetic decision
 
-### 2.2 Situated Artistic Lineage
+### 2.2 Four-stage Eryx lineage
 
-The project emerges from a situated artistic lineage in which early video games, crack intros, and demos were part of the same lived microcomputer culture. The relevant references are not only technical but experiential:
+The active work continues a motif that has already crossed several media and computational regimes:
 
-- Atari ST and Amiga domestic computing culture
-- geometric 3D game spaces such as *Driller*
-- demoscene works such as *Enigma* by Phenomena
-- low polygon counts, abstraction, harsh limitations, and real-time surprise
+```text
+Lovecraft and Kenneth J. Sterling, *In the Walls of Eryx*
+        ↓
+ASD, *Beyond the Walls of Eryx* (2007)
+        ↓
+Mandarine, *Within the Mesh* (2013)
+        ↓
+current interactive LLM work
+```
 
-This matters because the project does not treat poor graphics as irony or retro decoration. The intended visual poverty should reactivate a historically and personally grounded relation to computed images.
+The literary source provides a conceptual matrix: Venus as an extractive frontier, valuable crystals, invisible architecture, failed mapping, and the progressive loss of spatial certainty. It is a source to reinterpret, not a plot or prose style to reproduce.
 
-### 2.3 Demoscene Adjacency
+ASD's [*Beyond the Walls of Eryx*](https://www.pouet.net/prod.php?which=31088) transforms the motif into a demoscene audiovisual event of lines, linked spaces, changes of projection, transformation, and collapse.
 
-The strongest connection to the demoscene is not a genre claim. It is a shared attitude toward expressive allocation of computational resources.
+Mandarine's [*Within the Mesh*](https://www.pouet.net/prod.php?which=61730), co-created by the present project's author, continues that relation. The lineage is therefore not an opportunistic reference added to an AI artwork; it is historical and personal.
 
-In that sense, the project should inherit several demoscene-adjacent traits:
+The present work adds a transformation unavailable to the earlier stages: the player inhabits a computational labyrinth whose selected topological relations can actually change during play.
 
-- a specific or minimal engine
-- direct ownership of the technical stack
-- real-time execution
-- voluntary limitation
-- a tight bond between architecture and aesthetics
-- visible material consequences of computational choices
+### 2.3 Demoscene lineage and continuation
 
-The prototype may be treated as a demoscene-adjacent executable work without needing to resolve whether it counts as a "true demo".
+The project does not claim that an interactive artwork is automatically a canonical demo. It makes the more defensible claim that the work is a new transformation of a motif already present in demoscene history and in the author's own practice.
 
-### 2.4 Prototype as Research Instrument
+The relationship is:
 
-The prototype must not function as a mere illustration of a predetermined thesis. It should be built as an instrument of inquiry capable of producing resistance, ambiguity, and unexpected outcomes.
+- historical: a literary motif enters the demoscene through ASD
+- personal: the author later co-created *Within the Mesh*
+- technical: the project retains direct control of a native stack, real-time execution, platform awareness, voluntary constraint, and visible computation
+- medial: the same motif is changed by prose, fixed audiovisual sequence, personal demoscene reinterpretation, and interactive generation
 
-It should help reveal:
+The broader situated visual lineage includes Atari ST and Amiga culture, crack intros, *Driller*, *The Sentinel*, *Tau Ceti*, *Midwinter*, *The Pawn*, *Captain Blood*, *Drakkhen*, *Enigma*, *Origin Complex*, *Substance*, *Hardwired*, and *Amiga Desert Dreams*.
 
-- which incoherences are fertile and which destroy playability
-- how waiting and latency reshape interactive fiction
+These references establish an inherited visual grammar of incomplete but operational space. The project is a contemporary translation of constraint-based expressivity, not a retro simulation.
+
+### 2.4 Prototype as research instrument
+
+The prototype must not merely illustrate a predetermined thesis. It must be able to reveal where the concept resists implementation:
+
+- which contradictions are fertile and which destroy playability
+- how often topology can mutate before frustration dominates
+- what players need in order to map, retrace, and diagnose a route
 - when image poverty strengthens projection and when it collapses legibility
-- which facts must remain stable for instability to remain aesthetic rather than frustrating
+- whether the intended computational inversion is borne out by measurements
 
-## 3. Core Vision
+## 3. Core vision
 
-The project should deliver a playable local-first prototype where:
+The project should deliver a local-first native experience in which:
 
-- the fiction is generated locally by an LLM
-- the game is distributable as a native application
-- no Python runtime is required
-- no Ollama dependency is required
-- `llama.cpp` is the preferred inference backend
-- each location can be rendered from a minimal scene description
-- the visual identity is grayscale, raytraced, noisy, brutalist, and liminal
-- the system can be used both as a playable artifact and as a research demonstrator
+- the player uses open text commands in a parser-like cadence
+- a local LLM interprets intent, narrates concise consequences, and proposes structured state changes
+- the engine owns authoritative state and validates all changes
+- a distinct spatial layer represents local geometry, adjacency, exits, and invisible traversal constraints
+- a deterministic or hybrid compiler turns accepted spatial state into the narrow `scene v1` format
+- the image is raytraced, noisy, austere, and dominated by grayscale
+- the visible world consists of sparse Venusian extraction and prospecting infrastructure
+- the invisible labyrinth is encountered through topology and perception rather than rendered as conventional walls
+- the artifact can support play, exhibition, demoparty presentation, and research analysis
 
-## 4. Design Pillars
+## 4. Design pillars
 
-### 4.1 Narrative-First Compute
+### 4.1 Inference and world interpretation as the computational center
 
-The narrative layer is the main computational center of the project. The image is not the main spectacle; it is a consequence of the fiction pipeline.
+The LLM is not merely a content generator. It interprets player language, produces concise narration, updates selected soft facts, and proposes topological mutations. The image is a partial consequence of this world pipeline.
 
-### 4.2 Poor Image as Consequence, Not Skin
+### 4.2 Poor image as consequence, not skin
 
-The brutalist monochrome look must emerge from actual constraints:
+The visual austerity must emerge from real constraints:
 
-- simple primitives
-- one light source
-- low resolution
-- low sample counts
-- incomplete spatial continuity
-- preserved raytracing noise
+- a small primitive vocabulary
+- limited material control
+- camera-linked instrumental lighting
+- low sample counts and visible raytracing noise
+- low information density
+- deterministic simplification between spatial meaning and geometry
 
-The aesthetic should not feel like a decorative filter pasted over a conventional renderer.
+The implemented renderer currently uses a locked semantic RGB palette rather than strict monochrome. This limited color policy remains compatible with an image dominated by grayscale; the LLM must not gain arbitrary color control.
 
-### 4.3 Local Coherence, Global Drift
+### 4.3 Extraction brutalism
 
-The world should remain actionable at the sentence and turn level while allowing broader geography, architecture, and atmosphere to drift.
+“Brutalist” refers to the construction logic of the setting, not a vague mood label. The visual world should feel constructed, excavated, surveyed, and partially unreadable through:
 
-### 4.4 Open Language Interaction
+- quarry cuts and plateaus
+- slabs, retaining walls, ramps, trenches, and narrow service passages
+- sparse shelters and instrument housings
+- repeated extraction or atmospheric-processing modules
+- harsh open terrain and incomplete sensing
 
-Player input should remain open-ended. The system should absorb paraphrase, ambiguity, and unconventional wording instead of relying on a rigid verb whitelist.
+The project must not drift into generic cyberpunk, datacenter horror, or NASA realism.
 
-### 4.5 Direct Technical Ownership
+### 4.4 Local coherence, controlled global drift
 
-The runtime should be self-contained and directly own inference, validation, rendering, save data, and UI rather than outsourcing core behavior to external services.
+The player must always be able to understand the immediate situation and attempt a useful action. Hard state and local landmarks persist. Selected soft topology may drift:
 
-### 4.6 Measurable Computational Inversion
+- an exit becomes blocked or unblocked by an unseen barrier
+- a connection reaches another known location
+- a return arrives from an impossible direction
+- a locally recognizable place has changed adjacency
+- a mapping claim conflicts with the traversable graph
 
-The inversion of computational emphasis must be observable, not rhetorical. The system should make it possible to compare inference cost, scene-generation cost, and rendering cost.
+Instability is authored through a bounded proposal-and-validation mechanism. “The AI hallucinates” is not a design specification.
 
-## 5. Non-Goals
+### 4.5 Open language interaction
+
+The system should absorb paraphrase, ambiguity, and unconventional wording instead of relying on a rigid verb whitelist. It may ask for clarification. Parser failure, invisible collision, and topology change must remain distinguishable enough to support a next action.
+
+### 4.6 Direct technical ownership
+
+The native runtime should own inference, validation, rendering, save data, and UI instead of outsourcing core behavior to external services.
+
+### 4.7 Measurable computational inversion
+
+The system must make inference time, scene compilation and validation, and render time observable. The allocation of computation is an empirical research surface, not only a metaphor.
+
+## 5. Non-goals
 
 The v1 prototype is not trying to provide:
 
 - photorealistic rendering
-- a fully deterministic simulation
-- a large handcrafted map
+- a scientifically or historically realistic Venus
+- a scene-by-scene adaptation of *In the Walls of Eryx*
+- a conventional visible alien maze
+- generic cosmic-horror prose
+- a fully deterministic simulation or a large handcrafted map
 - a conventional puzzle-logic parser game
-- online multiplayer
-- cloud inference as a requirement
+- online multiplayer or mandatory cloud inference
 - proof that an LLM writes better fiction than a human author
-- a definitive answer about whether the project belongs inside demoscene genre boundaries
+- spatial change driven only by random sampling temperature
+- a definitive answer about whether the project is a “true demo”
 
-## 6. Target Experience
+## 6. Target experience
 
-The intended player experience is:
+A representative interaction is:
 
-1. The player types a command such as `open the metal door`, `listen`, `go back`, or `ask the woman what she lost`.
-2. The LLM interprets the intention and decides what happens.
-3. The game returns short prose, updates the local fiction state, and emits a constrained scene description.
-4. The renderer shows a grayscale image of the place that may confirm, reduce, distort, or partially contradict the prose.
-5. The player continues through a chain of spaces that feel haunted, partial, and statistically improvised.
+1. The player types `survey the barrier`, `mark this route`, `return to the beacon`, or `inspect the crystal sample`.
+2. The LLM interprets the command and produces concise narrative and structured deltas.
+3. The result may include a proposal to alter a selected topological relation.
+4. The engine validates the proposal against hard state, local actionability, and safety rules.
+5. The accepted spatial state is compiled deterministically into a renderable scene.
+6. The viewport shows an instrumental image that may confirm, reduce, or partially contradict the text.
+7. The player continues by moving, comparing, mapping, retracing, or testing the apparent contradiction.
 
 Tone targets:
 
-- uncanny
-- austere
-- oppressive
-- dreamlike but readable
-- occasionally contradictory
+- uncanny and austere
+- oppressive without generic horror ornament
+- dreamlike but actionable
+- sparse, constructed, and surveyed
+- occasionally contradictory at the level of global space
 
-The game should avoid classic parser dead ends such as repeated `I don't understand that verb`. Even failure should feel diegetic: the world ignores the action, misreads it, or transforms it into another plausible event.
+Inference latency may be presented as visible machine activity rather than hidden, but the prose should remain concise enough to preserve play rhythm.
 
-The player should also feel the temporal structure of the system. Inference latency is not just a technical issue; it is part of the rhythm of play and may be used aesthetically.
+## 7. Functional requirements
 
-## 7. Functional Requirements
+### 7.1 Input and interaction
 
-### 7.1 Input and Interaction
+- Support free-text keyboard input and a one-command/one-response cadence.
+- Interpret intent rather than only surface verbs.
+- Support movement, inspection, manipulation, inventory, marking, mapping, surveying, and optional dialogue.
+- Ask for clarification when ambiguity would otherwise threaten hard state.
+- Provide actionable feedback when movement meets an invisible barrier.
+- Preserve a safe next action or recovery route after accepted topology mutations.
 
-- The game must support free-text keyboard input.
-- The game must preserve a parser-like cadence: one player command, one world response.
-- The LLM must interpret intent, not just surface verbs.
-- The system must support basic IF actions such as movement, inspection, manipulation, dialogue, and inventory-related behavior.
-- The system must be able to ask for clarification when input is too ambiguous.
+### 7.2 Narrative generation
 
-### 7.2 Narrative Generation
+- Use `Ministral 3 8B Instruct 2512` in GGUF format through `llama.cpp` as the current target.
+- Generate short-form prose during active play.
+- Maintain recurring locations, objects, named entities, and discoveries through external state.
+- Optimize for playable coherence rather than maximal literary flourish.
+- Treat environmental or model temperature as optional and subordinate. If used, couple it to Eryx-relevant stress or spatial entropy, not to the superseded datacenter premise.
 
-- The current target model is `Ministral 3 8B Instruct 2512` in GGUF format, loaded through `llama.cpp`.
-- The game must generate short-form narrative output per turn.
-- The system must maintain enough state for local continuity across turns.
-- The system must support recurring locations, recurring objects, and recurring NPC references.
-- The system should favor concise prose over long paragraphs during active play.
-- The project should optimize for playable coherence, not maximal literary flourish.
+### 7.3 Spatial mediation and mutation
 
-### 7.3 Scene Generation
+The LLM may propose, but not directly commit:
 
-For each location or major state change, the system must produce a renderable scene description.
+- exit state changes
+- adjacency changes
+- route-length or orientation contradictions
+- newly discovered invisible barriers
+- disappearance of known barriers
+- local substructures within open areas
 
-Two content-generation modes are allowed:
+The engine must validate proposals. At minimum it must protect hard state, avoid trapping the player without intended recovery, preserve local renderability, log the decision, and keep the result inspectable.
 
-- Preferred mode for v1: a simple proprietary scene format describing primitives, transforms, and basic material properties.
-- Experimental mode: `.OBJ` generation directly from the LLM.
+### 7.4 Scene generation
 
-### 7.4 Rendering
+The production path is:
 
-- The renderer must produce grayscale output.
-- Lighting must use a single light source attached to the camera, like a harsh found-footage lamp.
-- The renderer must include raytraced diffuse bounce or crude radiosity at intentionally low sample counts.
-- The final image should preserve visible noise rather than denoise it away.
-- The renderer should prioritize mood, legibility, and speed over accuracy.
-- The renderer should remain computationally cheaper than, or at least clearly secondary to, model inference in the intended experience.
+```text
+structured LLM result
+    -> validated world/spatial state
+    -> deterministic or hybrid scene compiler
+    -> scene v1
+    -> renderer
+```
 
-### 7.5 Runtime and Distribution
+Direct LLM generation of a complete `.scene` remains an audit and stress-test path, not the authoritative production path. Direct `.OBJ` generation remains experimental.
 
-- The game must be distributable as a native desktop build.
-- The runtime should use `llama.cpp` rather than Python-based stacks.
-- The game should not require Ollama.
-- The game should run offline after installation.
-- Save/load support is required.
+Invisible barriers belong to traversal and collision semantics. Optional diagnostic visualization or indirect evidence may reveal them, but an ordinary opaque `prefab_invisible_wall` would defeat the concept.
 
-### 7.6 Instrumentation and Logging
+### 7.5 Rendering
 
-The prototype must expose enough telemetry to evaluate the central hypothesis.
+- Preserve the current locked palette and an image dominated by grayscale.
+- Use camera-linked, instrument-like lighting.
+- Include raytraced diffuse bounce or crude radiosity at intentionally low sample counts.
+- Preserve visible noise instead of denoising it away.
+- Prioritize mood, legibility, and speed over physical accuracy.
+- Keep rendering computationally secondary to inference in the intended experience, or make any exception measurable and explicit.
 
-It should record at least:
+### 7.6 Runtime and distribution
 
-- model inference time per turn
-- prompt and output size per turn
-- scene-generation and scene-validation time
-- render time
-- memory use
-- CPU and GPU activity when available
-- validation failures and fallback behavior
+- Distribute a native desktop build.
+- Use `llama.cpp`; do not require Ollama.
+- Run offline after setup.
+- Support save/load.
+- Keep CPU-only inference possible, even if slower, while supporting available hardware acceleration.
 
-## 8. Recommended Technical Direction
+### 7.7 Instrumentation and logging
 
-### 8.1 Application Stack
+Record at least:
+
+- inference time, prompt size, and output size per turn
+- scene compilation, validation, and render time
+- state and topological proposals, validator decisions, and fallbacks
+- memory use and CPU/GPU activity when available
+- parser clarifications and failed traversal feedback
+- location revisions and local-scene fingerprints useful for playtest analysis
+
+## 8. Technical direction
+
+### 8.1 Application stack
 
 Preferred direction:
 
-- native desktop executable
+- native C++ desktop executable
 - `llama.cpp` embedded or linked directly
-- renderer implemented in the same native runtime
-- `SDL3` as the preferred cross-platform media layer for window creation, input, audio, and framebuffer presentation
-- simple UI layer for text input, transcript view, image display, and debug access
+- renderer in the same runtime
+- `SDL3` for windowing, input, audio, and framebuffer presentation
+- project-specific UI for transcript, command input, viewport, state, and diagnostics
 
-Pragmatic implementation preference:
+Avoid Python services or external model daemons in the shipped runtime. Repository scripts may still support development, download, benchmarking, and documentation generation.
 
-- C++ is the most direct fit because of `llama.cpp` integration and renderer ownership.
-- Rust is acceptable if the project wants safer application code and is willing to manage FFI boundaries cleanly.
+### 8.2 Model runtime
 
-The main requirement is not the language itself, but avoiding a runtime architecture that depends on Python services or external model daemons.
+Assume:
 
-### 8.2 Model Runtime
+- model: `Ministral 3 8B Instruct 2512`
+- preferred artifact: GGUF `Q4_K_M`
+- runtime: `llama.cpp`
+- primary development acceleration: CUDA
+- optional CPU and other supported hardware backends where practical
 
-The system should assume:
+The application owns model loading, prompt assembly, generation, cancellation, and output validation.
 
-- the selected target model is `Ministral 3 8B Instruct 2512`
-- the preferred artifact is the GGUF quantized build `Q4_K_M`
-- inference runs through `llama.cpp`
-- CUDA is the primary acceleration profile for the current development machine
-- quantized local inference is required for practical distribution
-- hardware acceleration should be optional but supported when available
-
-Practical backend expectations:
-
-- CPU-only execution must remain possible, even if slower
-- Metal, CUDA, or Vulkan acceleration should be used opportunistically
-- the application must handle model loading, prompt assembly, and inference directly
-
-### 8.3 Turn Pipeline
-
-The core runtime should be organized as a chain of constrained transformations:
+### 8.3 Turn pipeline
 
 ```text
 player command
-    ->
-intent interpretation
-    ->
-fiction state update
-    ->
-constrained scene description
-    ->
-scene validation or simplification
-    ->
-raytraced rendering
-    ->
-image shown to the player
+    -> context projection
+    -> constrained LLM result
+    -> schema validation / repair
+    -> hard-state validation
+    -> topological proposal validation
+    -> committed hard, soft, and spatial state
+    -> deterministic scene compilation
+    -> scene audit / safe fallback
+    -> raytraced rendering
+    -> player-facing text and image
 ```
 
-Each stage is both an implementation boundary and a research surface. The system should be able to inspect and debug failures at every transition.
+Each boundary must be inspectable and independently debuggable.
 
-### 8.4 C++ Coding Guidelines
+### 8.4 C++ guidelines
 
-If the project takes the C++ implementation path, it should follow an Orthodox C++-style subset adapted from Branimir Karadzic's *Orthodox C++* guidelines.
+Use a conservative Orthodox C++-style subset:
 
-The purpose of this subset is to keep the codebase simple, portable, explicit in its resource usage, and easy to debug under real production constraints.
+- keep C++11 as the baseline unless a later feature has a concrete, documented benefit
+- prefer plain structs, free functions, and narrow classes with explicit ownership
+- do not use exceptions, RTTI, modules, or abstraction-heavy inheritance
+- do not use `iostream` or `stringstream`; prefer explicit logging and `printf`-style formatting
+- avoid hidden allocations in runtime-critical paths
+- avoid template metaprogramming unless it clearly reduces complexity
+- keep subsystem APIs, allocator boundaries, and ownership transfer obvious
+- prefer dependencies compatible with no-exceptions/no-RTTI builds
 
-Language baseline:
+## 9. World model
 
-- Prefer `C++11` as the default language baseline for the project.
-- Do not raise the language baseline casually.
-- Any post-`C++11` feature should require a concrete justification in readability, correctness, or portability, and should be rejected if it complicates the build, dependency, or platform story.
+The model is intentionally asymmetric.
 
-Mandatory implementation guidelines:
+### 9.1 Hard state
 
-- Prefer simple C-like C++ that remains readable to programmers comfortable with C.
-- Prefer plain structs, free functions, and narrow classes with obvious ownership over deep inheritance or abstraction-heavy designs.
-- Do not use exceptions.
-- Do not use RTTI.
-- Do not use `iostream` or `stringstream`; use explicit logging and `printf`-style formatting instead.
-- Prefer C runtime headers such as `<stdio.h>`, `<stdlib.h>`, `<string.h>`, and `<math.h>` over C++ wrapper headers when practical.
-- Avoid STL containers or helpers that hide allocation behavior in runtime-critical code.
-- Keep memory ownership and allocator boundaries explicit in subsystem APIs.
-- Avoid template metaprogramming unless it clearly reduces complexity instead of increasing it.
-- Do not use C++ modules.
-- Treat newer standard features as opt-in exceptions, not as the default style of the codebase.
+Hard state must persist reliably:
 
-Project-level implications:
+- turn number and authoritative current graph node
+- inventory, samples, tools, and survival resources if used
+- persistent named entities and major discoveries
+- resolved and unresolved commitments that affect action
+- accepted barriers or topology facts the design marks immutable
+- session, save, model, and validation metadata
 
-- The renderer, scene pipeline, save/load layer, and inference integration should be debuggable without relying on exceptions, RTTI, or heavy template indirection.
-- Subsystem boundaries should avoid hidden allocations and implicit ownership transfer.
-- External dependencies should preferably tolerate `no-exceptions` and `no-rtti` builds.
-- The preferred toolchain target is a conservative `C++11` subset with selectively approved later features only when their value is concrete and their cost is negligible.
+Hard state must never depend only on the prose of the last turn.
 
-## 9. World Model
+### 9.2 Soft state
 
-The world model should be intentionally asymmetric:
+Soft state may be summarized or drift:
 
-- Some facts are hard state and must persist reliably.
-- Some facts are soft state and may drift.
-
-### 9.1 Hard State
-
-Hard state should include:
-
-- current turn number
-- current location identifier
-- inventory
-- manipulable objects relevant to immediate action
-- persistent named entities
-- unresolved promises or threats
-- recently established facts that directly affect interaction
-- save metadata and model metadata
-
-### 9.2 Soft State
-
-Soft state may include:
-
-- broader geography
-- exact architectural continuity
-- atmospheric details
+- atmosphere and local interpretations
+- non-actionable history or explanations
+- psychological confidence and inferred meaning
 - minor object placement
-- historical explanations that are not mechanically relevant
 
-This split is essential. The game should preserve what the player can act upon while allowing the larger world to remain unstable.
+### 9.3 Mutable spatial state
 
-## 10. LLM Turn Contract
+Spatial state sits between fiction and render geometry. It may include:
 
-The LLM should not return raw prose alone. It should return structured turn data that can be validated before being accepted by the engine.
+- stable location identity and local visual anchors
+- current adjacency and exits
+- invisible barriers and traversal feedback
+- orientation, route length, and mapping claims
+- locally visible extraction structures and instruments
+- diagnostic evidence and scene constraints
+- accepted mutation history
 
-Minimum turn payload:
+The LLM should change this state through bounded deltas, not by inventing an unconstrained final scene.
 
-- player intent interpretation
-- narrative response
-- world-state deltas
-- visible entities or salient objects
-- optional clarification request
-- scene description for rendering
-- continuity notes or constraints when useful
+## 10. LLM contracts
 
-An example target shape could be JSON or another grammar-constrained structure with fields such as:
+The turn result must be structured. A target payload should cover:
 
-- `intent`
-- `narration`
-- `result`
-- `inventory_delta`
-- `facts_added`
-- `facts_removed`
-- `entities_visible`
-- `scene`
-- `continuity_notes`
+- interpreted intent
+- concise narration
+- optional clarification
+- hard-state deltas
+- soft-state deltas
+- spatial deltas
+- optional topological mutation proposal
+- continuity notes
 
-The exact schema is an implementation detail, but structured output is a product requirement because it is the only realistic way to keep the game playable, inspectable, and debuggable.
+Room generation should likewise return semantic metadata and qualitative constraints rather than exact arbitrary coordinates. The engine owns placement, collision avoidance, camera choice, and final scene syntax.
 
-## 11. Scene Representation
+Grammar-constrained output is desirable where stable, but validation, repair, and safe no-op fallback remain mandatory.
 
-### 11.1 Preferred v1 Format: Proprietary Primitive Scene Format
+## 11. Scene representation
 
-The preferred v1 approach is a very small proprietary scene description language built for LLM reliability and renderer simplicity.
+### 11.1 Production format
 
-Reasons:
+Use the narrow proprietary primitive format documented in [`SCENE_FORMAT_V1.md`](./SCENE_FORMAT_V1.md). It is compact, auditable, deterministic to compile, and easier to validate than general mesh formats.
 
-- fewer tokens than `.OBJ`
-- easier to validate
-- easier to constrain with a grammar
-- easier to keep scale and orientation consistent
-- easier to render directly with analytic primitives
-- easier to recover from malformed output
+The implementation currently supports only its documented subset and prefabs. Planned Eryx semantics must not be claimed as scene directives until they are implemented.
 
-The format should support a minimal set of primitives:
+### 11.2 Direct scene and mesh generation
 
-- plane
-- box
-- sphere
-- cylinder
-- cone
-- optional mesh reference
+Direct LLM `.scene` output remains valuable as an audit benchmark because it reveals truncation, invented properties, and semantic drift. It is not the normal runtime authority.
 
-The format should support:
+Direct `.OBJ` generation may be explored for isolated research cases, but its token cost, malformed geometry, scale drift, and validation burden make it unsuitable as the v1 production path.
 
-- position
-- rotation
-- scale or size
-- grayscale material value
-- roughness or diffuse category
-- object name or tag
+## 12. UI and presentation
 
-Illustrative example:
-
-```text
-room "service corridor"
-box "wall_left"    pos(-4,1,0)   size(0.2,2.5,8)    gray(0.35)
-box "wall_right"   pos(4,1,0)    size(0.2,2.5,8)    gray(0.38)
-box "ceiling"      pos(0,2.6,0)  size(8,0.2,8)      gray(0.42)
-plane "floor"      pos(0,0,0)    normal(0,1,0)      gray(0.18)
-box "door"         pos(0,1,-3.6) size(1.1,2.1,0.15) gray(0.52)
-cylinder "bucket"  pos(-2.8,0.3,1.2) radius(0.25) height(0.6) gray(0.48)
-```
-
-This format should remain intentionally narrow. If the LLM cannot describe a place with this vocabulary, the scene should be simplified rather than expanded into a general-purpose 3D standard.
-
-### 11.2 Experimental v2 Format: LLM-Generated `.OBJ`
-
-Direct `.OBJ` generation may be explored later for stranger or richer forms, but it should not be the primary production path for v1.
-
-Risks of `.OBJ` as the main path:
-
-- malformed geometry
-- token-heavy output
-- unstable scale
-- broken normals or topology
-- high validation cost
-- poor determinism across similar prompts
-
-Recommended role for `.OBJ`:
-
-- optional research branch
-- special-case hero scenes
-- offline pre-generation experiments
-
-## 12. Rendering Specification
-
-The renderer should implement a deliberately rough grayscale raytraced aesthetic.
-
-### 12.1 Visual Rules
-
-- grayscale only
-- no color as a core lighting signal
-- one light source only
-- light source locked to the camera
-- high contrast where useful
-- visible shadow noise
-- low sample count by design
-- geometry should read as stark and primitive
-
-### 12.2 Lighting Model
-
-The camera acts like a carried lamp or flashlight, evoking found-footage horror. This is not a realistic cinematographic setup; it is a stylistic one.
-
-The renderer should support:
-
-- direct illumination from the camera-mounted light
-- raytraced indirect bounce or crude radiosity
-- intentionally noisy sampling
-- no aggressive temporal smoothing that would erase the aesthetic
-
-### 12.3 Performance Direction
-
-The renderer should aim for a low internal resolution and should prefer stable responsiveness over expensive accuracy.
-
-Acceptable strategies:
-
-- low fixed internal render resolution
-- image upscaling in the UI
-- progressive refinement only when idle
-- hard caps on bounce depth and sample count
-
-### 12.4 Inference-Time Refinement
-
-A strong optional direction is to let the renderer accumulate samples while the language model is preparing its response. In that mode, the image would become a material trace of narrative computation time rather than a separate decorative output.
-
-## 13. UI, Debug, and Presentation
-
-The UI should remain minimal.
-
-The preferred implementation path for the native UI layer is `SDL3`, with a project-specific interface drawn directly on top rather than a heavyweight generic application framework.
+The interface should feel like a prospecting, mapping, or sensing apparatus rather than a glossy game HUD.
 
 Required elements:
 
-- text transcript
-- command input line
 - current rendered image
+- transcript and command input
 - save/load access
+- clear busy/cancellation state
 - settings for model path and performance profile
 
-Optional but strongly recommended elements:
+Recommended research and debug elements:
 
-- command history
-- transcript export
-- debug panel for scene data and state inspection
-- timing and telemetry panel
-- raw structured turn output view
+- command history and transcript export
+- current exits, map claims, or survey marks where fictionally appropriate
+- raw structured result and validator decision
+- scene provenance, state diff, and timing telemetry
+- optional invisible-topology diagnostic view unavailable in ordinary player presentation
 
-The interface should feel closer to a tool, terminal, or surveillance device than to a glossy game HUD.
+### 12.1 Autonomous or ghost-player presentation
 
-A pragmatic v1 layout is an upper viewport for the grayscale rendered image and a lower textual area for transcript plus parser-style command input.
+An exhibition or demoparty mode may run an authored sequence of survey, movement, marking, retracing, comparison, contradiction, and remapping commands. The script supplies dramatic rhythm; the LLM and topology validator preserve live uncertainty. It should not become an unconstrained model conversation.
 
-## 14. Save, Load, and Session Logging
+## 13. Save, load, and session logs
 
-Save files should preserve enough information to continue play coherently.
-
-They should include at least:
+Save data should preserve:
 
 - transcript or transcript summary
-- hard world state
-- current scene description
-- persistent entity state
+- hard, soft, and spatial state
+- current scene or enough committed state to reproduce it
+- discovered locations, connections, barriers, and mutation history
+- persistent entities and player marks
 - model identifier and relevant generation settings
-- seed or sampling metadata if reproducibility is desired
+- seeds or sampling metadata when reproducibility is desired
 
-The system should also support session logs suitable for later analysis, including:
+Logs should preserve turn timings, validator outcomes, fallbacks, scene provenance, and structured deltas. Perfect regeneration from prompts alone is not assumed.
 
-- turn-by-turn timings
-- validation errors
-- fallback decisions
-- scene outputs
-- structured state deltas
+## 14. Distribution
 
-Because LLM output is non-deterministic, save files and logs are both important. The system cannot rely on perfect regeneration from prompts alone.
+Goals:
 
-## 15. Distribution Requirements
-
-The project must be distributable without requiring the user to assemble a local AI stack manually.
-
-Distribution goals:
-
-- macOS build
-- Windows build
-- Linux build if practical
-- no Python installation step
-- no Ollama installation step
+- Windows and macOS native builds
+- Linux if practical
+- no Python or Ollama requirement for players
 - no mandatory network dependency after setup
 
-Possible delivery models:
+Model weights may be bundled, downloaded on first run, or shipped separately. The final choice depends on redistribution terms, artifact size, and installation testing.
 
-- bundle executable plus model weights
-- bundle executable plus first-run model downloader
-- separate installer for executable and licensed model package
+## 15. Prototype priorities and roadmap
 
-The final packaging strategy depends on model licensing and artifact size.
+### Phase A — Preserve and baseline the current runtime
 
-## 16. Prototype Scope Priorities
+- retain the working `llama.cpp`, SDL3, state, compiler, raytracer, save/load, and benchmark paths
+- keep datacenter fixtures and benchmarks as historical technical baselines
+- verify factual documentation without renaming runtime identifiers prematurely
 
-The full specification is broader than the first deliverable needs to be. For an initial public or research-facing slice, the project should prioritize a compact but stable vertical slice.
+### Phase B — Eryx semantic migration
 
-Minimum first-slice goals:
+- replace active datacenter prompts and default narrative vocabulary
+- define extraction/prospecting location archetypes and object semantics
+- distinguish invisible barriers from ordinary blocked exits in spatial state
+- define a structured topological mutation proposal and validator
+- repurpose existing prefab geometry where convincing; implement a very small high-value set of new prefabs
+- regenerate source-derived prefab and benchmark documentation only after implementation
 
-1. a playable session of roughly five to ten minutes
-2. a local model integrated through `llama.cpp`
-3. an open-text command loop
-4. a minimal hard-state model
-5. a primitive scene language
-6. an identifiable grayscale raytracer
-7. logging of responses, state changes, errors, and timing data
+### Phase C — Playable labyrinth slice
 
-The priority is not a finished consumer product. The priority is an experience stable enough to test the hypothesis in practice.
+- provide a five-to-ten-minute parser-style session
+- support survey, marking, movement, retracing, and contradiction feedback
+- keep revisited locations locally recognizable
+- preserve hard state through impossible return paths and accepted topology changes
+- log enough evidence to compare intentional instability with failure
 
-## 17. Roadmap
+### Phase D — Research readability and presentation
 
-### Phase 0: Feasibility and Constraints
+- run the spatial validation protocol
+- calibrate mutation frequency and recovery affordances
+- expose useful telemetry and diagnostic views
+- prepare a controlled ghost-player sequence
+- test the work as colloquium artifact, exhibition installation, and demoparty presentation
 
-Goals:
+### Phase E — Distribution and optional geometry research
 
-- lock the runtime target to `llama.cpp` with `Ministral 3 8B`
-- validate the CUDA build and reproducible local inference workflow
-- confirm license terms for redistribution
-- estimate practical memory and latency targets
-- choose packaging strategy
+- package native builds and model management
+- test offline installation and performance profiles
+- retain direct `.scene` and `.OBJ` generation as bounded experiments
 
-Exit criteria:
+## 16. Major friction points
 
-- model/runtime feasibility is confirmed for the selected `Ministral 3 8B` target
-- distribution constraints are understood
-- a v1 scene format is selected
+### 16.1 Uncanny topology versus broken interaction
 
-### Phase 1: Vertical Slice
+The design must make a changed route feel like an event in the world, not lost input or corrupt state. Clear local feedback, persistent anchors, mutation limits, and recovery paths are central.
 
-Goals:
+### 16.2 Invisible but actionable barriers
 
-- implement the parser-style turn loop
-- establish hard versus soft state rules
-- define the structured LLM turn contract
-- implement primitive-scene generation and validation
-- render a recognizable grayscale scene per turn
-- log timing and failure data
+If a wall is neither visible nor explained through text, collision reads as a bug. If it is rendered as an ordinary wall, the central perceptual tension disappears. Indirect evidence and diagnostic tooling require careful separation.
 
-Exit criteria:
+### 16.3 Authoritative state versus generative agency
 
-- the player can type commands and receive coherent multi-turn responses
-- most turns produce a valid render or a safe fallback
-- timings and system behavior can be inspected after play
+Over-constraining the model makes topology decorative; under-constraining it destroys playability. The proposal/validation contract must identify exactly which relations the model can influence.
 
-### Phase 2: Coherence and Research Readability
+### 16.4 Model availability, licensing, and local performance
 
-Goals:
+An 8B-class local model remains heavy. Latency, RAM/VRAM, load time, package size, and redistribution conditions remain practical risks.
 
-- improve revisiting behavior for locations
-- improve recurring entities and inventory consistency
-- improve the relation between text, state, and image
-- refine latency presentation and debug tooling
-- evaluate which incoherences are productive
+### 16.5 Geometry and contract reliability
 
-Exit criteria:
+Structured model output can still be malformed, truncated, or semantically vague. Repair and safe fallback are required, while direct scene generation must remain non-authoritative.
 
-- the experience holds together across medium-length sessions
-- contradictions feel interpretable rather than arbitrary
-- the project can support analysis as well as play
+### 16.6 Style becoming decoration
 
-### Phase 3: Distribution Build
+Sparse quarry brutalism, limited color, and visible noise must remain consequences of the system and fictional setting. Adding decorative detail or expensive rendering can weaken both the computational inversion and the perceptual premise.
 
-Goals:
+### 16.7 Debuggability and telemetry
 
-- package the game as a native app
-- integrate model management
-- support multiple performance profiles
-- test offline installation and first-launch flow
+Inference, state projection, topology validation, compilation, and rendering can fail separately. Each stage needs provenance, diagnostics, and measured timings.
 
-Exit criteria:
+## 17. Evaluation questions
 
-- a non-technical player can install and run the game locally
-- no Python or Ollama setup is required
+1. Can players identify an intentional invisible barrier and respond usefully?
+2. How much topology change is tolerable in a short session?
+3. Do revisited places remain recognizable when their connectivity changes?
+4. Can an impossible return path occur without corrupting inventory, discoveries, or current position?
+5. How do player-made maps expose or fail to expose the labyrinth?
+6. How do text, image, movement, and diagnostic evidence distribute knowledge differently?
+7. Does the constrained image stimulate projection while remaining actionable?
+8. Does measured inference remain the dominant computational cost?
+9. What is preserved, lost, or newly possible across the Eryx literary and demoscene lineage?
+10. How can the work mediate demoscene values of platform awareness and expressive allocation for a contemporary audience?
 
-### Phase 4: Experimental Geometry Expansion
+Evaluation should combine direct playtesting, telemetry, state/scene inspection, mapping artifacts, and qualitative reports.
 
-Goals:
+## 18. Computational-constraint mediation
 
-- test `.OBJ` generation as an optional path
-- compare direct mesh generation against primitive scenes
-- evaluate whether richer geometry improves the experience enough to justify the added instability
+The WinUAE DMA visualizer remains an important complementary research device. It can show that historical constraint is allocation rather than simply “old machines were slow”: CPU, Copper, Blitter, bitplanes, sprites, audio, and other accesses compete for Amiga memory-bus time.
 
-Exit criteria:
+The comparison with the current project is conceptual, not architectural:
 
-- either `.OBJ` remains experimental, or it proves sufficiently robust for limited use
+```text
+Amiga-era demo:
+hardware resources -> coordinated audiovisual output
 
-## 18. Major Friction Points
+current project:
+GPU compute -> inference, interpretation, topological proposals
+CPU compute -> deliberately constrained raytraced image
+```
 
-### 18.1 Model Availability and Licensing
+In both cases, aesthetic form depends on where the machine spends its resources.
 
-The biggest non-creative risk is no longer choosing a model family, but confirming the exact redistribution and packaging constraints of `Ministral 3 8B` in the intended shipping format.
+## 19. Summary
 
-### 18.2 Local Performance
+The project is a local-first interactive fiction engine, a constrained raytraced executable artwork, and a research apparatus for unstable computed space. It extends a specific literary and demoscene lineage by making the Eryx labyrinth playable and generative.
 
-Even an 8B-class local model remains heavy for a distributable art game, especially on lower-end machines or systems without usable GPU acceleration. Latency, RAM pressure, load time, VRAM budget, and package size are major concerns.
+Its pragmatic form is not a general 3D world generator. It is a bounded system in which a local LLM interprets action and proposes selected spatial changes, an authoritative engine protects playability, and a poor but material image witnesses only part of the world.
 
-### 18.3 LLM as Parser
-
-An LLM-driven parser is expressive, but it is also difficult to test. The system may misread commands, invent hidden affordances, or contradict earlier decisions.
-
-### 18.4 Coherence Versus Hallucination
-
-The concept benefits from instability, but too much instability breaks playability. The design challenge is deciding which layers may drift and which layers must remain hard.
-
-### 18.5 Geometry Reliability
-
-If the LLM generates visual data directly, malformed output is inevitable. The renderer pipeline must be defensive, validating or simplifying content rather than assuming correctness.
-
-### 18.6 Style Becoming Mere Decoration
-
-If the monochrome brutalist look is implemented as a superficial art direction rather than as the consequence of constrained computation, the conceptual core of the project weakens.
-
-### 18.7 Debuggability
-
-A combined system of inference, state summarization, structured output, validation, and rendering can fail in subtle ways. The project will need internal debugging views very early.
-
-### 18.8 Distribution Size
-
-Bundling a native app plus local model weights may produce a large download. This affects accessibility, platform support, and update strategy.
-
-## 19. Research Questions and Evaluation
-
-The prototype can be used to investigate questions such as:
-
-1. What becomes of the game image when it is no longer the main site of computational expense?
-2. Can an interactive fiction remain playable when its operational coherence is stable but its representational coherence drifts?
-3. How do players interpret contradictions between narration, world state, and rendered image?
-4. Does a poor geometric image stimulate stronger mental projection than a richer image?
-5. How does inference latency reshape rhythm and expectation in parser-like play?
-6. To what extent does the project reactivate a historical and affective continuity between video games, cracking culture, and the demoscene?
-7. Can allocation of computation itself be treated as an aesthetic gesture?
-8. Which parts of a world must remain stable for instability to be experienced as uncanny rather than broken?
-
-Evaluation should combine:
-
-- direct playtesting
-- telemetry and timing analysis
-- inspection of text/image mismatches
-- qualitative notes about player interpretation
-
-## 20. Recommended v1 Decisions
-
-To keep the project achievable, v1 should commit to the following:
-
-- use `llama.cpp`
-- avoid Python and Ollama entirely
-- use `Ministral 3 8B Instruct 2512` as the primary local model target
-- use CUDA as the primary acceleration profile during development, with CPU fallback kept possible
-- if using C++, keep `C++11` as the baseline language target
-- treat the proprietary primitive scene format as the default rendering input
-- keep `.OBJ` generation experimental
-- preserve local continuity rather than global map consistency
-- if using C++, follow an Orthodox C++ subset with no exceptions, no RTTI, no modules, and explicit memory ownership
-- expose timing, validation, and debug data from the start
-- design the renderer around grayscale, camera-light, and noisy radiosity from the start
-- prioritize a research-grade vertical slice before full product ambitions
-
-## 21. Open Questions
-
-- Should the public build bundle the `Ministral 3 8B` weights, download them on first launch, or ship them as a separate package?
-- Should the world be framed as a pure wandering machine, or should it have a stronger authored premise and win/lose conditions?
-- How much of inventory and object interaction should be deterministic at the engine level versus entrusted to the LLM?
-- Should revisiting a location reproduce a stable scene fingerprint, or should it visibly mutate?
-- Should the first public target be a colloquium artifact, an exhibition prototype, or a downloadable art game?
-
-## 22. Summary
-
-The project should be treated as a local-first interactive fiction engine, a grayscale raytraced executable artwork, and a research apparatus for studying what happens when language becomes the expensive center of the machine and the image becomes its poor but material witness.
-
-The most pragmatic v1 is not a general 3D world generator. It is a tightly constrained narrative system that emits simple geometry, renders it in noisy grayscale, exposes its computational distribution, and uses instability as part of the fiction rather than as an implementation accident.
+AI is used not to escape computational constraint, but to relocate it.

@@ -1,10 +1,16 @@
-## Notes
+# Research Notes
 
-_Thinking out loud_
+_Thinking out loud. Historical formulations are retained even when a later section supersedes their positioning._
+
+## Editorial status
+
+The long synthesis below records the research state reached during the first technical and conceptual phase. Its general work on computational inversion, situated visual education, hard and soft state, image/text translation, and the prototype as a research instrument remains active.
+
+Some formulations are now historical, in particular the description of the work as merely peripheral or adjacent to the demoscene. The dated section `2026-08-09 - Eryx reorientation` documents the active direction without rewriting this earlier reasoning as if it had never occurred.
 
 > Ce rapprochement entre jeu vidéo et démoscène ne relève pas uniquement d’une parenté technique reconstruite rétrospectivement. Il procède également d’un point de vue situé et d’une formation esthétique personnelle. Sur les mêmes micro-ordinateurs, à la même époque, je découvrais les espaces tridimensionnels en faces pleines de jeux comme Driller et les mondes géométriques des démos, notamment Enigma de Phenomena. Ces productions partageaient les mêmes contraintes matérielles et des stratégies voisines de contournement esthétique : faible nombre de polygones, abstraction, discontinuité du mouvement et forte sollicitation de l’imagination. Elles appartenaient aussi à une même expérience domestique de l’informatique, faite de jeux, de copies, de crack intros, de démos et d’après-midi passés entre amis devant un Atari ST ou un Amiga. Si l’histoire culturelle a progressivement distingué ces pratiques, elles ont conjointement formé mon regard sur l’image calculée. Le prototype proposé cherche notamment à réactiver cette continuité sensible, en réunissant interaction, génération en temps réel et pauvreté graphique assumée.
 
-# Inverser la charge computationnelle de la fiction interactive
+## Previous research synthesis: inverting the computational load of interactive fiction
 
 ## Synthèse du cheminement artistique, scientifique et méthodologique
 
@@ -468,5 +474,124 @@ Le colloque ne crée pas artificiellement cette trajectoire. Il fournit le cadre
 La réalisation du prototype doit toutefois rester ouverte : l’œuvre ne doit pas confirmer automatiquement le projet théorique. Elle doit produire des résistances, des erreurs et des écarts capables de faire évoluer la recherche.
 
 C’est précisément à cette condition que le dispositif pourra devenir à la fois une œuvre, un prototype technique et un véritable objet de recherche-création.
+
+## 2026-08-09 - Eryx reorientation
+
+### Why the narrative focus changed
+
+The immediately preceding narrative branch, developed under the working title *Le Désert des tokens*, placed an officer in an autonomous desert datacenter waiting for a massive cyberattack that might not exist. Server heat, water consumption, environmental damage, institutional interpretation, and LLM sampling temperature formed a feedback loop.
+
+That branch remains intellectually useful. It made computation, latency, heat, ecological cost, and self-amplifying interpretation part of the fiction. It also clarified the inversion at the center of the project: GPU resources were spent on local language inference while the CPU produced a deliberately poor raytraced image.
+
+Its weakness for the PhD research was structural. The relationship to the demoscene depended mainly on an aesthetic of constraint and on an analogy of resource allocation. The active Eryx direction gives the work a direct historical and personal genealogy while preserving the engine architecture that the earlier phase helped define.
+
+The datacenter, the officer waiting for an attack, cyber-threat interpretation, heat/water feedback, and the direct equation `desert temperature -> LLM temperature` are therefore superseded as the main fiction. They remain documented here and in the chronological journal as a previous conceptual stage.
+
+### Four-stage genealogy
+
+```text
+Lovecraft and Kenneth J. Sterling, *In the Walls of Eryx*
+        ↓
+ASD, *Beyond the Walls of Eryx* (2007)
+        ↓
+Mandarine, *Within the Mesh* (2013)
+        ↓
+current interactive LLM work
+```
+
+The literary source provides Venusian extraction, crystals, invisible architecture, failed mapping, and uncertainty about spatial stability.
+
+ASD transformed the motif into demoscene audiovisual language: lines, linked worlds, shifting projection, transformation, and collapse. [*Beyond the Walls of Eryx*](https://www.pouet.net/prod.php?which=31088) demonstrates that Eryx had already become a computational aesthetic within demoscene history.
+
+Mandarine's [*Within the Mesh*](https://www.pouet.net/prod.php?which=61730), co-created by the present project's author, explicitly continued this lineage in 2013. The reference is consequently not imported into the project after the fact; it passed through the author's own practice more than a decade earlier.
+
+The current work adds an interactive transformation. The player inhabits a local, actionable world in which a model may propose selected changes to topology. A deterministic engine validates those proposals and preserves hard state. The model's imperfect long-range spatial continuity is not simply renamed “hallucination”; it becomes a bounded capacity to renegotiate the labyrinth.
+
+### Sharpened research proposition
+
+The central question becomes:
+
+> How can an AI-driven interactive work extend a demoscene lineage by turning the spatial inconsistency of generative models into an expressive, navigable constraint?
+
+A broader PhD-facing formulation is:
+
+> How can artificial intelligence mediate and reactivate a demoscene aesthetic founded on real-time computation, platform awareness, technical constraint, and incomplete but suggestive images?
+
+The crucial playability question is:
+
+> What has to remain stable for a generatively changing world to be experienced as an uncanny labyrinth rather than as a broken game?
+
+### Hard state and soft topology
+
+The earlier hard/soft distinction becomes more precise.
+
+Hard state should protect inventory, collected specimens, survival resources if used, named discoveries, major commitments, and the player's authoritative current graph position.
+
+Soft topology may include adjacency, orientation, route length, unseen barriers, corridor continuity, and inferred geometry beyond the current local view. Local visual anchors should usually persist even when connections change.
+
+The LLM may propose a blocked exit, a vanished barrier, an impossible return path, or a reconnection to another known place. The engine decides whether the mutation is accepted. This division gives the model genuine spatial authorship without making prose the sole source of truth.
+
+### Image and invisible architecture
+
+The new setting aligns the renderer's primitive vocabulary with the fiction:
+
+- boxes and slabs become extraction infrastructure
+- planes become quarry floors, cuts, and plateaus
+- repeated modules become prospecting or atmospheric equipment
+- constrained color and grayscale become instrumental perception
+- visible raytracing noise becomes incomplete sensing
+- sparse scenes make unseen space active
+
+The labyrinth must not become an ordinary visible maze. Text, traversal, and the image should remain asymmetric. The text may know that a wall occupies apparently empty space; the viewport may reveal only indirect evidence such as a scanner trace, halted dust, a shadow, or an object pressed against nothing.
+
+### Temperature retained only as an optional mechanism
+
+The earlier coupling among environmental, machine, and sampling temperature remains an interesting research mechanism but is no longer the narrative center. If reused, it should serve the Eryx setting through suit stress, oxygen depletion, exposure, proximity to the labyrinth, or loss of spatial confidence.
+
+Temperature must not be the sole source of topology change. Randomness does not by itself produce a meaningful labyrinth.
+
+### Constraint mediation and WinUAE DMA visualization
+
+The Amiga DMA mediation remains fully relevant. Saying that older computers were simply “limited” hides the organization of their resources. The WinUAE DMA visualizer can show CPU, Copper, Blitter, bitplane DMA, sprites, audio, and other accesses occupying memory-bus time.
+
+A useful public comparison remains:
+
+1. a relatively idle Workbench;
+2. a simple window operation;
+3. a carefully selected demo sequence using several hardware subsystems.
+
+This makes constraint visible as allocation and orchestration. The comparison with the current project must remain conceptual rather than architectural:
+
+```text
+Amiga-era demo:
+hardware resources -> coordinated audiovisual output
+
+current project:
+GPU compute -> LLM inference, interpretation, and topological proposals
+CPU compute -> deliberately constrained raytraced image
+```
+
+In both cases, the form of the work depends on where the machine spends its computation.
+
+### Mediation chain
+
+The work can now be presented as two complementary chains:
+
+```text
+literary invisible labyrinth
+        -> demoscene audiovisual interpretation
+        -> personal demoscene reinterpretation
+        -> interactive generative labyrinth
+```
+
+```text
+historical hardware allocation
+        -> visible through DMA mediation
+
+contemporary inference/render allocation
+        -> visible through runtime telemetry and the resulting image
+```
+
+This creates a coherent triangle among demoscene lineage, AI-driven spatial mediation, and public understanding of computational constraint.
 
 

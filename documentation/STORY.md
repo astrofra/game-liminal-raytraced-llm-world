@@ -1,81 +1,155 @@
-# Le Désert des tokens
+# Eryx-Based Generative Labyrinth
 
-## Synthèse concise du projet
+## Current story direction
 
-*Le Désert des tokens* est une fiction interactive générative située dans un datacenter autonome construit au milieu d’un désert. Un officier y est affecté pour surveiller une attaque numérique massive, annoncée comme imminente mais dont la nature, l’origine et même l’existence demeurent incertaines.
+The project does not yet have a final public title. *Le Désert des tokens* is the previous working title and now designates an earlier narrative branch documented in [`NOTES.md`](./NOTES.md) and [`PROJECT_JOURNAL.md`](./PROJECT_JOURNAL.md).
 
-Le datacenter actualise la fonction de la forteresse dans *Le Désert des Tartares* (D. Buzzati) : un lieu isolé, organisé autour de l’attente d’un événement qui pourrait ne jamais survenir. Il évoque également *En attendant les barbares* (J.M. Coetzee), dans la mesure où l’institution chargée d’identifier la menace peut finir par la produire elle-même, en transformant chaque panne, variation de trafic ou phénomène naturel en signe d’une offensive dissimulée. Il ne s’agit cependant pas d’une adaptation, mais d’une fiction originale consacrée aux infrastructures numériques, à l’intelligence artificielle et à la matérialité écologique du calcul.
+The active fiction places the player in a Venusian extraction zone. The player is a prospector or survey operative moving among a quarry, sparse industrial shelters, extraction machinery, navigation beacons, sample containers, and other human attempts to measure and exploit a hostile environment.
 
-## Le datacenter comme forteresse écologique
+Within this visible infrastructure lies another architecture: a labyrinth whose walls cannot ordinarily be seen. An apparently open route may reject movement. A corridor may reconnect to a different place. A path followed in reverse may not return from the expected direction. A familiar site may preserve its local appearance while acquiring different connections.
 
-L’infrastructure mobilise en permanence ses capacités de calcul pour analyser les journaux réseau, les tentatives d’authentification, les anomalies thermiques, les corruptions de données et les signaux observés dans le désert. Or cette activité produit elle-même de la chaleur, consomme de l’eau et accélère la dégradation des systèmes de refroidissement.
+The player is therefore not only exploring territory. They are trying to establish whether space can still be trusted.
 
-La menace extérieure attendue masque ainsi une destruction bien réelle : celle que le datacenter inflige à son propre environnement. Plus il cherche à se protéger, plus il épuise les ressources nécessaires à sa survie. Le centre transforme de l’électricité, de l’eau et de la chaleur en tokens afin de déterminer si quelqu’un cherche à l’attaquer ; plus il calcule, plus il trouve de raisons de continuer à calculer.
+## Fictional situation
 
-Dans une version autonome destinée à une projection, l’officier peut être incarné par un **joueur fantôme scénarisé**. Une série de commandes préparées — consulter les rapports, inspecter le refroidissement, observer l’horizon, interroger le système, rédiger le rapport quotidien — garantit la durée et la progression générale, tandis que le LLM génère en direct les réponses, les interprétations et les variations du monde.
+The player enters the extraction field with practical objectives: survey a sector, recover or inspect a crystal specimen, reactivate an instrument, locate another prospector, return to a shelter, or mark a safe route. These goals make the world actionable without requiring a fixed retelling of *In the Walls of Eryx*.
 
-Le rapport quotidien constitue une mécanique centrale. Une formule prudente comme « origine indéterminée » peut être réinterprétée par le système comme « attaque d’origine dissimulée confirmée ». La fiction se construit ainsi par sédimentation administrative de l’incertitude.
+The human layer should remain materially legible:
 
-## Les trois températures
+- quarry floors, cuts, ramps, trenches, and retaining slabs
+- prospecting stations and pressure shelters
+- drilling or extraction equipment
+- atmospheric-processing and oxygen-service units
+- gates, pylons, cargo, scanners, and survey beacons
+- sparse terrain extending beyond the range of the player's instrumented view
 
-Le projet fait coïncider trois sens du mot *température* : la température atmosphérique du désert, la température matérielle du datacenter et la température statistique du modèle de langage.
+The alien layer should not become a conventional set of visible corridors. It exists primarily through traversal constraints, contradictions, and indirect evidence. The text may report contact with a surface where the image shows empty air. Dust may stop against a plane, a scanner may trace a contour, or an object may appear to rest against nothing. These signs are optional and incremental; the perceptual mismatch is fundamental.
 
-Lorsque le désert chauffe, la température d’échantillonnage du LLM augmente. Les textes passent progressivement d’un registre administratif sobre à des interprétations plus spéculatives, contradictoires et métaphoriques. L’absence de preuve peut devenir la preuve d’une dissimulation ; les dunes, la poussière ou la chaleur peuvent être considérées comme les vecteurs d’une attaque distribuée.
+The setting is a mediated, speculative Venus rather than an exercise in historical or scientific reconstruction. Its visual synthesis is:
 
-Cette relation produit une boucle de rétroaction :
+> human brutalist extraction infrastructure + sparse hostile planetary environment + invisible alien topology
+
+## The labyrinth changes under controlled rules
+
+The system maintains an authoritative world state outside the language model. Inventory, collected specimens, survival resources if used, named discoveries, and the player's committed current position must not disappear because a model improvises.
+
+The LLM receives controlled authority over selected topological relations. It may propose that:
+
+- a known exit is now blocked by an unseen barrier
+- a barrier previously encountered is absent
+- a corridor reaches a different known location
+- a return path arrives from an impossible direction
+- an open quarry contains a newly inferred hidden division
+- a revisited site retains recognizable anchors but changes connectivity
+- the player's map conflicts with an otherwise actionable local scene
+
+The engine validates each proposal before committing it. It must preserve immediate playability, protect hard state, and keep at least one useful course of action available. Random sampling alone is not the labyrinth; the artistic mechanism is the deliberate negotiation between generative proposals and deterministic validation.
+
+The central design question is:
+
+> What must remain stable for a changing maze to feel uncanny rather than merely broken?
+
+## Four-stage lineage
+
+The project treats Eryx as a motif transformed across four media and computational regimes.
 
 ```text
-calcul accru
-    ↓
-consommation et chaleur
-    ↓
-réchauffement du désert
-    ↓
-augmentation de la température du LLM
-    ↓
-interprétations plus absurdes et plus prolixes
-    ↓
-davantage de tokens et de calcul
+*In the Walls of Eryx*
+        ↓
+ASD, *Beyond the Walls of Eryx*
+        ↓
+Mandarine, *Within the Mesh*
+        ↓
+current interactive LLM work
 ```
 
-La température ne doit toutefois pas rendre tout le système aléatoire. L’état matériel du datacenter et le compilateur de scènes 3D restent pilotés à très basse température. Seuls le système de défense et le narrateur dérivent. Le monde conserve donc une réalité minimale ; c’est son interprétation institutionnelle qui devient pathologique.
+### 1. Literary invisible space
 
-La montée peut s’achever par un retournement : lorsque le datacenter coupe ses unités de calcul, la température du modèle retombe et son dernier message redevient froid et factuel — aucune attaque externe n’a été identifiée, mais les réserves d’eau sont épuisées.
+H. P. Lovecraft and Kenneth J. Sterling's *In the Walls of Eryx* provides the conceptual matrix: Venus as an extractive frontier, valuable crystals, a prospector trapped by invisible architecture, failed mapping, and the progressive loss of spatial certainty.
 
-## Le lien avec la démoscène
+The project credits and reinterprets these motifs. It does not reproduce the story scene by scene or imitate its prose.
 
-La démoscène n’est pas le sujet littéral du récit. Elle intervient comme **régime esthétique et technique de fabrication**.
+### 2. Demoscene transformation
 
-Le projet reprend une logique dans laquelle la contrainte matérielle n’est pas seulement un manque, mais le moteur d’une écriture. La puissance de la machine contemporaine est répartie de manière volontairement dissymétrique : le GPU est principalement mobilisé par l’inférence du LLM, tandis que l’image reste produite par un raytracer élémentaire, composé de primitives simples, d’une lumière instrumentale, d’une résolution limitée et d’un bruit visible.
+ASD's [*Beyond the Walls of Eryx*](https://www.pouet.net/prod.php?which=31088) (2007) transformed the motif into a demoscene audiovisual work concerned with lines, linked worlds, changing projection, collapse, and the breakdown of computed space. The reference establishes that Eryx already has a history as an aesthetic and computational reinterpretation within the demoscene.
 
-L’intelligence artificielle n’abolit donc pas la contrainte : elle la déplace. La dépense computationnelle quitte l’image pour migrer vers le langage, la fiction et l’instabilité du monde.
+### 3. Personal demoscene continuation
 
-L’écriture visuelle prolonge le régime perceptif identifié dans le moodboard de jeux et de démos des années 1980 et 1990 : peu de volumes, des masses franches, de grands aplats, des zones opaques, des couloirs et des seuils, une interface très présente et un texte qui complète ce que l’image ne montre pas. Il ne s’agit pas de reproduire un style rétro, mais de réactiver une **expressivité sous contrainte** : un monde incomplet mais opératoire, que le spectateur doit reconstruire mentalement.
+Mandarine's [*Within the Mesh*](https://www.pouet.net/prod.php?which=61730) (2013), co-created by the present project's author, explicitly continued that relation. The Eryx lineage is therefore historical and personal: it already passed through the author's demoscene practice before this project.
 
-La contrainte doit être inscrite dans le système pour ne pas devenir un simple effet graphique : nombre limité de primitives, absence de textures photographiques, faible budget lumineux, résolution interne fixe, budget de tokens et fenêtre de contexte maîtrisés, latence exposée dans l’interface. La technique devient alors une condition visible de la forme.
+### 4. Interactive generative transformation
 
-## Visualiser la contrainte sur Amiga
+The current work makes the labyrinth inhabitable and mutable. The player no longer watches unstable computed space unfold in a fixed audiovisual sequence. A local model interprets actions and proposes controlled changes to the navigable graph while a deterministic engine protects the conditions of play.
 
-Pour expliquer cette notion au public, il est insuffisant de dire que les anciens ordinateurs « n’étaient pas puissants ». Le visualiseur DMA de WinUAE permet de montrer concrètement comment les ressources de l’Amiga sont distribuées entre le CPU, le Copper, le Blitter, les bitplanes, les sprites, l’audio et les autres canaux d’accès à la mémoire Chip.
+This is the new contribution to the lineage:
 
-Une comparaison en trois temps peut rendre ce partage lisible :
+> performed computed space becomes generatively reconfigured interactive space.
 
-1. un Workbench statique ;
-2. l’ouverture ou le déplacement d’une fenêtre ;
-3. une séquence précisément identifiée d’une démo mobilisant plusieurs composants.
+## Text, image, and incomplete perception
 
-La visualisation se transforme alors en partition matérielle. Elle montre que l’esthétique de la démoscène ne résulte pas seulement d’une faible puissance globale, mais d’une orchestration temporelle : quel composant peut accéder au bus, à quel moment, pour produire quelle partie de l’image ou du son.
+The LLM is not merely a prose generator. It interprets commands, narrates local consequences, updates selected facts, and proposes changes to soft topology. A separate spatial state and deterministic scene compiler mediate those proposals into geometry.
 
-Cette démonstration historique peut être mise en regard de la télémétrie de *Le Désert des tokens* : charge CPU et GPU, occupation de la VRAM, vitesse d’inférence, nombre de tokens, température et temps de rendu. Les architectures ne sont pas équivalentes, mais elles rendent visible un même principe : la forme de l’œuvre dépend de la manière dont les ressources de la machine sont distribuées.
+The renderer remains deliberately austere. Simple slabs, boxes, planes, a constrained palette, camera-linked lighting, low sample counts, and visible noise make the image feel like an incomplete instrument reading rather than an exhaustive depiction.
 
-## Démoscène, médiation et intelligence artificielle
+The text and image do different work:
 
-Le projet réunit ainsi les trois axes de la recherche.
+- the text can name a wall the image cannot show
+- the image can preserve a familiar local landmark while the text reports changed access
+- the scene can orient the player without proving the global map
+- the gap between both channels can become evidence of the labyrinth
 
-La **démoscène** fournit le principe d’une expression située dans l’architecture, produite en temps réel et transformant la contrainte en esthétique.
+The world should stay locally legible and globally uncertain. The image is not a failed illustration of the prose; it is one partial sensor among others.
 
-La **médiation** intervient à plusieurs niveaux : l’interface donne accès au monde par machine interposée ; le raytracer traduit partiellement la fiction du LLM ; WinUAE rend visible l’organisation matérielle d’une démo ancienne ; l’œuvre réactive pour un public contemporain un régime perceptif hérité de la micro-informatique.
+## Pressure, orientation, and optional temperature
 
-L’**intelligence artificielle** produit le récit, interprète les anomalies et reçoit une place matériellement mesurable dans l’allocation du calcul. Son coût énergétique n’est plus dissimulé : il devient une variable fictionnelle et esthétique.
+The fiction may use oxygen, suit stress, exposure time, confidence in the map, distance from shelter, or proximity to the labyrinth as pressures on exploration. No such resource should be added merely to imitate survival-game convention.
 
-> **En déplaçant la dépense computationnelle de l’image vers l’inférence, *Le Désert des tokens* interroge la manière dont l’IA peut servir de médiation contemporaine à une esthétique de la démoscène fondée sur la contrainte, le temps réel, l’incomplétude visuelle et la visibilité de la machine.**
+The temperature mechanism developed for *Le Désert des tokens* remains an optional research idea, not the central mechanic. If retained, model sampling variation could respond to environmental stress or spatial entropy. It must remain subordinate to structured topological mutation, because randomness and meaningful spatial instability are not equivalent.
+
+## Autonomous presentation
+
+An exhibition or demoparty version may use a scripted ghost player. Its command sequence should provide dramatic structure while leaving narration and accepted topology changes live.
+
+A suitable progression is:
+
+```text
+survey
+    → mark a route
+    → move through it
+    → retrace it
+    → discover a contradiction
+    → compare instruments and memory
+    → remap
+    → continue
+```
+
+This is preferable to an unconstrained model talking to itself: authored actions establish rhythm, while the generative system preserves uncertainty.
+
+## Computational allocation and mediation
+
+The original counterfactual remains central:
+
+> What if video games had spent their computational power on narrative plasticity rather than graphical sophistication?
+
+The GPU is used primarily for local LLM inference and world interpretation. The CPU produces a deliberately constrained raytraced image. AI does not remove computational constraint; it relocates it.
+
+The WinUAE DMA visualizer remains a complementary mediation device. It can show how CPU, Copper, Blitter, bitplane DMA, sprites, audio, and other accesses occupy Amiga memory-bus time. This should be compared conceptually, not architecturally, with the contemporary allocation:
+
+```text
+Amiga-era demo:
+hardware resources → coordinated audiovisual output
+
+current project:
+GPU compute → inference, interpretation, topological proposals
+CPU compute → constrained raytraced image
+```
+
+In both cases, aesthetic form is inseparable from where the machine spends its resources.
+
+## Research proposition
+
+The project is not an experiment in whether a model can write literature better than a human author. It is an executable research instrument concerned with computational allocation, image/text mediation, real-time world generation, and controlled spatial instability.
+
+Its central question is:
+
+> How can an AI-driven interactive work extend a demoscene lineage by turning the spatial inconsistency of generative models into an expressive, navigable constraint?

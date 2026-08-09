@@ -1,111 +1,96 @@
 # Hybrid Scene Layout Plan
 
-Derniere mise a jour : 2026-08-03
+Dernière mise à jour : 2026-08-09
 
-## Role du document
+## Rôle du document
 
-Ce document formalise une voie hybride pour la generation des salles :
+Ce document formalise le compositeur hybride des scènes locales :
 
-- le LLM choisit **quoi** mettre dans la piece
-- le moteur decide **ou** et **comment** disposer ces objets
+- le LLM choisit **quoi** doit être signifiant dans le lieu ;
+- l'état spatial validé détermine **ce qui est autorisé ou traversable** ;
+- le moteur décide **où** et **comment** disposer la géométrie visible.
 
-L'objectif n'est pas de faire un solveur 3D general, mais un pipeline stable, debuggable et suffisamment expressif pour produire des salles lisibles, actionnables et esthetiquement defendables.
+L'objectif reste un pipeline stable, déterministe, auditable et assez expressif pour produire des lieux lisibles. La réorientation Eryx change les archétypes, objets et tensions spatiales, pas le principe du pipeline.
 
-Le plan de travail valide est :
+## Statut
 
-1. documentation technique
-2. implementation
-3. benchmark
-4. diagnostic
+Une première voie hybride fonctionne déjà pour les salles datacenter/désert : metadata JSON, `SpatialState`, choix procédural d'une coque, placement 2.5D simple, compilation `.scene` et fallback.
 
-## Hypothese directrice
+Le code actuel ne possède pas encore les archétypes Eryx proposés dans ce document, les nouveaux prefabs de prospection, ni la représentation topologique des barrières invisibles. Les vocabulaires datacenter restent donc une baseline d'implémentation et de benchmark, tandis que les sections suivantes décrivent la migration planifiée.
 
-La generation libre d'une `.scene` complete par le LLM a montre deux limites distinctes :
+## Hypothèse directrice
 
-- scenes tronquees
-- scenes completes mais hors contrat `scene v1`
+La génération libre d'une scène complète par le LLM a montré des troncatures et des sorties hors grammaire. Le compromis v1 reste :
 
-Le meilleur compromis v1 est donc :
+- **LLM** pour les décisions sémantiques et les contraintes qualitatives ;
+- **validateur de topologie** pour les changements de traversal ;
+- **procédural** pour le layout visible ;
+- **compilateur déterministe** pour la scène finale.
 
-- **LLM** pour les decisions semantiques
-- **procedural** pour le layout spatial
-- **compilateur deterministe** pour la scene finale
+Le modèle ne choisit pas les coordonnées exactes. Il choisit un type de lieu, des masses, des objets actionnables, des repères et des asymétries. Le moteur incarne ces choix en protégeant les sorties, la lisibilité, les repères persistants et le budget géométrique.
 
-La nuance ajoutee depuis le 3 aout 2026 est la suivante :
+## Principe Eryx : local visible, topologie invisible
 
-- la geographie cachee du monde (`distance + angle` autour du datacenter) ne doit pas piloter la geometrie directement
-- elle doit d'abord etre **verbalisee** en un guide de derive cache
-- ce guide pousse ensuite le LLM a choisir une famille lexicale, des objets et des asymetries differentes d'une room a l'autre
+Le layout visible représente l'infrastructure humaine et le terrain : carrière, plateau, abri, station, rig, pylon, cargo, tranchée ou rampe.
 
-Le LLM ne doit pas choisir des coordonnees exactes. Il doit choisir :
+Le labyrinthe alien appartient principalement à :
 
-- le type de salle
-- les masses principales
-- les objets actionnables
-- les ouvertures
-- quelques contraintes spatiales qualitatives
+- l'état d'adjacence
+- la collision et la traversal
+- les barrières invisibles
+- les changements de route
+- le feedback narratif ou instrumental
 
-Le moteur doit ensuite transformer cela en implantation concrete.
+Le solveur ne doit pas matérialiser toutes les relations de graphe sous forme de corridors et de murs. Une zone ouverte peut être divisée topologiquement tout en restant visuellement ouverte.
 
-## Cadrage
+## Séparation des responsabilités
 
-Le probleme a resoudre n'est pas un moteur de physique.
+### Le LLM décide
 
-Le probleme a resoudre est :
+- l'archétype local et l'ambiance concise
+- les objets et repères sémantiques
+- leur importance relative
+- les affordances actionnables
+- une orientation ou zone qualitative
+- des contraintes de composition
+- une proposition topologique séparée, si le contrat de tour l'autorise
 
-- obtenir une salle spatialement plausible
-- sans interpenetrations grossieres
-- avec une circulation minimale
-- avec quelques silhouettes fortes
-- en restant deterministe a seed fixee
+### Le validateur topologique décide
 
-La bonne granularite pour le v1 est un solveur **2.5D** :
+- si une sortie ou relation peut changer
+- si une barrière invisible peut apparaître ou disparaître
+- si la fréquence de mutation reste acceptable
+- si hard state, progression et récupération restent valides
+- quels indices joueur doivent accompagner le changement
 
-- le placement se fait surtout dans le plan `XZ`
-- `Y` est derive de regles simples (`floor`, `wall`, `ceiling`, `stack`)
-- les collisions sont traitees via des AABB de layout
+### Le moteur de layout décide
 
-## Principe de separation des responsabilites
+- dimensions et coque visible
+- ancres et surfaces utilisables
+- position et orientation exactes
+- évitement des collisions visibles
+- circulation locale
+- persistance des repères d'un lieu revisité
+- camera, lumière et compilation `scene v1`
 
-### Ce que decide le LLM
+## Contrat de layout recommandé
 
-- archetype de salle
-- ambiance locale
-- liste d'objets
-- importance relative
-- affordances actionnables
-- orientation ou zone approximative
-- exceptions semantiques voulues
-
-### Ce que decide le moteur
-
-- dimensions de la salle
-- enveloppe spatiale
-- ancres et surfaces disponibles
-- position exacte des objets
-- avoidance des collisions
-- couloir de circulation
-- camera finale
-- lumiere finale
-- compilation vers `scene v1`
-
-## Contrat de donnees recommande
-
-Le LLM ne doit plus sortir directement une `.scene` complete pour la voie principale.
-
-Il doit sortir un contrat de layout plus petit, du type :
+La voie principale reçoit un contrat de ce type :
 
 ```text
 room_layout
+  location_id
   room_archetype
   room_scale
   mood
-  openings
+  visible_openings
   dominant_axis
+  persistent_anchor_ids[]
   object_specs[]
+  scene_constraints[]
 ```
 
-Chaque `object_spec` devrait contenir au minimum :
+Chaque `object_spec` peut contenir :
 
 ```text
 id
@@ -117,38 +102,38 @@ mount
 zone
 facing
 against_wall
-allow_overlap
 stack_on
 notes
 ```
 
-## Champs recommandes
+Les barrières invisibles et adjacences ne doivent pas être cachées dans `object_specs`. Elles appartiennent à un contrat topologique distinct.
 
-### `room_archetype`
+## Archétypes Eryx planifiés
 
-Exemples :
+Le premier vocabulaire doit rester petit :
 
-- `entry_threshold`
-- `checkpoint`
-- `server_aisles`
-- `control_hub`
-- `backup_vault`
-- `cooling_bay`
-- `roof_parapet`
-- `loading_dock`
+- `quarry_threshold` : seuil large entre terrain et infrastructure
+- `extraction_field` : extérieur ouvert ponctué de machines et pylônes
+- `venus_plateau` : terrain vaste, peu d'ancres, forte importance du hors-champ
+- `industrial_service_zone` : passage technique entre modules de prospection
+- `prospecting_shelter` : intérieur compact, localement stable
+- `scanner_station` : instrument principal et zone apparemment ouverte à tester
+- `labyrinth_threshold` : lieu où la traversal cesse de correspondre au visible
+- `quarry_cut` : tranchée, rampe ou excavation guidant localement le mouvement
+
+Ces noms sont des cibles documentaires. Ils ne sont pas encore des valeurs acceptées par le runtime.
+
+## Échelles, montages et zones
 
 ### `room_scale`
-
-Valeurs simples :
 
 - `small`
 - `medium`
 - `large`
 - `long`
+- `open`
 
 ### `mount`
-
-Valeurs v1 :
 
 - `floor`
 - `wall`
@@ -156,8 +141,6 @@ Valeurs v1 :
 - `stack`
 
 ### `zone`
-
-Valeurs v1 :
 
 - `center`
 - `near_entry`
@@ -169,10 +152,9 @@ Valeurs v1 :
 - `east_wall`
 - `west_wall`
 - `perimeter`
+- `horizon_marker`
 
 ### `size_class`
-
-Valeurs v1 :
 
 - `small`
 - `medium`
@@ -181,453 +163,314 @@ Valeurs v1 :
 
 ### `priority`
 
-Entier simple, par exemple :
+- `100` : repère héroïque ou affordance critique
+- `60` : masse de structure
+- `30` : objet actionnable secondaire
+- `10` : décor supprimable
 
-- `100` pour masse heroique
-- `60` pour objet de structure
-- `30` pour accessoire important
-- `10` pour decor supprimable
+Les exceptions de chevauchement doivent être typées (`flush_to_wall`, `embedded_in_wall`, `stack_on`) plutôt que résumées par un `allow_overlap` général.
 
-### `allow_overlap`
+## Bibliothèque sémantique planifiée
 
-Valeur booleenne a eviter autant que possible.
+### Géométrie existante à réinterpréter
 
-Mieux vaut la remplacer plus tard par des exceptions explicites :
+- `prefab_gate` : seuil de périmètre, pression ou survey checkpoint
+- `prefab_crate` : cargo, échantillons, oxygène ou outils
+- `prefab_rack` : instrumentation de terrain si la silhouette reste convaincante
+- `prefab_cooling_unit` : traitement atmosphérique, pompe ou support de forage
+- `prefab_ai_server` : station de calcul ou analyseur uniquement si l'objet cesse de lire comme datacenter
 
-- `flush_to_wall`
-- `embedded_in_wall`
-- `under_object`
-- `stack_on:<id>`
-- `blocks_exit`
+Ces interprétations n'impliquent pas que les noms runtime aient déjà changé.
 
-## Bibliotheque de dimensions procedurales
+### Géométrie nouvelle à implémenter avant usage
 
-Le moteur doit posseder une table deterministe `kind -> dimensions`.
-
-Exemples v1 :
-
-- `prefab_gate`
-- `prefab_rack`
-- `prefab_crate`
-- `prefab_cooling_unit`
-- `box_console`
-- `box_hatch`
-- `box_placard`
-- `box_cabinet`
-- `box_switch`
+- survey beacon / navigation mast
+- crystal scanner / sample instrument
+- crystal cluster or specimen
+- mining drill / extraction rig
+- shelter / prospecting station module
+- quarry marker / industrial pylon
 
 Chaque type doit fournir :
 
-- `layout_half_extents_xz`
-- `render_size_xyz`
-- `mount`
-- `wall_clearance`
-- `preferred_orientation`
+- dimensions de layout conservatrices
+- dimensions de rendu
+- montage préféré
+- dégagement nécessaire
+- orientation préférée
+- coût géométrique approximatif
+- rôle sémantique et actionnable
 
-Important :
+Le catalogue doit maximiser la valeur sémantique par élément géométrique. Aucun grand ensemble décoratif n'est nécessaire.
 
-La bounding box de layout n'est pas obligee d'etre identique a la geometrie rendue. Elle peut etre volontairement plus conservative pour proteger la lisibilite.
+## Coques visibles
 
-## Pipeline recommande
+Le solveur choisit une coque simple selon l'archétype.
+
+### `quarry_threshold`
+
+- rectangle large et peu profond
+- un bord construit, une ouverture vers le terrain
+- gate, marker ou shelter comme repère
+- ciel et espace négatif importants
+
+### `extraction_field`
+
+- plan ouvert sans plafond
+- quelques masses éloignées
+- rig ou beacon comme repère principal
+- circulation visible non assimilée à un couloir
+
+### `venus_plateau`
+
+- horizon et terrain dominant
+- très peu d'objets
+- repères assez distincts pour tester les déplacements
+- forte place laissée à la topologie invisible
+
+### `prospecting_shelter`
+
+- petit intérieur ou volume semi-ouvert
+- une sortie principale lisible
+- équipement persistant
+- identité locale forte pour les revisites
+
+### `scanner_station`
+
+- instrument ou console héroïque
+- champ de test apparent devant ou autour
+- pylon ou beacon secondaire
+- cadrage permettant de voir un espace que la traversal pourra contredire
+
+### `labyrinth_threshold`
+
+- géométrie humaine minimale
+- espace apparemment ouvert
+- au moins deux trajectoires testables
+- aucun corridor alien visible par défaut
+
+## Pipeline recommandé
 
 ```text
-brief spatial
-    ->
-guide textuel cache de derive (distance + angle -> motifs, dissymetrie, vocabulaire)
-    ->
-LLM layout contract
-    ->
-validation semantique
-    ->
-construction d'une coque de salle
-    ->
-placement initial par ancres et zones
-    ->
-solveur iteratif anti-chevauchement
-    ->
-reserve de circulation
-    ->
-pruning des objets non essentiels
-    ->
-camera + spotlight
-    ->
-scene v1 finale
+état spatial validé
+    -> guide textuel de variation locale
+    -> contrat sémantique LLM
+    -> validation du vocabulaire
+    -> choix de coque
+    -> restauration des repères persistants
+    -> ancres et placement initial
+    -> relaxation anti-chevauchement
+    -> réserve de circulation visible
+    -> pruning
+    -> camera + spotlight
+    -> scene v1
+    -> audit / fallback
 ```
 
-## Algorithme sur papier
+La topologie invisible est évaluée en parallèle pour la traversal. Elle n'entre dans la géométrie que si une preuve indirecte explicitement validée doit être rendue.
 
-### Etape 0 - Guide textuel cache
+## Guide textuel de variation
 
-Avant meme que le LLM ne choisisse les objets, le moteur derive un petit guide textuel a partir de la pose cachee du monde :
+Le système actuel dérive un guide de monde depuis une pose cachée autour du datacenter. La migration Eryx doit remplacer cette sémantique par des cues comme :
 
-- bande radiale : `central core`, `inner technical ring`, `perimeter seam`, `outer parapet`, `open desert`
-- relation au portail : `entry-facing side`, `east flank`, `west flank`, `far side opposite the entry gate`
-- ouverture probable : interieur ferme, ouvertures partielles, ciel ouvert, desert ouvert
-- quelques motifs preferes
-- quelques motifs a eviter
-- une pression de dissymetrie verbale : `east hatch`, `rear beacon`, `west crate`, etc.
+- relation au camp ou à l'abri de prospection
+- profondeur dans la carrière ou distance sur le plateau
+- exposition au ciel et au terrain
+- densité d'infrastructure humaine
+- proximité supposée du labyrinthe
+- confiance de navigation
+- asymétrie locale : beacon à l'est, rampe arrière, rig sur le flanc, etc.
 
-Ce guide n'est pas un contrat geometrique.
+Le guide influence titre, archétype, repères, objets et contraintes de scène. Il ne définit pas une géométrie secrète exacte et ne doit pas annuler une mutation topologique validée.
 
-Il sert a faire diverger les sorties JSON du LLM sur le plan :
+## Placement 2.5D
 
-- du titre
-- du `location_archetype`
-- des `anchors`
-- des `visible_objects`
-- des `scene_constraints`
+Le placement visible reste principalement dans le plan `XZ`. `Y` est dérivé de règles simples (`floor`, `wall`, `ceiling`, `stack`). Les collisions utilisent des AABB de layout volontairement conservatrices.
 
-Autrement dit :
+### Ordre de placement
 
-- la variation doit naitre d'abord du langage
-- le solveur spatial ne fait qu'incarner ce langage de facon stable
+1. repères persistants
+2. masse héroïque
+3. structure secondaire
+4. affordances actionnables
+5. petits accessoires
 
-### Etape 1 - Coque de salle
+Une revisite doit réutiliser la seed et les repères du lieu. Une mutation de connectivité ne doit pas relancer arbitrairement toute la composition.
 
-Le solveur commence par choisir une coque simple selon `room_archetype`.
-
-Exemples :
-
-- `entry_threshold` : rectangle plutot large et peu profond
-- `server_aisles` : rectangle long avec axe principal fort
-- `control_hub` : petite salle presque carree
-- `cooling_bay` : salle moyenne a grande avec masses laterales
-- `roof_parapet` : dalle exterieure avec bord et horizon
-
-La coque produit :
-
-- largeur
-- profondeur
-- hauteur
-- surfaces murales utilisables
-- point d'entree
-- point(s) de sortie
-- bandes reservees a la circulation
-
-### Etape 2 - Ancres
-
-Le moteur derive des ancres stables :
+### Ancres
 
 - centre
-- murs
+- murs ou bord construit
 - coins
-- proche entree
-- fond de salle
-- ligne mediane
-- bande gauche / droite
+- proximité de l'entrée
+- fond visible
+- ligne médiane
+- bandes gauche et droite
+- horizon marker
 
-Les objets ne sont pas places directement dans l'espace libre. Ils sont d'abord associes a une ancre compatible.
+### Relaxation anti-chevauchement
 
-### Etape 3 - Placement initial
+Pour chaque paire d'AABB en conflit :
 
-Ordre recommande :
+1. calculer la pénétration sur `x` et `z` ;
+2. choisir l'axe de séparation minimal ;
+3. pousser selon la mobilité relative ;
+4. réappliquer les limites de coque et les contraintes de montage ;
+5. supprimer un objet faible priorité si le conflit persiste.
 
-1. masses hero
-2. structure secondaire
-3. affordances actionnables
-4. petits accessoires
-
-Chaque objet recoit :
-
-- une orientation initiale
-- une position initiale derivee de `zone`
-- une cote d'ancrage si `against_wall = true`
-
-Exemples :
-
-- un `prefab_rack` en `server_aisles` va d'abord sur une bande laterale
-- un `crate` va plutot en bord de circulation ou contre un mur
-- une `placard` va plutot sur un mur
-- un `hatch` va plutot au sol, hors couloir principal
-
-### Etape 4 - Solveur iteratif anti-chevauchement
-
-Le solveur ne doit pas chercher un optimum global. Il doit juste eliminer les recouvrements evidents.
-
-Representer chaque objet par une AABB de layout dans le plan `XZ`.
-
-Pour `N` iterations :
-
-1. parcourir toutes les paires d'objets
-2. tester le chevauchement `XZ`
-3. si chevauchement :
-   - calculer la penetration sur `x`
-   - calculer la penetration sur `z`
-   - choisir l'axe de separation minimal
-   - pousser les deux objets en sens inverse
-4. reappliquer les contraintes de murs et de salle
-5. resnapper certains objets au mur si necessaire
-
-Schema de poussee :
+Forme de poussée :
 
 ```text
 push_a = penetration * weight_b / (weight_a + weight_b)
 push_b = penetration * weight_a / (weight_a + weight_b)
 ```
 
-Ou :
+Les repères persistants et masses héroïques sont peu mobiles. Les accessoires sont mobiles ou supprimables.
 
-- `weight` eleve = objet peu mobile
-- `weight` faible = objet facilement deplacable
+## Circulation visible versus traversal réelle
 
-Bon choix v1 :
+Le solveur doit conserver une lecture locale : entrée, centre, sorties visibles et affordance majeure ne doivent pas être obstrués accidentellement par le décor.
 
-- masse heroique : peu mobile
-- rack / cooling unit : peu mobile
-- crate / console basse : mobile
-- petit accessoire : tres mobile ou supprimable
+Cette circulation visible ne garantit pas la traversal réelle. Une barrière invisible validée peut refuser une trajectoire apparemment libre. La différence doit provenir de l'état topologique, pas d'un chevauchement géométrique involontaire.
 
-### Etape 5 - Couloir de circulation
+Le diagnostic doit donc distinguer :
 
-Apres relaxation, verifier qu'un chemin simple reste libre entre :
+- collision de layout visible, à corriger
+- obstacle visible intentionnel
+- barrière invisible intentionnelle
+- sortie sans relation topologique
 
-- entree
-- centre de salle
-- sorties ouvertes
-- eventuel objet heroique ou affordance majeure
+## Camera
 
-Version v1 tres simple :
+La camera reste contrôlée par le moteur. Gabarits planifiés :
 
-- reserver a l'avance une bande de circulation
-- interdire aux objets volumineux d'y entrer
+- seuil : frontal légèrement décentré
+- carrière : axe de rampe ou de tranchée
+- plateau : horizon et repère vertical
+- abri : affordance et sortie dans le même cadre si possible
+- scanner : instrument et champ ouvert
+- seuil invisible : espace ouvert et repères permettant de comparer les trajectoires
 
-Version v2 :
+La camera doit montrer au moins une masse principale, une affordance et une relation spatiale utile. Elle ne doit pas révéler automatiquement les surfaces invisibles.
 
-- grille 2D grossiere
-- cellules bloquees par AABB
-- BFS entre entree et sorties
+## Pruning et budget géométrique
 
-Si la circulation echoue :
+Si le layout ne converge pas, supprimer dans cet ordre :
 
-1. deplacer les objets les moins prioritaires
-2. sinon supprimer les objets decoratifs
-3. sinon reduire la taille de certains objets secondaires
-
-### Etape 6 - Exceptions semantiques
-
-Certaines collisions doivent rester possibles, mais seulement si elles sont explicites.
-
-Cas permis plus tard :
-
-- caisse partiellement sous une console
-- panneau encastre dans un mur
-- objet pose sur une autre masse
-- obstruction volontaire d'une sortie
-
-Le solveur doit donc distinguer :
-
-- collision interdite
-- collision toleree
-- collision requise
-
-Mais le v1 peut commencer avec seulement :
-
-- `forbid overlap`
-- `allow wall embedding`
-- `allow stack_on`
-
-### Etape 7 - Camera
-
-La camera ne doit pas etre laissee au LLM.
-
-Le moteur choisit un gabarit de camera par archetype :
-
-- seuil : frontal legerement decentre
-- travees : axe de fuite
-- controle : legere plongee ou face centrale
-- toit : profondeur vers l'horizon
-- cooling bay : masse centrale ou laterale dans un grand noir
-
-La camera peut ensuite ajuster :
-
-- distance
-- yaw
-- pitch
-
-pour garder au moins :
-
-- une masse principale lisible
-- une affordance visible
-- une ouverture ou un bord de salle
-
-## Strategie de pruning
-
-Si le layout n'arrive pas a converger, ne pas raffiner le solveur a l'infini.
-
-Il faut supprimer.
-
-Ordre recommande :
-
-1. petits accessoires
-2. doublons semantiques
-3. objets decoratifs redondants
-4. objets secondaires hors gameplay
+1. accessoires
+2. doublons sémantiques
+3. décor redondant
+4. objets secondaires sans fonction
 
 Ne jamais supprimer :
 
-- ouverture principale
-- masse heroique
+- repère persistant requis
 - affordance critique
+- sortie visible nécessaire à la composition
+- masse héroïque définissant l'identité du lieu
 
-## Determinisme
+Le coût des prefabs doit rester compatible avec l'inversion computationnelle. Un nouveau prefab doit justifier son nombre de primitives par une forte valeur de lecture ou d'action.
 
-Le layout doit etre reproductible.
+## Déterminisme et revisite
 
-Chaque salle doit etre stabilisee par :
+Chaque lieu doit être stabilisé par :
 
-- seed derivee de l'identite de salle
-- meme archetype
-- meme liste d'objets
-- memes regles de placement
+- identité et seed persistantes
+- même archétype de base
+- repères persistants
+- mêmes règles de placement
+- historique des mutations séparé de la composition locale
 
-Cela permet :
+Une revisite peut modifier les sorties, des détails secondaires ou les preuves du labyrinthe. Elle doit conserver un fingerprint local suffisant pour que la contradiction globale soit perceptible.
 
-- comparaison visuelle
-- debug
-- benchmark
-- reprise de sauvegarde
+## Fallbacks
 
-## Pourquoi cette approche n'est pas trop risquee
+En cas d'échec :
 
-Elle reste defendable si :
+- garder les repères persistants
+- supprimer les objets de faible priorité
+- simplifier la coque
+- produire une scène de fallback Eryx sobre après son implémentation
+- tant que cette migration n'est pas codée, conserver explicitement le fallback legacy actuel
 
-- le solveur reste petit
-- les archetypes restent peu nombreux
-- les objets restent dans une bibliotheque fermee
-- le LLM ne manipule pas des coordonnees libres
+Un fallback technique ne doit pas introduire une mutation topologique ni être présenté au joueur comme un phénomène du labyrinthe.
 
-Elle devient risquee si :
+## Plan d'implémentation
 
-- on laisse le LLM inventer des primitives et leurs positions exactes
-- on attend du solveur qu'il sauve n'importe quelle scene
-- on veut gerer de vraies geometries 3D generales
+### A — Vocabulaire sémantique
 
-Le risque principal n'est donc pas l'idee du solveur. Le risque principal serait de lui donner un probleme trop libre.
+- ajouter les archétypes Eryx
+- borner `scene_constraints`
+- documenter les repères persistants
+- supprimer les instructions actives de prompt datacenter
 
-## Plan d'implementation
+### B — Prefabs
 
-### Etape A - Structures
+- réinterpréter d'abord les géométries convaincantes
+- implémenter seulement les nouveaux éléments indispensables
+- ajouter dimensions, rôle, montage et coût à la table interne
+- régénérer [`PREFAB_CATALOG.md`](./PREFAB_CATALOG.md) depuis les sources
 
-Ajouter des structures du type :
+### C — Persistance locale
 
-```text
-RoomLayoutDraft
-RoomShell
-LayoutObjectSpec
-PlacedLayoutObject
-LayoutSolveReport
-```
+- associer seed et repères au `location_id`
+- séparer les détails secondaires des ancres d'identité
+- tester les revisites avant les mutations
 
-### Etape B - Nouveau contrat LLM
+### D — Topologie invisible
 
-Le LLM doit sortir un bloc structure pour les objets, pas une `.scene` complete, par exemple :
+- implémenter barrière invisible et feedback de traversal
+- ajouter proposition et validateur de mutation
+- ne transmettre au layout que les preuves indirectes à rendre
 
-```text
-room_archetype
-room_scale
-openings
-object_specs[]
-```
+### E — Diagnostic et benchmark
 
-Le chemin `.scene` direct doit rester disponible comme benchmark et mode d'audit, pas comme chemin principal.
-
-### Etape C - Table des prefabs et boites semantiques
-
-Ajouter une table interne :
-
-- dimensions de layout
-- dimensions de rendu
-- type de montage
-- poids de deplacement
-- regles d'ancrage
-
-### Etape D - Solveur
-
-Implementer dans cet ordre :
-
-1. coque
-2. ancres
-3. placement initial
-4. relaxation anti-chevauchement
-5. reserve de circulation
-6. pruning
-7. compilation `.scene`
-
-### Etape E - Camera
-
-Sortir la camera du LLM et la rendre derivee de :
-
-- archetype
-- masse dominante
-- ouverture
-- horizon
+- dump du contrat LLM
+- dump du placement initial/final
+- rapport de collisions et pruning
+- état topologique et décision du validateur
+- scène finale et provenance
+- vue top-down de layout visible optionnelle
+- vue topologique debug séparée
 
 ## Plan de benchmark
 
-Le benchmark doit comparer :
+Conserver les rapports datacenter du 2026-08-02 comme baseline historique. Une nouvelle batterie Eryx ne doit être générée qu'après implémentation des archétypes et prefabs réels.
 
-1. `.scene` libre directe par le LLM
-2. layout hybride `LLM -> solveur -> scene`
+Cas recommandés :
 
-Mesures minimales :
+- quarry threshold
+- scanner station
+- prospecting shelter
+- extraction field
+- Venusian plateau
+- labyrinth threshold
 
-- taux de scenes valides
-- nombre d'interpenetrations restantes
-- nombre d'objets supprimes
-- temps de generation LLM
-- temps de solveur
-- temps de rendu
-- triangles produits
-- stabilite visuelle sur reruns
+Mesures :
 
-Jeux de cas recommandes :
+- taux de scènes valides
+- collisions visibles restantes
+- objets supprimés
+- conservation des repères sur revisite
+- temps LLM, layout et rendu
+- triangles et matériaux
+- stabilité à seed fixe
+- absence de géométrie opaque créée pour une barrière invisible
 
-- seuil d'entree
-- checkpoint
-- salle de controle
-- travees de serveurs
-- baie de refroidissement
-- toit / parapet
-- dock de chargement
+## Critères de réussite
 
-## Plan de diagnostic
+La migration hybride Eryx est validée si :
 
-Le solveur doit pouvoir sortir des artefacts lisibles.
-
-Minimum utile :
-
-- dump JSON du contrat LLM
-- dump du placement initial
-- dump du placement final
-- rapport de collisions resolues
-- rapport de pruning
-- image finale
-- eventuellement une vue debug 2D `top-down`
-
-Le diagnostic doit rendre possible la question :
-
-> est-ce que l'erreur vient du choix du LLM, du solveur, de la camera, ou du renderer ?
-
-## Criteres de reussite
-
-Cette approche sera validee si elle permet :
-
-- des salles plus coherentes spatialement que la `.scene` libre
-- moins d'echecs de syntaxe
-- moins de substitutions absurdes de prefabs
-- des images plus lisibles ou plus fortes
-- une stabilite suffisante sur plusieurs runs
+- les lieux lisent comme extraction/prospection plutôt que datacenter
+- les extérieurs ouverts restent composés avec peu d'éléments
+- les revisites préservent des repères locaux
+- une mutation topologique n'oblige pas à reconstruire toute la scène
+- barrière invisible et collision géométrique accidentelle sont distinctes
+- aucun résultat de benchmark n'est inventé ou extrapolé depuis les fixtures legacy
+- le solveur reste petit, déterministe et auditable
 
 ## Conclusion
 
-La bonne ambition pour le v1 n'est pas :
+La bonne ambition n'est pas un générateur général de mondes 3D ni un dédale visible.
 
-- un generateur de scene general
-
-La bonne ambition est :
-
-- un **compositeur de salles pauvres**, contraint, hybride, stable et auditable
-
-Le LLM doit choisir les ingredients.
-
-Le moteur doit faire la mise en place.
+Elle est un **compositeur de lieux de prospection pauvres**, capable de préserver l'identité locale pendant qu'une couche topologique distincte négocie le labyrinthe invisible.

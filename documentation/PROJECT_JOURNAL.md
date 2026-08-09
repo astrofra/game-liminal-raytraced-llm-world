@@ -999,3 +999,64 @@ Observations :
 - la distinction entre zone fictionnelle et zone debug devient plus nette
 - le support UTF-8 cote joueur est meilleur qu'avec `SDL_RenderDebugText`
 - la convention `*...*` devient une facon simple d'obtenir des accents visuels sans ouvrir un systeme de style plus lourd
+
+## 2026-08-09 - Iteration 0022 - Réorientation documentaire vers Eryx
+
+Objectif :
+
+Reconsidérer la direction artistique et de recherche du projet sans réécrire son histoire technique ni prétendre que le runtime a déjà migré.
+
+Contexte immédiatement précédent :
+
+La phase *Le Désert des tokens* mettait en scène un officier affecté à un datacenter autonome dans le désert, dans l'attente d'une cyberattaque indéterminée. Le calcul du centre chauffait et consommait ses ressources, tandis que la température fictionnelle devait influencer la température d'échantillonnage du modèle. Cette boucle reliait infrastructure numérique, écologie, attente institutionnelle, tokens et dérive interprétative.
+
+Ce concept reste une étape légitime. Il a aidé à préciser :
+
+- l'inversion de charge entre inférence GPU et image CPU contrainte
+- la visibilité de la latence et de la computation
+- la séparation entre état autoritatif et narration générée
+- le potentiel esthétique de la cohérence locale et de la dérive globale
+- l'intérêt d'une version autonome à joueur fantôme
+
+Motif de la réorientation :
+
+La relation du datacenter à la démoscène restait principalement analogique : contrainte, allocation du calcul et grammaire visuelle héritée. Le motif d'Eryx fournit un ancrage plus direct pour la thèse :
+
+```text
+Lovecraft et Kenneth J. Sterling, *In the Walls of Eryx*
+    -> ASD, *Beyond the Walls of Eryx* (2007)
+    -> Mandarine, *Within the Mesh* (2013)
+    -> œuvre interactive générative actuelle
+```
+
+ASD a déjà transformé le labyrinthe invisible en espace calculé de démo. *Within the Mesh*, co-créé par l'auteur du projet, a poursuivi cette relation dans sa propre pratique. Le travail actuel peut donc ajouter une quatrième transformation : un espace calculé que le joueur habite et dont certaines connexions peuvent être renégociées pendant l'exécution.
+
+Décisions documentaires prises :
+
+- la fiction active devient une zone d'extraction vénusienne et un labyrinthe alien invisible
+- le datacenter, l'officier et la cyberattaque sont conservés comme phase historique, pas comme fiction active
+- aucun titre final n'est inventé ; *Le Désert des tokens* reste identifié comme ancien titre de travail
+- le LLM est défini comme interprète et auteur de propositions topologiques contrôlées, pas comme source de vérité globale
+- le hard state et le compilateur déterministe restent autoritatifs
+- les barrières invisibles doivent exister d'abord dans la traversal et la sémantique, pas comme murs visibles ordinaires
+- la validation spatiale devient un axe majeur de recherche et de playtest
+- les benchmarks et catalogues existants restent des baselines factuelles datacenter
+- les notes sur le visualiseur DMA WinUAE et l'allocation des ressources sont préservées
+
+Travail effectué :
+
+- réécriture de `STORY.md` et `SPEC.md`
+- réorganisation du moodboard autour de trois couches : perception micro-informatique, transformation démoscène, transformation générative actuelle
+- ajout d'une note datée à `NOTES.md` sans effacer la synthèse antérieure
+- relecture Eryx de `FUNCTIONAL_PIPELINE_V1.md` et `HYBRID_SCENE_LAYOUT_PLAN.md`
+- nouveau protocole principal dans `SPATIAL_VALIDATION_PLAN.md`
+- ajout de statuts de migration aux documents générés concernés
+- mise à jour des décisions, problèmes connus, état technique et index documentaires
+
+Limite explicite :
+
+Aucun code, prompt runtime, prefab, fixture ou résultat de benchmark n'a été modifié pendant cette passe. Les fonctionnalités Eryx restent planifiées jusqu'à une itération d'implémentation distincte.
+
+Prochaine étape recommandée :
+
+Définir puis implémenter le plus petit contrat de barrière invisible et de proposition topologique, tout en remplaçant progressivement les prompts et archétypes datacenter par la sémantique de prospection/extraction. Régénérer les catalogues et benchmarks seulement après ces changements source.

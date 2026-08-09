@@ -1,6 +1,6 @@
 # Decisions
 
-Derniere mise a jour : 2026-07-31
+Derniere mise a jour : 2026-08-09
 
 ## 2026-07-29 - Base du renderer en C++11
 
@@ -319,3 +319,43 @@ Raison :
 Consequence :
 
 Le coeur du renderer et les buffers memoire passent en RGB, mais le langage `.scene` reste base sur `gray()` et sur un nommage semantique simple. Le `PGM` legacy reste disponible via conversion en luminance.
+
+## 2026-08-09 - Réorienter la fiction vers un labyrinthe génératif fondé sur Eryx
+
+Decision :
+
+Le datacenter autonome de *Le Désert des tokens* cesse d'être la fiction principale. La direction active devient une zone d'extraction vénusienne traversée par un labyrinthe invisible et potentiellement changeant.
+
+La généalogie structurante est désormais explicite :
+
+```text
+*In the Walls of Eryx*
+    -> ASD, *Beyond the Walls of Eryx*
+    -> Mandarine, *Within the Mesh*
+    -> œuvre interactive LLM actuelle
+```
+
+Le LLM pourra proposer des mutations topologiques limitées, mais l'état autoritatif, la validation et la compilation de scène restent contrôlés par le moteur.
+
+Raison :
+
+- le récit datacenter établissait une boucle forte entre calcul, chaleur, écologie et interprétation, mais sa relation à la démoscène restait indirecte
+- Eryx fournit une lignée historique dans la démoscène à travers ASD
+- *Within the Mesh*, co-créé par l'auteur du projet, rend cette lignée personnelle et antérieure au projet actuel
+- le labyrinthe invisible donne une fonction fictionnelle précise à la cohérence locale et à la dérive globale déjà présentes dans l'architecture
+- l'autorité contrôlée du LLM sur certaines relations spatiales transforme une faiblesse de continuité en question de recherche testable
+- le décor d'extraction justifie les dalles, plans, répétitions industrielles, espaces ouverts et images instrumentales du renderer
+
+Decisions associées :
+
+- préserver l'inversion de charge computationnelle, `llama.cpp`, l'exécutable natif, SDL3, le hard/soft/spatial state, le compilateur hybride et le raytracer actuel
+- ne pas revenir à la génération libre d'une `.scene` comme voie de production
+- ne pas rendre les murs invisibles comme des murs opaques ordinaires
+- valider toute proposition topologique avant commit
+- réinterpréter les recherches et géométries antérieures plutôt que les effacer
+- conserver *Le Désert des tokens* comme ancien titre de travail et phase historique
+- traiter les noms runtime, prompts, fixtures, prefabs et benchmarks datacenter comme dette de migration ou baseline tant qu'aucun refactor code ne les remplace
+
+Consequence :
+
+La documentation artistique et les plans de validation adoptent Eryx immédiatement. Le binaire courant reste factuellement datacenter/désert jusqu'à une tâche de migration du code, des prompts et des assets. Aucune fonctionnalité Eryx ne doit être décrite comme implémentée avant cette étape.
