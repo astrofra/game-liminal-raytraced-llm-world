@@ -1125,3 +1125,89 @@ Validation :
 Limite conservée :
 
 Cette itération migre le vocabulaire visible, pas encore les lieux canoniques, les fallbacks, le hard state ou la topologie invisible. Le binaire global ne doit donc pas encore être présenté comme une expérience Eryx complète.
+
+## 2026-08-09 - Iteration 0025 - Verre diélectrique des cristaux
+
+Objectif :
+
+Faire du cristal un matériau réellement optique plutôt qu'une forme diffuse claire, tout en conservant une grammaire `.scene` bornée et un coût prévisible.
+
+Implémentation :
+
+- ajout d'un modèle de matériau diélectrique interne avec transmission et indice de réfraction
+- IOR fixe `1.52` pour les cristaux
+- réfraction selon Snell, Fresnel diélectrique exact et réflexion totale interne
+- sélection stochastique de l'événement spéculaire avec correction d'indice pour le transport de radiance
+- plafond dédié `max_glass_bounces`, exposé par `--glass-bounces` et fixé à `8` par défaut
+- transmission atténuée des rayons d'ombre à travers les cristaux
+- application aux cinq prismes de `prefab_crystal_cluster` et à l'échantillon de `prefab_crystal_scanner`
+- maintien explicite de la pointe de forage comme matériau diffus malgré sa géométrie prismatique partagée
+
+Validation :
+
+- compilation C++11 `Release` réussie
+- rendu de contrôle des deux prefabs cristallins à `640x640`, `48 spp`, trois événements diffus et huit interfaces diélectriques
+- inspection visuelle de la réfraction du ciel, du sol et des prismes voisins à travers les facettes
+- vérification de la conservation du langage `.scene` existant, sans propriété matérielle supplémentaire
+
+Limites assumées :
+
+- pas de dispersion spectrale
+- pas d'absorption volumique dépendante de l'épaisseur
+- pas de caustiques focalisées ; les ombres transmissives restent une approximation rectiligne
+
+## 2026-08-09 - Iteration 0026 - Dispersion RGB « poor man's »
+
+Objectif :
+
+Ajouter aux cristaux une séparation chromatique perceptible, inspirée du [shader RenderMan d'Astrofra](https://astrofra.com/wordpress/index.php/2005/07/12/poor-man-s-dispersion-shader-rman-version/), sans convertir le renderer RGB en moteur spectral ni tripler systématiquement chaque chemin réfracté.
+
+Adaptation :
+
+- conservation de l'idée source : IOR distincts pour les composantes rouge, verte et bleue, puis recomposition
+- remplacement des trois rayons simultanés par un canal héroïque par sample, pondéré pour reconstituer les trois composantes RGB avant clamp
+- stratification du canal selon le pixel et l'indice de sample ; avec le preset `24 spp`, chaque pixel reçoit huit chemins de chaque canal
+- jitter borné de l'IOR dans chaque bande pour éviter trois contours parfaitement discrets
+- conservation du canal et de son offset pendant toutes les réflexions et réfractions suivantes du chemin
+- IOR central `1.52` et écart inter-bandes nominal `0.035`, verrouillés dans le matériau interne
+
+Validation :
+
+- compilation C++11 `Release` réussie
+- comparaison visuelle à `640x640` en `24 spp` et `96 spp`
+- franges chromatiques limitées aux volumes cristallins ; infrastructure et palette sémantique inchangées
+- convergence du bruit chromatique vers une irisation plus douce lorsque le nombre de samples augmente
+
+Limites assumées :
+
+- il s'agit de dispersion, pas de diffraction physique
+- le spectre reste réduit à trois bandes larges
+- les ombres transmissives restent achromatiques et ne produisent pas de caustiques dispersives
+
+## 2026-08-09 - Iteration 0027 - Épaisseur et matière du verre
+
+Objectif :
+
+Donner davantage de matière aux cristaux sans remplacer leur transparence par une opacité uniforme.
+
+Implémentation :
+
+- ajout d'une absorption volumique RGB selon Beer–Lambert, évaluée sur la distance de chaque segment intérieur
+- coefficients verrouillés `(0.45,0.22,0.08)` : les volumes épais retiennent davantage le rouge et le vert
+- suivi borné de huit milieux actifs, afin que les prismes qui se chevauchent cumulent correctement leur filtre
+- application du même filtre aux rayons caméra et aux rayons d'ombre transmissifs
+- cutoff énergétique `0.02` pour arrêter les chemins devenus visuellement négligeables
+- passage du plafond diélectrique de huit à neuf interfaces par chemin
+
+Validation :
+
+- compilation C++11 `Release` réussie
+- comparaison du cluster à `640x640` en `24 spp` et `96 spp`
+- cœur et superpositions plus denses, avec maintien des facettes, de la réfraction et des franges RGB
+- coefficient renforcé après un premier essai trop discret au preset `24 spp`
+
+Limites assumées :
+
+- absorption RGB artistique, pas mesure spectrale d'un cristal réel
+- pas de diffusion volumique ni d'inclusions internes
+- rayon d'ombre filtré mais non dévié : aucune caustique dispersive

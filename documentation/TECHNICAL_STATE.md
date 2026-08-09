@@ -57,6 +57,7 @@ Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun b
   - `--dump-scene-audit-prompt`
   - `--compile-location`
   - `--audit-scene-text`
+- Options de profondeur de transport séparées : `--bounces` pour les événements diffus et `--glass-bounces` pour les interfaces diélectriques (`9` par défaut).
 - Preset de rendu par defaut en `800x400` pour la scene liminale, avec cadrage panorama.
 - Chargement de scene generique via `--scene <path>` pour `.scene` ou `.obj`.
 - Parseur de format de scene proprietaire v1.
@@ -106,6 +107,19 @@ Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun b
   - un petit nombre de rebonds diffus
   - roulette russe
   - clamp simple des contributions extremes
+- Modèle diélectrique verrouillé pour les prismes de `prefab_crystal_cluster` et l'échantillon de `prefab_crystal_scanner` :
+  - indice de réfraction fixe `1.52`
+  - loi de Snell
+  - Fresnel diélectrique exact, sans approximation de Schlick
+  - réflexion totale interne
+  - tirage stochastique réflexion / transmission conservant l'énergie
+  - limite indépendante de neuf interfaces par chemin
+  - absorption volumique RGB selon Beer–Lambert et distance réellement parcourue dans chaque prisme
+  - suivi borné des milieux actifs pour les cristaux qui se chevauchent
+  - cutoff énergétique interne `0.02`
+  - transmission approximative des rayons d'ombre avec le même filtre volumique
+  - dispersion RGB « poor man's » : un canal héroïque stratifié par sample, IOR central `1.52`, écart inter-bandes nominal `0.035` et jitter d'IOR
+  - recomposition Monte-Carlo pondérée des trois canaux sans tripler le nombre de chemins par impact
 - Palette visuelle verrouillee :
   - ciel bleu degrade
   - desert ocre

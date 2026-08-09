@@ -299,6 +299,8 @@ Latency should acquire rhythm without becoming a false spectacle of technical ac
 - hard camera-linked light
 - visible raytracing noise
 - a sparse scene language and deterministic compiler path
+- a source-generated Eryx quarry prefab vocabulary
+- faceted crystal prisms with bounded dielectric refraction, Fresnel reflection, thickness-dependent filtering, and restrained RGB dispersion
 - a parser-like SDL3 interface
 - separation between authoritative state and generated text
 - local room generation, caching, and weak global topology
@@ -307,8 +309,8 @@ These are implemented technical foundations, even though the current build still
 
 ### Planned Eryx adaptations
 
-- quarry, plateau, shelter, extraction-field, and scanner-station archetypes
-- high-value prospecting prefabs and semantic reinterpretation of existing geometry
+- canonical quarry, plateau, shelter, extraction-field, and scanner-station locations built from the implemented prefab vocabulary
+- integration of high-value prospecting prefabs into runtime archetypes and fixtures
 - persistent local visual anchors for revisited places
 - invisible barrier semantics separated from ordinary blocked exits
 - indirect evidence that can reveal an unseen plane without making it a normal wall

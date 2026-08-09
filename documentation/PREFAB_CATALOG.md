@@ -1,6 +1,6 @@
 # Catalogue des prefabs — carrière d’Eryx
 
-Généré le 2026-08-09 18:49:46.
+Généré le 2026-08-09 22:57:03.
 
 Ce document est généré depuis les géométries C++ réellement prises en charge par le format `scene v1`. Il fixe le vocabulaire visuel actif de la carrière de cristal vénusienne : infrastructure humaine brutaliste, instruments de prospection lisibles, cristaux facettés et repères de navigation.
 
@@ -13,6 +13,8 @@ Notes :
 - rendu carré sans changement d’architecture du raytraceur : seul le buffer de sortie change
 - chaque objet repose sur un plan de carrière neutre sous un ciel brumeux sans étoiles
 - deux vues par prefab : 3/4 gauche et 3/4 droite
+- les cristaux utilisent un verre diélectrique interne à IOR central 1,52, dispersion RGB et filtre d’épaisseur ; le format `.scene` n’expose pas de matériau libre
+- profondeur de rendu : 3 événements diffus et 9 événements diélectriques au maximum par chemin
 - paramètres de rendu utilisés : `1024x1024`, `24` samples par pixel
 
 ## prefab_gate
@@ -68,7 +70,7 @@ prefab_survey_beacon "catalog_route_datum" pos(0.0,1.90,0.0) size(1.20,3.80,1.10
 
 ## prefab_crystal_scanner
 
-Instrument d'affinité pour localiser et examiner un échantillon. Deux piles épaisses encadrent un petit cristal et une ligne de mesure suspendue.
+Instrument d'affinité pour localiser et examiner un échantillon. Deux piles épaisses encadrent un petit cristal diélectrique filtré par son épaisseur et une ligne de mesure suspendue.
 
 Scene gauche : `generated/prefab_catalog/scenes/prefab_crystal_scanner_left.scene`
 Scene droite : `generated/prefab_catalog/scenes/prefab_crystal_scanner_right.scene`
@@ -85,7 +87,7 @@ prefab_crystal_scanner "catalog_affinity_scanner" pos(0.0,1.25,0.0) size(2.60,2.
 
 ## prefab_crystal_cluster
 
-Veine cristalline affleurante, à la fois ressource, balise lumineuse et appât. Les cinq prismes sont facettés en C++ et non assemblés comme de simples boîtes.
+Veine cristalline affleurante, à la fois ressource, balise lumineuse et appât. Les cinq prismes utilisent un verre diélectrique verrouillé : réfraction, Fresnel, dispersion RGB et filtre d'absorption dépendant de l'épaisseur.
 
 Scene gauche : `generated/prefab_catalog/scenes/prefab_crystal_cluster_left.scene`
 Scene droite : `generated/prefab_catalog/scenes/prefab_crystal_cluster_right.scene`

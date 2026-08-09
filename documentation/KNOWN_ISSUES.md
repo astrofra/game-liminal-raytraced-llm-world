@@ -148,7 +148,7 @@ Ouvert.
 
 Description :
 
-Le renderer actuel travaille sur une palette RGB tres contrainte. Un passage a un rendu spectral ferait surtout monter le cout des materiaux, du shading, des milieux et de la bande passante memoire, meme si les intersections geometriques et le BVH resteraient globalement du meme ordre.
+Le renderer actuel travaille sur une palette RGB tres contrainte. Le verre des cristaux simule une dispersion à trois bandes par canal héroïque et une absorption volumique RGB selon Beer–Lambert, mais il ne calcule ni spectre continu, ni diffusion interne, ni caustiques focalisées. Cette approximation peut produire du bruit chromatique aux faibles nombres de samples. Un passage à un rendu spectral ferait surtout monter le cout des materiaux, du shading, des milieux et de la bande passante memoire, meme si les intersections geometriques et le BVH resteraient globalement du meme ordre.
 
 Ordres de grandeur a garder en tete :
 
@@ -156,6 +156,8 @@ Ordres de grandeur a garder en tete :
 - rendu spectral naif avec `30` longueurs d'onde : environ `10x` le cout du calcul couleur
 - sur un path tracer complet, le surcout total reel serait souvent plutot de l'ordre de `2x` a `8x`, selon la part prise par les intersections par rapport au shading
 - une approche type `hero wavelength` ou quelques longueurs d'onde par chemin pourrait rester vers `1.2x` a `3x`, mais avec plus de bruit et parfois plus de samples par pixel pour converger
+
+Approximations actuelles à conserver comme limites explicites : les rayons caméra suivent Snell, Fresnel et la réflexion totale interne avec trois IOR RGB jitterés et un filtre d'épaisseur. Les rayons d'ombre reçoivent le même filtre RGB, mais traversent les interfaces en ligne droite. Cette solution donne des franges réfractives et une ombre transmissive stable sans prétendre résoudre un spectre continu ou les caustiques d'un prisme.
 
 Impact :
 
@@ -165,7 +167,7 @@ Impact :
 
 Piste :
 
-Si un besoin visuel reel apparait plus tard (dispersion, absorption plus juste, iridescence, caustiques colorees), preferer d'abord une approche spectrale parcimonieuse et benchmarker separement :
+Si un besoin visuel reel apparait plus tard (dispersion continue, absorption spectrale plus juste, iridescence, caustiques colorees), preferer d'abord une approche spectrale parcimonieuse et benchmarker separement :
 
 - intersections
 - shading / BSDF

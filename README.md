@@ -22,6 +22,7 @@ Current state:
 - grayscale material reduction from the Cornell MTL
 - simple BVH acceleration
 - diffuse path tracing with direct light sampling and low-bounce radiosity
+- locked dielectric glass for crystal prefabs, with refraction, exact Fresnel reflection, total internal reflection, thickness-dependent RGB filtering, bounded “poor man's” dispersion, and a separate path-depth limit
 - native PNG output via vendored `stb_image_write.h`
 - optional `llama.cpp` runtime wiring in CMake
 - optional OpenMP line-parallel rendering in CMake

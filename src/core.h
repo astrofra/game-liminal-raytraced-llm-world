@@ -165,6 +165,11 @@ enum MaterialSemantic {
     kMaterialSemanticRackLed,
 };
 
+enum MaterialModel {
+    kMaterialModelDiffuse = 0,
+    kMaterialModelDielectricGlass,
+};
+
 struct Ray {
     Vec3 origin;
     Vec3 direction;
@@ -193,12 +198,24 @@ struct Material {
     std::string name;
     Vec3 albedo;
     Vec3 emission;
+    Vec3 transmission;
+    Vec3 volume_absorption;
     MaterialSemantic semantic;
+    MaterialModel model;
+    float index_of_refraction;
+    float dispersion;
+    float transmission_cutoff;
 
     Material()
         : albedo(0.6f)
         , emission(0.0f)
+        , transmission(1.0f)
+        , volume_absorption(0.0f)
         , semantic(kMaterialSemanticNeutral)
+        , model(kMaterialModelDiffuse)
+        , index_of_refraction(1.0f)
+        , dispersion(0.0f)
+        , transmission_cutoff(0.0f)
     {
     }
 };
@@ -297,6 +314,7 @@ struct RenderConfig {
     int height;
     int samples_per_pixel;
     int max_bounces;
+    int max_glass_bounces;
     int direct_light_samples;
     uint32_t seed;
     float exposure;
@@ -306,6 +324,7 @@ struct RenderConfig {
         , height(400)
         , samples_per_pixel(16)
         , max_bounces(3)
+        , max_glass_bounces(9)
         , direct_light_samples(2)
         , seed(1337u)
         , exposure(1.0f)

@@ -25,7 +25,8 @@ static void PrintUsage()
     printf("  --width <n>              Output width\n");
     printf("  --height <n>             Output height\n");
     printf("  --samples <n>            Samples per pixel\n");
-    printf("  --bounces <n>            Maximum diffuse bounces\n");
+    printf("  --bounces <n>            Maximum diffuse events per path\n");
+    printf("  --glass-bounces <n>      Maximum dielectric events per path\n");
     printf("  --direct-samples <n>     Direct light samples per hit\n");
     printf("  --seed <n>               Random seed\n");
     printf("  --exposure <f>           Tone mapping exposure\n");
@@ -348,6 +349,13 @@ int main(int argc, char** argv)
         if (strcmp(argv[index], "--bounces") == 0 && index + 1 < argc) {
             if (!ReadInt(argv[++index], &config.max_bounces)) {
                 fprintf(stderr, "Invalid bounces value.\n");
+                return 1;
+            }
+            continue;
+        }
+        if (strcmp(argv[index], "--glass-bounces") == 0 && index + 1 < argc) {
+            if (!ReadInt(argv[++index], &config.max_glass_bounces)) {
+                fprintf(stderr, "Invalid glass bounces value.\n");
                 return 1;
             }
             continue;

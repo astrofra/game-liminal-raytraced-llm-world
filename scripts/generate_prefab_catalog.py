@@ -59,7 +59,7 @@ PREFABS = [
     {
         "slug": "prefab_crystal_scanner",
         "title": "prefab_crystal_scanner",
-        "role": "Instrument d'affinité pour localiser et examiner un échantillon. Deux piles épaisses encadrent un petit cristal et une ligne de mesure suspendue.",
+        "role": "Instrument d'affinité pour localiser et examiner un échantillon. Deux piles épaisses encadrent un petit cristal diélectrique filtré par son épaisseur et une ligne de mesure suspendue.",
         "camera_eye": (-6.4, 2.7, -7.4),
         "camera_target": (0.0, 1.15, 0.0),
         "fov": 40.0,
@@ -69,7 +69,7 @@ PREFABS = [
     {
         "slug": "prefab_crystal_cluster",
         "title": "prefab_crystal_cluster",
-        "role": "Veine cristalline affleurante, à la fois ressource, balise lumineuse et appât. Les cinq prismes sont facettés en C++ et non assemblés comme de simples boîtes.",
+        "role": "Veine cristalline affleurante, à la fois ressource, balise lumineuse et appât. Les cinq prismes utilisent un verre diélectrique verrouillé : réfraction, Fresnel, dispersion RGB et filtre d'absorption dépendant de l'épaisseur.",
         "camera_eye": (-5.8, 2.8, -6.8),
         "camera_target": (0.0, 1.15, 0.0),
         "fov": 40.0,
@@ -161,6 +161,8 @@ def render_prefab(renderer_path, scene_path, image_path, width, height, samples)
         str(samples),
         "--bounces",
         "3",
+        "--glass-bounces",
+        "9",
         "--direct-samples",
         "1",
         "--seed",
@@ -189,6 +191,8 @@ def write_markdown(markdown_path, output_root, entries, width, height, samples):
         "- rendu carré sans changement d’architecture du raytraceur : seul le buffer de sortie change",
         "- chaque objet repose sur un plan de carrière neutre sous un ciel brumeux sans étoiles",
         "- deux vues par prefab : 3/4 gauche et 3/4 droite",
+        "- les cristaux utilisent un verre diélectrique interne à IOR central 1,52, dispersion RGB et filtre d’épaisseur ; le format `.scene` n’expose pas de matériau libre",
+        "- profondeur de rendu : 3 événements diffus et 9 événements diélectriques au maximum par chemin",
         f"- paramètres de rendu utilisés : `{width}x{height}`, `{samples}` samples par pixel",
         "",
     ]

@@ -63,6 +63,9 @@ struct CameraLightState {
 };
 
 static const float kSampleRadianceClamp = 6.0f;
+static const float kRayOriginOffset = 0.001f;
+static const int kMaxShadowGlassIntersections = 16;
+static const int kMaxActiveGlassMedia = 8;
 
 static float Saturate(float value)
 {
@@ -386,11 +389,214 @@ static bool IntersectScene(const Scene& scene, const Ray& ray, float max_distanc
     return found_hit;
 }
 
-static bool IsOccluded(const Scene& scene, const Ray& ray, float max_distance)
+static float EvaluateDielectricFresnel(
+    const Vec3& incident,
+    const Vec3& interface_normal,
+    float incident_ior,
+    float transmitted_ior,
+    bool* total_internal_reflection,
+    float* transmitted_cosine)
 {
-    Hit hit;
-    hit.t = max_distance;
-    return IntersectScene(scene, ray, max_distance, &hit);
+    const float cos_incident = Clamp(-Dot(incident, interface_normal), 0.0f, 1.0f);
+    const float eta = incident_ior / transmitted_ior;
+    const float sin_transmitted_squared = eta * eta * std::max(0.0f, 1.0f - cos_incident * cos_incident);
+    if (sin_transmitted_squared >= 1.0f) {
+        if (total_internal_reflection) {
+            *total_internal_reflection = true;
+        }
+        if (transmitted_cosine) {
+            *transmitted_cosine = 0.0f;
+        }
+        return 1.0f;
+    }
+
+    const float cos_transmitted = sqrtf(std::max(0.0f, 1.0f - sin_transmitted_squared));
+    const float rs_denominator = incident_ior * cos_incident + transmitted_ior * cos_transmitted;
+    const float rp_denominator = transmitted_ior * cos_incident + incident_ior * cos_transmitted;
+    const float rs = fabsf(rs_denominator) > kEpsilon
+        ? (incident_ior * cos_incident - transmitted_ior * cos_transmitted) / rs_denominator
+        : 1.0f;
+    const float rp = fabsf(rp_denominator) > kEpsilon
+        ? (transmitted_ior * cos_incident - incident_ior * cos_transmitted) / rp_denominator
+        : 1.0f;
+
+    if (total_internal_reflection) {
+        *total_internal_reflection = false;
+    }
+    if (transmitted_cosine) {
+        *transmitted_cosine = cos_transmitted;
+    }
+    return Saturate(0.5f * (rs * rs + rp * rp));
+}
+
+static Vec3 BuildDispersionChannelWeight(int channel)
+{
+    if (channel == 0) {
+        return Vec3(3.0f, 0.0f, 0.0f);
+    }
+    if (channel == 1) {
+        return Vec3(0.0f, 3.0f, 0.0f);
+    }
+    return Vec3(0.0f, 0.0f, 3.0f);
+}
+
+static float SampleDispersionIorOffset(int channel, Rng* rng)
+{
+    const float channel_center = static_cast<float>(channel - 1);
+    const float band_jitter = (rng->NextFloat() * 2.0f - 1.0f) * 0.65f;
+    return channel_center + band_jitter;
+}
+
+static float EvaluateGlassIor(const Material& material, bool dispersion_active, float dispersion_ior_offset)
+{
+    const float base_ior = std::max(material.index_of_refraction, 1.0001f);
+    if (!dispersion_active || material.dispersion <= 0.0f) {
+        return base_ior;
+    }
+    return std::max(base_ior + material.dispersion * dispersion_ior_offset, 1.0001f);
+}
+
+static void AddActiveGlassMedium(int material_index, int* material_indices, int* material_count)
+{
+    if (!material_indices || !material_count) {
+        return;
+    }
+    for (int index = 0; index < *material_count; ++index) {
+        if (material_indices[index] == material_index) {
+            return;
+        }
+    }
+    if (*material_count < kMaxActiveGlassMedia) {
+        material_indices[(*material_count)++] = material_index;
+    }
+}
+
+static void RemoveActiveGlassMedium(int material_index, int* material_indices, int* material_count)
+{
+    if (!material_indices || !material_count) {
+        return;
+    }
+    for (int index = *material_count - 1; index >= 0; --index) {
+        if (material_indices[index] != material_index) {
+            continue;
+        }
+        for (int shifted_index = index; shifted_index + 1 < *material_count; ++shifted_index) {
+            material_indices[shifted_index] = material_indices[shifted_index + 1];
+        }
+        --(*material_count);
+        return;
+    }
+}
+
+static Vec3 EvaluateGlassVolumeFilter(
+    const Scene& scene,
+    const int* material_indices,
+    int material_count,
+    float distance)
+{
+    Vec3 filter(1.0f);
+    const float safe_distance = std::max(distance, 0.0f);
+    for (int index = 0; index < material_count; ++index) {
+        const Material& material = scene.materials[material_indices[index]];
+        filter *= Vec3(
+            expf(-std::max(material.volume_absorption.x, 0.0f) * safe_distance),
+            expf(-std::max(material.volume_absorption.y, 0.0f) * safe_distance),
+            expf(-std::max(material.volume_absorption.z, 0.0f) * safe_distance));
+    }
+    return filter;
+}
+
+static float EvaluateGlassTransmissionCutoff(
+    const Scene& scene,
+    const int* material_indices,
+    int material_count)
+{
+    float cutoff = 0.0f;
+    for (int index = 0; index < material_count; ++index) {
+        cutoff = std::max(cutoff, scene.materials[material_indices[index]].transmission_cutoff);
+    }
+    return cutoff;
+}
+
+static Vec3 TraceShadowTransmittance(const Scene& scene, Ray ray, float max_distance)
+{
+    Vec3 transmittance(1.0f);
+    float remaining_distance = max_distance;
+    int active_glass_media[kMaxActiveGlassMedia];
+    int active_glass_medium_count = 0;
+
+    for (int intersection_index = 0;
+         intersection_index < kMaxShadowGlassIntersections && remaining_distance > kRayOriginOffset;
+         ++intersection_index) {
+        Hit hit;
+        hit.t = remaining_distance;
+        if (!IntersectScene(scene, ray, remaining_distance, &hit)) {
+            transmittance *= EvaluateGlassVolumeFilter(
+                scene,
+                active_glass_media,
+                active_glass_medium_count,
+                remaining_distance);
+            return transmittance;
+        }
+
+        transmittance *= EvaluateGlassVolumeFilter(
+            scene,
+            active_glass_media,
+            active_glass_medium_count,
+            hit.t);
+        const float active_cutoff = EvaluateGlassTransmissionCutoff(
+            scene,
+            active_glass_media,
+            active_glass_medium_count);
+        if (MaxComponent(transmittance) < active_cutoff) {
+            return Vec3(0.0f);
+        }
+
+        const Triangle& triangle = scene.triangles[hit.triangle_index];
+        const Material& material = scene.materials[triangle.material_index];
+        if (material.model != kMaterialModelDielectricGlass) {
+            return Vec3(0.0f);
+        }
+
+        const bool entering = Dot(ray.direction, triangle.normal) < 0.0f;
+        const Vec3 interface_normal = entering ? triangle.normal : -triangle.normal;
+        const float glass_ior = std::max(material.index_of_refraction, 1.0001f);
+        const float incident_ior = entering ? 1.0f : glass_ior;
+        const float transmitted_ior = entering ? glass_ior : 1.0f;
+        bool total_internal_reflection = false;
+        const float fresnel = EvaluateDielectricFresnel(
+            ray.direction,
+            interface_normal,
+            incident_ior,
+            transmitted_ior,
+            &total_internal_reflection,
+            0);
+        if (total_internal_reflection) {
+            return Vec3(0.0f);
+        }
+
+        transmittance *= material.transmission * (1.0f - fresnel);
+        if (MaxComponent(transmittance) < std::max(material.transmission_cutoff, kEpsilon)) {
+            return Vec3(0.0f);
+        }
+
+        if (entering) {
+            AddActiveGlassMedium(
+                triangle.material_index,
+                active_glass_media,
+                &active_glass_medium_count);
+        } else {
+            RemoveActiveGlassMedium(
+                triangle.material_index,
+                active_glass_media,
+                &active_glass_medium_count);
+        }
+
+        remaining_distance -= hit.t + kRayOriginOffset;
+        ray.origin = hit.position + ray.direction * kRayOriginOffset;
+    }
+
+    return remaining_distance <= kRayOriginOffset ? transmittance : Vec3(0.0f);
 }
 
 static Vec3 SampleCosineHemisphere(const Vec3& normal, Rng* rng)
@@ -470,10 +676,14 @@ static Vec3 EstimateEmissiveTriangleLighting(
         }
 
         Ray shadow_ray;
-        shadow_ray.origin = hit.position + hit.normal * 0.001f;
+        shadow_ray.origin = hit.position + hit.normal * kRayOriginOffset;
         shadow_ray.direction = direction;
 
-        if (IsOccluded(scene, shadow_ray, distance - 0.002f)) {
+        const Vec3 visibility = TraceShadowTransmittance(
+            scene,
+            shadow_ray,
+            distance - kRayOriginOffset * 2.0f);
+        if (IsNearBlack(visibility)) {
             continue;
         }
 
@@ -482,7 +692,8 @@ static Vec3 EstimateEmissiveTriangleLighting(
         const float pdf = area_pdf * selection_pdf;
         const Vec3 brdf = material.albedo / kPi;
 
-        contribution += brdf * light_material.emission * (cos_surface * cos_light / (distance_squared * pdf));
+        contribution += visibility * brdf * light_material.emission *
+            (cos_surface * cos_light / (distance_squared * pdf));
     }
 
     return contribution / static_cast<float>(light_samples);
@@ -534,13 +745,17 @@ static Vec3 EstimateCameraSpotLighting(
         }
 
         Ray shadow_ray;
-        shadow_ray.origin = hit.position + hit.normal * 0.001f;
+        shadow_ray.origin = hit.position + hit.normal * kRayOriginOffset;
         shadow_ray.direction = direction;
-        if (IsOccluded(scene, shadow_ray, distance - 0.002f)) {
+        const Vec3 visibility = TraceShadowTransmittance(
+            scene,
+            shadow_ray,
+            distance - kRayOriginOffset * 2.0f);
+        if (IsNearBlack(visibility)) {
             continue;
         }
 
-        contribution += brdf *
+        contribution += visibility * brdf *
             (camera_light.intensity * cone_factor * range_factor * cos_surface * cos_light /
                 (distance_squared * area_pdf));
     }
@@ -565,16 +780,39 @@ static Vec3 TracePath(
     const CameraLightState& camera_light,
     const RenderConfig& config,
     const Ray& camera_ray,
+    int dispersion_channel,
     Rng* rng)
 {
     Ray ray = camera_ray;
     Vec3 throughput(1.0f);
     Vec3 radiance(0.0f);
+    int diffuse_events = 0;
+    int glass_events = 0;
+    bool dispersion_active = false;
+    float dispersion_ior_offset = 0.0f;
+    int active_glass_media[kMaxActiveGlassMedia];
+    int active_glass_medium_count = 0;
+    const int max_diffuse_events = std::max(config.max_bounces, 0);
+    const int max_glass_events = std::max(config.max_glass_bounces, 0);
+    const int max_path_events = max_diffuse_events + max_glass_events;
 
-    for (int bounce = 0; bounce < config.max_bounces; ++bounce) {
+    for (int path_event = 0; path_event < max_path_events; ++path_event) {
         Hit hit;
         if (!IntersectScene(scene, ray, kHuge, &hit)) {
             radiance += throughput * SampleSkyBackground(scene.sky_background, ray.direction, rng);
+            break;
+        }
+
+        throughput *= EvaluateGlassVolumeFilter(
+            scene,
+            active_glass_media,
+            active_glass_medium_count,
+            hit.t);
+        const float active_cutoff = EvaluateGlassTransmissionCutoff(
+            scene,
+            active_glass_media,
+            active_glass_medium_count);
+        if (MaxComponent(throughput) < active_cutoff) {
             break;
         }
 
@@ -583,8 +821,93 @@ static Vec3 TracePath(
 
         if (!IsNearBlack(material.emission)) {
             radiance += throughput * material.emission;
+            if (material.model != kMaterialModelDielectricGlass) {
+                break;
+            }
+        }
+
+        if (material.model == kMaterialModelDielectricGlass) {
+            if (glass_events >= max_glass_events) {
+                break;
+            }
+            ++glass_events;
+
+            const bool entering = Dot(ray.direction, triangle.normal) < 0.0f;
+            const Vec3 interface_normal = entering ? triangle.normal : -triangle.normal;
+            float glass_ior = EvaluateGlassIor(material, dispersion_active, dispersion_ior_offset);
+            const float incident_ior = entering ? 1.0f : glass_ior;
+            const float transmitted_ior = entering ? glass_ior : 1.0f;
+            bool total_internal_reflection = false;
+            float cos_transmitted = 0.0f;
+            const float fresnel = EvaluateDielectricFresnel(
+                ray.direction,
+                interface_normal,
+                incident_ior,
+                transmitted_ior,
+                &total_internal_reflection,
+                &cos_transmitted);
+
+            if (total_internal_reflection || rng->NextFloat() < fresnel) {
+                ray.origin = hit.position + interface_normal * kRayOriginOffset;
+                ray.direction = Normalize(
+                    ray.direction - interface_normal * (2.0f * Dot(ray.direction, interface_normal)));
+            } else {
+                if (!dispersion_active && material.dispersion > 0.0f) {
+                    dispersion_active = true;
+                    dispersion_ior_offset = SampleDispersionIorOffset(dispersion_channel, rng);
+                    throughput *= BuildDispersionChannelWeight(dispersion_channel);
+
+                    glass_ior = EvaluateGlassIor(material, dispersion_active, dispersion_ior_offset);
+                    const float dispersed_incident_ior = entering ? 1.0f : glass_ior;
+                    const float dispersed_transmitted_ior = entering ? glass_ior : 1.0f;
+                    bool dispersed_total_internal_reflection = false;
+                    EvaluateDielectricFresnel(
+                        ray.direction,
+                        interface_normal,
+                        dispersed_incident_ior,
+                        dispersed_transmitted_ior,
+                        &dispersed_total_internal_reflection,
+                        &cos_transmitted);
+                    if (dispersed_total_internal_reflection) {
+                        ray.origin = hit.position + interface_normal * kRayOriginOffset;
+                        ray.direction = Normalize(
+                            ray.direction - interface_normal * (2.0f * Dot(ray.direction, interface_normal)));
+                        continue;
+                    }
+                }
+
+                const float dispersed_incident_ior = entering ? 1.0f : glass_ior;
+                const float dispersed_transmitted_ior = entering ? glass_ior : 1.0f;
+                const float dispersed_eta = dispersed_incident_ior / dispersed_transmitted_ior;
+                const float cos_incident = Clamp(-Dot(ray.direction, interface_normal), 0.0f, 1.0f);
+                ray.origin = hit.position - interface_normal * kRayOriginOffset;
+                ray.direction = Normalize(
+                    ray.direction * dispersed_eta +
+                    interface_normal * (dispersed_eta * cos_incident - cos_transmitted));
+                throughput *= material.transmission;
+                throughput *= dispersed_eta * dispersed_eta;
+                if (entering) {
+                    AddActiveGlassMedium(
+                        triangle.material_index,
+                        active_glass_media,
+                        &active_glass_medium_count);
+                } else {
+                    RemoveActiveGlassMedium(
+                        triangle.material_index,
+                        active_glass_media,
+                        &active_glass_medium_count);
+                }
+                if (MaxComponent(throughput) < material.transmission_cutoff) {
+                    break;
+                }
+            }
+            continue;
+        }
+
+        if (diffuse_events >= max_diffuse_events) {
             break;
         }
+        ++diffuse_events;
 
         radiance += throughput *
             EstimateDirectLighting(scene, camera_light, hit, material, config.direct_light_samples, rng);
@@ -594,7 +917,7 @@ static Vec3 TracePath(
         }
 
         throughput *= material.albedo;
-        if (bounce >= 1) {
+        if (diffuse_events >= 2) {
             const float survival_probability = Clamp(MaxComponent(throughput), 0.2f, 0.95f);
             if (rng->NextFloat() > survival_probability) {
                 break;
@@ -602,8 +925,11 @@ static Vec3 TracePath(
             throughput /= survival_probability;
         }
 
-        ray.origin = hit.position + hit.normal * 0.001f;
+        ray.origin = hit.position + hit.normal * kRayOriginOffset;
         ray.direction = SampleCosineHemisphere(hit.normal, rng);
+        if (diffuse_events >= max_diffuse_events) {
+            break;
+        }
     }
 
     return ClampColor(radiance, 0.0f, kSampleRadianceClamp);
@@ -727,11 +1053,12 @@ static bool RenderSceneInternal(
 
     if (print_progress) {
         printf(
-            "Rendering %dx%d, spp=%d, bounces=%d, emissive=%d, camera_spot=%s, openmp=%s, threads=%d\n",
+            "Rendering %dx%d, spp=%d, diffuse=%d, glass=%d, emissive=%d, camera_spot=%s, openmp=%s, threads=%d\n",
             config.width,
             config.height,
             config.samples_per_pixel,
             config.max_bounces,
+            config.max_glass_bounces,
             static_cast<int>(scene.emissive_triangles.size()),
             camera_light.enabled ? "on" : "off",
             parallel_enabled ? "on" : "off",
@@ -748,7 +1075,8 @@ static bool RenderSceneInternal(
             Vec3 accumulated(0.0f);
             for (int sample_index = 0; sample_index < config.samples_per_pixel; ++sample_index) {
                 const Ray ray = GenerateCameraRay(scene.camera, basis, x, y, config, &rng);
-                accumulated += TracePath(scene, camera_light, config, ray, &rng);
+                const int dispersion_channel = (sample_index + x + y) % 3;
+                accumulated += TracePath(scene, camera_light, config, ray, dispersion_channel, &rng);
             }
 
             const Vec3 average = accumulated / static_cast<float>(config.samples_per_pixel);

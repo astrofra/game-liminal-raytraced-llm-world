@@ -433,6 +433,28 @@ static int AddPrimitiveMaterial(Scene* scene, const std::string& name, float gra
     return static_cast<int>(scene->materials.size()) - 1;
 }
 
+static int AddGlassPrimitiveMaterial(
+    Scene* scene,
+    const std::string& name,
+    float gray_value,
+    float emission_value)
+{
+    Material material;
+    material.name = name;
+    material.semantic = InferMaterialSemantic(name);
+    material.model = kMaterialModelDielectricGlass;
+    material.albedo = Vec3(0.0f);
+    material.emission = BuildSemanticEmission(emission_value, material.semantic);
+    const float transmission = Clamp(0.84f + Clamp(gray_value, 0.0f, 0.95f) * 0.16f, 0.84f, 0.99f);
+    material.transmission = Vec3(transmission);
+    material.volume_absorption = Vec3(0.45f, 0.22f, 0.08f);
+    material.index_of_refraction = 1.52f;
+    material.dispersion = 0.035f;
+    material.transmission_cutoff = 0.02f;
+    scene->materials.push_back(material);
+    return static_cast<int>(scene->materials.size()) - 1;
+}
+
 static bool LoadMaterialLibrary(
     const char* mtl_path,
     std::vector<Material>* materials,
@@ -1166,14 +1188,17 @@ static void AddCrystalShardPrimitive(
     float height,
     const Vec3& rotation_degrees,
     float gray_value,
-    float emission_value)
+    float emission_value,
+    bool use_glass)
 {
     const int side_count = 6;
     const float safe_radius = std::max(radius, 0.04f);
     const float safe_height = std::max(height, safe_radius * 2.0f);
     const float bottom_y = -safe_height * 0.5f;
     const float shoulder_y = safe_height * 0.22f;
-    const int material_index = AddPrimitiveMaterial(scene, name, gray_value, emission_value);
+    const int material_index = use_glass
+        ? AddGlassPrimitiveMaterial(scene, name, gray_value, emission_value)
+        : AddPrimitiveMaterial(scene, name, gray_value, emission_value);
 
     Vec3 lower[side_count];
     Vec3 shoulder[side_count];
@@ -1254,7 +1279,8 @@ static void AddCrystalClusterPrefab(
         size.y * 0.96f,
         Vec3(0.0f, -8.0f, -4.0f),
         crystal_gray,
-        glow_value);
+        glow_value,
+        true);
     AddCrystalShardPrimitive(
         scene,
         PrefabChildName(name, "crystal_left"),
@@ -1263,7 +1289,8 @@ static void AddCrystalClusterPrefab(
         size.y * 0.60f,
         Vec3(4.0f, 12.0f, -17.0f),
         Clamp(crystal_gray * 0.90f, 0.0f, 0.95f),
-        glow_value * 0.28f);
+        glow_value * 0.28f,
+        true);
     AddCrystalShardPrimitive(
         scene,
         PrefabChildName(name, "crystal_right"),
@@ -1272,7 +1299,8 @@ static void AddCrystalClusterPrefab(
         size.y * 0.68f,
         Vec3(-5.0f, -10.0f, 15.0f),
         Clamp(crystal_gray * 0.82f, 0.0f, 0.95f),
-        glow_value * 0.22f);
+        glow_value * 0.22f,
+        true);
     AddCrystalShardPrimitive(
         scene,
         PrefabChildName(name, "crystal_front"),
@@ -1281,7 +1309,8 @@ static void AddCrystalClusterPrefab(
         size.y * 0.43f,
         Vec3(11.0f, 18.0f, 8.0f),
         Clamp(crystal_gray * 0.74f, 0.0f, 0.95f),
-        glow_value * 0.18f);
+        glow_value * 0.18f,
+        true);
     AddCrystalShardPrimitive(
         scene,
         PrefabChildName(name, "crystal_rear"),
@@ -1290,7 +1319,8 @@ static void AddCrystalClusterPrefab(
         size.y * 0.39f,
         Vec3(-9.0f, 3.0f, -12.0f),
         Clamp(crystal_gray * 0.68f, 0.0f, 0.95f),
-        glow_value * 0.14f);
+        glow_value * 0.14f,
+        true);
 }
 
 static void AddCrystalScannerPrefab(
@@ -1321,7 +1351,8 @@ static void AddCrystalScannerPrefab(
         size.y * 0.34f,
         Vec3(0.0f, 12.0f, -4.0f),
         0.72f,
-        glow_value);
+        glow_value,
+        true);
 }
 
 static void AddExtractionRigPrefab(
@@ -1341,7 +1372,7 @@ static void AddExtractionRigPrefab(
     AddPrefabChildBox(scene, name, "head_beam", center, Vec3(0.0f, size.y * 0.35f, 0.0f), Vec3(size.x * 0.68f, size.y * 0.12f, size.z * 0.40f), detail_gray);
     AddPrefabChildBox(scene, name, "drill_carriage", center, Vec3(0.0f, size.y * 0.13f, 0.0f), Vec3(size.x * 0.23f, size.y * 0.26f, size.z * 0.32f), detail_gray);
     AddPrefabChildCapsule(scene, name, "drill_column", center, Vec3(0.0f, -size.y * 0.17f, 0.0f), Vec3(size.x * 0.10f, size.y * 0.50f, size.x * 0.10f), Vec3(0.0f), Clamp(detail_gray * 0.72f, 0.0f, 0.95f));
-    AddCrystalShardPrimitive(scene, PrefabChildName(name, "drill_bit"), center + Vec3(0.0f, -size.y * 0.40f, 0.0f), size.x * 0.075f, size.y * 0.20f, Vec3(180.0f, 0.0f, 0.0f), 0.62f, 0.0f);
+    AddCrystalShardPrimitive(scene, PrefabChildName(name, "drill_bit"), center + Vec3(0.0f, -size.y * 0.40f, 0.0f), size.x * 0.075f, size.y * 0.20f, Vec3(180.0f, 0.0f, 0.0f), 0.62f, 0.0f, false);
     AddPrefabChildBox(scene, name, "control_pod", center, Vec3(size.x * 0.37f, -size.y * 0.22f, -size.z * 0.12f), Vec3(size.x * 0.22f, size.y * 0.25f, size.z * 0.54f), body_gray);
     AddPrefabChildBox(scene, name, "control_lamp", center, Vec3(size.x * 0.37f, -size.y * 0.16f, -size.z * 0.41f), Vec3(size.x * 0.07f, size.y * 0.035f, size.z * 0.035f), 0.84f, 1.0f);
 }

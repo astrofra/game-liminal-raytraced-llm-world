@@ -244,6 +244,7 @@ Invisible barriers belong to traversal and collision semantics. Optional diagnos
 - Preserve the current locked palette and an image dominated by grayscale.
 - Use camera-linked, instrument-like lighting.
 - Include raytraced diffuse bounce or crude radiosity at intentionally low sample counts.
+- Reserve bounded dielectric refraction, Fresnel reflection, thickness-dependent absorption, and deliberately approximate three-band RGB dispersion for crystals; do not expose a general material language to the LLM.
 - Preserve visible noise instead of denoising it away.
 - Prioritize mood, legibility, and speed over physical accuracy.
 - Keep rendering computationally secondary to inference in the intended experience, or make any exception measurable and explicit.

@@ -156,6 +156,10 @@ prefab_crate "service_console" pos(0.8,0.65,-6.9) size(1.3,1.3,0.8) gray(0.19) d
 
 Les sept directives suivantes partagent les propriétés obligatoires `pos(x,y,z)`, `size(x,y,z)` et `gray(value)`. `detail(value)` est optionnel sur les objets industriels. Les deux objets cristallins acceptent aussi `glow(value)`, qui règle une émission blanche contrainte.
 
+Le matériau `glass` des prismes cristallins est verrouillé dans le moteur, et non exposé comme une directive libre. Il utilise un indice de réfraction central de `1.52`, la réfraction de Snell, une réflexion de Fresnel exacte et la réflexion totale interne. Une dispersion RGB volontairement approximative sépare les IOR rouge, vert et bleu avec un écart nominal de `0.035` et un léger jitter par échantillon. Les trois canaux sont stratifiés puis recomposés au fil des samples ; aucun lancer spectral complet n'est effectué.
+
+La matière intérieure applique aussi un filtre de Beer–Lambert dépendant de la distance parcourue, avec des coefficients RGB verrouillés à `(0.45,0.22,0.08)`. Les grandes épaisseurs absorbent donc davantage le rouge et le vert que le bleu. Un cutoff de transport à `0.02` élimine les chemins devenus négligeables. `gray(value)` module la transmission aux interfaces ; il ne donne pas accès à une couleur ou à un BSDF arbitraire. Le renderer autorise par défaut au plus neuf événements diélectriques par chemin, indépendamment des rebonds diffus.
+
 #### `prefab_survey_beacon`
 
 Balise de navigation à mât fourchu, barre de relèvement et lampe unique.
@@ -166,7 +170,7 @@ prefab_survey_beacon "route_datum" pos(-4.8,1.7,6.4) size(1.1,3.4,1.0) gray(0.24
 
 #### `prefab_crystal_scanner`
 
-Instrument d'affinité brutaliste encadrant un petit échantillon cristallin.
+Instrument d'affinité brutaliste encadrant un petit échantillon en verre cristallin.
 
 ```text
 prefab_crystal_scanner "affinity_scanner" pos(-2.8,1.2,1.4) size(2.2,2.4,1.5) gray(0.25) detail(0.44) glow(0.28)
@@ -174,7 +178,7 @@ prefab_crystal_scanner "affinity_scanner" pos(-2.8,1.2,1.4) size(2.2,2.4,1.5) gr
 
 #### `prefab_crystal_cluster`
 
-Veine affleurante formée de cinq prismes hexagonaux pointus et d'un lit fracturé.
+Veine affleurante formée de cinq prismes hexagonaux pointus en verre diélectrique et d'un lit fracturé.
 
 ```text
 prefab_crystal_cluster "exposed_vein" pos(3.4,1.15,4.2) size(1.8,2.3,1.6) gray(0.66) glow(0.34)

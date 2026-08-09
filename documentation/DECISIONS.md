@@ -379,3 +379,23 @@ Raison :
 Consequence :
 
 Le parseur `scene v1`, le compilateur hybride, le prompt d'audit et la documentation technique reconnaissent les nouveaux objets. `PREFAB_CATALOG.md` et ses dix-huit images sont régénérés depuis le renderer. Le preset passe à `1024x1024`, `24` samples par pixel : le nombre de vues augmente fortement tout en conservant un niveau d'audit supérieur au rendu de jeu.
+
+## 2026-08-09 - Réserver un verre diélectrique borné aux cristaux
+
+Decision :
+
+Les prismes de `prefab_crystal_cluster` et l'échantillon de `prefab_crystal_scanner` utilisent un modèle `glass` interne. Son IOR central est fixé à `1.52` ; la réfraction, le Fresnel diélectrique exact et la réflexion totale interne sont calculés par le renderer. Une dispersion RGB « poor man's », inspirée du [shader RenderMan documenté par Astrofra](https://astrofra.com/wordpress/index.php/2005/07/12/poor-man-s-dispersion-shader-rman-version/), décale les IOR des trois canaux avec un écart nominal de `0.035` et un jitter borné. Un filtre Beer–Lambert RGB donne une densité croissante avec l'épaisseur. Les événements diélectriques ont un plafond séparé de neuf interfaces par chemin et un cutoff énergétique de `0.02`.
+
+Le format `.scene` ne gagne ni directive `material`, ni IOR libre. La pointe du rig d'extraction, qui réutilise la même géométrie de prisme comme outil, reste diffuse et opaque.
+
+Raison :
+
+- dans la nouvelle, le cristal est un objet optiquement actif, précieux et attirant, distinct de l'architecture alien explicitement non réfractive et non réfléchissante
+- dans le catalogue, la transparence et la déviation du fond différencient immédiatement la ressource vénusienne des masses brutalistes humaines
+- un budget spéculaire séparé permet au rayon d'entrer, de sortir et de subir des réflexions internes sans augmenter le nombre de rebonds diffus de toute la scène
+- un canal RGB héroïque stratifié par sample recompose les trois réfractions sans le coût systématique de trois chemins complets par impact
+- verrouiller le modèle préserve la petite grammaire contrôlable par le compilateur et le LLM
+
+Consequence :
+
+Le renderer possède désormais deux familles de transport : diffus et diélectrique. Les ombres traversent approximativement le verre avec le même filtre d'épaisseur ; la dispersion continue, l'absorption spectrale et les caustiques restent hors périmètre afin de préserver le budget CPU.
