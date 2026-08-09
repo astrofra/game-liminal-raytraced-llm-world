@@ -1,5 +1,6 @@
 room "prefab_crate catalog left"
-camera eye(-4.90,1.80,-5.90) target(0.00,0.55,0.00) up(0.00,1.00,0.00) fov(40.0)
-sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
-spotlight panel(1.00,1.00) offset(0.00,0.10,0.35) range(20.0) cone(16.0,34.0) intensity(220.0)
-prefab_crate "catalog_crate" pos(0.0,0.55,0.0) size(1.70,1.10,1.40) gray(0.20) detail(0.31)
+camera eye(-4.90,1.80,-5.90) target(0.00,0.62,0.00) up(0.00,1.00,0.00) fov(40.0)
+sky zenith(0.025) horizon(0.30) nadir(0.015) band(0.42) curve(1.55) noise(0.16) stars(0.0,0.0,0.0) seed(77)
+spotlight panel(1.00,1.00) offset(0.00,0.10,0.35) range(24.0) cone(16.0,36.0) intensity(250.0)
+plane "quarry_ground" pos(0.0,-0.02,0.0) normal(0.0,1.0,0.0) size(14.0,14.0) gray(0.11)
+prefab_crate "catalog_sample_case" pos(0.0,0.60,0.0) size(1.90,1.20,1.50) gray(0.20) detail(0.36)

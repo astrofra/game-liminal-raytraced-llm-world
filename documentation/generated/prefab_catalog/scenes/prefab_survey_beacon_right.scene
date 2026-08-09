@@ -1,6 +1,6 @@
-room "prefab_gate catalog left"
-camera eye(-10.00,3.80,-11.20) target(0.00,1.70,0.00) up(0.00,1.00,0.00) fov(40.0)
+room "prefab_survey_beacon catalog right"
+camera eye(5.80,3.00,-7.20) target(0.00,1.75,0.00) up(0.00,1.00,0.00) fov(41.0)
 sky zenith(0.025) horizon(0.30) nadir(0.015) band(0.42) curve(1.55) noise(0.16) stars(0.0,0.0,0.0) seed(77)
 spotlight panel(1.00,1.00) offset(0.00,0.10,0.35) range(24.0) cone(16.0,36.0) intensity(250.0)
 plane "quarry_ground" pos(0.0,-0.02,0.0) normal(0.0,1.0,0.0) size(14.0,14.0) gray(0.11)
-prefab_gate "catalog_quarry_gate" pos(0.0,1.90,0.0) size(6.60,3.80,0.65) gray(0.31) detail(0.48) bars(6)
+prefab_survey_beacon "catalog_route_datum" pos(0.0,1.90,0.0) size(1.20,3.80,1.10) gray(0.24) detail(0.44)

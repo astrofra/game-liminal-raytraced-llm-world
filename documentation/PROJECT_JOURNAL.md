@@ -1082,3 +1082,46 @@ Validation :
 - rapport final de Wesley P. Miller présent
 - aucun élément HTML ou pixel de mise en page résiduel
 - liens Markdown relatifs vérifiés
+
+## 2026-08-09 - Iteration 0024 - Première migration source vers la carrière de cristal
+
+Objectif :
+
+Refondre entièrement le catalogue visuel et le code C++ de ses objets à la lumière du brief Eryx, de la nouvelle et des moodboards `origins` / `brutalism`.
+
+Grammaire retenue :
+
+- masses humaines opaques, lourdes et asymétriques
+- socles, retraits et porte-à-faux brutalistes
+- pylônes dédoublés et instruments minces servant de repères
+- cristaux facettés, lumineux et immédiatement distincts de l'infrastructure
+- aucune matérialisation ordinaire des murs aliens invisibles
+
+Travail source :
+
+- refonte de `prefab_gate` en seuil de carrière et de `prefab_crate` en container d'échantillons
+- ajout de sept directives : survey beacon, crystal scanner, crystal cluster, extraction rig, prospect shelter, quarry pylon et atmospheric processor
+- construction de prismes cristallins hexagonaux pointus directement dans le backend triangle
+- ajout de boîtes enfants orientées pour les contreforts, jambes de foreuse et couronnes fendues
+- raccordement au parseur `.scene`, au compilateur hybride et au prompt d'audit
+- maintien explicite des racks, cooling units et AI servers comme compatibilité legacy hors du catalogue actif
+- correction de portabilité du tokenizer OBJ : `strtok_s` sous Windows, `strtok_r` sur les systèmes POSIX
+
+Catalogue :
+
+- neuf objets actifs, deux vues chacun
+- plan de carrière commun et ciel brumeux sans étoiles
+- preset source `1024x1024`, `24` samples par pixel
+- nettoyage automatique des scènes et images générées devenues obsolètes
+- descriptions reliées au rôle jouable de chaque silhouette plutôt qu'à une fonction décorative
+
+Validation :
+
+- compilation C++11 `Release` réussie sous macOS avec `llama.cpp` et SDL3 désactivés
+- parsing et rendu de prévisualisation réussis pour les dix-huit scènes
+- inspection visuelle comparative des deux vues de chaque objet
+- catalogue final régénéré depuis les géométries réelles, sans image fabriquée manuellement
+
+Limite conservée :
+
+Cette itération migre le vocabulaire visible, pas encore les lieux canoniques, les fallbacks, le hard state ou la topologie invisible. Le binaire global ne doit donc pas encore être présenté comme une expérience Eryx complète.

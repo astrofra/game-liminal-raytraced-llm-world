@@ -8,7 +8,7 @@ This repository is a native, local-first interactive fiction and raytracing rese
 
 The active artistic direction follows a four-stage lineage from Lovecraft and Kenneth J. Sterling's *In the Walls of Eryx*, through ASD's *Beyond the Walls of Eryx* and Mandarine's *Within the Mesh*, to an interactive generative labyrinth. The intended player explores Venusian extraction infrastructure while an invisible topology can change through LLM proposals validated by an authoritative engine.
 
-This direction is currently documentation-first. The working runtime still uses the earlier *Le Désert des tokens* datacenter/desert prompts, locations, prefabs, fixtures, and helper names. Eryx-specific invisible barriers and controlled topology mutations are planned, not implemented. See [`documentation/README.md`](documentation/README.md) for the active design and [`documentation/TECHNICAL_STATE.md`](documentation/TECHNICAL_STATE.md) for the exact implementation boundary.
+The first code-level migration is now present: the active prefab catalog provides Venusian crystal-quarry, prospecting, extraction, shelter, and atmospheric-service geometry. The working runtime still uses the earlier *Le Désert des tokens* prompts, canonical locations, fixtures, state names, and helper names. Eryx-specific invisible barriers and controlled topology mutations remain planned, not implemented. See [`documentation/README.md`](documentation/README.md) for the active design and [`documentation/TECHNICAL_STATE.md`](documentation/TECHNICAL_STATE.md) for the exact implementation boundary.
 
 Current state:
 
@@ -16,6 +16,7 @@ Current state:
 - vendored `llama.cpp` tree in `vendor/llama.cpp`
 - clean C++11 CLI renderer
 - proprietary scene format v1 bootstrap
+- source-generated Eryx quarry prefab vocabulary and visual catalog
 - first handcrafted liminal scene
 - camera-attached parametric spotlight for proprietary scenes
 - grayscale material reduction from the Cornell MTL
@@ -27,7 +28,7 @@ Current state:
 - first SDL3 interactive frontend with streaming LLM output
 - first generated-room graph for improvised cardinal navigation
 - authoritative hard/soft/spatial state with deterministic and hybrid scene compilation
-- legacy datacenter/desert semantic content pending the Eryx migration
+- legacy datacenter/desert runtime semantics pending the broader Eryx migration
 - Python helper to download `Ministral 3 8B Instruct 2512` GGUF
 - first headless `Ministral` turn pipeline wired to the renderer
 - explicit provenance for the reused 2003 raytracer ideas

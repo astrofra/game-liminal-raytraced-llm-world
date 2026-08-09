@@ -1,5 +1,0 @@
-room "prefab_ai_server catalog right"
-camera eye(6.40,2.80,-7.80) target(0.00,1.40,0.00) up(0.00,1.00,0.00) fov(40.0)
-sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
-spotlight panel(1.00,1.00) offset(0.00,0.10,0.35) range(20.0) cone(16.0,34.0) intensity(220.0)
-prefab_ai_server "catalog_ai_server" pos(0.0,1.40,0.0) size(1.70,2.80,1.70) gray(0.16) detail(0.28)

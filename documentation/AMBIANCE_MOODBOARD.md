@@ -159,6 +159,20 @@ The active setting gives concrete meaning to severe primitive geometry. Boxes an
 
 The intended composition favors flat masses, hard diagonals, rectangular voids, repetition, and a clear distribution of occupied versus empty space. “Brutalist” means that the world feels built, excavated, and surveyed. It is not a generic surface treatment.
 
+### Translation into the implemented prefab vocabulary
+
+The first source-level translation is now visible in [`PREFAB_CATALOG.md`](./PREFAB_CATALOG.md). It does not copy a reference building or demoscene object. It extracts a small set of compositional operations:
+
+| Visual operation | Moodboard lineage | Implemented use |
+|---|---|---|
+| unequal paired masses and split crowns | brutalist towers, pylons, and monuments | quarry gate, quarry pylon, atmospheric processor |
+| deep recess beneath a heavy cantilever | shelters and concrete institutional buildings | prospect shelter and scanner bridge |
+| thin instrument against a massive base | *Beyond the Walls of Eryx* markers and sparse computed fields | survey beacon and extraction-rig drill column |
+| faceted luminous fragments | the literary crystal and *Within the Mesh* luminous volumes | crystal cluster and scanner specimen |
+| repeated bars used as measurement rather than decoration | grids, meshes, and serial concrete bays | gate sensor field, processor intakes, scanner line |
+
+This contrast is intentional: human infrastructure is heavy, opaque, and visibly assembled; crystals are faceted and luminous; alien topology remains visually absent. The catalog therefore describes a quarry kit, not a conventional maze kit.
+
 ### The invisible labyrinth must stay invisible
 
 The maze should not be visualized as a complete corridor plan. Its presence comes from mismatches among channels:

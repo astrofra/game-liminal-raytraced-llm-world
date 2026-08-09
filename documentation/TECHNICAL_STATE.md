@@ -23,7 +23,7 @@ Cette reorientation n'est pas encore implementee dans le runtime. L'etat factuel
 - hard state et HUD encore exposes via `datacenter_temperature_c`
 - graphe cardinal persistant et pose cachee vaguement euclidienne, sans mutation topologique explicite
 - pas de distinction typee entre une barriere invisible et une sortie ordinaire bloquee
-- prefabs et benchmarks encore lies a la semantique datacenter
+- catalogue de prefabs et primitives de carrière Eryx désormais implémentés, mais prompts, archétypes, fixtures et benchmarks encore majoritairement liés au datacenter
 - helper `play_desert_des_tokens.bat` conserve sous son nom legacy
 
 Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun benchmark ou rendu existant ne constitue une validation de cette cible.
@@ -75,6 +75,13 @@ Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun b
   - `prefab_crate`
   - `prefab_cooling_unit`
   - `prefab_ai_server`
+  - `prefab_survey_beacon`
+  - `prefab_crystal_scanner`
+  - `prefab_crystal_cluster`
+  - `prefab_extraction_rig`
+  - `prefab_prospect_shelter`
+  - `prefab_quarry_pylon`
+  - `prefab_atmospheric_processor`
   - `prefab_cactus_sentinel`
   - `prefab_cactus_fork`
   - `prefab_cactus_cluster`
@@ -149,6 +156,7 @@ Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun b
   - shells desertiques sans masse de datacenter ni plafond
   - injection procedurale de cactus, rochers et marqueurs de desert
   - reconnaissance lexicale un peu plus large pour convertir des cues verbaux comme `barrier`, `fence`, `rail`, `post`, `mast`, `pylon`, `duct`, `conduit`, `pipe`, `trench`, `ridge` ou `berm` vers les familles de prefabs existantes
+  - reconnaissance dédiée des cues `crystal`, `scanner`, `drill`, `prospect shelter`, `survey beacon`, `quarry pylon` et `atmospheric processor` vers les nouvelles primitives Eryx
 - Premiere HMI `SDL3` desktop :
   - event loop non bloquante
   - worker thread dedie a l'inference et au raytracing
@@ -160,8 +168,9 @@ Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun b
   - ligne de commande avec edition clavier et historique haut/bas
   - ligne de statut avec spinner ASCII pour distinguer `llm` et `cpu`
   - annulation best-effort via `Escape`
-- Script Python `scripts/generate_prefab_catalog.py` pour rendre chaque prefab supporte, stocker les `.scene`/`.png` d'audit et assembler un unique `documentation/PREFAB_CATALOG.md`.
-  - Le mode par defaut du catalogue est desormais HQ : `1536x1536`, `32` samples par pixel.
+- Script Python `scripts/generate_prefab_catalog.py` pour rendre le vocabulaire de prefabs actif, stocker les `.scene`/`.png` d'audit et assembler un unique `documentation/PREFAB_CATALOG.md`.
+  - Le catalogue Eryx rend neuf objets à `1024x1024`, `24` samples par pixel, en deux vues chacun, sur un plan de carrière commun.
+  - Le générateur supprime les anciens artefacts `.scene`/`.png` qui ne font plus partie de la liste source.
 - Script Python `scripts/run_scene_generation_benchmark.py` pour :
   - fabriquer des prompts d'audit `.scene` depuis le moteur lui-meme
   - interroger `Ministral` via `llama-cli`
@@ -485,7 +494,7 @@ Observation importante :
   - pas de proposition de mutation topologique separee des deltas spatiaux ordinaires
   - pas de validateur de frequence, recuperation ou preservation des reperes locaux
   - pas de barriere invisible typee avec feedback de traversal
-  - pas de prefabs de survey beacon, scanner, cristal, rig, shelter ou quarry marker
+  - les nouveaux prefabs Eryx sont reconnus par le compilateur, mais les archétypes par défaut et les fallbacks de salles n'en font pas encore un monde Eryx complet
 
 ## Ecart assume par rapport a la spec longue
 

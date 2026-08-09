@@ -16,7 +16,7 @@ L'objectif reste un pipeline stable, déterministe, auditable et assez expressif
 
 Une première voie hybride fonctionne déjà pour les salles datacenter/désert : metadata JSON, `SpatialState`, choix procédural d'une coque, placement 2.5D simple, compilation `.scene` et fallback.
 
-Le code actuel ne possède pas encore les archétypes Eryx proposés dans ce document, les nouveaux prefabs de prospection, ni la représentation topologique des barrières invisibles. Les vocabulaires datacenter restent donc une baseline d'implémentation et de benchmark, tandis que les sections suivantes décrivent la migration planifiée.
+Le code actuel ne possède pas encore les archétypes Eryx proposés dans ce document ni la représentation topologique des barrières invisibles. En revanche, la première bibliothèque de prefabs de prospection/extraction est implémentée, documentée et reconnue lexicalement par le compilateur. Les coques, fallbacks et benchmarks datacenter restent une baseline d'implémentation pendant la suite de la migration.
 
 ## Hypothèse directrice
 
@@ -170,26 +170,25 @@ Ces noms sont des cibles documentaires. Ils ne sont pas encore des valeurs accep
 
 Les exceptions de chevauchement doivent être typées (`flush_to_wall`, `embedded_in_wall`, `stack_on`) plutôt que résumées par un `allow_overlap` général.
 
-## Bibliothèque sémantique planifiée
+## Bibliothèque sémantique active
 
-### Géométrie existante à réinterpréter
+### Géométrie conservée ou réinterprétée
 
 - `prefab_gate` : seuil de périmètre, pression ou survey checkpoint
 - `prefab_crate` : cargo, échantillons, oxygène ou outils
-- `prefab_rack` : instrumentation de terrain si la silhouette reste convaincante
-- `prefab_cooling_unit` : traitement atmosphérique, pompe ou support de forage
-- `prefab_ai_server` : station de calcul ou analyseur uniquement si l'objet cesse de lire comme datacenter
+- `prefab_rack`, `prefab_cooling_unit` et `prefab_ai_server` : compatibilité legacy uniquement ; ils sont absents du catalogue actif tant qu'une scène historique ne les demande pas
 
-Ces interprétations n'impliquent pas que les noms runtime aient déjà changé.
+La géométrie du seuil et de la caisse a été refondue. Les autres noms runtime historiques n'ont pas été maquillés en objets Eryx.
 
-### Géométrie nouvelle à implémenter avant usage
+### Géométrie Eryx implémentée
 
-- survey beacon / navigation mast
-- crystal scanner / sample instrument
-- crystal cluster or specimen
-- mining drill / extraction rig
-- shelter / prospecting station module
-- quarry marker / industrial pylon
+- `prefab_survey_beacon` : survey beacon / navigation mast
+- `prefab_crystal_scanner` : crystal scanner / sample instrument
+- `prefab_crystal_cluster` : crystal cluster / exposed specimen
+- `prefab_extraction_rig` : mining drill / extraction rig
+- `prefab_prospect_shelter` : shelter / prospecting station module
+- `prefab_quarry_pylon` : quarry marker / industrial pylon
+- `prefab_atmospheric_processor` : oxygen and atmospheric service
 
 Chaque type doit fournir :
 
@@ -404,12 +403,12 @@ Un fallback technique ne doit pas introduire une mutation topologique ni être p
 - documenter les repères persistants
 - supprimer les instructions actives de prompt datacenter
 
-### B — Prefabs
+### B — Prefabs — première passe réalisée le 2026-08-09
 
-- réinterpréter d'abord les géométries convaincantes
-- implémenter seulement les nouveaux éléments indispensables
-- ajouter dimensions, rôle, montage et coût à la table interne
-- régénérer [`PREFAB_CATALOG.md`](./PREFAB_CATALOG.md) depuis les sources
+- géométries convaincantes réinterprétées sans casser la lecture des scènes historiques
+- sept nouveaux éléments à forte valeur sémantique implémentés
+- dimensions, zone de placement et blocage de corridor ajoutés au compilateur hybride
+- [`PREFAB_CATALOG.md`](./PREFAB_CATALOG.md) régénéré depuis les sources ; le suivi du coût géométrique par objet reste à formaliser
 
 ### C — Persistance locale
 

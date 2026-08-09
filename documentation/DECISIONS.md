@@ -359,3 +359,23 @@ Decisions associées :
 Consequence :
 
 La documentation artistique et les plans de validation adoptent Eryx immédiatement. Le binaire courant reste factuellement datacenter/désert jusqu'à une tâche de migration du code, des prompts et des assets. Aucune fonctionnalité Eryx ne doit être décrite comme implémentée avant cette étape.
+
+## 2026-08-09 - Faire du catalogue de prefabs la première migration source vers Eryx
+
+Decision :
+
+Le catalogue actif devient un vocabulaire de carrière de cristal sur Vénus. Il contient neuf objets source-générés : seuil, container d'échantillons, balise de survey, scanner, veine cristalline, rig d'extraction, abri de prospection, pylône de carrière et processeur atmosphérique.
+
+Les directives `prefab_rack`, `prefab_cooling_unit` et `prefab_ai_server` restent supportées pour les fixtures et benchmarks historiques, mais sortent du catalogue actif. Les murs aliens invisibles restent exclus des prefabs visibles.
+
+Raison :
+
+- le brief demande une infrastructure humaine brutaliste opposée à une topologie alien imperceptible
+- la nouvelle fournit des fonctions concrètes à haute valeur sémantique : détecter, extraire, baliser, stocker, respirer et s'abriter
+- les moodboards `origins` et `brutalism` convergent vers des masses asymétriques, porte-à-faux, couronnes fendues, instruments minces et fragments facettés
+- conserver les anciens noms comme compatibilité évite de falsifier l'histoire et de casser les scènes existantes
+- neuf types suffisent à former une grammaire sans ouvrir une bibliothèque décorative coûteuse
+
+Consequence :
+
+Le parseur `scene v1`, le compilateur hybride, le prompt d'audit et la documentation technique reconnaissent les nouveaux objets. `PREFAB_CATALOG.md` et ses dix-huit images sont régénérés depuis le renderer. Le preset passe à `1024x1024`, `24` samples par pixel : le nombre de vues augmente fortement tout en conservant un niveau d'audit supérieur au rendu de jeu.

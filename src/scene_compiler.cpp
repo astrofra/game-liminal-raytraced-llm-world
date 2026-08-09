@@ -29,6 +29,13 @@ enum ScenePrimitive {
     kScenePrimitivePrefabCrate,
     kScenePrimitivePrefabCoolingUnit,
     kScenePrimitivePrefabAiServer,
+    kScenePrimitivePrefabSurveyBeacon,
+    kScenePrimitivePrefabCrystalScanner,
+    kScenePrimitivePrefabCrystalCluster,
+    kScenePrimitivePrefabExtractionRig,
+    kScenePrimitivePrefabProspectShelter,
+    kScenePrimitivePrefabQuarryPylon,
+    kScenePrimitivePrefabAtmosphericProcessor,
     kScenePrimitivePrefabCactusSentinel,
     kScenePrimitivePrefabCactusFork,
     kScenePrimitivePrefabCactusCluster,
@@ -174,6 +181,20 @@ static const char* ScenePrimitiveToString(ScenePrimitive primitive)
         return "prefab_cooling_unit";
     case kScenePrimitivePrefabAiServer:
         return "prefab_ai_server";
+    case kScenePrimitivePrefabSurveyBeacon:
+        return "prefab_survey_beacon";
+    case kScenePrimitivePrefabCrystalScanner:
+        return "prefab_crystal_scanner";
+    case kScenePrimitivePrefabCrystalCluster:
+        return "prefab_crystal_cluster";
+    case kScenePrimitivePrefabExtractionRig:
+        return "prefab_extraction_rig";
+    case kScenePrimitivePrefabProspectShelter:
+        return "prefab_prospect_shelter";
+    case kScenePrimitivePrefabQuarryPylon:
+        return "prefab_quarry_pylon";
+    case kScenePrimitivePrefabAtmosphericProcessor:
+        return "prefab_atmospheric_processor";
     case kScenePrimitivePrefabCactusSentinel:
         return "prefab_cactus_sentinel";
     case kScenePrimitivePrefabCactusFork:
@@ -970,6 +991,136 @@ static void AddCrateSpec(std::vector<LayoutObjectSpec>* specs, const std::string
     AddObjectSpec(specs, spec);
 }
 
+static void AddEryxPrefabSpec(
+    std::vector<LayoutObjectSpec>* specs,
+    ScenePrimitive primitive,
+    const std::string& label,
+    const char* fallback_name,
+    LayoutZone zone,
+    int index,
+    const Vec3& size,
+    float gray,
+    float detail,
+    bool blocks_corridor)
+{
+    LayoutObjectSpec spec;
+    spec.primitive = primitive;
+    spec.mount = kLayoutMountFloor;
+    spec.zone = zone;
+    spec.name = SanitizeIdentifier(label, fallback_name, index);
+    spec.size = size;
+    spec.gray = gray;
+    spec.has_detail = detail > 0.0f;
+    spec.detail = detail;
+    spec.blocks_corridor = blocks_corridor;
+    AddObjectSpec(specs, spec);
+}
+
+static void AddSurveyBeaconSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
+{
+    AddEryxPrefabSpec(
+        specs,
+        kScenePrimitivePrefabSurveyBeacon,
+        label,
+        "survey_beacon",
+        zone,
+        index,
+        Vec3(1.10f, 3.40f, 1.00f),
+        0.24f,
+        0.43f,
+        false);
+}
+
+static void AddCrystalScannerSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
+{
+    AddEryxPrefabSpec(
+        specs,
+        kScenePrimitivePrefabCrystalScanner,
+        label,
+        "crystal_scanner",
+        zone,
+        index,
+        Vec3(2.20f, 2.40f, 1.50f),
+        0.25f,
+        0.44f,
+        true);
+}
+
+static void AddCrystalClusterSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
+{
+    AddEryxPrefabSpec(
+        specs,
+        kScenePrimitivePrefabCrystalCluster,
+        label,
+        "crystal_cluster",
+        zone,
+        index,
+        Vec3(1.80f, 2.30f, 1.60f),
+        0.66f,
+        0.0f,
+        false);
+}
+
+static void AddExtractionRigSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
+{
+    AddEryxPrefabSpec(
+        specs,
+        kScenePrimitivePrefabExtractionRig,
+        label,
+        "extraction_rig",
+        zone,
+        index,
+        Vec3(2.80f, 3.20f, 2.20f),
+        0.23f,
+        0.42f,
+        true);
+}
+
+static void AddProspectShelterSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
+{
+    AddEryxPrefabSpec(
+        specs,
+        kScenePrimitivePrefabProspectShelter,
+        label,
+        "prospect_shelter",
+        zone,
+        index,
+        Vec3(4.80f, 3.10f, 3.50f),
+        0.28f,
+        0.40f,
+        true);
+}
+
+static void AddQuarryPylonSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
+{
+    AddEryxPrefabSpec(
+        specs,
+        kScenePrimitivePrefabQuarryPylon,
+        label,
+        "quarry_pylon",
+        zone,
+        index,
+        Vec3(1.40f, 3.50f, 1.20f),
+        0.27f,
+        0.44f,
+        false);
+}
+
+static void AddAtmosphericProcessorSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
+{
+    AddEryxPrefabSpec(
+        specs,
+        kScenePrimitivePrefabAtmosphericProcessor,
+        label,
+        "atmospheric_processor",
+        zone,
+        index,
+        Vec3(2.20f, 3.00f, 1.70f),
+        0.24f,
+        0.40f,
+        true);
+}
+
 static void AddConsoleSpec(std::vector<LayoutObjectSpec>* specs, const std::string& label, LayoutZone zone, int index)
 {
     LayoutObjectSpec spec;
@@ -1007,6 +1158,8 @@ static void AddLockerSpec(std::vector<LayoutObjectSpec>* specs, const std::strin
     AddObjectSpec(specs, spec);
 }
 
+static bool HasPrimitive(const std::vector<LayoutObjectSpec>& specs, ScenePrimitive primitive);
+
 static void BuildVisibleObjectSpecs(
     const SpatialState& spatial_state,
     const RoomShell& shell,
@@ -1035,6 +1188,69 @@ static void BuildVisibleObjectSpecs(
         }
 
         if (ShouldSkipLabelForShell(shell, lower)) {
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "crystal scanner") || ContainsSubstring(lower, "crystal detector") ||
+            ContainsSubstring(lower, "sample instrument") || ContainsSubstring(lower, "affinity detector")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabCrystalScanner) && floor_objects < 10) {
+                AddCrystalScannerSpec(specs, label, kLayoutZoneCenter, static_cast<int>(index));
+                ++floor_objects;
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "drill") || ContainsSubstring(lower, "extraction rig") ||
+            ContainsSubstring(lower, "boring rig") || ContainsSubstring(lower, "mining rig")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabExtractionRig) && floor_objects < 10) {
+                AddExtractionRigSpec(specs, label, kLayoutZoneBack, static_cast<int>(index));
+                ++floor_objects;
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "prospect shelter") || ContainsSubstring(lower, "prospecting station") ||
+            ContainsSubstring(lower, "field shelter") || ContainsSubstring(lower, "survey shelter")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabProspectShelter) && floor_objects < 10) {
+                AddProspectShelterSpec(specs, label, kLayoutZoneBack, static_cast<int>(index));
+                ++floor_objects;
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "atmospheric processor") || ContainsSubstring(lower, "air processor") ||
+            ContainsSubstring(lower, "oxygen service") || ContainsSubstring(lower, "electrolyser") ||
+            ContainsSubstring(lower, "extraction pump")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabAtmosphericProcessor) && floor_objects < 10) {
+                AddAtmosphericProcessorSpec(specs, label, kLayoutZoneLeft, static_cast<int>(index));
+                ++floor_objects;
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "quarry pylon") || ContainsSubstring(lower, "datum pylon") ||
+            ContainsSubstring(lower, "industrial pylon")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabQuarryPylon) && floor_objects < 10) {
+                AddQuarryPylonSpec(specs, label, kLayoutZoneBack, static_cast<int>(index));
+                ++floor_objects;
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "survey beacon") || ContainsSubstring(lower, "navigation mast") ||
+            ContainsSubstring(lower, "range beacon")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabSurveyBeacon) && floor_objects < 10) {
+                AddSurveyBeaconSpec(specs, label, kLayoutZoneBack, static_cast<int>(index));
+                ++floor_objects;
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "crystal")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabCrystalCluster) && floor_objects < 10) {
+                AddCrystalClusterSpec(specs, label, kLayoutZoneCenter, static_cast<int>(index));
+                ++floor_objects;
+            }
             continue;
         }
 
@@ -1221,6 +1437,62 @@ static void AddConstraintDrivenSpecs(
         const LayoutZone zone = InferConstraintZone(lower, shell.exterior ? kLayoutZoneBack : kLayoutZoneCenter);
 
         if (ShouldSkipLabelForShell(shell, lower)) {
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "crystal scanner") || ContainsSubstring(lower, "crystal detector") ||
+            ContainsSubstring(lower, "sample instrument") || ContainsSubstring(lower, "affinity detector")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabCrystalScanner)) {
+                AddCrystalScannerSpec(specs, label, zone, static_cast<int>(180 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "drill") || ContainsSubstring(lower, "extraction rig") ||
+            ContainsSubstring(lower, "boring rig") || ContainsSubstring(lower, "mining rig")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabExtractionRig)) {
+                AddExtractionRigSpec(specs, label, zone, static_cast<int>(185 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "prospect shelter") || ContainsSubstring(lower, "prospecting station") ||
+            ContainsSubstring(lower, "field shelter") || ContainsSubstring(lower, "survey shelter")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabProspectShelter)) {
+                AddProspectShelterSpec(specs, label, zone, static_cast<int>(190 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "atmospheric processor") || ContainsSubstring(lower, "air processor") ||
+            ContainsSubstring(lower, "oxygen service") || ContainsSubstring(lower, "electrolyser") ||
+            ContainsSubstring(lower, "extraction pump")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabAtmosphericProcessor)) {
+                AddAtmosphericProcessorSpec(specs, label, zone, static_cast<int>(195 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "quarry pylon") || ContainsSubstring(lower, "datum pylon") ||
+            ContainsSubstring(lower, "industrial pylon")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabQuarryPylon)) {
+                AddQuarryPylonSpec(specs, label, zone, static_cast<int>(198 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "survey beacon") || ContainsSubstring(lower, "navigation mast") ||
+            ContainsSubstring(lower, "range beacon")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabSurveyBeacon)) {
+                AddSurveyBeaconSpec(specs, label, zone, static_cast<int>(199 + index));
+            }
+            continue;
+        }
+
+        if (ContainsSubstring(lower, "crystal")) {
+            if (!HasPrimitive(*specs, kScenePrimitivePrefabCrystalCluster)) {
+                AddCrystalClusterSpec(specs, label, zone, static_cast<int>(200 + index));
+            }
             continue;
         }
 
@@ -1970,6 +2242,103 @@ static void AppendPlacedObject(std::string* scene_text, const PlacedLayoutObject
             AppendLine(scene_text, " detail(%.2f)", object.spec.detail);
         }
         AppendLine(scene_text, "\n");
+        break;
+    case kScenePrimitivePrefabSurveyBeacon:
+        AppendLine(
+            scene_text,
+            "prefab_survey_beacon \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f) detail(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray,
+            object.spec.detail);
+        break;
+    case kScenePrimitivePrefabCrystalScanner:
+        AppendLine(
+            scene_text,
+            "prefab_crystal_scanner \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f) detail(%.2f) glow(0.28)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray,
+            object.spec.detail);
+        break;
+    case kScenePrimitivePrefabCrystalCluster:
+        AppendLine(
+            scene_text,
+            "prefab_crystal_cluster \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f) glow(0.34)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray);
+        break;
+    case kScenePrimitivePrefabExtractionRig:
+        AppendLine(
+            scene_text,
+            "prefab_extraction_rig \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f) detail(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray,
+            object.spec.detail);
+        break;
+    case kScenePrimitivePrefabProspectShelter:
+        AppendLine(
+            scene_text,
+            "prefab_prospect_shelter \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f) detail(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray,
+            object.spec.detail);
+        break;
+    case kScenePrimitivePrefabQuarryPylon:
+        AppendLine(
+            scene_text,
+            "prefab_quarry_pylon \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f) detail(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray,
+            object.spec.detail);
+        break;
+    case kScenePrimitivePrefabAtmosphericProcessor:
+        AppendLine(
+            scene_text,
+            "prefab_atmospheric_processor \"%s\" pos(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f) gray(%.2f) detail(%.2f)\n",
+            object.spec.name.c_str(),
+            object.pos.x,
+            object.pos.y,
+            object.pos.z,
+            object.spec.size.x,
+            object.spec.size.y,
+            object.spec.size.z,
+            object.spec.gray,
+            object.spec.detail);
         break;
     case kScenePrimitivePrefabCactusSentinel:
         AppendLine(

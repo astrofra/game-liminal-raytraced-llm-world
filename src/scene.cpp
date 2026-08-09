@@ -140,6 +140,15 @@ static bool StartsWith(const std::string& line, const char* prefix)
     return line.size() >= prefix_size && line.compare(0, prefix_size, prefix) == 0;
 }
 
+static char* NextToken(char* text, const char* delimiters, char** context)
+{
+#if defined(_WIN32)
+    return strtok_s(text, delimiters, context);
+#else
+    return strtok_r(text, delimiters, context);
+#endif
+}
+
 static std::string ToLowerCopy(const std::string& text)
 {
     std::string lower = text;
@@ -668,6 +677,27 @@ static void AddPrefabChildBox(
         emission_value);
 }
 
+static void AddPrefabChildBoxRotated(
+    Scene* scene,
+    const std::string& base_name,
+    const char* suffix,
+    const Vec3& prefab_center,
+    const Vec3& local_center,
+    const Vec3& size,
+    const Vec3& rotation_degrees,
+    float gray_value,
+    float emission_value = 0.0f)
+{
+    AddBoxPrimitive(
+        scene,
+        PrefabChildName(base_name, suffix),
+        prefab_center + local_center,
+        size,
+        rotation_degrees,
+        gray_value,
+        emission_value);
+}
+
 static void AddGatePrefab(
     Scene* scene,
     const std::string& name,
@@ -678,49 +708,68 @@ static void AddGatePrefab(
     unsigned int bars)
 {
     const unsigned int bar_count = std::max(1u, bars);
-    const float pillar_width = Clamp(size.x * 0.10f, 0.10f, size.x * 0.22f);
-    const float top_beam_height = Clamp(size.y * 0.10f, 0.10f, size.y * 0.20f);
-    const float bottom_beam_height = Clamp(size.y * 0.08f, 0.08f, size.y * 0.16f);
+    const float left_pillar_width = Clamp(size.x * 0.16f, 0.16f, size.x * 0.24f);
+    const float right_pillar_width = Clamp(size.x * 0.12f, 0.14f, size.x * 0.20f);
+    const float top_beam_height = Clamp(size.y * 0.18f, 0.16f, size.y * 0.26f);
+    const float bottom_beam_height = Clamp(size.y * 0.07f, 0.08f, size.y * 0.13f);
     const float frame_depth = std::max(size.z, 0.08f);
-    const float bar_depth = std::max(frame_depth * 0.35f, 0.05f);
+    const float bar_depth = std::max(frame_depth * 0.28f, 0.04f);
 
     AddPrefabChildBox(
         scene,
         name,
-        "frame_left",
+        "quarry_pier_left",
         center,
-        Vec3(-(size.x - pillar_width) * 0.5f, 0.0f, 0.0f),
-        Vec3(pillar_width, size.y, frame_depth),
+        Vec3(-(size.x - left_pillar_width) * 0.5f, 0.0f, 0.0f),
+        Vec3(left_pillar_width, size.y, frame_depth * 1.35f),
         frame_gray);
     AddPrefabChildBox(
         scene,
         name,
-        "frame_right",
+        "quarry_pier_right",
         center,
-        Vec3((size.x - pillar_width) * 0.5f, 0.0f, 0.0f),
-        Vec3(pillar_width, size.y, frame_depth),
+        Vec3((size.x - right_pillar_width) * 0.5f, -size.y * 0.06f, 0.0f),
+        Vec3(right_pillar_width, size.y * 0.88f, frame_depth * 1.10f),
         frame_gray);
     AddPrefabChildBox(
         scene,
         name,
-        "frame_top",
+        "cantilever_header",
         center,
-        Vec3(0.0f, (size.y - top_beam_height) * 0.5f, 0.0f),
-        Vec3(size.x, top_beam_height, frame_depth),
+        Vec3(-size.x * 0.055f, (size.y - top_beam_height) * 0.5f, 0.0f),
+        Vec3(size.x * 1.08f, top_beam_height, frame_depth * 1.55f),
         frame_gray);
     AddPrefabChildBox(
         scene,
         name,
-        "frame_bottom",
+        "threshold_slab",
         center,
         Vec3(0.0f, -(size.y - bottom_beam_height) * 0.5f, 0.0f),
-        Vec3(size.x, bottom_beam_height, frame_depth),
+        Vec3(size.x * 0.92f, bottom_beam_height, frame_depth * 1.75f),
         frame_gray);
 
-    const float bar_clear_width = std::max(size.x - pillar_width * 2.0f - 0.16f, 0.20f);
+    AddPrefabChildBoxRotated(
+        scene,
+        name,
+        "buttress_left",
+        center,
+        Vec3(-size.x * 0.39f, -size.y * 0.22f, frame_depth * 0.44f),
+        Vec3(left_pillar_width * 0.48f, size.y * 0.48f, frame_depth * 0.70f),
+        Vec3(0.0f, 0.0f, -12.0f),
+        detail_gray);
+    AddPrefabChildBox(
+        scene,
+        name,
+        "survey_lintel",
+        center,
+        Vec3(size.x * 0.15f, size.y * 0.26f, -frame_depth * 0.58f),
+        Vec3(size.x * 0.52f, top_beam_height * 0.28f, bar_depth),
+        detail_gray);
+
+    const float bar_clear_width = std::max(size.x - left_pillar_width - right_pillar_width - 0.22f, 0.20f);
     const float bar_height = std::max(size.y - top_beam_height - bottom_beam_height - 0.16f, 0.20f);
     const float bar_center_y = (bottom_beam_height - top_beam_height) * 0.5f;
-    const float bar_width = Clamp(bar_clear_width / (static_cast<float>(bar_count) * 4.5f), 0.05f, 0.14f);
+    const float bar_width = Clamp(bar_clear_width / (static_cast<float>(bar_count) * 7.0f), 0.035f, 0.10f);
 
     for (unsigned int bar_index = 0; bar_index < bar_count; ++bar_index) {
         float x = 0.0f;
@@ -736,10 +785,20 @@ static void AddGatePrefab(
             name,
             suffix,
             center,
-            Vec3(x, bar_center_y, 0.0f),
+            Vec3(x, bar_center_y, -frame_depth * 0.28f),
             Vec3(bar_width, bar_height, bar_depth),
             detail_gray);
     }
+
+    AddPrefabChildBox(
+        scene,
+        name,
+        "checkpoint_lamp",
+        center,
+        Vec3(-size.x * 0.31f, size.y * 0.26f, -frame_depth * 0.82f),
+        Vec3(left_pillar_width * 0.22f, top_beam_height * 0.18f, bar_depth),
+        0.85f,
+        1.2f);
 }
 
 static void AddRackPrefab(
@@ -812,6 +871,7 @@ static void AddCratePrefab(
 {
     const float brace = Clamp(std::min(size.x, size.z) * 0.12f, 0.04f, 0.18f);
     const float lid_height = Clamp(size.y * 0.14f, 0.04f, size.y * 0.28f);
+    const float band_height = Clamp(size.y * 0.12f, 0.04f, size.y * 0.20f);
 
     AddPrefabChildBox(
         scene,
@@ -862,6 +922,23 @@ static void AddCratePrefab(
         Vec3((size.x - brace) * 0.5f, 0.0f, (size.z - brace) * 0.5f),
         Vec3(brace, size.y, brace),
         detail_gray);
+
+    AddPrefabChildBox(
+        scene,
+        name,
+        "sample_band_front",
+        center,
+        Vec3(0.0f, -size.y * 0.04f, -(size.z * 0.5f + brace * 0.08f)),
+        Vec3(size.x * 0.66f, band_height, brace * 0.34f),
+        detail_gray);
+    AddPrefabChildBox(
+        scene,
+        name,
+        "sample_seal",
+        center,
+        Vec3(size.x * 0.22f, -size.y * 0.04f, -(size.z * 0.5f + brace * 0.18f)),
+        Vec3(brace * 0.78f, band_height * 0.60f, brace * 0.28f),
+        0.78f);
 }
 
 static void AddCoolingUnitPrefab(
@@ -1079,6 +1156,261 @@ static void AddPrefabChildCapsule(
         rotation_degrees,
         gray_value,
         emission_value);
+}
+
+static void AddCrystalShardPrimitive(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    float radius,
+    float height,
+    const Vec3& rotation_degrees,
+    float gray_value,
+    float emission_value)
+{
+    const int side_count = 6;
+    const float safe_radius = std::max(radius, 0.04f);
+    const float safe_height = std::max(height, safe_radius * 2.0f);
+    const float bottom_y = -safe_height * 0.5f;
+    const float shoulder_y = safe_height * 0.22f;
+    const int material_index = AddPrimitiveMaterial(scene, name, gray_value, emission_value);
+
+    Vec3 lower[side_count];
+    Vec3 shoulder[side_count];
+    for (int side = 0; side < side_count; ++side) {
+        const float angle = (static_cast<float>(side) / static_cast<float>(side_count)) * kPi * 2.0f + kPi / 6.0f;
+        lower[side] = RotateEulerDegrees(
+            Vec3(cosf(angle) * safe_radius * 0.72f, bottom_y, sinf(angle) * safe_radius * 0.72f),
+            rotation_degrees) + center;
+        shoulder[side] = RotateEulerDegrees(
+            Vec3(cosf(angle) * safe_radius, shoulder_y, sinf(angle) * safe_radius),
+            rotation_degrees) + center;
+    }
+
+    const Vec3 bottom_center = RotateEulerDegrees(Vec3(0.0f, bottom_y, 0.0f), rotation_degrees) + center;
+    const Vec3 tip = RotateEulerDegrees(Vec3(0.0f, safe_height * 0.5f, 0.0f), rotation_degrees) + center;
+    const Vec3 down = Normalize(RotateEulerDegrees(Vec3(0.0f, -1.0f, 0.0f), rotation_degrees));
+
+    for (int side = 0; side < side_count; ++side) {
+        const int next = (side + 1) % side_count;
+        const float mid_angle =
+            ((static_cast<float>(side) + 0.5f) / static_cast<float>(side_count)) * kPi * 2.0f + kPi / 6.0f;
+        const Vec3 outward = Normalize(RotateEulerDegrees(
+            Vec3(cosf(mid_angle), 0.04f, sinf(mid_angle)),
+            rotation_degrees));
+
+        AddQuad(scene, lower[side], lower[next], shoulder[next], shoulder[side], material_index, outward);
+        AddTriangle(scene, MakeTriangleFacing(shoulder[side], shoulder[next], tip, material_index, outward));
+        AddTriangle(scene, MakeTriangleFacing(bottom_center, lower[next], lower[side], material_index, down));
+    }
+}
+
+static void AddSurveyBeaconPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray,
+    float detail_gray)
+{
+    const float base_height = size.y * 0.15f;
+    const float mast_width = std::max(size.x * 0.10f, 0.08f);
+    const float mast_height = size.y * 0.62f;
+
+    AddPrefabChildBox(scene, name, "base", center, Vec3(0.0f, -size.y * 0.425f, 0.0f), Vec3(size.x, base_height, size.z), body_gray);
+    AddPrefabChildBox(scene, name, "step", center, Vec3(-size.x * 0.18f, -size.y * 0.31f, -size.z * 0.08f), Vec3(size.x * 0.56f, size.y * 0.10f, size.z * 0.68f), detail_gray);
+    AddPrefabChildBox(scene, name, "mast", center, Vec3(0.0f, -size.y * 0.01f, 0.0f), Vec3(mast_width, mast_height, mast_width), detail_gray);
+    AddPrefabChildBoxRotated(scene, name, "fork_left", center, Vec3(-size.x * 0.16f, size.y * 0.30f, 0.0f), Vec3(mast_width, size.y * 0.32f, mast_width), Vec3(0.0f, 0.0f, -16.0f), body_gray);
+    AddPrefabChildBoxRotated(scene, name, "fork_right", center, Vec3(size.x * 0.16f, size.y * 0.30f, 0.0f), Vec3(mast_width, size.y * 0.32f, mast_width), Vec3(0.0f, 0.0f, 16.0f), body_gray);
+    AddPrefabChildBox(scene, name, "range_bar", center, Vec3(0.0f, size.y * 0.16f, -size.z * 0.05f), Vec3(size.x * 0.72f, mast_width, mast_width), detail_gray);
+    AddPrefabChildBox(scene, name, "marker_lamp", center, Vec3(0.0f, size.y * 0.43f, -size.z * 0.08f), Vec3(size.x * 0.18f, size.y * 0.055f, mast_width), 0.82f, 1.4f);
+}
+
+static void AddCrystalClusterPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float crystal_gray,
+    float glow_value)
+{
+    const float floor_y = -size.y * 0.5f;
+    const float radius = std::max(std::min(size.x, size.z), 0.20f);
+
+    AddPrefabChildBox(
+        scene,
+        name,
+        "fractured_bed",
+        center,
+        Vec3(0.0f, floor_y + size.y * 0.055f, 0.0f),
+        Vec3(size.x * 0.94f, size.y * 0.11f, size.z * 0.88f),
+        Clamp(crystal_gray * 0.38f, 0.04f, 0.40f));
+
+    AddCrystalShardPrimitive(
+        scene,
+        PrefabChildName(name, "crystal_crown"),
+        center + Vec3(-size.x * 0.06f, floor_y + size.y * 0.57f, size.z * 0.04f),
+        radius * 0.18f,
+        size.y * 0.96f,
+        Vec3(0.0f, -8.0f, -4.0f),
+        crystal_gray,
+        glow_value);
+    AddCrystalShardPrimitive(
+        scene,
+        PrefabChildName(name, "crystal_left"),
+        center + Vec3(-size.x * 0.27f, floor_y + size.y * 0.36f, -size.z * 0.04f),
+        radius * 0.15f,
+        size.y * 0.60f,
+        Vec3(4.0f, 12.0f, -17.0f),
+        Clamp(crystal_gray * 0.90f, 0.0f, 0.95f),
+        glow_value * 0.28f);
+    AddCrystalShardPrimitive(
+        scene,
+        PrefabChildName(name, "crystal_right"),
+        center + Vec3(size.x * 0.26f, floor_y + size.y * 0.40f, size.z * 0.02f),
+        radius * 0.17f,
+        size.y * 0.68f,
+        Vec3(-5.0f, -10.0f, 15.0f),
+        Clamp(crystal_gray * 0.82f, 0.0f, 0.95f),
+        glow_value * 0.22f);
+    AddCrystalShardPrimitive(
+        scene,
+        PrefabChildName(name, "crystal_front"),
+        center + Vec3(size.x * 0.08f, floor_y + size.y * 0.27f, -size.z * 0.25f),
+        radius * 0.13f,
+        size.y * 0.43f,
+        Vec3(11.0f, 18.0f, 8.0f),
+        Clamp(crystal_gray * 0.74f, 0.0f, 0.95f),
+        glow_value * 0.18f);
+    AddCrystalShardPrimitive(
+        scene,
+        PrefabChildName(name, "crystal_rear"),
+        center + Vec3(size.x * 0.18f, floor_y + size.y * 0.25f, size.z * 0.25f),
+        radius * 0.12f,
+        size.y * 0.39f,
+        Vec3(-9.0f, 3.0f, -12.0f),
+        Clamp(crystal_gray * 0.68f, 0.0f, 0.95f),
+        glow_value * 0.14f);
+}
+
+static void AddCrystalScannerPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray,
+    float detail_gray,
+    float glow_value)
+{
+    const float plinth_height = size.y * 0.13f;
+    const float pier_width = size.x * 0.15f;
+    const float inner_y = -size.y * 0.18f;
+
+    AddPrefabChildBox(scene, name, "plinth", center, Vec3(0.0f, -size.y * 0.435f, 0.0f), Vec3(size.x, plinth_height, size.z), body_gray);
+    AddPrefabChildBox(scene, name, "pier_left", center, Vec3(-size.x * 0.34f, -size.y * 0.04f, 0.0f), Vec3(pier_width, size.y * 0.70f, size.z * 0.70f), body_gray);
+    AddPrefabChildBox(scene, name, "pier_right", center, Vec3(size.x * 0.34f, -size.y * 0.04f, 0.0f), Vec3(pier_width, size.y * 0.70f, size.z * 0.70f), body_gray);
+    AddPrefabChildBox(scene, name, "bridge", center, Vec3(0.0f, size.y * 0.30f, size.z * 0.03f), Vec3(size.x * 0.82f, size.y * 0.13f, size.z * 0.76f), detail_gray);
+    AddPrefabChildBoxRotated(scene, name, "sensor_left", center, Vec3(-size.x * 0.18f, size.y * 0.12f, -size.z * 0.36f), Vec3(size.x * 0.26f, size.y * 0.055f, size.z * 0.10f), Vec3(0.0f, 0.0f, -18.0f), detail_gray);
+    AddPrefabChildBoxRotated(scene, name, "sensor_right", center, Vec3(size.x * 0.18f, size.y * 0.12f, -size.z * 0.36f), Vec3(size.x * 0.26f, size.y * 0.055f, size.z * 0.10f), Vec3(0.0f, 0.0f, 18.0f), detail_gray);
+    AddPrefabChildBox(scene, name, "scan_line", center, Vec3(0.0f, size.y * 0.09f, -size.z * 0.42f), Vec3(size.x * 0.32f, size.y * 0.025f, size.z * 0.035f), 0.90f, 1.0f);
+    AddCrystalShardPrimitive(
+        scene,
+        PrefabChildName(name, "crystal_sample"),
+        center + Vec3(0.0f, inner_y + size.y * 0.15f, 0.0f),
+        std::min(size.x, size.z) * 0.12f,
+        size.y * 0.34f,
+        Vec3(0.0f, 12.0f, -4.0f),
+        0.72f,
+        glow_value);
+}
+
+static void AddExtractionRigPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray,
+    float detail_gray)
+{
+    const float beam = std::max(size.x * 0.085f, 0.08f);
+    const float base_y = -size.y * 0.44f;
+
+    AddPrefabChildBox(scene, name, "base", center, Vec3(0.0f, base_y, 0.0f), Vec3(size.x, size.y * 0.12f, size.z), body_gray);
+    AddPrefabChildBoxRotated(scene, name, "gantry_left", center, Vec3(-size.x * 0.25f, -size.y * 0.02f, 0.0f), Vec3(beam, size.y * 0.78f, beam), Vec3(0.0f, 0.0f, -11.0f), body_gray);
+    AddPrefabChildBoxRotated(scene, name, "gantry_right", center, Vec3(size.x * 0.25f, -size.y * 0.02f, 0.0f), Vec3(beam, size.y * 0.78f, beam), Vec3(0.0f, 0.0f, 11.0f), body_gray);
+    AddPrefabChildBox(scene, name, "head_beam", center, Vec3(0.0f, size.y * 0.35f, 0.0f), Vec3(size.x * 0.68f, size.y * 0.12f, size.z * 0.40f), detail_gray);
+    AddPrefabChildBox(scene, name, "drill_carriage", center, Vec3(0.0f, size.y * 0.13f, 0.0f), Vec3(size.x * 0.23f, size.y * 0.26f, size.z * 0.32f), detail_gray);
+    AddPrefabChildCapsule(scene, name, "drill_column", center, Vec3(0.0f, -size.y * 0.17f, 0.0f), Vec3(size.x * 0.10f, size.y * 0.50f, size.x * 0.10f), Vec3(0.0f), Clamp(detail_gray * 0.72f, 0.0f, 0.95f));
+    AddCrystalShardPrimitive(scene, PrefabChildName(name, "drill_bit"), center + Vec3(0.0f, -size.y * 0.40f, 0.0f), size.x * 0.075f, size.y * 0.20f, Vec3(180.0f, 0.0f, 0.0f), 0.62f, 0.0f);
+    AddPrefabChildBox(scene, name, "control_pod", center, Vec3(size.x * 0.37f, -size.y * 0.22f, -size.z * 0.12f), Vec3(size.x * 0.22f, size.y * 0.25f, size.z * 0.54f), body_gray);
+    AddPrefabChildBox(scene, name, "control_lamp", center, Vec3(size.x * 0.37f, -size.y * 0.16f, -size.z * 0.41f), Vec3(size.x * 0.07f, size.y * 0.035f, size.z * 0.035f), 0.84f, 1.0f);
+}
+
+static void AddProspectShelterPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray,
+    float detail_gray)
+{
+    const float floor_y = -size.y * 0.46f;
+    const float wall_height = size.y * 0.66f;
+    const float wall_y = floor_y + size.y * 0.10f + wall_height * 0.5f;
+
+    AddPrefabChildBox(scene, name, "foundation", center, Vec3(-size.x * 0.03f, floor_y, 0.0f), Vec3(size.x * 1.06f, size.y * 0.10f, size.z * 1.04f), detail_gray);
+    AddPrefabChildBox(scene, name, "rear_mass", center, Vec3(size.x * 0.18f, wall_y, size.z * 0.30f), Vec3(size.x * 0.62f, wall_height, size.z * 0.42f), body_gray);
+    AddPrefabChildBox(scene, name, "wall_left", center, Vec3(-size.x * 0.37f, wall_y, -size.z * 0.03f), Vec3(size.x * 0.24f, wall_height, size.z * 0.70f), body_gray);
+    AddPrefabChildBox(scene, name, "wall_right", center, Vec3(size.x * 0.34f, wall_y - size.y * 0.07f, -size.z * 0.05f), Vec3(size.x * 0.20f, wall_height * 0.80f, size.z * 0.66f), body_gray);
+    AddPrefabChildBox(scene, name, "cantilever_roof", center, Vec3(-size.x * 0.08f, size.y * 0.31f, -size.z * 0.05f), Vec3(size.x * 1.12f, size.y * 0.16f, size.z * 1.12f), body_gray);
+    AddPrefabChildBox(scene, name, "upper_block", center, Vec3(-size.x * 0.20f, size.y * 0.43f, size.z * 0.18f), Vec3(size.x * 0.42f, size.y * 0.19f, size.z * 0.64f), body_gray);
+    AddPrefabChildBox(scene, name, "recessed_door", center, Vec3(0.0f, wall_y - size.y * 0.06f, -size.z * 0.385f), Vec3(size.x * 0.28f, wall_height * 0.72f, size.z * 0.035f), Clamp(body_gray * 0.26f, 0.02f, 0.22f));
+    AddPrefabChildBoxRotated(scene, name, "entry_buttress", center, Vec3(-size.x * 0.18f, wall_y - size.y * 0.14f, -size.z * 0.43f), Vec3(size.x * 0.10f, wall_height * 0.58f, size.z * 0.10f), Vec3(0.0f, 0.0f, -13.0f), detail_gray);
+    AddPrefabChildBox(scene, name, "door_lamp", center, Vec3(0.0f, wall_y + wall_height * 0.31f, -size.z * 0.415f), Vec3(size.x * 0.16f, size.y * 0.035f, size.z * 0.035f), 0.82f, 1.1f);
+}
+
+static void AddQuarryPylonPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray,
+    float detail_gray)
+{
+    AddPrefabChildBox(scene, name, "foot", center, Vec3(0.0f, -size.y * 0.44f, 0.0f), Vec3(size.x, size.y * 0.12f, size.z), detail_gray);
+    AddPrefabChildBox(scene, name, "lower_mass", center, Vec3(0.0f, -size.y * 0.24f, 0.0f), Vec3(size.x * 0.70f, size.y * 0.34f, size.z * 0.68f), body_gray);
+    AddPrefabChildBox(scene, name, "shaft", center, Vec3(0.0f, size.y * 0.08f, 0.0f), Vec3(size.x * 0.34f, size.y * 0.38f, size.z * 0.36f), body_gray);
+    AddPrefabChildBoxRotated(scene, name, "crown_left", center, Vec3(-size.x * 0.16f, size.y * 0.32f, 0.0f), Vec3(size.x * 0.26f, size.y * 0.30f, size.z * 0.48f), Vec3(0.0f, 0.0f, -7.0f), body_gray);
+    AddPrefabChildBoxRotated(scene, name, "crown_right", center, Vec3(size.x * 0.16f, size.y * 0.32f, 0.0f), Vec3(size.x * 0.26f, size.y * 0.30f, size.z * 0.48f), Vec3(0.0f, 0.0f, 7.0f), body_gray);
+    AddPrefabChildBox(scene, name, "datum_cut", center, Vec3(0.0f, size.y * 0.19f, -size.z * 0.27f), Vec3(size.x * 0.50f, size.y * 0.045f, size.z * 0.05f), detail_gray);
+    AddPrefabChildBox(scene, name, "datum_lamp", center, Vec3(0.0f, size.y * 0.40f, -size.z * 0.28f), Vec3(size.x * 0.20f, size.y * 0.04f, size.z * 0.05f), 0.84f, 1.3f);
+}
+
+static void AddAtmosphericProcessorPrefab(
+    Scene* scene,
+    const std::string& name,
+    const Vec3& center,
+    const Vec3& size,
+    float body_gray,
+    float detail_gray)
+{
+    const float plinth_height = size.y * 0.12f;
+    const float stack_width = size.x * 0.22f;
+
+    AddPrefabChildBox(scene, name, "plinth", center, Vec3(0.0f, -size.y * 0.44f, 0.0f), Vec3(size.x, plinth_height, size.z), detail_gray);
+    AddPrefabChildBox(scene, name, "body", center, Vec3(-size.x * 0.08f, -size.y * 0.10f, 0.0f), Vec3(size.x * 0.80f, size.y * 0.58f, size.z * 0.88f), body_gray);
+    AddPrefabChildBox(scene, name, "cantilever_cap", center, Vec3(-size.x * 0.08f, size.y * 0.21f, 0.0f), Vec3(size.x * 0.94f, size.y * 0.12f, size.z), detail_gray);
+    AddPrefabChildCapsule(scene, name, "stack_left", center, Vec3(-size.x * 0.23f, size.y * 0.29f, size.z * 0.08f), Vec3(stack_width, size.y * 0.40f, stack_width), Vec3(0.0f), body_gray);
+    AddPrefabChildCapsule(scene, name, "stack_right", center, Vec3(size.x * 0.17f, size.y * 0.34f, size.z * 0.08f), Vec3(stack_width, size.y * 0.50f, stack_width), Vec3(0.0f), body_gray);
+
+    const float intake_z = -size.z * 0.465f;
+    for (int slot = 0; slot < 4; ++slot) {
+        const float y = -size.y * 0.22f + static_cast<float>(slot) * size.y * 0.10f;
+        char suffix[32];
+        snprintf(suffix, sizeof(suffix), "intake_%02d", slot + 1);
+        AddPrefabChildBox(scene, name, suffix, center, Vec3(-size.x * 0.08f, y, intake_z), Vec3(size.x * 0.52f, size.y * 0.035f, size.z * 0.055f), detail_gray);
+    }
+    AddPrefabChildBox(scene, name, "status_lamp", center, Vec3(size.x * 0.29f, -size.y * 0.01f, intake_z - size.z * 0.01f), Vec3(size.x * 0.08f, size.y * 0.035f, size.z * 0.045f), 0.84f, 1.0f);
 }
 
 static float SeedSignedUnit(unsigned int seed)
@@ -1386,6 +1718,43 @@ static std::string ExtensionOf(const char* path)
     return dot == std::string::npos ? std::string() : ToLowerCopy(base_name.substr(dot));
 }
 
+static bool ParseStandardPrefabProperties(
+    const std::string& line,
+    const char* directive,
+    const char* scene_name,
+    int line_number,
+    std::string* name,
+    Vec3* position,
+    Vec3* size,
+    float* gray_value,
+    float* detail_value,
+    float detail_offset,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    if (!ExtractQuotedString(line, name) ||
+        !ExtractVec3Property(line, "pos(", position) ||
+        !ExtractVec3Property(line, "size(", size) ||
+        !ExtractFloatProperty(line, "gray(", gray_value)) {
+        char message[160];
+        snprintf(message, sizeof(message), "%s requires name, pos(), size(), and gray()", directive);
+        SetLineError(error_buffer, error_buffer_size, scene_name, line_number, message);
+        return false;
+    }
+
+    if (size->x <= 0.0f || size->y <= 0.0f || size->z <= 0.0f) {
+        char message[128];
+        snprintf(message, sizeof(message), "%s has invalid size", directive);
+        SetLineError(error_buffer, error_buffer_size, scene_name, line_number, message);
+        return false;
+    }
+
+    if (!ExtractFloatProperty(line, "detail(", detail_value)) {
+        *detail_value = Clamp(*gray_value + detail_offset, 0.0f, 0.95f);
+    }
+    return true;
+}
+
 static bool ParseSceneV1Directive(
     const std::string& line,
     const char* scene_name,
@@ -1680,6 +2049,185 @@ static bool ParseSceneV1Directive(
             detail_value = Clamp(gray_value + 0.12f, 0.0f, 0.95f);
         }
         AddAiServerPrefab(scene, name, position, size, gray_value, detail_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_survey_beacon ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float detail_value = 0.0f;
+        if (!ParseStandardPrefabProperties(
+                line,
+                "prefab_survey_beacon",
+                scene_name,
+                line_number,
+                &name,
+                &position,
+                &size,
+                &gray_value,
+                &detail_value,
+                0.16f,
+                error_buffer,
+                error_buffer_size)) {
+            return false;
+        }
+        AddSurveyBeaconPrefab(scene, name, position, size, gray_value, detail_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_crystal_scanner ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float detail_value = 0.0f;
+        float glow_value = 0.28f;
+        if (!ParseStandardPrefabProperties(
+                line,
+                "prefab_crystal_scanner",
+                scene_name,
+                line_number,
+                &name,
+                &position,
+                &size,
+                &gray_value,
+                &detail_value,
+                0.14f,
+                error_buffer,
+                error_buffer_size)) {
+            return false;
+        }
+        ExtractFloatProperty(line, "glow(", &glow_value);
+        AddCrystalScannerPrefab(scene, name, position, size, gray_value, detail_value, std::max(glow_value, 0.0f));
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_crystal_cluster ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float unused_detail = 0.0f;
+        float glow_value = 0.34f;
+        if (!ParseStandardPrefabProperties(
+                line,
+                "prefab_crystal_cluster",
+                scene_name,
+                line_number,
+                &name,
+                &position,
+                &size,
+                &gray_value,
+                &unused_detail,
+                0.0f,
+                error_buffer,
+                error_buffer_size)) {
+            return false;
+        }
+        ExtractFloatProperty(line, "glow(", &glow_value);
+        AddCrystalClusterPrefab(scene, name, position, size, gray_value, std::max(glow_value, 0.0f));
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_extraction_rig ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float detail_value = 0.0f;
+        if (!ParseStandardPrefabProperties(
+                line,
+                "prefab_extraction_rig",
+                scene_name,
+                line_number,
+                &name,
+                &position,
+                &size,
+                &gray_value,
+                &detail_value,
+                0.13f,
+                error_buffer,
+                error_buffer_size)) {
+            return false;
+        }
+        AddExtractionRigPrefab(scene, name, position, size, gray_value, detail_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_prospect_shelter ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float detail_value = 0.0f;
+        if (!ParseStandardPrefabProperties(
+                line,
+                "prefab_prospect_shelter",
+                scene_name,
+                line_number,
+                &name,
+                &position,
+                &size,
+                &gray_value,
+                &detail_value,
+                0.12f,
+                error_buffer,
+                error_buffer_size)) {
+            return false;
+        }
+        AddProspectShelterPrefab(scene, name, position, size, gray_value, detail_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_quarry_pylon ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float detail_value = 0.0f;
+        if (!ParseStandardPrefabProperties(
+                line,
+                "prefab_quarry_pylon",
+                scene_name,
+                line_number,
+                &name,
+                &position,
+                &size,
+                &gray_value,
+                &detail_value,
+                0.13f,
+                error_buffer,
+                error_buffer_size)) {
+            return false;
+        }
+        AddQuarryPylonPrefab(scene, name, position, size, gray_value, detail_value);
+        return true;
+    }
+
+    if (StartsWith(line, "prefab_atmospheric_processor ")) {
+        std::string name;
+        Vec3 position;
+        Vec3 size;
+        float gray_value = 0.0f;
+        float detail_value = 0.0f;
+        if (!ParseStandardPrefabProperties(
+                line,
+                "prefab_atmospheric_processor",
+                scene_name,
+                line_number,
+                &name,
+                &position,
+                &size,
+                &gray_value,
+                &detail_value,
+                0.12f,
+                error_buffer,
+                error_buffer_size)) {
+            return false;
+        }
+        AddAtmosphericProcessorPrefab(scene, name, position, size, gray_value, detail_value);
         return true;
     }
 
@@ -2100,15 +2648,15 @@ bool LoadSceneFromObj(const char* obj_path, Scene* scene, char* error_buffer, si
 
             std::vector<int> indices;
             char* context = 0;
-            char* token = strtok_s(buffer, " \t\r\n", &context);
-            token = strtok_s(0, " \t\r\n", &context);
+            char* token = NextToken(buffer, " \t\r\n", &context);
+            token = NextToken(0, " \t\r\n", &context);
 
             while (token) {
                 int index = -1;
                 if (ParseFaceToken(token, static_cast<int>(positions.size()), &index)) {
                     indices.push_back(index);
                 }
-                token = strtok_s(0, " \t\r\n", &context);
+                token = NextToken(0, " \t\r\n", &context);
             }
 
             if (indices.size() < 3) {

@@ -1,12 +1,12 @@
 # Scene Format V1
 
-Derniere mise a jour : 2026-08-02
+Dernière mise à jour : 2026-08-09
 
 ## Statut
 
 Ce document decrit le format de scene proprietaire v1 actuellement implemente dans le depot.
 
-Le format cible plus large de la spec n'est pas encore entierement supporte. L'implementation actuelle couvre un sous-ensemble volontairement petit, suffisant pour amorcer le pipeline scene -> validation -> rendu.
+Le format cible plus large de la spec n'est pas encore entièrement supporté. L'implémentation actuelle couvre un sous-ensemble volontairement petit, suffisant pour le pipeline scène -> validation -> rendu. Le vocabulaire de prefabs actif est désormais orienté vers la carrière de cristal vénusienne ; les prefabs datacenter restent lisibles pour la compatibilité des scènes historiques.
 
 ## Intentions
 
@@ -97,7 +97,7 @@ sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) st
 
 ### `prefab_gate`
 
-Prefab de portail axis-aligne, utile pour les seuils, grilles et entrees controlees.
+Prefab de seuil de carrière asymétrique, composé de piles massives, d'un linteau en porte-à-faux, d'un contrefort et de barres de contrôle. Il représente une infrastructure humaine visible, jamais un mur alien invisible.
 
 Proprietes supportees :
 
@@ -114,9 +114,9 @@ Exemple :
 prefab_gate "entry_gate" pos(0.0,1.55,4.8) size(6.15,3.10,0.40) gray(0.46) detail(0.58) bars(5)
 ```
 
-### `prefab_rack`
+### `prefab_rack` — legacy
 
-Prefab de baie ou rack technique axis-aligne, utile pour les allees de serveurs.
+Prefab historique de baie ou rack technique, conservé pour les scènes et benchmarks datacenter.
 
 Le renderer injecte automatiquement de petites LEDs rouges sur la facade du rack. Elles n'ont pas besoin d'etre decrites dans le fichier `.scene`.
 
@@ -136,7 +136,7 @@ prefab_rack "rack_left_01" pos(-2.9,1.25,-5.8) size(1.2,2.5,1.5) gray(0.19) deta
 
 ### `prefab_crate`
 
-Prefab de caisse ou bloc de service axis-aligne.
+Prefab de caisse d'échantillons, container d'oxygène ou bloc de service. Un bandeau frontal et un sceau géométrique renforcent sa lisibilité.
 
 Proprietes supportees :
 
@@ -152,9 +152,69 @@ Exemple :
 prefab_crate "service_console" pos(0.8,0.65,-6.9) size(1.3,1.3,0.8) gray(0.19) detail(0.31)
 ```
 
-### `prefab_cooling_unit`
+### Prefabs actifs de la carrière d'Eryx
 
-Prefab de bloc de climatisation ou d'unite technique axis-aligne.
+Les sept directives suivantes partagent les propriétés obligatoires `pos(x,y,z)`, `size(x,y,z)` et `gray(value)`. `detail(value)` est optionnel sur les objets industriels. Les deux objets cristallins acceptent aussi `glow(value)`, qui règle une émission blanche contrainte.
+
+#### `prefab_survey_beacon`
+
+Balise de navigation à mât fourchu, barre de relèvement et lampe unique.
+
+```text
+prefab_survey_beacon "route_datum" pos(-4.8,1.7,6.4) size(1.1,3.4,1.0) gray(0.24) detail(0.43)
+```
+
+#### `prefab_crystal_scanner`
+
+Instrument d'affinité brutaliste encadrant un petit échantillon cristallin.
+
+```text
+prefab_crystal_scanner "affinity_scanner" pos(-2.8,1.2,1.4) size(2.2,2.4,1.5) gray(0.25) detail(0.44) glow(0.28)
+```
+
+#### `prefab_crystal_cluster`
+
+Veine affleurante formée de cinq prismes hexagonaux pointus et d'un lit fracturé.
+
+```text
+prefab_crystal_cluster "exposed_vein" pos(3.4,1.15,4.2) size(1.8,2.3,1.6) gray(0.66) glow(0.34)
+```
+
+#### `prefab_extraction_rig`
+
+Portique de forage compact avec jambes inclinées, tête suspendue, colonne et pointe de coupe.
+
+```text
+prefab_extraction_rig "diamond_drill" pos(0.0,1.6,5.0) size(2.8,3.2,2.2) gray(0.23) detail(0.42)
+```
+
+#### `prefab_prospect_shelter`
+
+Abri modulaire à entrée en retrait, masses décalées et toiture en porte-à-faux.
+
+```text
+prefab_prospect_shelter "field_shelter" pos(0.0,1.55,8.0) size(4.8,3.1,3.5) gray(0.28) detail(0.40)
+```
+
+#### `prefab_quarry_pylon`
+
+Pylône de cote massif à couronne fendue, distinct d'une balise légère.
+
+```text
+prefab_quarry_pylon "quarry_datum" pos(4.8,1.75,6.8) size(1.4,3.5,1.2) gray(0.27) detail(0.44)
+```
+
+#### `prefab_atmospheric_processor`
+
+Unité de service d'air et d'oxygène avec double cheminée et prises frontales.
+
+```text
+prefab_atmospheric_processor "oxygen_service" pos(-4.4,1.5,3.2) size(2.2,3.0,1.7) gray(0.24) detail(0.40)
+```
+
+### `prefab_cooling_unit` — legacy
+
+Prefab historique de bloc de climatisation, conservé pour les scènes datacenter. Utiliser `prefab_atmospheric_processor` pour les nouvelles scènes d'Eryx.
 
 Proprietes supportees :
 
@@ -170,7 +230,7 @@ Exemple :
 prefab_cooling_unit "cooling_block_left" pos(-4.6,1.35,2.4) size(1.2,2.7,3.1) gray(0.25) detail(0.37)
 ```
 
-### `prefab_ai_server`
+### `prefab_ai_server` — legacy
 
 Prefab de serveur IA ou de mainframe d'inference axis-aligne.
 
@@ -238,11 +298,12 @@ Les commentaires commencent par `#` et vont jusqu'a la fin de la ligne.
 
 Le format reste volontairement simple : `gray(value)` est toujours obligatoire pour les primitives et prefabs, et continue de piloter la luminance de base.
 
-La couleur finale est appliquee par le moteur selon une palette verrouillee :
+La couleur finale est appliquée par le moteur selon une palette verrouillée :
 
 - `sky` produit un ciel bleu degrade
 - les surfaces nommees `ground`, `desert_*`, `ridge_*`, `outcrop_*` sont teintees en ocre
-- `prefab_rack` ajoute des LEDs rouges discretes
+- les cristaux et lampes des nouveaux prefabs émettent une lumière blanche dont l'intensité reste bornée par leurs directives
+- `prefab_rack` ajoute des LEDs rouges discrètes dans les scènes legacy
 - `prefab_ai_server` ajoute aussi trois LEDs rouges verticales
 - tout le reste reste en niveaux de gris
 

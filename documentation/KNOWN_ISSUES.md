@@ -57,26 +57,6 @@ Piste :
 
 Ajouter le plus petit contrat topologique séparé du layout visible, puis le tester avec EV-002 et EV-003 dans `SPATIAL_VALIDATION_PLAN.md` avant d'autoriser des reconnexions plus complexes.
 
-### 2026-08-09 - Les prefabs et leur catalogue restent sémantiquement liés au datacenter
-
-Statut :
-
-Ouvert.
-
-Description :
-
-Les prefabs implémentés sont notamment `prefab_gate`, `prefab_rack`, `prefab_crate`, `prefab_cooling_unit` et `prefab_ai_server`. Le catalogue généré du 2026-08-02 reflète correctement ces sources et ne contient pas encore de beacon, scanner, cristal, rig, shelter ou quarry marker.
-
-Impact :
-
-- les salles générées continuent à lire comme infrastructure informatique
-- renommer uniquement les descriptions du catalogue falsifierait l'état des assets
-- l'ajout de nombreux objets décoratifs augmenterait rapidement le coût géométrique
-
-Piste :
-
-Tester d'abord les réinterprétations crédibles de la géométrie existante, implémenter un petit nombre de nouveaux prefabs à forte valeur sémantique, puis régénérer `PREFAB_CATALOG.md` depuis les sources.
-
 ### 2026-08-09 - Des noms de scripts et d'exécution conservent l'ancien titre de travail
 
 Statut :
@@ -540,3 +520,19 @@ Impact :
 Piste :
 
 Verifier et normaliser explicitement l'encodage du fichier si cela devient genant pour le travail quotidien.
+
+## Résolus
+
+### 2026-08-09 - Les prefabs et leur catalogue restaient sémantiquement liés au datacenter
+
+Statut :
+
+Résolu le 2026-08-09 pour le vocabulaire visuel et le catalogue. La migration globale du runtime reste suivie séparément.
+
+Résolution :
+
+- refonte source de `prefab_gate` et `prefab_crate` pour la carrière et les containers d'échantillons
+- ajout de `prefab_survey_beacon`, `prefab_crystal_scanner`, `prefab_crystal_cluster`, `prefab_extraction_rig`, `prefab_prospect_shelter`, `prefab_quarry_pylon` et `prefab_atmospheric_processor`
+- raccordement de ces directives au parseur `scene v1`, au prompt d'audit et à la reconnaissance lexicale du compilateur hybride
+- régénération de `PREFAB_CATALOG.md`, des scènes sources et de dix-huit vues depuis le renderer réel
+- maintien des racks, unités de refroidissement et serveurs IA comme directives legacy hors du catalogue actif

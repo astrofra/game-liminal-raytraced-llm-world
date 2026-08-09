@@ -6,7 +6,7 @@ Ce dossier sert de mémoire de travail artistique, scientifique et technique du 
 
 La direction active est une œuvre interactive fondée sur la lignée d'Eryx : un monde d'extraction vénusien localement cohérent, traversé par un labyrinthe invisible dont le LLM peut proposer des mutations topologiques contrôlées. *Le Désert des tokens* est l'ancien titre de travail et la phase narrative immédiatement précédente.
 
-La réorientation est d'abord documentaire. Le runtime courant conserve encore ses prompts, fixtures, prefabs et noms datacenter/désert. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) sépare les faits implémentés des intentions Eryx.
+La migration du vocabulaire visuel a commencé dans le code : le catalogue actif et neuf prefabs décrivent désormais la carrière de cristal, tandis que les anciens objets datacenter restent disponibles comme compatibilité historique. Les prompts, fixtures, lieux canoniques et états de monde restent encore largement datacenter/désert. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) sépare les faits implémentés des intentions Eryx.
 
 ## Point d'entrée
 
@@ -24,7 +24,7 @@ La réorientation est d'abord documentaire. Le runtime courant conserve encore s
 - [`FUNCTIONAL_PIPELINE_V1.md`](./FUNCTIONAL_PIPELINE_V1.md) : chaîne autoritative `commande -> résultat structuré -> état spatial -> compilation -> rendu` et cible de mutation topologique.
 - [`SPATIAL_VALIDATION_PLAN.md`](./SPATIAL_VALIDATION_PLAN.md) : protocole Eryx pour barrières invisibles, revisites, chemins impossibles, fréquence des mutations et cartographie.
 - [`HYBRID_SCENE_LAYOUT_PLAN.md`](./HYBRID_SCENE_LAYOUT_PLAN.md) : migration du compositeur hybride vers carrière, plateau, abri, scanner et seuil invisible.
-- [`SCENE_FORMAT_V1.md`](./SCENE_FORMAT_V1.md) : format de scène réellement implémenté. Aucun mur invisible ou prefab Eryx n'y est ajouté tant que le code ne le supporte pas.
+- [`SCENE_FORMAT_V1.md`](./SCENE_FORMAT_V1.md) : format de scène réellement implémenté, y compris les prefabs de prospection/extraction. Les murs invisibles n'y sont pas encore représentés.
 - [`LLAMA_CUDA_SPECS.md`](./LLAMA_CUDA_SPECS.md) : procédure de build et de validation de `Ministral 3 8B` avec `llama.cpp` et CUDA.
 - [`MULTIPROCESSING_FEASIBILITY.md`](./MULTIPROCESSING_FEASIBILITY.md) : étude et base de validation du rendu CPU parallèle, concrétisée par OpenMP.
 
@@ -38,7 +38,7 @@ La réorientation est d'abord documentaire. Le runtime courant conserve encore s
 
 ## Documents générés et baselines historiques
 
-- [`PREFAB_CATALOG.md`](./PREFAB_CATALOG.md) : catalogue généré des prefabs actuellement implémentés. Il reste datacenter-era jusqu'à modification des sources et régénération.
+- [`PREFAB_CATALOG.md`](./PREFAB_CATALOG.md) : catalogue généré depuis les géométries C++ actives de la carrière d'Eryx, avec deux vues et une scène d'audit par objet.
 - [`SCENE_GENERATION_BENCHMARK.md`](./SCENE_GENERATION_BENCHMARK.md) : benchmark historique de génération `.scene` directe sur des briefs datacenter.
 - [`HYBRID_SCENE_GENERATION_BENCHMARK.md`](./HYBRID_SCENE_GENERATION_BENCHMARK.md) : benchmark historique de la chaîne hybride datacenter.
 - `generated/` : prompts, réponses, états, scènes, logs et images soutenant ces résultats.
