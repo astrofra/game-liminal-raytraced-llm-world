@@ -407,7 +407,8 @@ The interface should feel like a prospecting, mapping, or sensing apparatus rath
 
 Required elements:
 
-- a launch choice between `English (E)` and `Français (F)` before ordinary input begins
+- a launch choice between `English (E)`, `Français (F)`, `Norsk (N)` in Bokmål, `Dansk (D)`, `Deutsch (G)`, and `Italiano (I)` before ordinary input begins
+- the centered footer `(c) Resistance 2026` at the bottom of the launch screen
 - current rendered image
 - external and body temperature readouts embedded in the visor presentation
 - transcript and command input
@@ -415,7 +416,7 @@ Required elements:
 - clear busy/cancellation state
 - settings for model path and performance profile
 
-Player-facing narration, clarification, location labels, controls, and status text follow the selected language. Prompt instructions, JSON keys, IDs, topology state, scene tokens, and other non-exposed LLM mechanics remain English.
+Player-facing narration, clarification, location labels, controls, and status text follow the selected language, including language-specific diacritics. Prompt instructions, JSON keys, IDs, topology state, scene tokens, and other non-exposed LLM mechanics remain English.
 
 Recommended research and debug elements:
 

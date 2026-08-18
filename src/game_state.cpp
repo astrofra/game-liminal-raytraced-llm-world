@@ -691,7 +691,40 @@ const char* ResourceStateToString(ResourceState value)
 
 const char* GameLanguageToString(GameLanguage value)
 {
-    return value == kGameLanguageFrench ? "fr" : "en";
+    switch (value) {
+    case kGameLanguageFrench:
+        return "fr";
+    case kGameLanguageNorwegian:
+        return "no";
+    case kGameLanguageDanish:
+        return "da";
+    case kGameLanguageGerman:
+        return "de";
+    case kGameLanguageItalian:
+        return "it";
+    case kGameLanguageEnglish:
+    default:
+        return "en";
+    }
+}
+
+const char* GameLanguageEnglishName(GameLanguage value)
+{
+    switch (value) {
+    case kGameLanguageFrench:
+        return "French";
+    case kGameLanguageNorwegian:
+        return "Norwegian Bokmål";
+    case kGameLanguageDanish:
+        return "Danish";
+    case kGameLanguageGerman:
+        return "German";
+    case kGameLanguageItalian:
+        return "Italian";
+    case kGameLanguageEnglish:
+    default:
+        return "English";
+    }
 }
 
 bool ParseLocationId(const char* text, LocationId* value)
@@ -758,19 +791,31 @@ bool ParseCardinalDirection(const char* text, CardinalDirection* value)
         return false;
     }
 
-    if (EqualsAsciiNoCase(text, "north") || EqualsAsciiNoCase(text, "n") || EqualsAsciiNoCase(text, "nord")) {
+    if (EqualsAsciiNoCase(text, "north") || EqualsAsciiNoCase(text, "n") || EqualsAsciiNoCase(text, "nord") ||
+        EqualsAsciiNoCase(text, "norden") || EqualsAsciiNoCase(text, "nordover")) {
         *value = kDirectionNorth;
         return true;
     }
-    if (EqualsAsciiNoCase(text, "east") || EqualsAsciiNoCase(text, "e") || EqualsAsciiNoCase(text, "est")) {
+    if (EqualsAsciiNoCase(text, "east") || EqualsAsciiNoCase(text, "e") || EqualsAsciiNoCase(text, "est") ||
+        EqualsAsciiNoCase(text, "ost") || EqualsAsciiNoCase(text, "osten") || EqualsAsciiNoCase(text, "ostover") ||
+        strcmp(text, "øst") == 0 || strcmp(text, "Øst") == 0 || strcmp(text, "ØST") == 0 ||
+        strcmp(text, "østover") == 0 || strcmp(text, "Østover") == 0) {
         *value = kDirectionEast;
         return true;
     }
-    if (EqualsAsciiNoCase(text, "south") || EqualsAsciiNoCase(text, "s") || EqualsAsciiNoCase(text, "sud")) {
+    if (EqualsAsciiNoCase(text, "south") || EqualsAsciiNoCase(text, "s") || EqualsAsciiNoCase(text, "sud") ||
+        EqualsAsciiNoCase(text, "syd") || EqualsAsciiNoCase(text, "sor") || EqualsAsciiNoCase(text, "suden") ||
+        EqualsAsciiNoCase(text, "sorover") ||
+        strcmp(text, "sør") == 0 || strcmp(text, "Sør") == 0 || strcmp(text, "SØR") == 0 ||
+        strcmp(text, "sørover") == 0 || strcmp(text, "Sørover") == 0 ||
+        strcmp(text, "süd") == 0 || strcmp(text, "Süd") == 0 || strcmp(text, "SÜD") == 0 ||
+        strcmp(text, "süden") == 0 || strcmp(text, "Süden") == 0) {
         *value = kDirectionSouth;
         return true;
     }
     if (EqualsAsciiNoCase(text, "west") || EqualsAsciiNoCase(text, "w") || EqualsAsciiNoCase(text, "ouest") ||
+        EqualsAsciiNoCase(text, "ovest") || EqualsAsciiNoCase(text, "vest") || EqualsAsciiNoCase(text, "vestover") ||
+        EqualsAsciiNoCase(text, "westen") || EqualsAsciiNoCase(text, "v") ||
         EqualsAsciiNoCase(text, "o")) {
         *value = kDirectionWest;
         return true;
@@ -896,8 +941,28 @@ bool ParseGameLanguage(const char* text, GameLanguage* value)
     if (!text || !value) {
         return false;
     }
-    if (EqualsAsciiNoCase(text, "fr") || EqualsAsciiNoCase(text, "french") || EqualsAsciiNoCase(text, "francais")) {
+    if (EqualsAsciiNoCase(text, "fr") || EqualsAsciiNoCase(text, "french") || EqualsAsciiNoCase(text, "francais") ||
+        strcmp(text, "français") == 0 || strcmp(text, "FRANÇAIS") == 0) {
         *value = kGameLanguageFrench;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "no") || EqualsAsciiNoCase(text, "nb") || EqualsAsciiNoCase(text, "norwegian") ||
+        EqualsAsciiNoCase(text, "norsk")) {
+        *value = kGameLanguageNorwegian;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "da") || EqualsAsciiNoCase(text, "danish") || EqualsAsciiNoCase(text, "dansk")) {
+        *value = kGameLanguageDanish;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "de") || EqualsAsciiNoCase(text, "german") || EqualsAsciiNoCase(text, "deutsch") ||
+        EqualsAsciiNoCase(text, "allemand")) {
+        *value = kGameLanguageGerman;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "it") || EqualsAsciiNoCase(text, "italian") || EqualsAsciiNoCase(text, "italiano") ||
+        EqualsAsciiNoCase(text, "italien")) {
+        *value = kGameLanguageItalian;
         return true;
     }
     if (EqualsAsciiNoCase(text, "en") || EqualsAsciiNoCase(text, "english")) {
@@ -976,6 +1041,50 @@ std::string DescribePlaceLabel(const SessionState& state, const std::string& pla
                 return "Abri de Vey";
             default:
                 break;
+            }
+        } else if (state.language == kGameLanguageNorwegian) {
+            switch (location_id) {
+            case kLocationQuarryThreshold: return "Steinbruddets terskel";
+            case kLocationExtractionField: return "Utvinningsfelt";
+            case kLocationCrystalCut: return "Krystallsnitt";
+            case kLocationScannerStation: return "Affinitetsskanner";
+            case kLocationSurveyPlateau: return "Signalplatå";
+            case kLocationLabyrinthThreshold: return "Åpent referansepunkt";
+            case kLocationProspectShelter: return "Veys ly";
+            default: break;
+            }
+        } else if (state.language == kGameLanguageDanish) {
+            switch (location_id) {
+            case kLocationQuarryThreshold: return "Stenbruddets tærskel";
+            case kLocationExtractionField: return "Udvindingsfelt";
+            case kLocationCrystalCut: return "Krystalsnit";
+            case kLocationScannerStation: return "Affinitetsscanner";
+            case kLocationSurveyPlateau: return "Signalplateau";
+            case kLocationLabyrinthThreshold: return "Åbent referencepunkt";
+            case kLocationProspectShelter: return "Veys ly";
+            default: break;
+            }
+        } else if (state.language == kGameLanguageGerman) {
+            switch (location_id) {
+            case kLocationQuarryThreshold: return "Steinbruchschwelle";
+            case kLocationExtractionField: return "Abbaugebiet";
+            case kLocationCrystalCut: return "Kristallschnitt";
+            case kLocationScannerStation: return "Affinitätsscanner";
+            case kLocationSurveyPlateau: return "Signalplateau";
+            case kLocationLabyrinthThreshold: return "Offener Messpunkt";
+            case kLocationProspectShelter: return "Veys Schutzraum";
+            default: break;
+            }
+        } else if (state.language == kGameLanguageItalian) {
+            switch (location_id) {
+            case kLocationQuarryThreshold: return "Soglia della cava";
+            case kLocationExtractionField: return "Campo di estrazione";
+            case kLocationCrystalCut: return "Taglio cristallino";
+            case kLocationScannerStation: return "Scanner di affinità";
+            case kLocationSurveyPlateau: return "Altopiano del faro";
+            case kLocationLabyrinthThreshold: return "Caposaldo aperto";
+            case kLocationProspectShelter: return "Rifugio di Vey";
+            default: break;
             }
         }
         switch (location_id) {

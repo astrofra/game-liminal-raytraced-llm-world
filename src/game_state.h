@@ -68,6 +68,10 @@ enum ResourceState {
 enum GameLanguage {
     kGameLanguageEnglish = 0,
     kGameLanguageFrench,
+    kGameLanguageNorwegian,
+    kGameLanguageDanish,
+    kGameLanguageGerman,
+    kGameLanguageItalian,
 };
 
 static const int kDefaultSpatialEntropy = 8;
@@ -346,6 +350,7 @@ const char* DesertStateToString(DesertState value);
 const char* InteriorDensityToString(InteriorDensity value);
 const char* ResourceStateToString(ResourceState value);
 const char* GameLanguageToString(GameLanguage value);
+const char* GameLanguageEnglishName(GameLanguage value);
 int ClampSpatialEntropy(int value);
 int ClampExternalTemperatureC(int value);
 float ClampBodyTemperatureC(float value);

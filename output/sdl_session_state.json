@@ -3,9 +3,9 @@
   "generated_rooms": [],
   "hard_state": {
     "alert_level": 1,
-    "body_temperature_c": 37.20000076293945,
+    "body_temperature_c": 37.25,
     "current_location_id": "extraction_field",
-    "external_temperature_c": 464,
+    "external_temperature_c": 465,
     "instrument_power_state": "stable",
     "inventory_items": [
       "survey map slate",
@@ -19,9 +19,9 @@
     ],
     "oxygen_state": "stable",
     "score": 0,
-    "spatial_entropy": 8,
+    "spatial_entropy": 12,
     "suit_state": "stable",
-    "turn_number": 2,
+    "turn_number": 4,
     "unresolved_threats": [
       "locate prospector Vey",
       "verify the invisible obstruction",
@@ -30,13 +30,31 @@
   },
   "history": [
     {
-      "clarification": "Le portail est la seule issue vers l’intérieur du site minier. Attention à la pente raide de la rampe descendante qui suit.",
-      "intent": "traverse_north",
+      "clarification": "",
+      "intent": "move_north_known_room",
       "location_id": "extraction_field",
-      "location_label": "Champ d'extraction",
-      "narration": "Vous grimpez sur le portail brutaliste et franchissez le seuil du puits de mine. La lumière dorée de la veille s’éteint derrière vous, remplacée par une lueur bleutée des projecteurs de la galerie.",
-      "player_command": "monter sur le portail",
+      "location_label": "Abbaugebiet",
+      "narration": "Du gehst nach Norden und erreichst Abbaugebiet.",
+      "player_command": "NORD",
       "turn_number": 1
+    },
+    {
+      "clarification": "Möchtest du den Schrank mit den **Prospektorklammer** (Tongs) öffnen oder etwas anderes tun? Alternativ kannst du die **Grenztafel** (Boundary Chalk) verwenden, um die Umgebung zu markieren oder die **Datenpyramide**...",
+      "intent": "interact_with_object",
+      "location_id": "extraction_field",
+      "location_label": "Abbaugebiet",
+      "narration": "Der verschlossene Technikschrank steht auf einem stabilen Sockel zwischen den Retentionsflügeln. Der Schlossmechanismus ist mit einer rostigen Klappe verdeckt, die sich nicht ohne Werkzeug öffnen lässt. Der Schrank scheint jedoch keine offensichtlichen Beschädigungen...",
+      "player_command": "ich will den Technikshranck offnen",
+      "turn_number": 2
+    },
+    {
+      "clarification": "Möchtest du den **Datenpylon** scannen (verbraucht Instrumentenenergie), die Bohrvorrichtung auf Defekte prüfen oder die **Grenztafel** nutzen, um die unsichtbare Grenze zu markieren?",
+      "intent": "observe_extraction_equipment",
+      "location_id": "extraction_field",
+      "location_label": "Abbaugebiet",
+      "narration": "Der **Extraktionsrig** dominiert den Bereich zwischen den Retentionsflügeln. Die Bohrvorrichtung ist mit einem **Datenpylon** verankert, der die Quarry-Koordinaten anzeigt. Der **Atmosphärenprozessor** daneben zeigt leichte Druckschwankungen an – möglicherweise ein Hinweis...",
+      "player_command": "regarde le dispositif d'extraction. Réponds en Français.",
+      "turn_number": 3
     }
   ],
   "invisible_barriers": [
@@ -47,7 +65,7 @@
       "place_id": "canonical:labyrinth_threshold"
     }
   ],
-  "language": "fr",
+  "language": "de",
   "next_generated_room_index": 1,
   "origin_place_id": "canonical:quarry_threshold",
   "room_links": [
@@ -118,17 +136,18 @@
       "Vey reached the shelter by a route that cannot be retraced consistently"
     ],
     "atmosphere": "instrumental, mineral, sparse, spatially uncertain",
-    "rolling_summary": "Vous grimpez sur le portail brutaliste et franchissez le seuil du puits de mine. La lumière dorée de la veille s’éteint derrière vous, remplacée par une lueur bleutée des projecteurs de la galerie.",
+    "rolling_summary": "Der **Extraktionsrig** dominiert den Bereich zwischen den Retentionsflügeln. Die Bohrvorrichtung ist mit einem **Datenpylon** verankert, der die Quarry-Koordinaten anzeigt. Der **Atmosphärenprozessor** daneben zeigt leichte Druckschwankungen an – möglicherweise ein Hinweis...",
     "tolerated_incoherences": [
-      "Le seuil est maintenant derrière vous. La rampe descendante est la seule issue vers le sud.",
-      "Le scanner et les marques de route suggèrent une activité récente, mais incohérente avec la carte."
+      "Datenpylon könnte Koordinaten der unsichtbaren Barriere enthalten, aber nur mit Instrumenten nutzbar.",
+      "Atmosphärenprozessor deutet auf lokale Druckanomalie hin – möglicherweise Hinweis auf Vey’s Route."
     ]
   },
   "spatial_state": {
     "alert_level": 1,
     "anchors": [
-      "descending_quarry_ramp",
-      "extraction_rig"
+      "diamond_drill",
+      "atmospheric_processor",
+      "quarry_datum_pylon"
     ],
     "blocked_exits": [
       "east",
@@ -141,21 +160,19 @@
     "room_summary": "A diamond drill stands among retaining fins and atmospheric machinery; the marked quarry cut continues north.",
     "room_title": "Extraction Field",
     "scene_constraints": [
-      "ramp descends steeply",
-      "scanner mounted on work slab",
-      "open horizon to north",
-      "hero crystal scanner",
-      "hero crystal cluster",
+      "hero extraction rig on work slab, quarry datum pylon aligned north, atmospheric processor flank, open horizon",
+      "hero extraction rig",
+      "atmospheric processor flank",
       "open venus horizon"
     ],
     "spatial_anomalies": [],
     "surface_weather": "windy",
-    "time_of_day": "night",
-    "visibility_level": "low",
+    "time_of_day": "dusk",
+    "visibility_level": "dusty",
     "visible_objects": [
-      "crystal scanner",
-      "sample case",
-      "route mark"
+      "drill_service_lever",
+      "oxygen_manifold",
+      "sealed_equipment_crate"
     ],
     "world_pose_known": true,
     "world_x": 0.0,

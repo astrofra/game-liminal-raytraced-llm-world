@@ -455,17 +455,18 @@ Les sorties structurées peuvent modifier les deux températures. Les traversals
 
 Decision :
 
-Le lancement SDL exige `English (E)` ou `Français (F)`. La narration, les clarifications, les noms de lieux, le statut, la boussole et le HUD suivent ce choix. Les prompts d'instruction, clés JSON, identifiants, tokens d'objets, contraintes de scène et mécanismes LLM restent en anglais.
+Le lancement SDL propose `English (E)`, `Français (F)`, `Norsk (N)` en bokmål, `Dansk (D)`, `Deutsch (G)` et `Italiano (I)`. La narration, les clarifications, les noms de lieux, le statut, la boussole et le HUD suivent ce choix. Les prompts d'instruction, clés JSON, identifiants, tokens d'objets, contraintes de scène et mécanismes LLM restent en anglais.
 
 Raison :
 
 - la frontière empêche une traduction des identifiants de casser les parseurs et les caches
 - la langue devient un état de session explicite et sauvegardé
-- les deux interfaces peuvent partager la même logique de monde
+- les six interfaces partagent la même logique de monde
+- les sources C++ sont compilées explicitement en UTF-8 et la police embarquée couvre les diacritiques latins requis
 
 Consequence :
 
-Les invites demandent uniquement la traduction des champs destinés au joueur. Les commandes cardinales françaises sont reconnues par la voie déterministe. Un ancien transcript n'est pas retraduit rétroactivement.
+Les invites demandent uniquement la traduction des champs destinés au joueur. Les commandes cardinales et leurs préfixes courants sont reconnus par la voie déterministe dans les six langues. `G` sélectionne l'allemand afin de réserver `D` au danois. Un ancien transcript n'est pas retraduit rétroactivement.
 
 ## 2026-08-18 - Faire de la visière et du ciel des contraintes de rendu moteur
 

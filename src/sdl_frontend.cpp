@@ -163,6 +163,26 @@ struct UiFonts {
     }
 };
 
+static const char* UiText(
+    GameLanguage language,
+    const char* english,
+    const char* french,
+    const char* norwegian,
+    const char* danish,
+    const char* german,
+    const char* italian)
+{
+    switch (language) {
+    case kGameLanguageFrench: return french;
+    case kGameLanguageNorwegian: return norwegian;
+    case kGameLanguageDanish: return danish;
+    case kGameLanguageGerman: return german;
+    case kGameLanguageItalian: return italian;
+    case kGameLanguageEnglish:
+    default: return english;
+    }
+}
+
 static void SetError(char* error_buffer, size_t error_buffer_size, const char* message)
 {
     if (!error_buffer || error_buffer_size == 0) {
@@ -219,19 +239,19 @@ static const char* StreamPhaseStatus(HeadlessTurnStreamPhase phase)
     }
 }
 
-static const char* ActivityLabel(WorkerActivity activity)
+static const char* LocalizedActivityLabel(WorkerActivity activity, GameLanguage language)
 {
     switch (activity) {
-        case kWorkerActivityLlm:
-            return "llm";
-        case kWorkerActivityRenderer:
-            return "cpu";
-        case kWorkerActivityComplete:
-            return "done";
-        case kWorkerActivityFailed:
-            return "error";
-        default:
-            return "idle";
+    case kWorkerActivityLlm:
+        return UiText(language, "llm", "IMAGINATION", "FORESTILLING", "FORESTILLING", "IMAGINATION", "IMMAGINAZIONE");
+    case kWorkerActivityRenderer:
+        return UiText(language, "cpu", "RAYTRACING", "STRÅLESPORING", "STRÅLESPORING", "RAYTRACING", "RAYTRACING");
+    case kWorkerActivityComplete:
+        return UiText(language, "done", "TERMINÉ", "FERDIG", "FÆRDIG", "FERTIG", "COMPLETATO");
+    case kWorkerActivityFailed:
+        return UiText(language, "error", "ERREUR", "FEIL", "FEJL", "FEHLER", "ERRORE");
+    default:
+        return UiText(language, "idle", "PRÊT", "KLAR", "KLAR", "BEREIT", "PRONTO");
     }
 }
 
@@ -796,25 +816,40 @@ static std::string ExpandInfocomShortcutCommand(const std::string& command, Game
 {
     const std::string normalized = ToLowerAsciiCopy(CollapseAsciiWhitespace(command));
     if (normalized == "n" || normalized == "north" || normalized == "nord") {
-        return language == kGameLanguageFrench ? "NORD" : "NORTH";
+        return UiText(language, "NORTH", "NORD", "NORD", "NORD", "NORD", "NORD");
     }
-    if (normalized == "s" || normalized == "south" || normalized == "sud") {
-        return language == kGameLanguageFrench ? "SUD" : "SOUTH";
+    if (normalized == "s" || normalized == "south" || normalized == "sud" || normalized == "syd" ||
+        normalized == "sor" || normalized == "sør" || normalized == "süd") {
+        return UiText(language, "SOUTH", "SUD", "SØR", "SYD", "SÜD", "SUD");
     }
-    if (normalized == "e" || normalized == "east" || normalized == "est") {
-        return language == kGameLanguageFrench ? "EST" : "EAST";
+    if (normalized == "o") {
+        if (language == kGameLanguageGerman) {
+            return "OST";
+        }
+        if (language == kGameLanguageNorwegian || language == kGameLanguageDanish) {
+            return "ØST";
+        }
+        return UiText(language, "WEST", "OUEST", "VEST", "VEST", "WEST", "OVEST");
     }
-    if (normalized == "w" || normalized == "west" || normalized == "o" || normalized == "ouest") {
-        return language == kGameLanguageFrench ? "OUEST" : "WEST";
+    if (normalized == "e" || normalized == "east" || normalized == "est" || normalized == "ost" ||
+        normalized == "øst") {
+        return UiText(language, "EAST", "EST", "ØST", "ØST", "OST", "EST");
     }
-    if (normalized == "z" || normalized == "wait" || normalized == "attendre") {
-        return language == kGameLanguageFrench ? "ATTENDRE" : "WAIT";
+    if (normalized == "w" || normalized == "v" || normalized == "west" || normalized == "ouest" ||
+        normalized == "ovest" || normalized == "vest") {
+        return UiText(language, "WEST", "OUEST", "VEST", "VEST", "WEST", "OVEST");
     }
-    if (normalized == "i" || normalized == "inventory" || normalized == "inventaire") {
-        return language == kGameLanguageFrench ? "INVENTAIRE" : "INVENTORY";
+    if (normalized == "z" || normalized == "wait" || normalized == "attendre" || normalized == "vent" ||
+        normalized == "warten" || normalized == "aspetta") {
+        return UiText(language, "WAIT", "ATTENDRE", "VENT", "VENT", "WARTEN", "ASPETTA");
     }
-    if (normalized == "q" || normalized == "quit" || normalized == "quitter") {
-        return language == kGameLanguageFrench ? "QUITTER" : "QUIT";
+    if (normalized == "i" || normalized == "inventory" || normalized == "inventaire" ||
+        normalized == "inventar" || normalized == "inventario") {
+        return UiText(language, "INVENTORY", "INVENTAIRE", "INVENTAR", "INVENTAR", "INVENTAR", "INVENTARIO");
+    }
+    if (normalized == "q" || normalized == "quit" || normalized == "quitter" || normalized == "avslutt" ||
+        normalized == "afslut" || normalized == "beenden" || normalized == "esci") {
+        return UiText(language, "QUIT", "QUITTER", "AVSLUTT", "AFSLUT", "BEENDEN", "ESCI");
     }
     return command;
 }
@@ -840,8 +875,10 @@ static bool LooksPredominantlyEnglishForUi(const std::string& text)
 static std::string DescribeCurrentPlaceLabelForUi(const SessionState& session_state)
 {
     const std::string label = DescribeCurrentPlaceLabel(session_state);
-    if (session_state.language == kGameLanguageFrench && LooksPredominantlyEnglishForUi(label)) {
-        return "Secteur de prospection";
+    if (session_state.language != kGameLanguageEnglish && LooksPredominantlyEnglishForUi(label)) {
+        return UiText(
+            session_state.language, "Survey Sector", "Secteur de prospection", "Prospekteringssektor",
+            "Prospekteringssektor", "Prospektionssektor", "Settore di prospezione");
     }
     return label;
 }
@@ -849,7 +886,36 @@ static std::string DescribeCurrentPlaceLabelForUi(const SessionState& session_st
 static bool IsQuitCommand(const std::string& command)
 {
     const std::string normalized = ToLowerAsciiCopy(CollapseAsciiWhitespace(command));
-    return normalized == "q" || normalized == "quit" || normalized == "quitter";
+    return normalized == "q" || normalized == "quit" || normalized == "quitter" ||
+        normalized == "avslutt" || normalized == "afslut" || normalized == "beenden" || normalized == "esci";
+}
+
+static bool LanguageForSelectionKey(SDL_Keycode key, GameLanguage* language)
+{
+    if (!language) {
+        return false;
+    }
+    switch (key) {
+    case SDLK_E: *language = kGameLanguageEnglish; return true;
+    case SDLK_F: *language = kGameLanguageFrench; return true;
+    case SDLK_N: *language = kGameLanguageNorwegian; return true;
+    case SDLK_D: *language = kGameLanguageDanish; return true;
+    case SDLK_G: *language = kGameLanguageGerman; return true;
+    case SDLK_I: *language = kGameLanguageItalian; return true;
+    default: return false;
+    }
+}
+
+static const char* ReadyHint(GameLanguage language)
+{
+    return UiText(
+        language,
+        "Ready. Press Enter to send a command.",
+        "Prêt. Appuyez sur Entrée pour envoyer une commande.",
+        "Klar. Trykk Enter for å sende en kommando.",
+        "Klar. Tryk på Enter for at sende en kommando.",
+        "Bereit. Drücke die Eingabetaste, um einen Befehl zu senden.",
+        "Pronto. Premi Invio per inviare un comando.");
 }
 
 static void DrawTextSpan(
@@ -942,12 +1008,51 @@ static void DrawLanguageSelection(SDL_Renderer* renderer, const UiFonts& fonts, 
         SDL_Color{255, 255, 255, 255},
         0);
 
-    const float panel_width = 360.0f;
-    const float panel_height = 58.0f;
-    const float panel_x = (static_cast<float>(logical_width) - panel_width) * 0.5f;
+    const float panel_width = 300.0f;
+    const float panel_height = 54.0f;
+    const float column_gap = 34.0f;
+    const float row_gap = 28.0f;
+    const float panel_x = (static_cast<float>(logical_width) - panel_width * 2.0f - column_gap) * 0.5f;
     const float first_y = heading_y + static_cast<float>(fonts.line_height) + 52.0f;
     DrawLanguageSelectionCell(renderer, fonts, SDL_FRect{panel_x, first_y, panel_width, panel_height}, "English (E)");
-    DrawLanguageSelectionCell(renderer, fonts, SDL_FRect{panel_x, first_y + 90.0f, panel_width, panel_height}, "Français (F)");
+    DrawLanguageSelectionCell(
+        renderer,
+        fonts,
+        SDL_FRect{panel_x + panel_width + column_gap, first_y, panel_width, panel_height},
+        "Français (F)");
+    DrawLanguageSelectionCell(
+        renderer,
+        fonts,
+        SDL_FRect{panel_x, first_y + panel_height + row_gap, panel_width, panel_height},
+        "Norsk (N)");
+    DrawLanguageSelectionCell(
+        renderer,
+        fonts,
+        SDL_FRect{panel_x + panel_width + column_gap, first_y + panel_height + row_gap, panel_width, panel_height},
+        "Dansk (D)");
+    DrawLanguageSelectionCell(
+        renderer,
+        fonts,
+        SDL_FRect{panel_x, first_y + (panel_height + row_gap) * 2.0f, panel_width, panel_height},
+        "Deutsch (G)");
+    DrawLanguageSelectionCell(
+        renderer,
+        fonts,
+        SDL_FRect{panel_x + panel_width + column_gap, first_y + (panel_height + row_gap) * 2.0f, panel_width, panel_height},
+        "Italiano (I)");
+
+    const std::string copyright = "(c) Resistance 2026";
+    const int copyright_width = MeasureTextWidth(fonts.regular, copyright);
+    const int copyright_height = std::max(TTF_GetFontHeight(fonts.regular), 1);
+    DrawTextSpan(
+        renderer,
+        fonts.regular,
+        copyright,
+        (static_cast<float>(logical_width) - static_cast<float>(copyright_width)) * 0.5f,
+        static_cast<float>(logical_height - copyright_height - 18),
+        copyright_height,
+        SDL_Color{150, 150, 150, 255},
+        0);
 }
 
 static void DrawProceduralVisorMask(SDL_Renderer* renderer, const SDL_FRect& rect)
@@ -1092,7 +1197,7 @@ static void DrawExitCompass(
         renderer,
         fonts.regular,
         east_rect,
-        "E",
+        UiText(session_state.language, "E", "E", "Ø", "Ø", "O", "E"),
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionEast));
     DrawCompassDirectionCell(
         renderer,
@@ -1104,7 +1209,7 @@ static void DrawExitCompass(
         renderer,
         fonts.regular,
         west_rect,
-        session_state.language == kGameLanguageFrench ? "O" : "W",
+        UiText(session_state.language, "W", "O", "V", "V", "W", "O"),
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest));
 }
 
@@ -1148,29 +1253,30 @@ static void DrawThermalHud(
 
     char external_buffer[96];
     char body_buffer[96];
-    if (session_state.language == kGameLanguageFrench) {
-        snprintf(
-            external_buffer,
-            sizeof(external_buffer),
-            "TEMP. EXTÉRIEURE  %d °C",
-            session_state.hard_state.external_temperature_c);
-        snprintf(
-            body_buffer,
-            sizeof(body_buffer),
-            "TEMP. CORPORELLE  %.1f °C",
-            session_state.hard_state.body_temperature_c);
-    } else {
-        snprintf(
-            external_buffer,
-            sizeof(external_buffer),
+    snprintf(
+        external_buffer,
+        sizeof(external_buffer),
+        UiText(
+            session_state.language,
             "EXT. TEMPERATURE  %d °C",
-            session_state.hard_state.external_temperature_c);
-        snprintf(
-            body_buffer,
-            sizeof(body_buffer),
+            "TEMP. EXTÉRIEURE  %d °C",
+            "UTETEMPERATUR  %d °C",
+            "UDETEMPERATUR  %d °C",
+            "AUSSENTEMPERATUR  %d °C",
+            "TEMP. ESTERNA  %d °C"),
+        session_state.hard_state.external_temperature_c);
+    snprintf(
+        body_buffer,
+        sizeof(body_buffer),
+        UiText(
+            session_state.language,
             "BODY TEMPERATURE  %.1f °C",
-            session_state.hard_state.body_temperature_c);
-    }
+            "TEMP. CORPORELLE  %.1f °C",
+            "KROPPSTEMPERATUR  %.1f °C",
+            "KROPSTEMPERATUR  %.1f °C",
+            "KÖRPERTEMPERATUR  %.1f °C",
+            "TEMP. CORPOREA  %.1f °C"),
+        session_state.hard_state.body_temperature_c);
 
     const int label_height = std::max(TTF_GetFontHeight(fonts.regular), 1);
     const float panel_width = static_cast<float>(std::max(
@@ -1681,35 +1787,22 @@ static std::string BuildStatusLine(
     (void)have_last_turn;
     char buffer[512];
     const char spinner = busy ? SpinnerGlyph(ticks_ms) : ' ';
-    if (session_state.language == kGameLanguageFrench) {
-        const char* activity_label = "PRÊT";
-        switch (activity) {
-        case kWorkerActivityLlm: activity_label = "IMAGINATION"; break;
-        case kWorkerActivityRenderer: activity_label = "RAYTRACING"; break;
-        case kWorkerActivityComplete: activity_label = "TERMINÉ"; break;
-        case kWorkerActivityFailed: activity_label = "ERREUR"; break;
-        default: break;
-        }
-        snprintf(
-            buffer,
-            sizeof(buffer),
-            "[%c] %s | lieu=%s tour=%d alerte=%d",
-            spinner,
-            activity_label,
-            DescribeCurrentPlaceLabelForUi(session_state).c_str(),
-            session_state.hard_state.turn_number,
-            session_state.hard_state.alert_level);
-    } else {
-        snprintf(
-            buffer,
-            sizeof(buffer),
+    snprintf(
+        buffer,
+        sizeof(buffer),
+        UiText(
+            session_state.language,
             "[%c] %s | location=%s turn=%d alert=%d",
-            spinner,
-            ActivityLabel(activity),
-            DescribeCurrentPlaceLabelForUi(session_state).c_str(),
-            session_state.hard_state.turn_number,
-            session_state.hard_state.alert_level);
-    }
+            "[%c] %s | lieu=%s tour=%d alerte=%d",
+            "[%c] %s | sted=%s tur=%d alarm=%d",
+            "[%c] %s | sted=%s tur=%d alarm=%d",
+            "[%c] %s | Ort=%s Zug=%d Alarm=%d",
+            "[%c] %s | luogo=%s turno=%d allerta=%d"),
+        spinner,
+        LocalizedActivityLabel(activity, session_state.language),
+        DescribeCurrentPlaceLabelForUi(session_state).c_str(),
+        session_state.hard_state.turn_number,
+        session_state.hard_state.alert_level);
     return buffer;
 }
 
@@ -1738,8 +1831,15 @@ static void BuildTranscriptLines(
         MarkWrappedLinesAsCommand(lines, start_line);
         if (!record.narration.empty()) {
             const std::string narration =
-                session_state.language == kGameLanguageFrench && LooksPredominantlyEnglishForUi(record.narration)
-                ? "Le compte rendu de ce tour demeure archivé dans sa langue d'origine."
+                session_state.language != kGameLanguageEnglish && LooksPredominantlyEnglishForUi(record.narration)
+                ? UiText(
+                    session_state.language,
+                    "This turn remains archived in its original language.",
+                    "Le compte rendu de ce tour demeure archivé dans sa langue d'origine.",
+                    "Denne turen er fortsatt arkivert på originalspråket.",
+                    "Denne tur er fortsat arkiveret på originalsproget.",
+                    "Dieser Zug bleibt in seiner Originalsprache archiviert.",
+                    "Questo turno resta archiviato nella lingua originale.")
                 : record.narration;
             AppendWrappedText(narration, fonts, max_width, lines);
         }
@@ -1879,7 +1979,14 @@ static void DrawTitleBar(
     snprintf(
         stats_buffer,
         sizeof(stats_buffer),
-        session_state.language == kGameLanguageFrench ? "Déplacements %d   Score %d" : "Moves %d   Score %d",
+        UiText(
+            session_state.language,
+            "Moves %d   Score %d",
+            "Déplacements %d   Score %d",
+            "Trekk %d   Poeng %d",
+            "Træk %d   Point %d",
+            "Züge %d   Punkte %d",
+            "Mosse %d   Punti %d"),
         session_state.hard_state.move_count,
         session_state.hard_state.score);
     const std::string stats_text = stats_buffer;
@@ -2110,24 +2217,16 @@ bool RunSdlFrontend(
 
             if (!language_selected) {
                 if (event.type == SDL_EVENT_KEY_DOWN && event.key.down && !event.key.repeat) {
-                    if (event.key.key == SDLK_E) {
-                        current_session_state.language = kGameLanguageEnglish;
+                    GameLanguage selected_language = kGameLanguageEnglish;
+                    if (LanguageForSelectionKey(event.key.key, &selected_language)) {
+                        current_session_state.language = selected_language;
                         for (size_t index = 0; index < command_history.size(); ++index) {
                             command_history[index] = ExpandInfocomShortcutCommand(command_history[index], current_session_state.language);
                         }
                         language_selected = true;
                         playback_last_ticks = SDL_GetTicks();
                         text_input_suppressed_until = SDL_GetTicks() + 250;
-                        persistent_hint = "Ready. Press Enter to send a command.";
-                    } else if (event.key.key == SDLK_F) {
-                        current_session_state.language = kGameLanguageFrench;
-                        for (size_t index = 0; index < command_history.size(); ++index) {
-                            command_history[index] = ExpandInfocomShortcutCommand(command_history[index], current_session_state.language);
-                        }
-                        language_selected = true;
-                        playback_last_ticks = SDL_GetTicks();
-                        text_input_suppressed_until = SDL_GetTicks() + 250;
-                        persistent_hint = "Prêt. Appuyez sur Entrée pour envoyer une commande.";
+                        persistent_hint = ReadyHint(current_session_state.language);
                     }
                 }
                 continue;
@@ -2218,9 +2317,10 @@ bool RunSdlFrontend(
                 }
                 if (busy) {
                     worker_shared_state.stop_requested.store(true);
-                    ui_message = current_session_state.language == kGameLanguageFrench
-                        ? "Annulation demandée..."
-                        : "Cancellation requested...";
+                    ui_message = UiText(
+                        current_session_state.language,
+                        "Cancellation requested...", "Annulation demandée...", "Avbrudd forespurt...",
+                        "Annullering anmodet...", "Abbruch angefordert...", "Annullamento richiesto...");
                 } else {
                     input_text.clear();
                     input_cursor = 0;
@@ -2231,9 +2331,10 @@ bool RunSdlFrontend(
             if (key == SDLK_RETURN) {
                 const std::string raw_command = TrimCommandText(input_text);
                 if (raw_command.empty()) {
-                    ui_message = current_session_state.language == kGameLanguageFrench
-                        ? "Commande vide ignorée."
-                        : "Empty command ignored.";
+                    ui_message = UiText(
+                        current_session_state.language,
+                        "Empty command ignored.", "Commande vide ignorée.", "Tom kommando ignorert.",
+                        "Tom kommando ignoreret.", "Leerer Befehl ignoriert.", "Comando vuoto ignorato.");
                     continue;
                 }
 
@@ -2245,9 +2346,10 @@ bool RunSdlFrontend(
                     busy = worker_shared_state.busy;
                 }
                 if (busy) {
-                    ui_message = current_session_state.language == kGameLanguageFrench
-                        ? "Un tour est déjà en cours."
-                        : "A turn is already running.";
+                    ui_message = UiText(
+                        current_session_state.language,
+                        "A turn is already running.", "Un tour est déjà en cours.", "En tur pågår allerede.",
+                        "En tur er allerede i gang.", "Ein Zug wird bereits verarbeitet.", "Un turno è già in corso.");
                     continue;
                 }
 
@@ -2361,9 +2463,16 @@ bool RunSdlFrontend(
                 failure_text = worker_shared_state.error_text;
                 worker_shared_state.error_ready = false;
                 turn_failed = true;
-                ui_message = current_session_state.language == kGameLanguageFrench
-                    ? "Le tour a échoué. Consultez la sortie de diagnostic."
-                    : failure_text;
+                ui_message = current_session_state.language == kGameLanguageEnglish
+                    ? failure_text
+                    : UiText(
+                        current_session_state.language,
+                        "The turn failed. Check the diagnostic output.",
+                        "Le tour a échoué. Consultez la sortie de diagnostic.",
+                        "Turen mislyktes. Se diagnoseutdataene.",
+                        "Turen mislykkedes. Se diagnosticeringsoutputtet.",
+                        "Der Zug ist fehlgeschlagen. Sieh in die Diagnoseausgabe.",
+                        "Il turno non è riuscito. Consulta l'output diagnostico.");
             }
         }
 
@@ -2379,9 +2488,16 @@ bool RunSdlFrontend(
                     completed_first_image_duration_ms)) {
                 turn_failed = true;
                 failure_text = "Cannot initialize the replacement animated view.";
-                ui_message = current_session_state.language == kGameLanguageFrench
-                    ? "La nouvelle vue n'a pas pu être initialisée."
-                    : failure_text;
+                ui_message = current_session_state.language == kGameLanguageEnglish
+                    ? failure_text
+                    : UiText(
+                        current_session_state.language,
+                        "The new view could not be initialized.",
+                        "La nouvelle vue n'a pas pu être initialisée.",
+                        "Den nye visningen kunne ikke initialiseres.",
+                        "Den nye visning kunne ikke initialiseres.",
+                        "Die neue Ansicht konnte nicht initialisiert werden.",
+                        "Non è stato possibile inizializzare la nuova vista.");
             } else {
                 animation_shared_state.active_generation_id.store(replacement_view.generation_id);
                 animation_shared_state.stop_requested.store(true);
@@ -2493,11 +2609,18 @@ bool RunSdlFrontend(
             animation_failure_generation_id == active_animated_view.generation_id) {
             active_animated_view.generation_failed = true;
             active_animated_view.image_being_rendered = -1;
-            ui_message = current_session_state.language == kGameLanguageFrench
-                ? "L'animation s'est arrêtée ; les images disponibles restent utilisables."
-                : (animation_failure_text.empty()
+            ui_message = current_session_state.language == kGameLanguageEnglish
+                ? (animation_failure_text.empty()
                     ? "Animation generation stopped; available images remain playable."
-                    : animation_failure_text);
+                    : animation_failure_text)
+                : UiText(
+                    current_session_state.language,
+                    "Animation generation stopped; available images remain playable.",
+                    "L'animation s'est arrêtée ; les images disponibles restent utilisables.",
+                    "Animasjonen stoppet; de tilgjengelige bildene kan fortsatt brukes.",
+                    "Animationen stoppede; de tilgængelige billeder kan stadig bruges.",
+                    "Die Animation wurde angehalten; die verfügbaren Bilder bleiben nutzbar.",
+                    "L'animazione si è interrotta; le immagini disponibili restano utilizzabili.");
         }
 
         if (!animation_worker_busy && animation_worker_thread.joinable()) {

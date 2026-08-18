@@ -84,7 +84,7 @@ Impact :
 
 - un déplacement canonique peut désormais payer une petite latence d'inférence même sans génération de lieu
 - si l'appel thermique échoue ou renvoie un JSON invalide, les deux températures restent inchangées
-- un transcript déjà sauvegardé conserve en interne la langue dans laquelle chaque ancien tour a été écrit ; en interface française, une ancienne narration détectée comme anglophone est masquée par une notice française, mais elle n'est pas réellement retraduite
+- un transcript déjà sauvegardé conserve en interne la langue dans laquelle chaque ancien tour a été écrit ; dans toute interface non anglophone, une ancienne narration détectée comme anglophone est masquée par une notice localisée, mais elle n'est pas réellement retraduite
 
 Piste :
 

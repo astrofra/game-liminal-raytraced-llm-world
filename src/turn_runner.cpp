@@ -47,6 +47,26 @@ struct GeneratedRoomDraft {
     }
 };
 
+static const char* PlayerText(
+    GameLanguage language,
+    const char* english,
+    const char* french,
+    const char* norwegian,
+    const char* danish,
+    const char* german,
+    const char* italian)
+{
+    switch (language) {
+    case kGameLanguageFrench: return french;
+    case kGameLanguageNorwegian: return norwegian;
+    case kGameLanguageDanish: return danish;
+    case kGameLanguageGerman: return german;
+    case kGameLanguageItalian: return italian;
+    case kGameLanguageEnglish:
+    default: return english;
+    }
+}
+
 static void FinalizeGeneratedRoomDraft(GeneratedRoomDraft* draft, CardinalDirection direction);
 
 static void SetError(char* buffer, size_t buffer_size, const char* format, const char* argument)
@@ -313,12 +333,24 @@ static TurnResult MakeFallbackTurnResult(const std::string& raw_response_text, G
     TurnResult turn_result;
     turn_result.intent = "fallback_noop";
     ExtractQuotedJsonField(raw_response_text, "intent", &turn_result.intent);
-    turn_result.narration = language == kGameLanguageFrench
-        ? "La réponse du système est restée illisible. Votre position et l'état du monde ne changent pas."
-        : BuildFallbackNarration(raw_response_text);
-    turn_result.clarification = language == kGameLanguageFrench
-        ? "L'état du monde a été conservé après une réponse mal formée du modèle."
-        : "The world state was kept unchanged after a malformed model response.";
+    turn_result.narration = language == kGameLanguageEnglish
+        ? BuildFallbackNarration(raw_response_text)
+        : PlayerText(
+            language,
+            "The system response remained unreadable. Your position and the world state do not change.",
+            "La réponse du système est restée illisible. Votre position et l'état du monde ne changent pas.",
+            "Systemsvaret forble uleselig. Posisjonen din og verdenstilstanden endres ikke.",
+            "Systemets svar forblev ulæseligt. Din position og verdens tilstand ændres ikke.",
+            "Die Systemantwort blieb unlesbar. Deine Position und der Weltzustand bleiben unverändert.",
+            "La risposta del sistema è rimasta illeggibile. La tua posizione e lo stato del mondo non cambiano.");
+    turn_result.clarification = PlayerText(
+        language,
+        "The world state was kept unchanged after a malformed model response.",
+        "L'état du monde a été conservé après une réponse mal formée du modèle.",
+        "Verdenstilstanden ble bevart etter et ugyldig modellsvar.",
+        "Verdens tilstand blev bevaret efter et ugyldigt modelsvar.",
+        "Der Weltzustand wurde nach einer fehlerhaften Modellantwort beibehalten.",
+        "Lo stato del mondo è stato conservato dopo una risposta non valida del modello.");
     turn_result.continuity_notes.push_back("Malformed model response was ignored; hard state and spatial state were kept stable.");
     return turn_result;
 }
@@ -795,8 +827,9 @@ static bool LooksPredominantlyEnglish(const std::string& text)
     return score >= 2 || lower.compare(0, 5, " the ") == 0 || lower.compare(0, 5, " you ") == 0;
 }
 
-static bool LocalizePlayerFacingTextToFrench(
+static bool LocalizePlayerFacingText(
     const HeadlessTurnConfig& config,
+    GameLanguage language,
     std::string* title,
     std::string* summary,
     std::string* narration,
@@ -813,13 +846,15 @@ static bool LocalizePlayerFacingTextToFrench(
     messages.push_back(LlmPromptMessage());
     messages.back().role = "system";
     messages.back().content =
-        "You are a strict localization pass. Translate every non-empty JSON string value into idiomatic French. "
-        "Preserve proper names, concrete facts, directions, and gameplay affordances. Return the same four keys as valid JSON only. "
+        std::string("You are a strict localization pass. Translate every non-empty JSON string value into idiomatic ") +
+        GameLanguageEnglishName(language) +
+        ". Preserve proper names, concrete facts, directions, and gameplay affordances. Return the same four keys as valid JSON only. "
         "Never answer in English and never add explanations.";
     messages.push_back(LlmPromptMessage());
     messages.back().role = "user";
     messages.back().content =
-        std::string("Translate these player-facing strings into French. Empty values must remain empty:\n") + source.dump();
+        std::string("Translate these player-facing strings into ") + GameLanguageEnglishName(language) +
+        ". Empty values must remain empty:\n" + source.dump();
 
     LlmGenerationConfig localization_config = config.generation_config;
     localization_config.temperature = 0.0f;
@@ -1205,7 +1240,14 @@ static bool TryParseTraversalCommand(const char* player_command, CardinalDirecti
         return true;
     }
 
-    const char* prefixes[] = {"go ", "move ", "walk ", "aller ", "va ", "marche ", "avancer "};
+    const char* prefixes[] = {
+        "go ", "move ", "walk ",
+        "aller ", "va ", "marche ", "avancer ",
+        "gå mot ", "ga mot ", "gå mod ", "ga mod ", "gå ", "ga ", "beveg ", "flytt ",
+        "bevæg ", "bevaeg ",
+        "gehe nach ", "geh nach ", "bewege dich nach ", "gehe ", "geh ", "bewege ",
+        "vai verso ", "cammina verso ", "vai a ", "vai ", "andare ", "cammina ",
+    };
     for (size_t index = 0; index < sizeof(prefixes) / sizeof(prefixes[0]); ++index) {
         const std::string prefix = prefixes[index];
         if (normalized.compare(0, prefix.size(), prefix) == 0) {
@@ -1613,28 +1655,51 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(
         draft.spatial_state.scene_constraints.push_back("atmospheric processor flank");
     }
     ApplyGeneratedRoomWorldBiases(&draft, direction);
-    if (initial_session_state.language == kGameLanguageFrench) {
+    if (initial_session_state.language != kGameLanguageEnglish) {
+        const char* north_title = PlayerText(
+            initial_session_state.language, "Northern Relay", "Relais septentrional", "Nordlig relé",
+            "Nordligt relæ", "Nördliche Relaisstation", "Ripetitore settentrionale");
+        const char* east_title = PlayerText(
+            initial_session_state.language, "Eastern Marker Field", "Champ de repères oriental", "Østre merkefelt",
+            "Østligt markeringsfelt", "Östliches Markierungsfeld", "Campo di riferimenti orientale");
+        const char* south_title = PlayerText(
+            initial_session_state.language, "Southern Cut", "Entaille méridionale", "Sørlig skjæring",
+            "Sydligt snit", "Südlicher Einschnitt", "Taglio meridionale");
+        const char* west_title = PlayerText(
+            initial_session_state.language, "Western Beacon Spur", "Éperon de la balise occidentale", "Vestlig signalrygg",
+            "Vestlig signalryg", "Westlicher Signalsporn", "Sperone del faro occidentale");
         switch (direction) {
-        case kDirectionNorth:
-            draft.title = "Relais septentrional";
-            break;
-        case kDirectionEast:
-            draft.title = "Champ de repères oriental";
-            break;
-        case kDirectionSouth:
-            draft.title = "Entaille méridionale";
-            break;
-        case kDirectionWest:
-            draft.title = "Éperon de la balise occidentale";
-            break;
+        case kDirectionNorth: draft.title = north_title; break;
+        case kDirectionEast: draft.title = east_title; break;
+        case kDirectionSouth: draft.title = south_title; break;
+        case kDirectionWest: draft.title = west_title; break;
         default:
-            draft.title = "Champ d'exploration vénusien";
+            draft.title = PlayerText(
+                initial_session_state.language, "Venusian Survey Field", "Champ d'exploration vénusien",
+                "Venusiansk prospekteringsfelt", "Venusiansk prospekteringsfelt",
+                "Venusisches Prospektionsfeld", "Campo di esplorazione venusiano");
             break;
         }
         draft.summary = exterior
-            ? "Un terrain vénusien hostile sépare les repères de prospection et les masses brutales de la carrière."
-            : "Une cellule de service pressurisée prolonge la route de prospection.";
-        draft.arrival_narration = "Vous atteignez " + draft.title + ". " + draft.summary;
+            ? PlayerText(
+                initial_session_state.language,
+                "Hostile Venusian ground separates the survey markers from the quarry masses.",
+                "Un terrain vénusien hostile sépare les repères de prospection et les masses brutales de la carrière.",
+                "Fiendtlig venusisk terreng skiller peilemerkene fra steinbruddets massive former.",
+                "Fjendtligt venusisk terræn adskiller pejlemærkerne fra stenbruddets massive former.",
+                "Feindliches venusisches Gelände trennt die Vermessungsmarken von den massiven Formen des Steinbruchs.",
+                "Un terreno venusiano ostile separa i riferimenti di prospezione dalle masse della cava.")
+            : PlayerText(
+                initial_session_state.language,
+                "A pressurized service cell extends the survey route.",
+                "Une cellule de service pressurisée prolonge la route de prospection.",
+                "En trykksatt servicecelle forlenger prospekteringsruten.",
+                "En tryksat servicecelle forlænger prospekteringsruten.",
+                "Eine druckbeaufschlagte Servicezelle verlängert die Prospektionsroute.",
+                "Una cella di servizio pressurizzata prolunga il percorso di prospezione.");
+        draft.arrival_narration = std::string(PlayerText(
+            initial_session_state.language, "You reach ", "Vous atteignez ", "Du når ", "Du når ",
+            "Du erreichst ", "Raggiungi ")) + draft.title + ". " + draft.summary;
         draft.spatial_state.room_title = draft.title;
         draft.spatial_state.room_summary = draft.summary;
     }
@@ -1832,7 +1897,8 @@ static bool RefreshGeneratedRoomCache(
 
 static const char* DescribeDirection(CardinalDirection direction, GameLanguage language)
 {
-    if (language == kGameLanguageFrench) {
+    switch (language) {
+    case kGameLanguageFrench:
         switch (direction) {
         case kDirectionNorth: return "le nord";
         case kDirectionEast: return "l'est";
@@ -1840,8 +1906,42 @@ static const char* DescribeDirection(CardinalDirection direction, GameLanguage l
         case kDirectionWest: return "l'ouest";
         default: return "direction inconnue";
         }
+    case kGameLanguageNorwegian:
+        switch (direction) {
+        case kDirectionNorth: return "nordover";
+        case kDirectionEast: return "østover";
+        case kDirectionSouth: return "sørover";
+        case kDirectionWest: return "vestover";
+        default: return "i ukjent retning";
+        }
+    case kGameLanguageDanish:
+        switch (direction) {
+        case kDirectionNorth: return "mod nord";
+        case kDirectionEast: return "mod øst";
+        case kDirectionSouth: return "mod syd";
+        case kDirectionWest: return "mod vest";
+        default: return "i ukendt retning";
+        }
+    case kGameLanguageGerman:
+        switch (direction) {
+        case kDirectionNorth: return "nach Norden";
+        case kDirectionEast: return "nach Osten";
+        case kDirectionSouth: return "nach Süden";
+        case kDirectionWest: return "nach Westen";
+        default: return "in unbekannte Richtung";
+        }
+    case kGameLanguageItalian:
+        switch (direction) {
+        case kDirectionNorth: return "verso nord";
+        case kDirectionEast: return "verso est";
+        case kDirectionSouth: return "verso sud";
+        case kDirectionWest: return "verso ovest";
+        default: return "in una direzione sconosciuta";
+        }
+    case kGameLanguageEnglish:
+    default:
+        return CardinalDirectionToString(direction);
     }
-    return CardinalDirectionToString(direction);
 }
 
 static std::string BuildBlockedTraversalNarration(
@@ -1849,9 +1949,11 @@ static std::string BuildBlockedTraversalNarration(
     CardinalDirection direction,
     GameLanguage language)
 {
-    std::string narration = language == kGameLanguageFrench ? "Le passage vers " : "The way ";
+    std::string narration = PlayerText(
+        language, "The way ", "Le passage vers ", "Veien ", "Vejen ", "Der Weg ", "Il passaggio ");
     narration += DescribeDirection(direction, language);
-    narration += language == kGameLanguageFrench ? " est bloqué." : " is blocked.";
+    narration += PlayerText(
+        language, " is blocked.", " est bloqué.", " er blokkert.", " er blokeret.", " ist versperrt.", " è bloccato.");
     if (language == kGameLanguageEnglish && !spatial_state.room_summary.empty()) {
         narration += " ";
         narration += spatial_state.room_summary;
@@ -1862,15 +1964,17 @@ static std::string BuildBlockedTraversalNarration(
 static std::string BuildInvisibleBarrierNarration(const InvisibleBarrier& barrier, GameLanguage language)
 {
     std::string narration;
-    if (language == kGameLanguageFrench) {
-        narration = "Vous avancez vers ";
-        narration += DescribeDirection(barrier.direction, language);
-        narration += " sur un terrain apparemment libre. Votre sonde et votre scaphandre heurtent un plan lisse là où la visière ne montre que le ciel.";
-    } else {
-        narration = "You advance ";
-        narration += DescribeDirection(barrier.direction, language);
-        narration += " across apparently open ground. Your probe and suit strike a smooth plane where the viewport shows only sky.";
-    }
+    narration = PlayerText(
+        language, "You advance ", "Vous avancez vers ", "Du går ", "Du går ", "Du gehst ", "Avanzi ");
+    narration += DescribeDirection(barrier.direction, language);
+    narration += PlayerText(
+        language,
+        " across apparently open ground. Your probe and suit strike a smooth plane where the viewport shows only sky.",
+        " sur un terrain apparemment libre. Votre sonde et votre scaphandre heurtent un plan lisse là où la visière ne montre que le ciel.",
+        " over tilsynelatende åpent terreng. Sonden og romdrakten treffer en glatt flate der visiret bare viser himmel.",
+        " over tilsyneladende åbent terræn. Sonden og rumdragten rammer en glat flade, hvor visiret kun viser himmel.",
+        " über scheinbar freies Gelände. Deine Sonde und dein Raumanzug stoßen gegen eine glatte Fläche, wo das Visier nur Himmel zeigt.",
+        " su un terreno apparentemente libero. La sonda e la tuta urtano una superficie liscia dove la visiera mostra soltanto il cielo.");
     if (language == kGameLanguageEnglish && !barrier.evidence.empty()) {
         narration += " ";
         narration += barrier.evidence;
@@ -1880,21 +1984,24 @@ static std::string BuildInvisibleBarrierNarration(const InvisibleBarrier& barrie
 
 static std::string BuildTraversalNarrationForKnownPlace(const SessionState& session_state, const std::string& place_id, CardinalDirection direction)
 {
-    const bool french = session_state.language == kGameLanguageFrench;
-    std::string narration = french ? "Vous allez vers " : "You go ";
+    const bool localized = session_state.language != kGameLanguageEnglish;
+    std::string narration = PlayerText(
+        session_state.language, "You go ", "Vous allez vers ", "Du går ", "Du går ", "Du gehst ", "Vai ");
     narration += DescribeDirection(direction, session_state.language);
-    narration += french ? " et atteignez " : " and enter ";
+    narration += PlayerText(
+        session_state.language, " and enter ", " et atteignez ", " og kommer til ", " og når ",
+        " und erreichst ", " e raggiungi ");
     narration += DescribePlaceLabel(session_state, place_id);
     narration += ".";
 
     const GeneratedRoom* room = FindGeneratedRoomById(session_state, place_id);
-    if (!french && room && !room->spatial_state.room_summary.empty()) {
+    if (!localized && room && !room->spatial_state.room_summary.empty()) {
         narration += " ";
         narration += room->spatial_state.room_summary;
     } else {
         LocationId location_id = kLocationUnknown;
         SpatialState canonical_state;
-        if (!french && ParseCanonicalPlaceId(place_id, &location_id) &&
+        if (!localized && ParseCanonicalPlaceId(place_id, &location_id) &&
             BuildCanonicalSpatialState(location_id, &canonical_state) &&
             !canonical_state.room_summary.empty()) {
             narration += " ";
@@ -2523,9 +2630,14 @@ bool RunHeadlessTurnFromState(
             result->turn_result.intent =
                 std::string("move_") + CardinalDirectionToString(traversal_direction) + "_invisible_barrier";
             result->turn_result.narration = BuildInvisibleBarrierNarration(discovered_barrier, initial_session_state.language);
-            result->turn_result.clarification = initial_session_state.language == kGameLanguageFrench
-                ? "Le déplacement a été reconnu : une barrière invisible, et non un échec de compréhension ou un obstacle visible, a refusé le passage."
-                : "Traversal was recognized; an invisible barrier, not a parser failure or visible obstacle, refused the move.";
+            result->turn_result.clarification = PlayerText(
+                initial_session_state.language,
+                "Traversal was recognized; an invisible barrier, not a parser failure or visible obstacle, refused the move.",
+                "Le déplacement a été reconnu : une barrière invisible, et non un échec de compréhension ou un obstacle visible, a refusé le passage.",
+                "Forflytningen ble gjenkjent: En usynlig barriere, ikke en tolkningsfeil eller et synlig hinder, stanset deg.",
+                "Bevægelsen blev genkendt: En usynlig barriere, ikke en fortolkningsfejl eller en synlig hindring, standsede dig.",
+                "Die Bewegung wurde erkannt: Eine unsichtbare Barriere, nicht ein Verständnisfehler oder ein sichtbares Hindernis, hielt dich auf.",
+                "Il movimento è stato riconosciuto: una barriera invisibile, non un errore di comprensione o un ostacolo visibile, ha impedito il passaggio.");
             result->updated_soft_state.rolling_summary = result->turn_result.narration;
             AddUniqueString(&result->updated_spatial_state.spatial_anomalies, discovered_barrier.evidence);
             AskLlmForThermalUpdate(
@@ -2553,9 +2665,14 @@ bool RunHeadlessTurnFromState(
                 result->initial_spatial_state,
                 traversal_direction,
                 initial_session_state.language);
-            result->turn_result.clarification = initial_session_state.language == kGameLanguageFrench
-                ? "Aucun nouveau lieu n'a été généré car cette sortie est indiquée comme bloquée."
-                : "No new room was generated because the current spatial brief marks that exit as blocked.";
+            result->turn_result.clarification = PlayerText(
+                initial_session_state.language,
+                "No new room was generated because the current spatial brief marks that exit as blocked.",
+                "Aucun nouveau lieu n'a été généré car cette sortie est indiquée comme bloquée.",
+                "Ingen ny plass ble generert fordi den romlige beskrivelsen markerer denne utgangen som blokkert.",
+                "Intet nyt sted blev genereret, fordi den rumlige beskrivelse markerer denne udgang som blokeret.",
+                "Es wurde kein neuer Ort erzeugt, weil die räumliche Beschreibung diesen Ausgang als versperrt markiert.",
+                "Non è stato generato alcun nuovo luogo perché la descrizione spaziale indica questa uscita come bloccata.");
             result->updated_soft_state.rolling_summary = result->turn_result.narration;
             AskLlmForThermalUpdate(
                 body_driven_config,
@@ -2633,12 +2750,12 @@ bool RunHeadlessTurnFromState(
         std::vector<LlmPromptMessage> room_messages;
         room_messages.push_back(LlmPromptMessage());
         room_messages.back().role = "system";
-        room_messages.back().content = initial_session_state.language == kGameLanguageFrench
-            ? "You invent one new neighboring room for a local interactive-fiction prototype. Return valid JSON only. "
-              "MANDATORY LANGUAGE RULE: title, summary, and arrival_narration must be written entirely in idiomatic French. "
-              "JSON keys, IDs, object tokens, anchors, and scene constraints remain English. Do not use markdown fences."
-            : "You invent one new neighboring room for a local interactive-fiction prototype. "
-              "Return valid JSON only. Do not use markdown fences.";
+        room_messages.back().content =
+            std::string("You invent one new neighboring room for a local interactive-fiction prototype. Return valid JSON only. ") +
+            "MANDATORY LANGUAGE RULE: title, summary, and arrival_narration must be written entirely in idiomatic " +
+            GameLanguageEnglishName(initial_session_state.language) +
+            ". JSON keys, IDs, object tokens, anchors, scene constraints, and all internal mechanics remain English. "
+            "Do not use markdown fences.";
         room_messages.push_back(LlmPromptMessage());
         room_messages.back().role = "user";
         room_messages.back().content = room_prompt;
@@ -2679,9 +2796,15 @@ bool RunHeadlessTurnFromState(
                     prospective_spatial_state);
                 used_room_metadata_fallback = true;
                 result->used_turn_fallback = true;
-                result->turn_result.clarification = initial_session_state.language == kGameLanguageFrench
-                    ? "Les métadonnées du lieu ont été remplacées par une solution de secours."
-                    : std::string("Generated room metadata fallback was used: ") + metadata_error;
+                result->turn_result.clarification = initial_session_state.language == kGameLanguageEnglish
+                    ? std::string("Generated room metadata fallback was used: ") + metadata_error
+                    : PlayerText(
+                        initial_session_state.language, "Generated room metadata fallback was used.",
+                        "Les métadonnées du lieu ont été remplacées par une solution de secours.",
+                        "Reserveløsningen ble brukt for metadataene til stedet.",
+                        "Reserveløsningen blev brugt til stedets metadata.",
+                        "Für die Ortsmetadaten wurde die Ersatzlösung verwendet.",
+                        "Per i metadati del luogo è stata usata la soluzione di riserva.");
             }
         } else {
             draft = MakeFallbackGeneratedRoomDraft(
@@ -2690,10 +2813,16 @@ bool RunHeadlessTurnFromState(
                 prospective_spatial_state);
             used_room_metadata_fallback = true;
             result->used_turn_fallback = true;
-            result->turn_result.clarification = initial_session_state.language == kGameLanguageFrench
-                ? "Le lieu a été construit par la solution de secours après un échec du modèle."
-                : std::string("Generated room metadata fallback was used after LLM failure: ") +
-                    (room_generation_result.error_message.empty() ? "unknown error" : room_generation_result.error_message);
+            result->turn_result.clarification = initial_session_state.language == kGameLanguageEnglish
+                ? std::string("Generated room metadata fallback was used after LLM failure: ") +
+                    (room_generation_result.error_message.empty() ? "unknown error" : room_generation_result.error_message)
+                : PlayerText(
+                    initial_session_state.language, "The fallback built the location after a model failure.",
+                    "Le lieu a été construit par la solution de secours après un échec du modèle.",
+                    "Reserveløsningen bygde stedet etter en modellfeil.",
+                    "Reserveløsningen byggede stedet efter en modelfejl.",
+                    "Nach einem Modellfehler wurde der Ort durch die Ersatzlösung aufgebaut.",
+                    "Il luogo è stato costruito dalla soluzione di riserva dopo un errore del modello.");
         }
 
         if (draft.spatial_state.alert_level <= 0) {
@@ -2730,18 +2859,36 @@ bool RunHeadlessTurnFromState(
                 : draft.summary;
         }
         ApplyGeneratedRoomWorldBiases(&draft, traversal_direction);
-        if (initial_session_state.language == kGameLanguageFrench &&
+        if (initial_session_state.language != kGameLanguageEnglish &&
             LooksPredominantlyEnglish(draft.title + " " + draft.summary + " " + draft.arrival_narration)) {
-            if (!LocalizePlayerFacingTextToFrench(
+            if (!LocalizePlayerFacingText(
                     body_driven_config,
+                    initial_session_state.language,
                     &draft.title,
                     &draft.summary,
                     &draft.arrival_narration,
                     0,
                     result)) {
-                draft.title = "Secteur de prospection fracturé";
-                draft.summary = "Un nouveau secteur vénusien prolonge la route entre les repères de prospection et les masses de la carrière.";
-                draft.arrival_narration = "Vous atteignez un secteur de prospection dont les repères ne concordent plus tout à fait.";
+                draft.title = PlayerText(
+                    initial_session_state.language, "Fractured Survey Sector", "Secteur de prospection fracturé",
+                    "Brutt prospekteringssektor", "Brudt prospekteringssektor", "Gebrochener Prospektionssektor",
+                    "Settore di prospezione fratturato");
+                draft.summary = PlayerText(
+                    initial_session_state.language,
+                    "A new Venusian sector extends the route between survey markers and quarry masses.",
+                    "Un nouveau secteur vénusien prolonge la route entre les repères de prospection et les masses de la carrière.",
+                    "En ny venusisk sektor forlenger ruten mellom peilemerkene og steinbruddets massive former.",
+                    "En ny venusisk sektor forlænger ruten mellem pejlemærkerne og stenbruddets massive former.",
+                    "Ein neuer venusischer Sektor verlängert die Route zwischen Vermessungsmarken und den massiven Formen des Steinbruchs.",
+                    "Un nuovo settore venusiano prolunga il percorso tra i riferimenti di prospezione e le masse della cava.");
+                draft.arrival_narration = PlayerText(
+                    initial_session_state.language,
+                    "You reach a survey sector whose markers no longer quite agree.",
+                    "Vous atteignez un secteur de prospection dont les repères ne concordent plus tout à fait.",
+                    "Du når en prospekteringssektor der peilemerkene ikke lenger stemmer helt overens.",
+                    "Du når en prospekteringssektor, hvor pejlemærkerne ikke længere stemmer helt overens.",
+                    "Du erreichst einen Prospektionssektor, dessen Markierungen nicht mehr ganz übereinstimmen.",
+                    "Raggiungi un settore di prospezione i cui riferimenti non coincidono più del tutto.");
             }
             draft.title = ConstrainNarrationText(draft.title, 72, 1);
             draft.summary = ConstrainNarrationText(draft.summary, 160, 2);
@@ -2817,18 +2964,28 @@ bool RunHeadlessTurnFromState(
         result->turn_result.intent = std::string("move_") + CardinalDirectionToString(traversal_direction) + "_generated_room";
         result->turn_result.narration = draft.arrival_narration;
         if (used_room_metadata_fallback && result->turn_result.clarification.empty()) {
-            result->turn_result.clarification = initial_session_state.language == kGameLanguageFrench
-                ? "Les métadonnées du lieu proviennent de la solution de secours."
-                : "Generated room metadata fallback was used.";
+            result->turn_result.clarification = PlayerText(
+                initial_session_state.language,
+                "Generated room metadata fallback was used.",
+                "Les métadonnées du lieu proviennent de la solution de secours.",
+                "Reserveløsningen ble brukt for metadataene til stedet.",
+                "Reserveløsningen blev brugt til stedets metadata.",
+                "Für die Ortsmetadaten wurde die Ersatzlösung verwendet.",
+                "Per i metadati del luogo è stata usata la soluzione di riserva.");
         }
         if (used_room_scene_fallback) {
             if (!result->turn_result.clarification.empty()) {
                 result->turn_result.clarification.append(" ");
             }
             result->turn_result.clarification.append(
-                initial_session_state.language == kGameLanguageFrench
-                    ? "La scène du lieu provient de la solution de secours."
-                    : "Generated room scene fallback was used.");
+                PlayerText(
+                    initial_session_state.language,
+                    "Generated room scene fallback was used.",
+                    "La scène du lieu provient de la solution de secours.",
+                    "Reserveløsningen ble brukt for scenen til stedet.",
+                    "Reserveløsningen blev brugt til stedets scene.",
+                    "Für die Ortsszene wurde die Ersatzlösung verwendet.",
+                    "Per la scena del luogo è stata usata la soluzione di riserva."));
         }
         result->rendered_scene = generated_scene;
         return true;
@@ -2847,13 +3004,12 @@ bool RunHeadlessTurnFromState(
     std::vector<LlmPromptMessage> messages;
         messages.push_back(LlmPromptMessage());
         messages.back().role = "system";
-    messages.back().content = initial_session_state.language == kGameLanguageFrench
-        ? "You are a deterministic interactive-fiction turn engine. Return valid JSON only. "
-          "MANDATORY LANGUAGE RULE: narration and clarification must be written entirely in idiomatic French. "
-          "JSON keys, IDs, intent labels, object tokens, and internal mechanics remain English. "
-          "Do not use markdown fences or write outside the JSON object."
-        : "You are a deterministic interactive-fiction turn engine. Return valid JSON only. "
-          "Do not use markdown fences. Do not write any text outside the JSON object.";
+    messages.back().content =
+        std::string("You are a deterministic interactive-fiction turn engine. Return valid JSON only. ") +
+        "MANDATORY LANGUAGE RULE: narration and clarification must be written entirely in idiomatic " +
+        GameLanguageEnglishName(initial_session_state.language) +
+        ". JSON keys, IDs, intent labels, object tokens, and internal mechanics remain English. "
+        "Do not use markdown fences or write outside the JSON object.";
     messages.push_back(LlmPromptMessage());
     messages.back().role = "user";
     messages.back().content = user_prompt;
@@ -2900,19 +3056,32 @@ bool RunHeadlessTurnFromState(
         }
     }
 
-    if (initial_session_state.language == kGameLanguageFrench &&
+    if (initial_session_state.language != kGameLanguageEnglish &&
         LooksPredominantlyEnglish(result->turn_result.narration + " " + result->turn_result.clarification)) {
-        if (!LocalizePlayerFacingTextToFrench(
+        if (!LocalizePlayerFacingText(
                 body_driven_config,
+                initial_session_state.language,
                 0,
                 0,
                 &result->turn_result.narration,
                 &result->turn_result.clarification,
                 result)) {
-            result->turn_result.narration =
-                "Votre action est prise en compte, mais le compte rendu détaillé demeure momentanément illisible.";
-            result->turn_result.clarification =
-                "L'état validé du monde est conservé malgré l'échec de localisation du texte joueur.";
+            result->turn_result.narration = PlayerText(
+                initial_session_state.language,
+                "Your action was accepted, but the detailed report is temporarily unreadable.",
+                "Votre action est prise en compte, mais le compte rendu détaillé demeure momentanément illisible.",
+                "Handlingen din ble registrert, men den detaljerte rapporten er midlertidig uleselig.",
+                "Din handling blev registreret, men den detaljerede rapport er midlertidigt ulæselig.",
+                "Deine Aktion wurde berücksichtigt, aber der ausführliche Bericht ist vorübergehend unlesbar.",
+                "La tua azione è stata registrata, ma il resoconto dettagliato è temporaneamente illeggibile.");
+            result->turn_result.clarification = PlayerText(
+                initial_session_state.language,
+                "The validated world state is preserved despite the player-text localization failure.",
+                "L'état validé du monde est conservé malgré l'échec de localisation du texte joueur.",
+                "Den validerte verdenstilstanden bevares selv om lokaliseringen av spillerteksten mislyktes.",
+                "Den validerede verdenstilstand bevares, selv om lokaliseringen af spillerteksten mislykkedes.",
+                "Der bestätigte Weltzustand bleibt trotz der fehlgeschlagenen Lokalisierung des Spielertexts erhalten.",
+                "Lo stato convalidato del mondo viene conservato nonostante l'errore di localizzazione del testo per il giocatore.");
         }
     }
 

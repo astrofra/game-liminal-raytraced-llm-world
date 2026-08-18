@@ -451,9 +451,9 @@ std::string BuildTurnPrompt(
         text += "The current room may be an improvised generated room. Keep that room stable unless the player explicitly moves.\n";
     }
     text += "Narration must stay short, concrete, and spatially actionable.\n";
-    text += language == kGameLanguageFrench
-        ? "Write narration and clarification in French. Keep JSON keys, IDs, intent labels, object names used as engine tokens, and all internal mechanics in English.\n"
-        : "Write narration and clarification in English. Keep JSON keys, IDs, intent labels, object names used as engine tokens, and all internal mechanics in English.\n";
+    text += "Write narration and clarification in idiomatic ";
+    text += GameLanguageEnglishName(language);
+    text += ". Keep JSON keys, IDs, intent labels, object names used as engine tokens, and all internal mechanics in English.\n";
     text += "Prefer 2 to 4 short sentences and stay roughly under 70 words.\n";
     text += "Avoid long atmospheric digressions and avoid restating the whole room summary.\n";
     text += "move_count tracks effectful actions only. Increase it only when the command materially changes position, inventory, state or knowledge.\n";
@@ -536,9 +536,9 @@ std::string BuildGeneratedRoomPrompt(
     text += "Keep the title short.\n";
     text += "Keep the summary compact and concrete.\n";
     text += "Keep arrival_narration under about 60 words and make it immediately playable.\n";
-    text += language == kGameLanguageFrench
-        ? "Write title, summary, and arrival_narration in French. Keep JSON keys, IDs, location_archetype, anchors, object tokens, constraints, and all internal mechanics in English.\n"
-        : "Write title, summary, and arrival_narration in English. Keep JSON keys, IDs, location_archetype, anchors, object tokens, constraints, and all internal mechanics in English.\n";
+    text += "Write title, summary, and arrival_narration in idiomatic ";
+    text += GameLanguageEnglishName(language);
+    text += ". Keep JSON keys, IDs, location_archetype, anchors, object tokens, constraints, and all internal mechanics in English.\n";
     text += "Set move_cost to 1 for a normal successful traversal, and use 0 only if the traversal has no meaningful effect.\n";
     text += "Set score_delta conservatively. Use 0 unless entering this room meaningfully advances progress or reveals something important.\n";
     text += "visible_objects must contain 3 to 5 concrete actionable objects or instruments, not vague scenery only.\n";

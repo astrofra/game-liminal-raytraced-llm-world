@@ -32,7 +32,7 @@ Current state:
 - authoritative hard/soft/spatial state with deterministic and hybrid scene compilation
 - seven-place Eryx survey route with deterministic invisible contact and non-reciprocal traversal
 - model-directed Venus heat loop linking external temperature, suit-buffered body temperature, and LLM sampling temperature
-- bilingual English/French player interface selected at launch with `E` or `F`
+- six-language player interface selected at launch: English (`E`), Français (`F`), Norsk (`N`, Bokmål), Dansk (`D`), Deutsch (`G`), or Italiano (`I`)
 - symmetric procedural suit-visor mask around the 3D viewport
 - green-to-pale-yellow Venus sky with doubled radiance on environment misses
 - legacy datacenter/desert scenes retained as historical baselines
@@ -160,7 +160,7 @@ Useful overrides:
 
 `--sdl` opens the first desktop loop:
 
-- launch screen: the large French title `Entre les Murs Latents`, the smaller English title `Within the Latent Walls`, then `English (E)` / `Français (F)`; player-facing text follows that choice while internal LLM contracts remain English
+- launch screen: the large French title `Entre les Murs Latents`, the smaller English title `Within the Latent Walls`, a two-column selector for `English (E)`, `Français (F)`, `Norsk (N)`, `Dansk (D)`, `Deutsch (G)`, and `Italiano (I)`, then `(c) Resistance 2026` at the bottom; player-facing text follows that choice while internal LLM contracts remain English
 - top panel: raytraced scene
 - the 3D image is clipped by a symmetric procedural visor assembled from rectangular scanlines and elliptical boundaries; the exterior is black
 - visor HUD: external temperature and body temperature

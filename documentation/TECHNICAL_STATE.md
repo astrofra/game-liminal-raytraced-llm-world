@@ -20,10 +20,10 @@ Une premiere tranche Eryx est implementee dans le runtime :
 - sept fixtures `.scene` source dans `assets/scenes/eryx_*.scene`
 - prompts de tour, generation de salle et audit visuel migres vers la carriere venusienne
 - etat serialise expose comme `spatial_entropy`, `external_temperature_c`, `body_temperature_c`, `suit_state`, `oxygen_state` et `instrument_power_state`
-- HUD thermique `EXT. TEMPERATURE` / `BODY TEMPERATURE`, traduit en français après sélection `F`
+- HUD thermique `EXT. TEMPERATURE` / `BODY TEMPERATURE`, localisé dans la langue joueur
 - température d'échantillonnage effective dérivée de la température corporelle pour les tours et l'imagination des lieux
-- sélection de langue `English (E)` / `Français (F)` au lancement SDL ; champs et mécaniques internes du LLM conservés en anglais
-- écran de langue titré `Entre les Murs Latents` en grand, puis `Within the Latent Walls` en plus petit
+- sélection SDL parmi `English (E)`, `Français (F)`, `Norsk (N, Bokmål)`, `Dansk (D)`, `Deutsch (G)` et `Italiano (I)` ; champs et mécaniques internes du LLM conservés en anglais
+- écran de langue titré `Entre les Murs Latents` en grand, puis `Within the Latent Walls` en plus petit, avec `(c) Resistance 2026` centré en bas
 - masque de visière 2D symétrique et procédural devant le viewport 3D
 - douze liens diriges constituant une route d'arpentage
 - type persistant `InvisibleBarrier`, separe de `blocked_exits`
@@ -212,9 +212,9 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - rendu TTF joueur via `SDL3_ttf` et fontes `Zilla Slab`
   - écran de sélection de langue `E`/`F` avant la boucle de commande
   - interface exposée, narrations déterministes et instructions LLM joueur localisées ; contrats internes conservés en anglais
-  - validation lexicale des sorties joueur françaises, suivie si nécessaire d'une passe de localisation LLM à température nulle puis d'un fallback français déterministe
+  - validation lexicale des sorties joueur non anglophones, suivie si nécessaire d'une passe de localisation LLM à température nulle vers la langue choisie puis d'un fallback déterministe localisé
   - raccourcis et directions affichés selon la langue (`NORTH`/`NORD`, `WEST`/`OUEST`, etc.)
-  - garde d'affichage française pour les titres et narrations anglophones déjà présents dans une ancienne sauvegarde, sans mutation des données archivées
+  - garde d'affichage non anglophone pour les titres et narrations anglaises déjà présents dans une ancienne sauvegarde, sans mutation des données archivées
   - masque de visière symétrique calculé par scanlines rectangulaires et frontières elliptiques ; extérieur de fenêtre noir et encoche centrale limitée au tiers inférieur
   - deux panneaux thermiques affichant température extérieure entière et température corporelle décimale
   - segments `*highlightes*` rendus avec `Zilla Slab Highlight`

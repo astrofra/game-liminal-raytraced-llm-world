@@ -130,7 +130,7 @@ target_compile_definitions(
     PRIVATE LIMINAL_LLAMA_VENDORED_COMMIT="${LIMINAL_LLAMA_VENDORED_COMMIT}")
 
 if(MSVC)
-    target_compile_options(liminal_cornell_renderer PRIVATE /W4 /wd4996)
+    target_compile_options(liminal_cornell_renderer PRIVATE /W4 /wd4996 /utf-8)
 else()
     target_compile_options(liminal_cornell_renderer PRIVATE -Wall -Wextra -Wpedantic)
 endif()

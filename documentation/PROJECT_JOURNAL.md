@@ -1412,3 +1412,26 @@ Limites assumees :
 - l'annulation intervient entre les images, pas au milieu d'une ligne de raytracing
 - la concurrence entre animation, image `0` et inference peut creer une contention CPU ponctuelle
 - aucune animation de decor, accumulation temporelle ou serialization de l'etat d'animation
+
+## 2026-08-18 - Iteration 0034 - Six langues et signature d'introduction
+
+Objectif :
+
+Étendre la sélection de langue à l'Europe du Nord, à l'allemand et à l'italien, puis signer l'écran d'introduction.
+
+Implémentation :
+
+- sélecteur d'introduction réorganisé en grille `2 x 3`
+- choix `English (E)`, `Français (F)`, `Norsk (N)` en bokmål, `Dansk (D)`, `Deutsch (G)` et `Italiano (I)`
+- ajout de `(c) Resistance 2026`, centré en bas de l'écran
+- nouveaux codes de sauvegarde `no`, `da`, `de` et `it`, avec alias de chargement explicites
+- localisation des titres canoniques, boussole, températures, statut, score, messages d'interface et textes de secours
+- consignes LLM paramétrées par langue pour les tours, les salles générées et la passe de localisation
+- commandes cardinales déterministes enrichies avec `øst`, `sør`, `syd`, `Süd`, `ovest` et les préfixes de mouvement usuels
+- compilation MSVC forcée en UTF-8 ; couverture des glyphes latins requis vérifiée dans Zilla Slab
+
+Validation :
+
+- build CMake `Release` réussi
+- police Zilla Slab vérifiée pour `å`, `ø`, `æ`, `ö`, `ü`, `ß`, les capitales correspondantes et les diacritiques français et italiens
+- contrats internes, clés JSON, identifiants et tokens de scène maintenus en anglais
