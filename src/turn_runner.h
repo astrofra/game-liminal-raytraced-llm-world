@@ -45,6 +45,8 @@ struct HeadlessTurnResult {
     std::string raw_response_text;
     std::string repair_response_text;
     std::string raw_scene_audit_response_text;
+    std::string thermal_prompt_text;
+    std::string thermal_response_text;
     std::string rendered_scene_text;
     std::string rendered_scene_debug_text;
     std::string initial_place_id;
@@ -76,9 +78,12 @@ struct HeadlessTurnResult {
     std::vector<RoomLink> room_links_to_add;
     std::vector<InvisibleBarrier> invisible_barriers_to_update;
     bool invisible_barrier_contact;
+    bool thermal_update_used;
+    bool player_text_localization_used;
     int prompt_tokens;
     int generated_tokens;
     double inference_time_ms;
+    float effective_llm_temperature;
 
     HeadlessTurnResult()
         : traversal_direction(kDirectionUnknown)
@@ -93,9 +98,12 @@ struct HeadlessTurnResult {
         , generated_room_metadata_fallback_used(false)
         , generated_room_scene_fallback_used(false)
         , invisible_barrier_contact(false)
+        , thermal_update_used(false)
+        , player_text_localization_used(false)
         , prompt_tokens(0)
         , generated_tokens(0)
         , inference_time_ms(0.0)
+        , effective_llm_temperature(0.0f)
     {
     }
 };

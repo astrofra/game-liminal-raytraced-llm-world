@@ -32,15 +32,17 @@ struct GeneratedRoomDraft {
     std::string arrival_narration;
     int move_cost;
     int score_delta;
-    bool temperature_changed;
-    int next_datacenter_temperature_c;
+    int next_spatial_entropy;
+    int next_external_temperature_c;
+    float next_body_temperature_c;
     SpatialState spatial_state;
 
     GeneratedRoomDraft()
         : move_cost(1)
         , score_delta(0)
-        , temperature_changed(false)
-        , next_datacenter_temperature_c(kDefaultDatacenterTemperatureC)
+        , next_spatial_entropy(kDefaultSpatialEntropy)
+        , next_external_temperature_c(kDefaultExternalTemperatureC)
+        , next_body_temperature_c(kDefaultBodyTemperatureC)
     {
     }
 };
@@ -306,13 +308,17 @@ static std::string BuildFallbackNarration(const std::string& raw_response_text)
     return ConstrainNarrationText(text, 280, 3);
 }
 
-static TurnResult MakeFallbackTurnResult(const std::string& raw_response_text)
+static TurnResult MakeFallbackTurnResult(const std::string& raw_response_text, GameLanguage language)
 {
     TurnResult turn_result;
     turn_result.intent = "fallback_noop";
     ExtractQuotedJsonField(raw_response_text, "intent", &turn_result.intent);
-    turn_result.narration = BuildFallbackNarration(raw_response_text);
-    turn_result.clarification = "The world state was kept unchanged after a malformed model response.";
+    turn_result.narration = language == kGameLanguageFrench
+        ? "La réponse du système est restée illisible. Votre position et l'état du monde ne changent pas."
+        : BuildFallbackNarration(raw_response_text);
+    turn_result.clarification = language == kGameLanguageFrench
+        ? "L'état du monde a été conservé après une réponse mal formée du modèle."
+        : "The world state was kept unchanged after a malformed model response.";
     turn_result.continuity_notes.push_back("Malformed model response was ignored; hard state and spatial state were kept stable.");
     return turn_result;
 }
@@ -527,6 +533,29 @@ static int ReadIntValue(const json& object, const char* key, int default_value)
     return object[key].get<int>();
 }
 
+static float ReadFloatValue(const json& object, const char* key, float default_value)
+{
+    if (!object.is_object() || !object.contains(key) || !object[key].is_number()) {
+        return default_value;
+    }
+    return object[key].get<float>();
+}
+
+static LlmGenerationConfig BuildBodyDrivenGenerationConfig(
+    const LlmGenerationConfig& base_config,
+    const HardState& hard_state)
+{
+    LlmGenerationConfig effective_config = base_config;
+    const float body_driven_temperature = ComputeLlmSamplingTemperature(hard_state.body_temperature_c);
+    effective_config.temperature = base_config.temperature <= 0.0f
+        ? body_driven_temperature
+        : base_config.temperature + (body_driven_temperature - 0.10f);
+    if (effective_config.temperature > 1.50f) {
+        effective_config.temperature = 1.50f;
+    }
+    return effective_config;
+}
+
 static void ParseHardStateDeltaNode(const json& node, HardStateDelta* delta)
 {
     if (!delta || !node.is_object()) {
@@ -547,15 +576,27 @@ static void ParseHardStateDeltaNode(const json& node, HardStateDelta* delta)
     const bool has_legacy_temperature =
         node.contains("next_datacenter_temperature_c") &&
         node["next_datacenter_temperature_c"].is_number_integer();
-    delta->temperature_changed =
+    delta->spatial_entropy_changed =
         (ReadBoolValue(node, "spatial_entropy_changed", false) && has_next_entropy) ||
         (ReadBoolValue(node, "temperature_changed", false) && has_legacy_temperature);
-    delta->next_datacenter_temperature_c =
-        ClampDatacenterTemperatureC(
+    delta->next_spatial_entropy =
+        ClampSpatialEntropy(
             ReadIntValue(
                 node,
                 has_next_entropy ? "next_spatial_entropy" : "next_datacenter_temperature_c",
-                delta->next_datacenter_temperature_c));
+                delta->next_spatial_entropy));
+    delta->external_temperature_changed =
+        ReadBoolValue(node, "external_temperature_changed", false) &&
+        node.contains("next_external_temperature_c") &&
+        node["next_external_temperature_c"].is_number_integer();
+    delta->next_external_temperature_c = ClampExternalTemperatureC(
+        ReadIntValue(node, "next_external_temperature_c", delta->next_external_temperature_c));
+    delta->body_temperature_changed =
+        ReadBoolValue(node, "body_temperature_changed", false) &&
+        node.contains("next_body_temperature_c") &&
+        node["next_body_temperature_c"].is_number();
+    delta->next_body_temperature_c = ClampBodyTemperatureC(
+        ReadFloatValue(node, "next_body_temperature_c", delta->next_body_temperature_c));
     delta->cooling_state_changed =
         ReadBoolValue(node, "suit_state_changed", false) ||
         ReadBoolValue(node, "cooling_state_changed", false);
@@ -634,8 +675,14 @@ static void ApplyHardDelta(HardState* state, const HardStateDelta& delta)
     if (delta.alert_level_changed) {
         state->alert_level = delta.next_alert_level;
     }
-    if (delta.temperature_changed) {
-        state->datacenter_temperature_c = ClampDatacenterTemperatureC(delta.next_datacenter_temperature_c);
+    if (delta.spatial_entropy_changed) {
+        state->spatial_entropy = ClampSpatialEntropy(delta.next_spatial_entropy);
+    }
+    if (delta.external_temperature_changed) {
+        state->external_temperature_c = ClampExternalTemperatureC(delta.next_external_temperature_c);
+    }
+    if (delta.body_temperature_changed) {
+        state->body_temperature_c = ClampBodyTemperatureC(delta.next_body_temperature_c);
     }
     if (delta.cooling_state_changed && delta.next_cooling_state != kResourceUnknown) {
         state->cooling_state = delta.next_cooling_state;
@@ -666,7 +713,9 @@ static void ApplyHardDelta(HardState* state, const HardStateDelta& delta)
     if (state->score < 0) {
         state->score = 0;
     }
-    state->datacenter_temperature_c = ClampDatacenterTemperatureC(state->datacenter_temperature_c);
+    state->spatial_entropy = ClampSpatialEntropy(state->spatial_entropy);
+    state->external_temperature_c = ClampExternalTemperatureC(state->external_temperature_c);
+    state->body_temperature_c = ClampBodyTemperatureC(state->body_temperature_c);
 }
 
 static void ApplySpatialDelta(SpatialState* state, const SpatialStateDelta& delta)
@@ -726,6 +775,108 @@ static std::string ToLowerAsciiCopy(const std::string& text)
         }
     }
     return lower;
+}
+
+static bool LooksPredominantlyEnglish(const std::string& text)
+{
+    const std::string lower = " " + ToLowerAsciiCopy(CollapseWhitespaceCopy(text)) + " ";
+    const char* english_markers[] = {
+        " the ", " you ", " your ", " and ", " with ", " into ", " from ", " this ", " that ",
+        " its ", " is ", " are ", " across ", " beyond ", " through ", " remains ", " stands ",
+        " fractured ", " quarry ", " survey ", " north ", " east ", " south ", " west ",
+        " shelter ", " room ", " field ", " cut ", " trench ",
+    };
+    int score = 0;
+    for (size_t index = 0; index < sizeof(english_markers) / sizeof(english_markers[0]); ++index) {
+        if (lower.find(english_markers[index]) != std::string::npos) {
+            ++score;
+        }
+    }
+    return score >= 2 || lower.compare(0, 5, " the ") == 0 || lower.compare(0, 5, " you ") == 0;
+}
+
+static bool LocalizePlayerFacingTextToFrench(
+    const HeadlessTurnConfig& config,
+    std::string* title,
+    std::string* summary,
+    std::string* narration,
+    std::string* clarification,
+    HeadlessTurnResult* result)
+{
+    json source = json::object();
+    source["title"] = title ? *title : std::string();
+    source["summary"] = summary ? *summary : std::string();
+    source["narration"] = narration ? *narration : std::string();
+    source["clarification"] = clarification ? *clarification : std::string();
+
+    std::vector<LlmPromptMessage> messages;
+    messages.push_back(LlmPromptMessage());
+    messages.back().role = "system";
+    messages.back().content =
+        "You are a strict localization pass. Translate every non-empty JSON string value into idiomatic French. "
+        "Preserve proper names, concrete facts, directions, and gameplay affordances. Return the same four keys as valid JSON only. "
+        "Never answer in English and never add explanations.";
+    messages.push_back(LlmPromptMessage());
+    messages.back().role = "user";
+    messages.back().content =
+        std::string("Translate these player-facing strings into French. Empty values must remain empty:\n") + source.dump();
+
+    LlmGenerationConfig localization_config = config.generation_config;
+    localization_config.temperature = 0.0f;
+    localization_config.use_json_grammar = false;
+    if (localization_config.n_predict <= 0 || localization_config.n_predict > 384) {
+        localization_config.n_predict = 384;
+    }
+
+    LlmGenerationResult generation_result;
+    if (!GenerateChatCompletion(localization_config, messages, &generation_result)) {
+        return false;
+    }
+    if (result) {
+        result->prompt_tokens += generation_result.prompt_tokens;
+        result->generated_tokens += generation_result.generated_tokens;
+        result->inference_time_ms += generation_result.inference_time_ms;
+    }
+
+    try {
+        std::string extracted_json;
+        const char* parse_text = generation_result.response_text.c_str();
+        if (ExtractFirstJsonObject(parse_text, &extracted_json)) {
+            parse_text = extracted_json.c_str();
+        }
+        const json root = json::parse(parse_text);
+        if (!root.is_object()) {
+            return false;
+        }
+
+        const std::string localized_title = ReadStringValue(root, "title");
+        const std::string localized_summary = ReadStringValue(root, "summary");
+        const std::string localized_narration = ReadStringValue(root, "narration");
+        const std::string localized_clarification = ReadStringValue(root, "clarification");
+        const std::string combined = localized_title + " " + localized_summary + " " + localized_narration + " " + localized_clarification;
+        if (combined.empty() || LooksPredominantlyEnglish(combined)) {
+            return false;
+        }
+
+        if (title && !localized_title.empty()) {
+            *title = localized_title;
+        }
+        if (summary && !localized_summary.empty()) {
+            *summary = localized_summary;
+        }
+        if (narration && !localized_narration.empty()) {
+            *narration = localized_narration;
+        }
+        if (clarification && !localized_clarification.empty()) {
+            *clarification = localized_clarification;
+        }
+        if (result) {
+            result->player_text_localization_used = true;
+        }
+        return true;
+    } catch (const std::exception&) {
+        return false;
+    }
 }
 
 static void AppendSearchTerms(std::string* text, const std::vector<std::string>& values)
@@ -1054,7 +1205,7 @@ static bool TryParseTraversalCommand(const char* player_command, CardinalDirecti
         return true;
     }
 
-    const char* prefixes[] = {"go ", "move ", "walk "};
+    const char* prefixes[] = {"go ", "move ", "walk ", "aller ", "va ", "marche ", "avancer "};
     for (size_t index = 0; index < sizeof(prefixes) / sizeof(prefixes[0]); ++index) {
         const std::string prefix = prefixes[index];
         if (normalized.compare(0, prefix.size(), prefix) == 0) {
@@ -1370,6 +1521,9 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(
     const SpatialState& prospective_spatial_state)
 {
     GeneratedRoomDraft draft;
+    draft.next_spatial_entropy = initial_session_state.hard_state.spatial_entropy;
+    draft.next_external_temperature_c = initial_session_state.hard_state.external_temperature_c;
+    draft.next_body_temperature_c = initial_session_state.hard_state.body_temperature_c;
     const SpatialState& origin = initial_session_state.spatial_state;
     const bool desert = SpatialFeelsOpenDesert(prospective_spatial_state);
     const bool exterior =
@@ -1459,6 +1613,31 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(
         draft.spatial_state.scene_constraints.push_back("atmospheric processor flank");
     }
     ApplyGeneratedRoomWorldBiases(&draft, direction);
+    if (initial_session_state.language == kGameLanguageFrench) {
+        switch (direction) {
+        case kDirectionNorth:
+            draft.title = "Relais septentrional";
+            break;
+        case kDirectionEast:
+            draft.title = "Champ de repères oriental";
+            break;
+        case kDirectionSouth:
+            draft.title = "Entaille méridionale";
+            break;
+        case kDirectionWest:
+            draft.title = "Éperon de la balise occidentale";
+            break;
+        default:
+            draft.title = "Champ d'exploration vénusien";
+            break;
+        }
+        draft.summary = exterior
+            ? "Un terrain vénusien hostile sépare les repères de prospection et les masses brutales de la carrière."
+            : "Une cellule de service pressurisée prolonge la route de prospection.";
+        draft.arrival_narration = "Vous atteignez " + draft.title + ". " + draft.summary;
+        draft.spatial_state.room_title = draft.title;
+        draft.spatial_state.room_summary = draft.summary;
+    }
     return draft;
 }
 
@@ -1651,24 +1830,48 @@ static bool RefreshGeneratedRoomCache(
     return true;
 }
 
-static std::string BuildBlockedTraversalNarration(const SpatialState& spatial_state, CardinalDirection direction)
+static const char* DescribeDirection(CardinalDirection direction, GameLanguage language)
 {
-    std::string narration = "The way ";
-    narration += CardinalDirectionToString(direction);
-    narration += " is blocked.";
-    if (!spatial_state.room_summary.empty()) {
+    if (language == kGameLanguageFrench) {
+        switch (direction) {
+        case kDirectionNorth: return "le nord";
+        case kDirectionEast: return "l'est";
+        case kDirectionSouth: return "le sud";
+        case kDirectionWest: return "l'ouest";
+        default: return "direction inconnue";
+        }
+    }
+    return CardinalDirectionToString(direction);
+}
+
+static std::string BuildBlockedTraversalNarration(
+    const SpatialState& spatial_state,
+    CardinalDirection direction,
+    GameLanguage language)
+{
+    std::string narration = language == kGameLanguageFrench ? "Le passage vers " : "The way ";
+    narration += DescribeDirection(direction, language);
+    narration += language == kGameLanguageFrench ? " est bloqué." : " is blocked.";
+    if (language == kGameLanguageEnglish && !spatial_state.room_summary.empty()) {
         narration += " ";
         narration += spatial_state.room_summary;
     }
     return ConstrainNarrationText(narration, 220, 2);
 }
 
-static std::string BuildInvisibleBarrierNarration(const InvisibleBarrier& barrier)
+static std::string BuildInvisibleBarrierNarration(const InvisibleBarrier& barrier, GameLanguage language)
 {
-    std::string narration = "You advance ";
-    narration += CardinalDirectionToString(barrier.direction);
-    narration += " across apparently open ground. Your probe and suit strike a smooth plane where the viewport shows only sky.";
-    if (!barrier.evidence.empty()) {
+    std::string narration;
+    if (language == kGameLanguageFrench) {
+        narration = "Vous avancez vers ";
+        narration += DescribeDirection(barrier.direction, language);
+        narration += " sur un terrain apparemment libre. Votre sonde et votre scaphandre heurtent un plan lisse là où la visière ne montre que le ciel.";
+    } else {
+        narration = "You advance ";
+        narration += DescribeDirection(barrier.direction, language);
+        narration += " across apparently open ground. Your probe and suit strike a smooth plane where the viewport shows only sky.";
+    }
+    if (language == kGameLanguageEnglish && !barrier.evidence.empty()) {
         narration += " ";
         narration += barrier.evidence;
     }
@@ -1677,20 +1880,21 @@ static std::string BuildInvisibleBarrierNarration(const InvisibleBarrier& barrie
 
 static std::string BuildTraversalNarrationForKnownPlace(const SessionState& session_state, const std::string& place_id, CardinalDirection direction)
 {
-    std::string narration = "You go ";
-    narration += CardinalDirectionToString(direction);
-    narration += " and enter ";
+    const bool french = session_state.language == kGameLanguageFrench;
+    std::string narration = french ? "Vous allez vers " : "You go ";
+    narration += DescribeDirection(direction, session_state.language);
+    narration += french ? " et atteignez " : " and enter ";
     narration += DescribePlaceLabel(session_state, place_id);
     narration += ".";
 
     const GeneratedRoom* room = FindGeneratedRoomById(session_state, place_id);
-    if (room && !room->spatial_state.room_summary.empty()) {
+    if (!french && room && !room->spatial_state.room_summary.empty()) {
         narration += " ";
         narration += room->spatial_state.room_summary;
     } else {
         LocationId location_id = kLocationUnknown;
         SpatialState canonical_state;
-        if (ParseCanonicalPlaceId(place_id, &location_id) &&
+        if (!french && ParseCanonicalPlaceId(place_id, &location_id) &&
             BuildCanonicalSpatialState(location_id, &canonical_state) &&
             !canonical_state.room_summary.empty()) {
             narration += " ";
@@ -1698,6 +1902,80 @@ static std::string BuildTraversalNarrationForKnownPlace(const SessionState& sess
         }
     }
     return ConstrainNarrationText(narration, 240, 3);
+}
+
+static void AskLlmForThermalUpdate(
+    const HeadlessTurnConfig& config,
+    const SessionState& initial_session_state,
+    const char* player_command,
+    const SpatialState& target_spatial_state,
+    HardState* hard_state,
+    HeadlessTurnResult* result)
+{
+    if (!hard_state || !result) {
+        return;
+    }
+
+    std::string prompt;
+    prompt += "Assess only the suit's thermal response to this completed action on Venus. Internal mechanics and JSON keys remain English. Return exactly one JSON object and no markdown.\n";
+    prompt += "The suit buffers the body from the exterior. External and body temperatures are correlated but lagged. Open exposure, effort, time, or suit strain may heat the body; shelter or atmospheric machinery may cool it. The values may also remain unchanged. Keep body changes small, normally 0.0 to 0.4 C for one action.\n";
+    prompt += "Schema: {\"external_temperature_changed\":boolean,\"next_external_temperature_c\":integer,\"body_temperature_changed\":boolean,\"next_body_temperature_c\":number}\n";
+    prompt += "current_external_temperature_c: " + std::to_string(initial_session_state.hard_state.external_temperature_c) + "\n";
+    prompt += "current_body_temperature_c: " + std::to_string(initial_session_state.hard_state.body_temperature_c) + "\n";
+    prompt += "suit_state: ";
+    prompt += ResourceStateToString(initial_session_state.hard_state.cooling_state);
+    prompt += "\naction: ";
+    prompt += player_command ? player_command : "move";
+    prompt += "\ntarget_spatial_brief:\n";
+    prompt += BuildSpatialBriefText(target_spatial_state);
+
+    std::vector<LlmPromptMessage> messages;
+    messages.push_back(LlmPromptMessage());
+    messages.back().role = "system";
+    messages.back().content = "You are an internal suit thermal-state controller. Return JSON only.";
+    messages.push_back(LlmPromptMessage());
+    messages.back().role = "user";
+    messages.back().content = prompt;
+
+    LlmGenerationConfig thermal_config = config.generation_config;
+    thermal_config.use_json_grammar = false;
+    if (thermal_config.n_predict <= 0 || thermal_config.n_predict > 160) {
+        thermal_config.n_predict = 160;
+    }
+
+    LlmGenerationResult generation_result;
+    if (!GenerateChatCompletion(thermal_config, messages, &generation_result)) {
+        return;
+    }
+
+    result->thermal_prompt_text = generation_result.prompt_text;
+    result->thermal_response_text = generation_result.response_text;
+    result->prompt_tokens += generation_result.prompt_tokens;
+    result->generated_tokens += generation_result.generated_tokens;
+    result->inference_time_ms += generation_result.inference_time_ms;
+
+    try {
+        std::string json_text;
+        const char* parse_text = generation_result.response_text.c_str();
+        if (ExtractFirstJsonObject(parse_text, &json_text)) {
+            parse_text = json_text.c_str();
+        }
+        const json root = json::parse(parse_text);
+        if (!root.is_object()) {
+            return;
+        }
+        if (ReadBoolValue(root, "external_temperature_changed", false)) {
+            hard_state->external_temperature_c = ClampExternalTemperatureC(
+                ReadIntValue(root, "next_external_temperature_c", hard_state->external_temperature_c));
+        }
+        if (ReadBoolValue(root, "body_temperature_changed", false)) {
+            hard_state->body_temperature_c = ClampBodyTemperatureC(
+                ReadFloatValue(root, "next_body_temperature_c", hard_state->body_temperature_c));
+        }
+        result->thermal_update_used = true;
+    } catch (const std::exception&) {
+        return;
+    }
 }
 
 static void FinalizeGeneratedRoomDraft(GeneratedRoomDraft* draft, CardinalDirection direction)
@@ -1727,8 +2005,9 @@ static void FinalizeGeneratedRoomDraft(GeneratedRoomDraft* draft, CardinalDirect
     if (draft->move_cost < 0) {
         draft->move_cost = 0;
     }
-    draft->next_datacenter_temperature_c =
-        ClampDatacenterTemperatureC(draft->next_datacenter_temperature_c);
+    draft->next_spatial_entropy = ClampSpatialEntropy(draft->next_spatial_entropy);
+    draft->next_external_temperature_c = ClampExternalTemperatureC(draft->next_external_temperature_c);
+    draft->next_body_temperature_c = ClampBodyTemperatureC(draft->next_body_temperature_c);
 
     draft->spatial_state.room_title = draft->title;
     draft->spatial_state.room_summary = draft->summary;
@@ -1764,6 +2043,7 @@ static bool ParseGeneratedSpatialStateNode(const json& node, SpatialState* spati
 
 static bool ParseGeneratedRoomJson(
     const char* json_text,
+    const HardState& current_hard_state,
     CardinalDirection direction,
     GeneratedRoomDraft* draft,
     char* error_buffer,
@@ -1775,6 +2055,9 @@ static bool ParseGeneratedRoomJson(
     }
 
     *draft = GeneratedRoomDraft();
+    draft->next_spatial_entropy = current_hard_state.spatial_entropy;
+    draft->next_external_temperature_c = current_hard_state.external_temperature_c;
+    draft->next_body_temperature_c = current_hard_state.body_temperature_c;
     try {
         json root;
         try {
@@ -1802,15 +2085,15 @@ static bool ParseGeneratedRoomJson(
         const bool has_legacy_temperature =
             root.contains("next_datacenter_temperature_c") &&
             root["next_datacenter_temperature_c"].is_number_integer();
-        if (has_next_entropy || has_legacy_temperature) {
-            draft->temperature_changed = true;
-            draft->next_datacenter_temperature_c =
-                ClampDatacenterTemperatureC(
-                    ReadIntValue(
-                        root,
-                        has_next_entropy ? "next_spatial_entropy" : "next_datacenter_temperature_c",
-                        draft->next_datacenter_temperature_c));
-        }
+        draft->next_spatial_entropy = ClampSpatialEntropy(
+            ReadIntValue(
+                root,
+                has_next_entropy ? "next_spatial_entropy" : (has_legacy_temperature ? "next_datacenter_temperature_c" : "next_spatial_entropy"),
+                draft->next_spatial_entropy));
+        draft->next_external_temperature_c = ClampExternalTemperatureC(
+            ReadIntValue(root, "next_external_temperature_c", draft->next_external_temperature_c));
+        draft->next_body_temperature_c = ClampBodyTemperatureC(
+            ReadFloatValue(root, "next_body_temperature_c", draft->next_body_temperature_c));
         if (root.contains("spatial_state")) {
             ParseGeneratedSpatialStateNode(root["spatial_state"], &draft->spatial_state);
         }
@@ -1950,7 +2233,7 @@ static void ApplyEryxSpatialEntropy(LocationId location_id, HardState* hard_stat
         return;
     }
 
-    int minimum_entropy = kDefaultDatacenterTemperatureC;
+    int minimum_entropy = kDefaultSpatialEntropy;
     switch (location_id) {
     case kLocationExtractionField:
         minimum_entropy = 12;
@@ -1973,8 +2256,8 @@ static void ApplyEryxSpatialEntropy(LocationId location_id, HardState* hard_stat
     default:
         break;
     }
-    if (hard_state->datacenter_temperature_c < minimum_entropy) {
-        hard_state->datacenter_temperature_c = minimum_entropy;
+    if (hard_state->spatial_entropy < minimum_entropy) {
+        hard_state->spatial_entropy = minimum_entropy;
     }
 }
 
@@ -2217,6 +2500,11 @@ bool RunHeadlessTurnFromState(
     result->updated_hard_state = result->initial_hard_state;
     result->updated_soft_state = result->initial_soft_state;
     result->updated_spatial_state = result->initial_spatial_state;
+    HeadlessTurnConfig body_driven_config = config;
+    body_driven_config.generation_config = BuildBodyDrivenGenerationConfig(
+        config.generation_config,
+        result->initial_hard_state);
+    result->effective_llm_temperature = body_driven_config.generation_config.temperature;
 
     CardinalDirection traversal_direction = kDirectionUnknown;
     if (TryParseTraversalCommand(player_command, &traversal_direction)) {
@@ -2234,11 +2522,19 @@ bool RunHeadlessTurnFromState(
             result->invisible_barrier_contact = true;
             result->turn_result.intent =
                 std::string("move_") + CardinalDirectionToString(traversal_direction) + "_invisible_barrier";
-            result->turn_result.narration = BuildInvisibleBarrierNarration(discovered_barrier);
-            result->turn_result.clarification =
-                "Traversal was recognized; an invisible barrier, not a parser failure or visible obstacle, refused the move.";
+            result->turn_result.narration = BuildInvisibleBarrierNarration(discovered_barrier, initial_session_state.language);
+            result->turn_result.clarification = initial_session_state.language == kGameLanguageFrench
+                ? "Le déplacement a été reconnu : une barrière invisible, et non un échec de compréhension ou un obstacle visible, a refusé le passage."
+                : "Traversal was recognized; an invisible barrier, not a parser failure or visible obstacle, refused the move.";
             result->updated_soft_state.rolling_summary = result->turn_result.narration;
             AddUniqueString(&result->updated_spatial_state.spatial_anomalies, discovered_barrier.evidence);
+            AskLlmForThermalUpdate(
+                body_driven_config,
+                initial_session_state,
+                player_command,
+                result->updated_spatial_state,
+                &result->updated_hard_state,
+                result);
             ++result->updated_hard_state.turn_number;
             CaptureSceneDebugArtifacts(
                 result->updated_spatial_state,
@@ -2253,9 +2549,21 @@ bool RunHeadlessTurnFromState(
 
         if (SpatialStateBlocksDirection(result->initial_spatial_state, traversal_direction)) {
             result->turn_result.intent = std::string("move_") + CardinalDirectionToString(traversal_direction) + "_blocked";
-            result->turn_result.narration = BuildBlockedTraversalNarration(result->initial_spatial_state, traversal_direction);
-            result->turn_result.clarification = "No new room was generated because the current spatial brief marks that exit as blocked.";
+            result->turn_result.narration = BuildBlockedTraversalNarration(
+                result->initial_spatial_state,
+                traversal_direction,
+                initial_session_state.language);
+            result->turn_result.clarification = initial_session_state.language == kGameLanguageFrench
+                ? "Aucun nouveau lieu n'a été généré car cette sortie est indiquée comme bloquée."
+                : "No new room was generated because the current spatial brief marks that exit as blocked.";
             result->updated_soft_state.rolling_summary = result->turn_result.narration;
+            AskLlmForThermalUpdate(
+                body_driven_config,
+                initial_session_state,
+                player_command,
+                result->updated_spatial_state,
+                &result->updated_hard_state,
+                result);
             ++result->updated_hard_state.turn_number;
             CaptureSceneDebugArtifacts(
                 result->updated_spatial_state,
@@ -2283,6 +2591,13 @@ bool RunHeadlessTurnFromState(
                 return false;
             }
             ApplyEryxSpatialEntropy(result->updated_hard_state.current_location_id, &result->updated_hard_state);
+            AskLlmForThermalUpdate(
+                body_driven_config,
+                initial_session_state,
+                player_command,
+                result->updated_spatial_state,
+                &result->updated_hard_state,
+                result);
             result->updated_soft_state.rolling_summary = result->turn_result.narration;
             ++result->updated_hard_state.move_count;
             ++result->updated_hard_state.turn_number;
@@ -2306,6 +2621,7 @@ bool RunHeadlessTurnFromState(
         result->prospective_spatial_state_known = true;
 
         const std::string room_prompt = BuildGeneratedRoomPrompt(
+            initial_session_state.language,
             result->initial_hard_state,
             result->initial_soft_state,
             result->initial_spatial_state,
@@ -2317,9 +2633,12 @@ bool RunHeadlessTurnFromState(
         std::vector<LlmPromptMessage> room_messages;
         room_messages.push_back(LlmPromptMessage());
         room_messages.back().role = "system";
-        room_messages.back().content =
-            "You invent one new neighboring room for a local interactive-fiction prototype. "
-            "Return valid JSON only. Do not use markdown fences.";
+        room_messages.back().content = initial_session_state.language == kGameLanguageFrench
+            ? "You invent one new neighboring room for a local interactive-fiction prototype. Return valid JSON only. "
+              "MANDATORY LANGUAGE RULE: title, summary, and arrival_narration must be written entirely in idiomatic French. "
+              "JSON keys, IDs, object tokens, anchors, and scene constraints remain English. Do not use markdown fences."
+            : "You invent one new neighboring room for a local interactive-fiction prototype. "
+              "Return valid JSON only. Do not use markdown fences.";
         room_messages.push_back(LlmPromptMessage());
         room_messages.back().role = "user";
         room_messages.back().content = room_prompt;
@@ -2334,7 +2653,7 @@ bool RunHeadlessTurnFromState(
         room_stream_forwarder.phase = kHeadlessTurnStreamPrimaryResponse;
         room_stream_forwarder.user_data = config.stream_user_data;
         if (GenerateChatCompletion(
-                config.generation_config,
+                body_driven_config.generation_config,
                 room_messages,
                 config.stream_callback ? ForwardStreamChunk : 0,
                 config.stream_callback ? &room_stream_forwarder : 0,
@@ -2349,6 +2668,7 @@ bool RunHeadlessTurnFromState(
             metadata_error[0] = '\0';
             if (!ParseGeneratedRoomJson(
                     room_generation_result.response_text.c_str(),
+                    result->initial_hard_state,
                     traversal_direction,
                     &draft,
                     metadata_error,
@@ -2359,7 +2679,9 @@ bool RunHeadlessTurnFromState(
                     prospective_spatial_state);
                 used_room_metadata_fallback = true;
                 result->used_turn_fallback = true;
-                result->turn_result.clarification = std::string("Generated room metadata fallback was used: ") + metadata_error;
+                result->turn_result.clarification = initial_session_state.language == kGameLanguageFrench
+                    ? "Les métadonnées du lieu ont été remplacées par une solution de secours."
+                    : std::string("Generated room metadata fallback was used: ") + metadata_error;
             }
         } else {
             draft = MakeFallbackGeneratedRoomDraft(
@@ -2368,9 +2690,10 @@ bool RunHeadlessTurnFromState(
                 prospective_spatial_state);
             used_room_metadata_fallback = true;
             result->used_turn_fallback = true;
-            result->turn_result.clarification =
-                std::string("Generated room metadata fallback was used after LLM failure: ") +
-                (room_generation_result.error_message.empty() ? "unknown error" : room_generation_result.error_message);
+            result->turn_result.clarification = initial_session_state.language == kGameLanguageFrench
+                ? "Le lieu a été construit par la solution de secours après un échec du modèle."
+                : std::string("Generated room metadata fallback was used after LLM failure: ") +
+                    (room_generation_result.error_message.empty() ? "unknown error" : room_generation_result.error_message);
         }
 
         if (draft.spatial_state.alert_level <= 0) {
@@ -2407,12 +2730,31 @@ bool RunHeadlessTurnFromState(
                 : draft.summary;
         }
         ApplyGeneratedRoomWorldBiases(&draft, traversal_direction);
+        if (initial_session_state.language == kGameLanguageFrench &&
+            LooksPredominantlyEnglish(draft.title + " " + draft.summary + " " + draft.arrival_narration)) {
+            if (!LocalizePlayerFacingTextToFrench(
+                    body_driven_config,
+                    &draft.title,
+                    &draft.summary,
+                    &draft.arrival_narration,
+                    0,
+                    result)) {
+                draft.title = "Secteur de prospection fracturé";
+                draft.summary = "Un nouveau secteur vénusien prolonge la route entre les repères de prospection et les masses de la carrière.";
+                draft.arrival_narration = "Vous atteignez un secteur de prospection dont les repères ne concordent plus tout à fait.";
+            }
+            draft.title = ConstrainNarrationText(draft.title, 72, 1);
+            draft.summary = ConstrainNarrationText(draft.summary, 160, 2);
+            draft.arrival_narration = ConstrainNarrationText(draft.arrival_narration, 260, 3);
+            draft.spatial_state.room_title = draft.title;
+            draft.spatial_state.room_summary = draft.summary;
+        }
 
         std::string generated_scene_text;
         Scene generated_scene;
         std::string generated_scene_source;
         if (!BuildGeneratedRoomSceneProgram(
-                config,
+                body_driven_config,
                 draft.spatial_state,
                 &generated_scene_text,
                 &generated_scene,
@@ -2458,9 +2800,9 @@ bool RunHeadlessTurnFromState(
         EnsureActionableVisibleObjects(&result->updated_spatial_state);
         result->updated_hard_state.move_count += draft.move_cost;
         result->updated_hard_state.score += draft.score_delta;
-        if (draft.temperature_changed) {
-            result->updated_hard_state.datacenter_temperature_c = draft.next_datacenter_temperature_c;
-        }
+        result->updated_hard_state.spatial_entropy = draft.next_spatial_entropy;
+        result->updated_hard_state.external_temperature_c = draft.next_external_temperature_c;
+        result->updated_hard_state.body_temperature_c = draft.next_body_temperature_c;
         if (result->updated_hard_state.move_count < 0) {
             result->updated_hard_state.move_count = 0;
         }
@@ -2475,19 +2817,25 @@ bool RunHeadlessTurnFromState(
         result->turn_result.intent = std::string("move_") + CardinalDirectionToString(traversal_direction) + "_generated_room";
         result->turn_result.narration = draft.arrival_narration;
         if (used_room_metadata_fallback && result->turn_result.clarification.empty()) {
-            result->turn_result.clarification = "Generated room metadata fallback was used.";
+            result->turn_result.clarification = initial_session_state.language == kGameLanguageFrench
+                ? "Les métadonnées du lieu proviennent de la solution de secours."
+                : "Generated room metadata fallback was used.";
         }
         if (used_room_scene_fallback) {
             if (!result->turn_result.clarification.empty()) {
                 result->turn_result.clarification.append(" ");
             }
-            result->turn_result.clarification.append("Generated room scene fallback was used.");
+            result->turn_result.clarification.append(
+                initial_session_state.language == kGameLanguageFrench
+                    ? "La scène du lieu provient de la solution de secours."
+                    : "Generated room scene fallback was used.");
         }
         result->rendered_scene = generated_scene;
         return true;
     }
 
     const std::string user_prompt = BuildTurnPrompt(
+        initial_session_state.language,
         result->initial_hard_state,
         result->initial_soft_state,
         result->initial_spatial_state,
@@ -2497,11 +2845,15 @@ bool RunHeadlessTurnFromState(
     result->request_text = user_prompt;
 
     std::vector<LlmPromptMessage> messages;
-    messages.push_back(LlmPromptMessage());
-    messages.back().role = "system";
-    messages.back().content =
-        "You are a deterministic interactive-fiction turn engine. Return valid JSON only. "
-        "Do not use markdown fences. Do not write any text outside the JSON object.";
+        messages.push_back(LlmPromptMessage());
+        messages.back().role = "system";
+    messages.back().content = initial_session_state.language == kGameLanguageFrench
+        ? "You are a deterministic interactive-fiction turn engine. Return valid JSON only. "
+          "MANDATORY LANGUAGE RULE: narration and clarification must be written entirely in idiomatic French. "
+          "JSON keys, IDs, intent labels, object tokens, and internal mechanics remain English. "
+          "Do not use markdown fences or write outside the JSON object."
+        : "You are a deterministic interactive-fiction turn engine. Return valid JSON only. "
+          "Do not use markdown fences. Do not write any text outside the JSON object.";
     messages.push_back(LlmPromptMessage());
     messages.back().role = "user";
     messages.back().content = user_prompt;
@@ -2512,7 +2864,7 @@ bool RunHeadlessTurnFromState(
     turn_stream_forwarder.phase = kHeadlessTurnStreamPrimaryResponse;
     turn_stream_forwarder.user_data = config.stream_user_data;
     if (!GenerateChatCompletion(
-            config.generation_config,
+            body_driven_config.generation_config,
             messages,
             config.stream_callback ? ForwardStreamChunk : 0,
             config.stream_callback ? &turn_stream_forwarder : 0,
@@ -2535,16 +2887,32 @@ bool RunHeadlessTurnFromState(
         char parse_error[512];
         memset(parse_error, 0, sizeof(parse_error));
         if (!RepairTurnResultJson(
-                config,
+                body_driven_config,
                 generation_result.response_text,
                 &result->turn_result,
                 &result->repair_response_text,
                 parse_error,
                 sizeof(parse_error))) {
-            result->turn_result = MakeFallbackTurnResult(generation_result.response_text);
+            result->turn_result = MakeFallbackTurnResult(generation_result.response_text, initial_session_state.language);
             result->used_turn_fallback = true;
         } else {
             result->used_turn_repair = true;
+        }
+    }
+
+    if (initial_session_state.language == kGameLanguageFrench &&
+        LooksPredominantlyEnglish(result->turn_result.narration + " " + result->turn_result.clarification)) {
+        if (!LocalizePlayerFacingTextToFrench(
+                body_driven_config,
+                0,
+                0,
+                &result->turn_result.narration,
+                &result->turn_result.clarification,
+                result)) {
+            result->turn_result.narration =
+                "Votre action est prise en compte, mais le compte rendu détaillé demeure momentanément illisible.";
+            result->turn_result.clarification =
+                "L'état validé du monde est conservé malgré l'échec de localisation du texte joueur.";
         }
     }
 
@@ -2562,7 +2930,7 @@ bool RunHeadlessTurnFromState(
         scene_messages.back().role = "user";
         scene_messages.back().content = BuildSceneAuditPrompt(result->updated_spatial_state);
 
-        LlmGenerationConfig scene_config = config.generation_config;
+        LlmGenerationConfig scene_config = body_driven_config.generation_config;
         scene_config.use_json_grammar = false;
 
         LlmGenerationResult scene_generation_result;
@@ -2657,6 +3025,9 @@ void PrintHeadlessTurnDebugTrace(const HeadlessTurnResult& result, FILE* stream)
     fprintf(out, "Invisible barrier contact: %s\n", result.invisible_barrier_contact ? "yes" : "no");
     fprintf(out, "Turn fallback: %s\n", result.used_turn_fallback ? "yes" : "no");
     fprintf(out, "Turn repair: %s\n", result.used_turn_repair ? "yes" : "no");
+    fprintf(out, "Thermal update used: %s\n", result.thermal_update_used ? "yes" : "no");
+    fprintf(out, "Player-text localization used: %s\n", result.player_text_localization_used ? "yes" : "no");
+    fprintf(out, "Effective LLM temperature: %.3f\n", result.effective_llm_temperature);
     fprintf(out, "Prompt tokens: %d\n", result.prompt_tokens);
     fprintf(out, "Generated tokens: %d\n", result.generated_tokens);
     fprintf(out, "Inference time: %.2f ms\n", result.inference_time_ms);

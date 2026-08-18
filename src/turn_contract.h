@@ -12,6 +12,7 @@ std::string BuildGeneratedRoomSchemaText();
 std::string BuildSceneFormatRuleText();
 std::string BuildSpatialBriefText(const SpatialState& spatial_state);
 std::string BuildTurnPrompt(
+    GameLanguage language,
     const HardState& hard_state,
     const SoftState& soft_state,
     const SpatialState& spatial_state,
@@ -19,6 +20,7 @@ std::string BuildTurnPrompt(
     const char* player_command,
     bool include_candidate_scene_text);
 std::string BuildGeneratedRoomPrompt(
+    GameLanguage language,
     const HardState& hard_state,
     const SoftState& soft_state,
     const SpatialState& current_spatial_state,

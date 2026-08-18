@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <math.h>
 #include <mutex>
 #include <stdio.h>
 #include <string.h>
@@ -710,37 +711,64 @@ static std::string TrimCommandText(const std::string& text)
     return TrimAsciiSpaces(text);
 }
 
-static std::string ExpandInfocomShortcutCommand(const std::string& command)
+static std::string ExpandInfocomShortcutCommand(const std::string& command, GameLanguage language)
 {
     const std::string normalized = ToLowerAsciiCopy(CollapseAsciiWhitespace(command));
-    if (normalized == "n") {
-        return "NORTH";
+    if (normalized == "n" || normalized == "north" || normalized == "nord") {
+        return language == kGameLanguageFrench ? "NORD" : "NORTH";
     }
-    if (normalized == "s") {
-        return "SOUTH";
+    if (normalized == "s" || normalized == "south" || normalized == "sud") {
+        return language == kGameLanguageFrench ? "SUD" : "SOUTH";
     }
-    if (normalized == "e") {
-        return "EAST";
+    if (normalized == "e" || normalized == "east" || normalized == "est") {
+        return language == kGameLanguageFrench ? "EST" : "EAST";
     }
-    if (normalized == "w") {
-        return "WEST";
+    if (normalized == "w" || normalized == "west" || normalized == "o" || normalized == "ouest") {
+        return language == kGameLanguageFrench ? "OUEST" : "WEST";
     }
-    if (normalized == "z") {
-        return "WAIT";
+    if (normalized == "z" || normalized == "wait" || normalized == "attendre") {
+        return language == kGameLanguageFrench ? "ATTENDRE" : "WAIT";
     }
-    if (normalized == "i") {
-        return "INVENTORY";
+    if (normalized == "i" || normalized == "inventory" || normalized == "inventaire") {
+        return language == kGameLanguageFrench ? "INVENTAIRE" : "INVENTORY";
     }
-    if (normalized == "q") {
-        return "QUIT";
+    if (normalized == "q" || normalized == "quit" || normalized == "quitter") {
+        return language == kGameLanguageFrench ? "QUITTER" : "QUIT";
     }
     return command;
+}
+
+static bool LooksPredominantlyEnglishForUi(const std::string& text)
+{
+    const std::string lower = " " + ToLowerAsciiCopy(CollapseAsciiWhitespace(text)) + " ";
+    const char* markers[] = {
+        " the ", " you ", " your ", " and ", " with ", " into ", " from ", " this ", " that ",
+        " its ", " is ", " are ", " across ", " beyond ", " through ", " remains ", " stands ",
+        " fractured ", " quarry ", " survey ", " north ", " east ", " south ", " west ",
+        " shelter ", " room ", " field ", " cut ", " trench ",
+    };
+    int score = 0;
+    for (size_t index = 0; index < sizeof(markers) / sizeof(markers[0]); ++index) {
+        if (lower.find(markers[index]) != std::string::npos) {
+            ++score;
+        }
+    }
+    return score >= 2 || lower.compare(0, 5, " the ") == 0 || lower.compare(0, 5, " you ") == 0;
+}
+
+static std::string DescribeCurrentPlaceLabelForUi(const SessionState& session_state)
+{
+    const std::string label = DescribeCurrentPlaceLabel(session_state);
+    if (session_state.language == kGameLanguageFrench && LooksPredominantlyEnglishForUi(label)) {
+        return "Secteur de prospection";
+    }
+    return label;
 }
 
 static bool IsQuitCommand(const std::string& command)
 {
     const std::string normalized = ToLowerAsciiCopy(CollapseAsciiWhitespace(command));
-    return normalized == "q" || normalized == "quit";
+    return normalized == "q" || normalized == "quit" || normalized == "quitter";
 }
 
 static void DrawTextSpan(
@@ -759,6 +787,112 @@ static void DrawPanel(SDL_Renderer* renderer, const SDL_FRect& rect, Uint8 fill,
     SDL_RenderFillRect(renderer, &rect);
     SDL_SetRenderDrawColor(renderer, border, border, border, 255);
     SDL_RenderRect(renderer, &rect);
+}
+
+static void DrawLanguageSelectionCell(
+    SDL_Renderer* renderer,
+    const UiFonts& fonts,
+    const SDL_FRect& rect,
+    const std::string& label)
+{
+    const SDL_FRect outer_rect = {rect.x - 3.0f, rect.y - 3.0f, rect.w + 6.0f, rect.h + 6.0f};
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderFillRect(renderer, &outer_rect);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderFillRect(renderer, &rect);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderRect(renderer, &rect);
+
+    const int text_width = MeasureTextWidth(fonts.regular, label);
+    const int text_height = std::max(TTF_GetFontHeight(fonts.regular), 1);
+    DrawTextSpan(
+        renderer,
+        fonts.regular,
+        label,
+        rect.x + (rect.w - static_cast<float>(text_width)) * 0.5f,
+        rect.y + (rect.h - static_cast<float>(text_height)) * 0.5f - 1.0f,
+        text_height,
+        SDL_Color{255, 255, 255, 255},
+        0);
+}
+
+static void DrawLanguageSelection(SDL_Renderer* renderer, const UiFonts& fonts, int logical_width, int logical_height)
+{
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    const std::string heading = "SELECT LANGUAGE / CHOISIR LA LANGUE";
+    const int heading_width = MeasureTextWidth(fonts.regular, heading);
+    DrawTextSpan(
+        renderer,
+        fonts.regular,
+        heading,
+        (static_cast<float>(logical_width) - static_cast<float>(heading_width)) * 0.5f,
+        static_cast<float>(logical_height) * 0.30f,
+        fonts.line_height,
+        SDL_Color{255, 255, 255, 255},
+        0);
+
+    const float panel_width = 360.0f;
+    const float panel_height = 58.0f;
+    const float panel_x = (static_cast<float>(logical_width) - panel_width) * 0.5f;
+    const float first_y = static_cast<float>(logical_height) * 0.42f;
+    DrawLanguageSelectionCell(renderer, fonts, SDL_FRect{panel_x, first_y, panel_width, panel_height}, "English (E)");
+    DrawLanguageSelectionCell(renderer, fonts, SDL_FRect{panel_x, first_y + 90.0f, panel_width, panel_height}, "Français (F)");
+}
+
+static void DrawProceduralVisorMask(SDL_Renderer* renderer, const SDL_FRect& rect)
+{
+    if (!renderer || rect.w <= 0.0f || rect.h <= 0.0f) {
+        return;
+    }
+
+    const int height = static_cast<int>(rect.h);
+    const float center_x = rect.x + rect.w * 0.5f;
+    const float full_half_width = rect.w * 0.495f;
+    const float corner_radius = std::min(rect.h * 0.16f, 68.0f);
+    const float notch_start = rect.h * 0.68f;
+    const float notch_half_width = rect.w * 0.09f;
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
+    for (int row = 0; row < height; ++row) {
+        const float y = static_cast<float>(row) + 0.5f;
+        float corner_inset = 0.0f;
+        if (y < corner_radius) {
+            const float dy = corner_radius - y;
+            corner_inset = corner_radius - sqrtf(std::max(0.0f, corner_radius * corner_radius - dy * dy));
+        } else if (y > rect.h - corner_radius) {
+            const float dy = y - (rect.h - corner_radius);
+            corner_inset = corner_radius - sqrtf(std::max(0.0f, corner_radius * corner_radius - dy * dy));
+        }
+
+        const float left_inside = center_x - full_half_width + corner_inset;
+        const float right_inside = center_x + full_half_width - corner_inset;
+        if (left_inside > rect.x) {
+            const SDL_FRect left_mask = {rect.x, rect.y + static_cast<float>(row), left_inside - rect.x, 1.0f};
+            SDL_RenderFillRect(renderer, &left_mask);
+        }
+        if (right_inside < rect.x + rect.w) {
+            const SDL_FRect right_mask = {
+                right_inside,
+                rect.y + static_cast<float>(row),
+                rect.x + rect.w - right_inside,
+                1.0f};
+            SDL_RenderFillRect(renderer, &right_mask);
+        }
+
+        if (y >= notch_start) {
+            const float t = (y - notch_start) / std::max(1.0f, rect.h - notch_start);
+            const float ellipse_term = std::max(0.0f, 1.0f - (1.0f - t) * (1.0f - t));
+            const float half_notch = notch_half_width * sqrtf(ellipse_term);
+            const SDL_FRect center_mask = {
+                center_x - half_notch,
+                rect.y + static_cast<float>(row),
+                half_notch * 2.0f,
+                1.0f};
+            SDL_RenderFillRect(renderer, &center_mask);
+        }
+    }
 }
 
 static bool SpatialStateBlocksDirectionForUi(const SpatialState& spatial_state, CardinalDirection direction)
@@ -861,37 +995,18 @@ static void DrawExitCompass(
         renderer,
         fonts.regular,
         west_rect,
-        "W",
+        session_state.language == kGameLanguageFrench ? "O" : "W",
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest));
 }
 
-static void DrawSpatialEntropyHud(
+static void DrawThermalIndicator(
     SDL_Renderer* renderer,
     const UiFonts& fonts,
-    const SessionState& session_state,
-    const SDL_FRect& scene_rect)
+    const SDL_FRect& rect,
+    const std::string& label_text)
 {
-    if (!renderer) {
-        return;
-    }
-
-    char label_buffer[64];
-    snprintf(
-        label_buffer,
-        sizeof(label_buffer),
-        "ENTROPY %d",
-        session_state.hard_state.datacenter_temperature_c);
-    const std::string label_text = label_buffer;
-
-    const int label_width = MeasureTextWidth(fonts.regular, label_text);
     const int label_height = std::max(TTF_GetFontHeight(fonts.regular), 1);
     const float padding_x = 10.0f;
-    const float padding_y = 6.0f;
-    const SDL_FRect rect = {
-        scene_rect.x + 14.0f,
-        scene_rect.y + scene_rect.h - static_cast<float>(label_height) - padding_y * 2.0f - 14.0f,
-        static_cast<float>(label_width) + padding_x * 2.0f,
-        static_cast<float>(label_height) + padding_y * 2.0f};
     const SDL_FRect outer_rect = {rect.x - 2.0f, rect.y - 2.0f, rect.w + 4.0f, rect.h + 4.0f};
 
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -910,6 +1025,55 @@ static void DrawSpatialEntropyHud(
         label_height,
         SDL_Color{255, 255, 255, 255},
         0);
+}
+
+static void DrawThermalHud(
+    SDL_Renderer* renderer,
+    const UiFonts& fonts,
+    const SessionState& session_state,
+    const SDL_FRect& scene_rect)
+{
+    if (!renderer) {
+        return;
+    }
+
+    char external_buffer[96];
+    char body_buffer[96];
+    if (session_state.language == kGameLanguageFrench) {
+        snprintf(
+            external_buffer,
+            sizeof(external_buffer),
+            "TEMP. EXTÉRIEURE  %d °C",
+            session_state.hard_state.external_temperature_c);
+        snprintf(
+            body_buffer,
+            sizeof(body_buffer),
+            "TEMP. CORPORELLE  %.1f °C",
+            session_state.hard_state.body_temperature_c);
+    } else {
+        snprintf(
+            external_buffer,
+            sizeof(external_buffer),
+            "EXT. TEMPERATURE  %d °C",
+            session_state.hard_state.external_temperature_c);
+        snprintf(
+            body_buffer,
+            sizeof(body_buffer),
+            "BODY TEMPERATURE  %.1f °C",
+            session_state.hard_state.body_temperature_c);
+    }
+
+    const int label_height = std::max(TTF_GetFontHeight(fonts.regular), 1);
+    const float panel_width = static_cast<float>(std::max(
+        MeasureTextWidth(fonts.regular, external_buffer),
+        MeasureTextWidth(fonts.regular, body_buffer))) + 20.0f;
+    const float panel_height = static_cast<float>(label_height) + 12.0f;
+    const float panel_x = scene_rect.x + 14.0f;
+    const float body_y = scene_rect.y + scene_rect.h - panel_height - 14.0f;
+    const SDL_FRect external_rect = {panel_x, body_y - panel_height - 8.0f, panel_width, panel_height};
+    const SDL_FRect body_rect = {panel_x, body_y, panel_width, panel_height};
+    DrawThermalIndicator(renderer, fonts, external_rect, external_buffer);
+    DrawThermalIndicator(renderer, fonts, body_rect, body_buffer);
 }
 
 static void UploadSceneTexture(
@@ -1226,33 +1390,39 @@ static std::string BuildStatusLine(
     bool busy,
     Uint64 ticks_ms)
 {
+    (void)worker_status;
+    (void)last_turn_result;
+    (void)have_last_turn;
     char buffer[512];
     const char spinner = busy ? SpinnerGlyph(ticks_ms) : ' ';
-    if (have_last_turn) {
+    if (session_state.language == kGameLanguageFrench) {
+        const char* activity_label = "PRÊT";
+        switch (activity) {
+        case kWorkerActivityLlm: activity_label = "IMAGINATION"; break;
+        case kWorkerActivityRenderer: activity_label = "RAYTRACING"; break;
+        case kWorkerActivityComplete: activity_label = "TERMINÉ"; break;
+        case kWorkerActivityFailed: activity_label = "ERREUR"; break;
+        default: break;
+        }
         snprintf(
             buffer,
             sizeof(buffer),
-            "[%c] %s | loc=%s turn=%d alert=%d | %s | prompt=%d gen=%d time=%.0f ms",
+            "[%c] %s | lieu=%s tour=%d alerte=%d",
             spinner,
-            ActivityLabel(activity),
-            DescribeCurrentPlaceLabel(session_state).c_str(),
+            activity_label,
+            DescribeCurrentPlaceLabelForUi(session_state).c_str(),
             session_state.hard_state.turn_number,
-            session_state.hard_state.alert_level,
-            worker_status.c_str(),
-            last_turn_result.prompt_tokens,
-            last_turn_result.generated_tokens,
-            last_turn_result.inference_time_ms);
+            session_state.hard_state.alert_level);
     } else {
         snprintf(
             buffer,
             sizeof(buffer),
-            "[%c] %s | loc=%s turn=%d alert=%d | %s",
+            "[%c] %s | location=%s turn=%d alert=%d",
             spinner,
             ActivityLabel(activity),
-            DescribeCurrentPlaceLabel(session_state).c_str(),
+            DescribeCurrentPlaceLabelForUi(session_state).c_str(),
             session_state.hard_state.turn_number,
-            session_state.hard_state.alert_level,
-            worker_status.c_str());
+            session_state.hard_state.alert_level);
     }
     return buffer;
 }
@@ -1274,10 +1444,18 @@ static void BuildTranscriptLines(
     for (size_t index = 0; index < session_state.history.size(); ++index) {
         const SessionTurnRecord& record = session_state.history[index];
         const size_t start_line = lines->size();
-        AppendWrappedText(std::string("> ") + record.player_command, fonts, max_width, lines);
+        AppendWrappedText(
+            std::string("> ") + ExpandInfocomShortcutCommand(record.player_command, session_state.language),
+            fonts,
+            max_width,
+            lines);
         MarkWrappedLinesAsCommand(lines, start_line);
         if (!record.narration.empty()) {
-            AppendWrappedText(record.narration, fonts, max_width, lines);
+            const std::string narration =
+                session_state.language == kGameLanguageFrench && LooksPredominantlyEnglishForUi(record.narration)
+                ? "Le compte rendu de ce tour demeure archivé dans sa langue d'origine."
+                : record.narration;
+            AppendWrappedText(narration, fonts, max_width, lines);
         }
     }
 
@@ -1410,14 +1588,12 @@ static void DrawTitleBar(
 
     DrawPanel(renderer, rect, 18, 0);
 
-    const std::string room_title = session_state.spatial_state.room_title.empty()
-        ? DescribeCurrentPlaceLabel(session_state)
-        : session_state.spatial_state.room_title;
+    const std::string room_title = DescribeCurrentPlaceLabelForUi(session_state);
     char stats_buffer[128];
     snprintf(
         stats_buffer,
         sizeof(stats_buffer),
-        "Moves %d   Score %d",
+        session_state.language == kGameLanguageFrench ? "Déplacements %d   Score %d" : "Moves %d   Score %d",
         session_state.hard_state.move_count,
         session_state.hard_state.score);
     const std::string stats_text = stats_buffer;
@@ -1578,6 +1754,7 @@ bool RunSdlFrontend(
     std::thread worker_thread;
     bool worker_joined = true;
     bool running = true;
+    bool language_selected = false;
     bool have_last_turn = false;
     HeadlessTurnResult last_turn_result;
     std::string input_text;
@@ -1585,12 +1762,13 @@ bool RunSdlFrontend(
     int history_index = -1;
     std::string history_draft;
     std::string ui_message;
-    std::string persistent_hint = "Ready. Press Enter to send a command.";
+    std::string persistent_hint;
     WorkerActivity worker_activity = kWorkerActivityIdle;
     std::string worker_status = "idle";
     std::string pending_command;
     std::vector<UiTextLine> transcript_lines;
     bool worker_busy = false;
+    Uint64 text_input_suppressed_until = 0;
 
     while (running) {
         SDL_Event event;
@@ -1601,7 +1779,33 @@ bool RunSdlFrontend(
                 break;
             }
 
+            if (!language_selected) {
+                if (event.type == SDL_EVENT_KEY_DOWN && event.key.down && !event.key.repeat) {
+                    if (event.key.key == SDLK_E) {
+                        current_session_state.language = kGameLanguageEnglish;
+                        for (size_t index = 0; index < command_history.size(); ++index) {
+                            command_history[index] = ExpandInfocomShortcutCommand(command_history[index], current_session_state.language);
+                        }
+                        language_selected = true;
+                        text_input_suppressed_until = SDL_GetTicks() + 250;
+                        persistent_hint = "Ready. Press Enter to send a command.";
+                    } else if (event.key.key == SDLK_F) {
+                        current_session_state.language = kGameLanguageFrench;
+                        for (size_t index = 0; index < command_history.size(); ++index) {
+                            command_history[index] = ExpandInfocomShortcutCommand(command_history[index], current_session_state.language);
+                        }
+                        language_selected = true;
+                        text_input_suppressed_until = SDL_GetTicks() + 250;
+                        persistent_hint = "Prêt. Appuyez sur Entrée pour envoyer une commande.";
+                    }
+                }
+                continue;
+            }
+
             if (event.type == SDL_EVENT_TEXT_INPUT) {
+                if (SDL_GetTicks() < text_input_suppressed_until) {
+                    continue;
+                }
                 const char* inserted = event.text.text ? event.text.text : "";
                 if (inserted[0]) {
                     input_text.insert(input_cursor, inserted);
@@ -1683,7 +1887,9 @@ bool RunSdlFrontend(
                 }
                 if (busy) {
                     worker_shared_state.stop_requested.store(true);
-                    ui_message = "Cancellation requested...";
+                    ui_message = current_session_state.language == kGameLanguageFrench
+                        ? "Annulation demandée..."
+                        : "Cancellation requested...";
                 } else {
                     input_text.clear();
                     input_cursor = 0;
@@ -1694,11 +1900,13 @@ bool RunSdlFrontend(
             if (key == SDLK_RETURN) {
                 const std::string raw_command = TrimCommandText(input_text);
                 if (raw_command.empty()) {
-                    ui_message = "Empty command ignored.";
+                    ui_message = current_session_state.language == kGameLanguageFrench
+                        ? "Commande vide ignorée."
+                        : "Empty command ignored.";
                     continue;
                 }
 
-                const std::string command = ExpandInfocomShortcutCommand(raw_command);
+                const std::string command = ExpandInfocomShortcutCommand(raw_command, current_session_state.language);
 
                 bool busy = false;
                 {
@@ -1706,7 +1914,9 @@ bool RunSdlFrontend(
                     busy = worker_shared_state.busy;
                 }
                 if (busy) {
-                    ui_message = "A turn is already running.";
+                    ui_message = current_session_state.language == kGameLanguageFrench
+                        ? "Un tour est déjà en cours."
+                        : "A turn is already running.";
                     continue;
                 }
 
@@ -1754,6 +1964,13 @@ bool RunSdlFrontend(
             }
         }
 
+        if (!language_selected && running) {
+            DrawLanguageSelection(renderer, ui_fonts, config.logical_width, config.logical_height);
+            SDL_RenderPresent(renderer);
+            SDL_Delay(16);
+            continue;
+        }
+
         bool turn_completed = false;
         bool turn_failed = false;
         std::string failure_text;
@@ -1783,7 +2000,9 @@ bool RunSdlFrontend(
                 failure_text = worker_shared_state.error_text;
                 worker_shared_state.error_ready = false;
                 turn_failed = true;
-                ui_message = failure_text;
+                ui_message = current_session_state.language == kGameLanguageFrench
+                    ? "Le tour a échoué. Consultez la sortie de diagnostic."
+                    : failure_text;
             }
         }
 
@@ -1819,21 +2038,22 @@ bool RunSdlFrontend(
         InputWindow input_window;
         BuildInputWindow(input_text, input_cursor, ui_fonts.regular, input_text_max_width, &input_window);
 
-        SDL_SetRenderDrawColor(renderer, 99, 99, 99, 255);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
         DrawPanel(renderer, scene_frame, 236, 0);
         DrawPanel(renderer, console_rect, 236, 0);
         DrawPanel(renderer, input_rect, 250, 0);
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         DrawTitleBar(renderer, ui_fonts, title_rect, current_session_state);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDebugText(renderer, 48.0f, 500.0f, status_line.c_str());
 
         SDL_RenderTexture(renderer, scene_texture, 0, &scene_rect);
+        DrawProceduralVisorMask(renderer, scene_rect);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderRect(renderer, &scene_frame);
-        DrawSpatialEntropyHud(renderer, ui_fonts, current_session_state, scene_rect);
+        DrawThermalHud(renderer, ui_fonts, current_session_state, scene_rect);
         DrawExitCompass(renderer, ui_fonts, current_session_state, scene_rect);
         DrawConsoleText(renderer, ui_fonts, console_rect, transcript_lines, console_line_capacity);
 

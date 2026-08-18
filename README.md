@@ -30,6 +30,10 @@ Current state:
 - first generated-room graph for improvised cardinal navigation
 - authoritative hard/soft/spatial state with deterministic and hybrid scene compilation
 - seven-place Eryx survey route with deterministic invisible contact and non-reciprocal traversal
+- model-directed Venus heat loop linking external temperature, suit-buffered body temperature, and LLM sampling temperature
+- bilingual English/French player interface selected at launch with `E` or `F`
+- symmetric procedural suit-visor mask around the 3D viewport
+- green-to-pale-yellow Venus sky with doubled radiance on environment misses
 - legacy datacenter/desert scenes retained as historical baselines
 - Python helper to download `Ministral 3 8B Instruct 2512` GGUF
 - first headless `Ministral` turn pipeline wired to the renderer
@@ -137,10 +141,13 @@ Useful overrides:
 
 `--sdl` opens the first desktop loop:
 
+- launch screen: choose `English (E)` or `Français (F)`; player-facing text follows that choice while internal LLM contracts remain English
 - top panel: raytraced scene
+- the 3D image is clipped by a symmetric procedural visor assembled from rectangular scanlines and elliptical boundaries; the exterior is black
+- visor HUD: external temperature and body temperature
 - lower panel: transcript joueur avec la narration finale seulement
 - input line: text entry with edition, history on arrow up/down, submit on Enter
-- status line with ASCII spinner for `llm` and `cpu`
+- localized status line with an ASCII activity spinner
 - raw LLM output and generated `.scene` stream to the terminal, not to the player GUI
 - `Escape` while busy: cancellation request
 - cardinal commands like `NORTH`, `EAST`, `SOUTH`, `WEST` can now generate and cache improvised rooms on first entry

@@ -114,11 +114,13 @@ The text and image do different work:
 
 The world should stay locally legible and globally uncertain. The image is not a failed illustration of the prose; it is one partial sensor among others.
 
-## Pressure, orientation, and optional temperature
+## Pressure, orientation, and embodied temperature
 
 The fiction may use oxygen, suit stress, exposure time, confidence in the map, distance from shelter, or proximity to the labyrinth as pressures on exploration. No such resource should be added merely to imitate survival-game convention.
 
-The temperature mechanism developed for *Le Désert des tokens* remains an optional research idea, not the central mechanic. If retained, model sampling variation could respond to environmental stress or spatial entropy. It must remain subordinate to structured topological mutation, because randomness and meaningful spatial instability are not equivalent.
+Temperature is now an active feedback loop grounded in Venus rather than in the superseded datacenter premise. The suit reports the extreme exterior temperature and a slower body temperature. The LLM decides whether exposure, effort, damage, shelter, or atmospheric equipment changes either value; the suit keeps both correlated but deliberately lagged.
+
+Body temperature then raises the sampling temperature used by the LLM to interpret actions and imagine places. This creates an embodied drift from hostile environment to generative instability. It remains subordinate to structured topological mutation: hotter sampling may alter proposals and prose, but it never grants the model direct authority over committed traversal or geometry.
 
 ## Autonomous presentation
 

@@ -73,13 +73,13 @@ The successful route has seven movement effects in eight turns. The rejected bar
 
 ## State ownership
 
-- `HardState` owns the committed player position, inventory, survival resources, and `spatial_entropy`.
+- `HardState` owns the committed player position, inventory, survival resources, `spatial_entropy`, `external_temperature_c`, and `body_temperature_c`.
 - `SpatialState` owns the visible local brief, actionable objects, normal blocked exits, and authored anomalies.
 - `RoomLink` owns directed traversal relations. It is allowed to be non-reciprocal when authored or validated as a contradiction.
 - `InvisibleBarrier` owns an obstruction independently of `blocked_exits`, including place, cardinal direction, evidence, and discovery state.
 - `.scene` owns visible human infrastructure, terrain, instruments, and indirect evidence. It never owns alien collision.
 
-The C++ members that store entropy, suit, oxygen, instrument power, and surface weather retain legacy names internally for save compatibility. Serialized JSON and player-facing prompts use the active Eryx names.
+Entropy and both temperatures now use distinct C++ members. The loader still accepts the legacy `datacenter_temperature_c` key as an alias for `spatial_entropy`; suit, oxygen, instrument power, and surface weather retain legacy member names for now.
 
 ## Implemented validation
 
@@ -87,7 +87,7 @@ The C++ members that store entropy, suit, oxygen, instrument power, and surface 
 - The route installs twelve directed links and one typed invisible barrier.
 - Northern contact at `labyrinth_threshold` leaves position and move count unchanged, marks the barrier discovered, and emits explicit diagnostic narration.
 - The shelter's west traversal returns to the scanner and persists through JSON save/load.
-- The active prompts and HUD use Eryx vocabulary and `spatial_entropy`.
+- Active prompts use Eryx vocabulary and preserve `spatial_entropy` as an internal topological measure. The player HUD instead exposes Venusian external and body temperatures.
 - Historical datacenter fixtures and legacy prefab directives remain available as technical baselines.
 
 ## Still planned

@@ -434,3 +434,51 @@ Raison :
 Consequence :
 
 Le viewport montre le champ ouvert tandis que le moteur refuse le mouvement et produit une preuve instrumentale. Les futures mutations devront modifier cette couche topologique sans demander au LLM de dessiner la collision.
+
+## 2026-08-18 - Réintroduire la température comme boucle corporelle vénusienne
+
+Decision :
+
+Le hard state distingue `spatial_entropy`, `external_temperature_c` et `body_temperature_c`. Le LLM décide des variations thermiques à partir de l'exposition, de l'effort, du scaphandre, des abris et des machines atmosphériques. La température corporelle produit une composante d'échantillonnage de `0.10` à `0.90`, utilisée directement par défaut ou ajoutée comme dérive à une température CLI explicite, puis appliquée aux tours, à l'imagination des lieux et à leur traduction visuelle.
+
+Raison :
+
+- Vénus redonne une cause fictionnelle directe à l'accumulation de chaleur
+- le scaphandre fournit le délai nécessaire entre environnement hostile et corps
+- relier le corps à l'échantillonnage matérialise la perte de stabilité sans confondre chaleur et entropie topologique
+
+Consequence :
+
+Les sorties structurées peuvent modifier les deux températures. Les traversals déterministes demandent une évaluation thermique interne séparée ; en cas d'échec, l'état reste inchangé. Le moteur conserve seul l'autorité sur les liens, les collisions et la géométrie.
+
+## 2026-08-18 - Séparer langue joueur et langue interne du moteur
+
+Decision :
+
+Le lancement SDL exige `English (E)` ou `Français (F)`. La narration, les clarifications, les noms de lieux, le statut, la boussole et le HUD suivent ce choix. Les prompts d'instruction, clés JSON, identifiants, tokens d'objets, contraintes de scène et mécanismes LLM restent en anglais.
+
+Raison :
+
+- la frontière empêche une traduction des identifiants de casser les parseurs et les caches
+- la langue devient un état de session explicite et sauvegardé
+- les deux interfaces peuvent partager la même logique de monde
+
+Consequence :
+
+Les invites demandent uniquement la traduction des champs destinés au joueur. Les commandes cardinales françaises sont reconnues par la voie déterministe. Un ancien transcript n'est pas retraduit rétroactivement.
+
+## 2026-08-18 - Faire de la visière et du ciel des contraintes de rendu moteur
+
+Decision :
+
+Le viewport SDL reçoit un masque noir symétrique calculé par scanlines rectangulaires, coins arrondis et encoche elliptique centrale d'après `documentation/mask_shape.png`. Le ciel verrouillé devient vert au zénith et jaune clair à l'horizon ; sa radiance est doublée seulement lorsque le path tracer manque la géométrie.
+
+Raison :
+
+- la visière transforme l'image en perception située dans un scaphandre sans modifier les scènes
+- une génération 2D procédurale reste indépendante de la résolution du raytraceur et du contenu LLM
+- la palette vénusienne doit rester une responsabilité du moteur, pas une couleur libre confiée au format `.scene`
+
+Consequence :
+
+Le masque se compose après la texture 3D et avant les instruments HUD. Le facteur lumineux du ciel n'éclaire pas directement les surfaces et ne modifie pas leurs matériaux.

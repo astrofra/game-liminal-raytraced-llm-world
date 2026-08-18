@@ -1254,3 +1254,67 @@ Limites assumées :
 - la contradiction actuelle est auteurisée, pas proposée live par le LLM
 - les verbes de mesure et de marquage ne produisent pas encore de preuves persistantes
 - les noms membres C++ du hard state restent legacy jusqu'à une migration de schéma versionnée
+
+## 2026-08-18 - Iteration 0029 - Scaphandre thermique, interface bilingue et ciel vénusien
+
+Objectif :
+
+Réintroduire la température à partir de Vénus, l'incarner dans le scaphandre, relier le corps à la dérive d'échantillonnage du LLM, puis situer visuellement le joueur derrière une visière.
+
+Implémentation :
+
+- séparation réelle de `spatial_entropy`, `external_temperature_c` et `body_temperature_c` dans `HardState`
+- lecture rétrocompatible de l'ancienne clé `datacenter_temperature_c` comme entropie uniquement
+- extension des contrats JSON de tour et de génération de lieu avec les deux températures
+- évaluation thermique LLM dédiée lors des traversals déterministes, sans autorité sur la topologie
+- courbe corporelle `37 °C -> 0.10`, jusqu'à `42 °C -> 0.90`, utilisée directement par défaut et ajoutée comme dérive à une éventuelle température CLI explicite
+- écran SDL obligatoire `English (E)` / `Français (F)`
+- localisation des textes joueur, noms canoniques, boussole, statut, messages et narrations déterministes
+- conservation en anglais des clés, identifiants, contrats, tokens d'objets et contraintes internes
+- remplacement du HUD d'entropie par deux panneaux de température extérieure et corporelle
+- masque noir de visière symétrique généré par rectangles de scanline, coins arrondis et encoche elliptique
+- remplacement de la palette du ciel bleu par un dégradé vert/jaune clair
+- multiplication par deux de la radiance sur les seuls chemins qui atteignent le fond de ciel
+
+Validation :
+
+- build CMake `Release` réussi avec SDL3, `llama.cpp`, CUDA et OpenMP
+- inspection du contrat de tour : températures initiales `464 °C` / `37.0 °C` et six champs de delta présents
+- tour canonique réel : décision thermique acceptée, passage `464 -> 465 °C` et `37.0 -> 37.25 °C`; tour suivant lancé à une température LLM effective de `0.140`
+- session française rechargée : commande `nord` reconnue et narration déterministe localisée
+- rendu de contrôle `survey_plateau` à `640x320`, `4 spp`, confirmant le dégradé vert vers jaune clair
+- vérification de la compilation de l'écran de langue, du masque procédural et des libellés thermiques UTF-8
+
+Limites assumées :
+
+- calibration thermique artistique, non physiologique
+- un appel thermique invalide conserve l'état précédent
+- les anciens tours d'un transcript sauvegardé ne sont pas retraduits lorsqu'une autre langue est choisie
+
+## 2026-08-18 - Iteration 0030 - Retours d'essai de l'interface française
+
+Objectif :
+
+Corriger les trois écarts visibles dans `fixFR000.png` : fond extérieur gris, encoche de visière trop envahissante et texte généré encore anglophone malgré le choix du français.
+
+Implémentation :
+
+- passage du fond général SDL du gris au noir, avec conservation de panneaux clairs pour le transcript et la saisie
+- déplacement du départ de l'encoche centrale de `48 %` à `68 %` de la hauteur du viewport
+- réduction de sa demi-largeur maximale de `15,5 %` à `9 %` de la largeur du viewport
+- développement localisé des raccourcis : `NORD`, `EST`, `SUD`, `OUEST`, `ATTENDRE`, `INVENTAIRE` et `QUITTER`
+- consigne système française rendue obligatoire pour le titre, le résumé, la narration et la clarification exposés au joueur
+- détection d'une sortie majoritairement anglaise, passe de localisation LLM dédiée à température nulle, puis fallback français déterministe
+- garde d'affichage pour ne plus réexposer tels quels les textes anglais déjà archivés dans une sauvegarde française
+
+Validation :
+
+- build CMake `Release` réussi avec SDL3, `llama.cpp`, CUDA et OpenMP
+- déplacement réel vers une salle inconnue depuis une sauvegarde française
+- sortie finale vérifiée : titre `Champ de repères oriental`, narration et clarification entièrement françaises
+- fallback de métadonnées déclenché par une réponse volontairement bornée à `384` tokens, lui-même correctement localisé
+- `git diff --check` sans erreur
+
+Limite assumée :
+
+- les anciens textes anglais restent intacts dans le JSON de sauvegarde ; la garde française les masque mais ne reconstruit pas rétroactivement leur traduction littéraire

@@ -65,11 +65,20 @@ enum ResourceState {
     kResourceCritical,
 };
 
-// Legacy field names below remain for save compatibility during the Eryx migration.
-// Their active runtime meaning is spatial entropy, suit integrity and oxygen state.
-static const int kDefaultDatacenterTemperatureC = 8;
-static const int kMinDatacenterTemperatureC = 0;
-static const int kMaxDatacenterTemperatureC = 100;
+enum GameLanguage {
+    kGameLanguageEnglish = 0,
+    kGameLanguageFrench,
+};
+
+static const int kDefaultSpatialEntropy = 8;
+static const int kMinSpatialEntropy = 0;
+static const int kMaxSpatialEntropy = 100;
+static const int kDefaultExternalTemperatureC = 464;
+static const int kMinExternalTemperatureC = 300;
+static const int kMaxExternalTemperatureC = 520;
+static const float kDefaultBodyTemperatureC = 37.0f;
+static const float kMinBodyTemperatureC = 34.0f;
+static const float kMaxBodyTemperatureC = 43.0f;
 
 struct HardState {
     int turn_number;
@@ -77,7 +86,9 @@ struct HardState {
     int score;
     LocationId current_location_id;
     int alert_level;
-    int datacenter_temperature_c;
+    int spatial_entropy;
+    int external_temperature_c;
+    float body_temperature_c;
     ResourceState cooling_state;
     ResourceState water_state;
     ResourceState power_state;
@@ -91,7 +102,9 @@ struct HardState {
         , score(0)
         , current_location_id(kLocationQuarryThreshold)
         , alert_level(1)
-        , datacenter_temperature_c(kDefaultDatacenterTemperatureC)
+        , spatial_entropy(kDefaultSpatialEntropy)
+        , external_temperature_c(kDefaultExternalTemperatureC)
+        , body_temperature_c(kDefaultBodyTemperatureC)
         , cooling_state(kResourceStable)
         , water_state(kResourceStable)
         , power_state(kResourceStable)
@@ -149,8 +162,12 @@ struct HardStateDelta {
     int next_score;
     bool alert_level_changed;
     int next_alert_level;
-    bool temperature_changed;
-    int next_datacenter_temperature_c;
+    bool spatial_entropy_changed;
+    int next_spatial_entropy;
+    bool external_temperature_changed;
+    int next_external_temperature_c;
+    bool body_temperature_changed;
+    float next_body_temperature_c;
     bool cooling_state_changed;
     ResourceState next_cooling_state;
     bool water_state_changed;
@@ -171,8 +188,12 @@ struct HardStateDelta {
         , next_score(0)
         , alert_level_changed(false)
         , next_alert_level(0)
-        , temperature_changed(false)
-        , next_datacenter_temperature_c(kDefaultDatacenterTemperatureC)
+        , spatial_entropy_changed(false)
+        , next_spatial_entropy(kDefaultSpatialEntropy)
+        , external_temperature_changed(false)
+        , next_external_temperature_c(kDefaultExternalTemperatureC)
+        , body_temperature_changed(false)
+        , next_body_temperature_c(kDefaultBodyTemperatureC)
         , cooling_state_changed(false)
         , next_cooling_state(kResourceUnknown)
         , water_state_changed(false)
@@ -298,6 +319,7 @@ struct InvisibleBarrier {
 };
 
 struct SessionState {
+    GameLanguage language;
     HardState hard_state;
     SoftState soft_state;
     SpatialState spatial_state;
@@ -310,7 +332,8 @@ struct SessionState {
     std::vector<InvisibleBarrier> invisible_barriers;
 
     SessionState()
-        : next_generated_room_index(1)
+        : language(kGameLanguageEnglish)
+        , next_generated_room_index(1)
     {
     }
 };
@@ -322,7 +345,11 @@ const char* VisibilityLevelToString(VisibilityLevel value);
 const char* DesertStateToString(DesertState value);
 const char* InteriorDensityToString(InteriorDensity value);
 const char* ResourceStateToString(ResourceState value);
-int ClampDatacenterTemperatureC(int value);
+const char* GameLanguageToString(GameLanguage value);
+int ClampSpatialEntropy(int value);
+int ClampExternalTemperatureC(int value);
+float ClampBodyTemperatureC(float value);
+float ComputeLlmSamplingTemperature(float body_temperature_c);
 
 bool ParseLocationId(const char* text, LocationId* value);
 bool ParseCardinalDirection(const char* text, CardinalDirection* value);
@@ -331,6 +358,7 @@ bool ParseVisibilityLevel(const char* text, VisibilityLevel* value);
 bool ParseDesertState(const char* text, DesertState* value);
 bool ParseInteriorDensity(const char* text, InteriorDensity* value);
 bool ParseResourceState(const char* text, ResourceState* value);
+bool ParseGameLanguage(const char* text, GameLanguage* value);
 CardinalDirection OppositeCardinalDirection(CardinalDirection value);
 std::string BuildCanonicalPlaceId(LocationId location_id);
 bool ParseCanonicalPlaceId(const std::string& place_id, LocationId* location_id);

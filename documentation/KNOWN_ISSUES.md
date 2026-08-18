@@ -30,17 +30,36 @@ Piste :
 
 Ajouter un `TopologyProposal` borné, un validateur déterministe et un journal de décisions avant d'autoriser les mutations live.
 
-### 2026-08-18 - Des noms membres d'état restent liés à la phase datacenter/désert
+### 2026-08-18 - La boucle thermique LLM reste une calibration artistique
 
 Statut :
 
-Ouvert.
+Ouvert, non bloquant.
 
 Description :
 
-Le JSON, les prompts, les traces et le HUD exposent désormais `spatial_entropy`, `suit_state`, `oxygen_state`, `instrument_power_state` et `surface_weather`. Les membres C++ sous-jacents restent toutefois nommés :
+La température corporelle fournit une composante d'échantillonnage comprise entre `0.10` et `0.90`. Elle est utilisée directement par défaut ou ajoutée comme dérive à une température CLI explicite, avec un plafond effectif de `1.50`. Les déplacements déterministes déclenchent aussi un court appel LLM supplémentaire pour décider de l'évolution thermique. Ces valeurs servent le rythme génératif du prototype ; elles ne constituent ni une simulation physiologique ni un modèle atmosphérique de Vénus.
 
-- `datacenter_temperature_c`
+Impact :
+
+- un déplacement canonique peut désormais payer une petite latence d'inférence même sans génération de lieu
+- si l'appel thermique échoue ou renvoie un JSON invalide, les deux températures restent inchangées
+- un transcript déjà sauvegardé conserve en interne la langue dans laquelle chaque ancien tour a été écrit ; en interface française, une ancienne narration détectée comme anglophone est masquée par une notice française, mais elle n'est pas réellement retraduite
+
+Piste :
+
+Mesurer la latence et la dérive sur une session longue, puis ajuster la courbe corporelle, les bornes par tour et éventuellement la fréquence des évaluations thermiques sans donner au modèle d'autorité topologique.
+
+### 2026-08-18 - Certains noms membres de ressources restent liés à la phase datacenter/désert
+
+Statut :
+
+Partiellement résolu.
+
+Description :
+
+`spatial_entropy`, `external_temperature_c` et `body_temperature_c` ont maintenant des membres C++ distincts et des clamps adaptés. Le loader accepte encore l'ancienne clé `datacenter_temperature_c` comme alias de sauvegarde pour l'entropie. Les membres suivants restent toutefois nommés selon les phases précédentes :
+
 - `cooling_state`
 - `water_state`
 - `power_state`
@@ -49,12 +68,11 @@ Le JSON, les prompts, les traces et le HUD exposent désormais `spatial_entropy`
 Impact :
 
 - dette de lecture et risque d'erreur lors des prochains changements de ressources
-- le clamp de température sert temporairement de clamp `0..100` pour l'entropie
-- la compatibilité de lecture des anciennes sauvegardes dépend de ce mapping
+- la compatibilité de lecture des anciennes sauvegardes dépend encore de quelques alias explicites
 
 Piste :
 
-Introduire de vrais noms membres lors d'une migration de schéma versionnée, après avoir ajouté un test explicite de chargement des sauvegardes legacy.
+Renommer les quatre membres restants lors d'une migration de schéma versionnée et conserver des tests explicites de chargement des sauvegardes legacy.
 
 ### 2026-08-09 - Des noms de scripts et d'exécution conservent l'ancien titre de travail
 
@@ -541,6 +559,20 @@ Piste :
 Verifier et normaliser explicitement l'encodage du fichier si cela devient genant pour le travail quotidien.
 
 ## Résolus
+
+### 2026-08-18 - Une salle générée en mode français pouvait encore exposer de l'anglais
+
+Statut :
+
+Résolu le 2026-08-18 pour les nouveaux tours et protégé à l'affichage pour les sauvegardes existantes.
+
+Résolution :
+
+- règle française obligatoire renforcée dans les messages système de génération de salle et de tour
+- détection lexicale d'une réponse joueur restée majoritairement anglaise
+- seconde passe de localisation LLM à température nulle, avec fallback français si cette passe échoue
+- directions développées dans la langue sélectionnée, par exemple `N` vers `NORD`
+- ancien titre anglais remplacé à l'affichage par un libellé français neutre et ancienne narration anglaise masquée par une notice française
 
 ### 2026-08-18 - Les prompts, lieux canoniques et fallbacks restaient liés au datacenter
 

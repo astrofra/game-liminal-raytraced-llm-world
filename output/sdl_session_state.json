@@ -1,386 +1,79 @@
 {
-  "current_place_id": "generated:room_0007",
+  "current_place_id": "generated:room_0001",
   "generated_rooms": [
     {
       "metadata_fallback_used": false,
       "room_id": "generated:room_0001",
       "scene_fallback_used": false,
       "scene_source": "hybrid",
-      "scene_text": "room \"Split Threshold Cut\"\ncamera eye(0.0,1.82,-8.90) target(0.0,1.30,8.80) up(0.0,1.0,0.0) fov(47.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(70.0)\nsky zenith(0.01) horizon(0.28) nadir(0.00) band(0.37) curve(1.95) noise(0.15) stars(0.0030,1.30,0.095) seed(401)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(94.6,154.0) gray(0.13)\nbox \"compound_mass\" pos(0.0,2.11,10.08) size(10.3,4.2,3.8) gray(0.18)\nbox \"compound_crown\" pos(0.0,3.78,10.08) size(8.8,0.42,2.0) gray(0.25)\nbox \"wall_left\" pos(-7.40,1.35,1.2) size(0.75,2.70,15.4) gray(0.18)\nbox \"wall_right\" pos(7.40,1.35,1.2) size(0.75,2.70,15.4) gray(0.18)\nprefab_quarry_pylon \"quarry_pylon_01\" pos(-1.20,1.75,7.00) size(1.40,3.50,1.20) gray(0.27) detail(0.44)\nprefab_survey_beacon \"survey_beacon_02\" pos(1.20,1.70,5.30) size(1.10,3.40,1.00) gray(0.24) detail(0.43)\nprefab_crystal_cluster \"crystal_cluster_03\" pos(-0.40,1.15,-0.58) size(1.80,2.30,1.60) gray(0.66) glow(0.34)\nprefab_crate \"sample_case_partially_buried_04\" pos(4.64,0.55,-2.24) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nprefab_gate \"checkpoint_gate_101\" pos(-1.50,1.42,13.71) size(4.60,2.90,0.42) gray(0.30) detail(0.42) bars(5)\nbox \"badge_reader_103\" pos(-8.47,1.38,-0.22) size(0.14,0.65,0.90) gray(0.39)\n",
+      "scene_text": "room \"Fractured Cut\"\ncamera eye(0.0,1.78,-9.80) target(0.0,1.35,10.00) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(38.0) cone(12.0,28.0) intensity(72.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(770)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(88.0,187.0) gray(0.12)\nbox \"cut_wall_left\" pos(-6.2,2.20,5.0) size(4.4,4.40,25.0) gray(0.18)\nbox \"cut_wall_right\" pos(6.4,1.75,7.0) size(4.8,3.50,23.0) gray(0.19)\nbox \"cut_step_rear\" pos(0.0,0.55,14.0) size(8.0,1.10,4.0) gray(0.21)\nprefab_survey_beacon \"survey_beacon_east_flank_flickering_01\" pos(-1.20,1.70,8.50) size(1.10,3.40,1.00) gray(0.24) detail(0.43)\nprefab_extraction_rig \"extraction_rig_half_buried_arm_bent_02\" pos(3.60,1.60,6.80) size(2.80,3.20,2.20) gray(0.23) detail(0.42)\nprefab_crystal_cluster \"crystal_cluster_exposed_seam_west_wall_03\" pos(-0.40,1.15,-0.34) size(1.80,2.30,1.60) gray(0.66) glow(0.34)\nprefab_crate \"sample_case_propped_against_retaining_fin_04\" pos(4.32,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nprefab_quarry_pylon \"quarry_pylon_206\" pos(-1.20,1.75,5.10) size(1.40,3.50,1.20) gray(0.27) detail(0.44)\n",
       "spatial_state": {
         "alert_level": 2,
         "anchors": [
-          "west pylon",
-          "broken cluster",
-          "tilted slab",
-          "baseward slope"
+          "east beacon",
+          "bent rig",
+          "crystal seam",
+          "processor hum"
         ],
         "blocked_exits": [],
         "canonical_fixture": "",
         "interior_density": "sparse",
-        "location_archetype": "threshold_cut",
+        "location_archetype": "quarry_cut_threshold",
         "location_id": "unknown",
-        "room_summary": "A fractured extraction slab with a west-facing survey pylon and a broken crystal cluster, where the quarry floor tilts toward the baseward approach.",
-        "room_title": "Split Threshold Cut",
+        "room_summary": "A narrow extraction trench where the Erycinian crystal seam has been partially severed, revealing unstable flanks and a half-buried prospector’s rig.",
+        "room_title": "Fractured Cut",
         "scene_constraints": [
-          "west pylon on tilted slab",
-          "broken cluster under retention fin",
-          "baseward slope dominates",
-          "no visible alien wall",
+          "split threshold masses: retaining fin on east, crystal seam on west",
+          "extraction rig on work slab (tilted toward north)",
+          "exposed crystal seam dominates west wall",
+          "scanner under cantilever (if present) would face south",
           "hero crystal cluster",
+          "hero extraction rig",
           "survey beacon",
           "quarry pylon",
           "open venus horizon"
         ],
         "spatial_anomalies": [
-          "displaced route marks",
-          "inconsistent floor tilt"
+          "range sensor conflict: north wall appears absent but returns as solid",
+          "beacon light casts no shadow on the crystal seam"
         ],
-        "surface_weather": "dusty",
+        "surface_weather": "still",
         "time_of_day": "dusk",
         "visibility_level": "dusty",
         "visible_objects": [
-          "quarry pylon",
-          "survey beacon",
-          "crystal cluster",
-          "sample case (partially buried)",
-          "retention fin"
+          "survey beacon (east flank, flickering)",
+          "extraction rig (half-buried, arm bent)",
+          "crystal cluster (exposed seam, west wall)",
+          "sample case (propped against retaining fin)",
+          "quarry pylon (cracked, north edge)"
         ],
         "world_pose_known": true,
         "world_x": 0.0,
         "world_z": -3.0
-      }
-    },
-    {
-      "metadata_fallback_used": false,
-      "room_id": "generated:room_0002",
-      "scene_fallback_used": false,
-      "scene_source": "hybrid",
-      "scene_text": "room \"Base Route Placard\"\ncamera eye(0.0,1.72,-7.10) target(0.0,1.18,6.80) up(0.0,1.0,0.0) fov(47.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(27.0) cone(12.0,28.0) intensity(82.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.4,20.0) gray(0.10)\nplane \"ceiling\" pos(0.0,3.40,0.0) normal(0.0,-1.0,0.0) size(12.4,20.0) gray(0.17)\nbox \"wall_back\" pos(0.0,1.70,10.00) size(12.4,3.4,0.60) gray(0.19)\nbox \"wall_left\" pos(-6.20,1.70,0.0) size(0.60,3.4,20.0) gray(0.19)\nbox \"wall_right\" pos(6.20,1.70,0.0) size(0.60,3.4,20.0) gray(0.19)\nprefab_prospect_shelter \"prospect_shelter_01\" pos(-3.35,1.55,5.22) size(4.80,3.10,3.50) gray(0.28) detail(0.40)\nprefab_atmospheric_processor \"atmospheric_processor_02\" pos(-3.35,1.50,-2.25) size(2.20,3.00,1.70) gray(0.24) detail(0.40)\nprefab_crystal_scanner \"crystal_scanner_04\" pos(-2.80,1.20,-0.25) size(2.20,2.40,1.50) gray(0.25) detail(0.44) glow(0.28)\nprefab_crate \"sample_case_empty_05\" pos(3.35,0.55,-1.60) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nprefab_rack \"processor_under_cracked_slate_222\" pos(2.38,1.25,0.80) size(1.35,2.50,1.70) gray(0.20) detail(0.35)\nprefab_crystal_cluster \"hero_crystal_cluster_207\" pos(-0.80,1.15,2.28) size(1.80,2.30,1.60) gray(0.66) glow(0.34)\nbox \"survey_map_display_95\" pos(0.00,1.42,9.85) size(0.90,0.65,0.14) gray(0.39)\n",
-      "spatial_state": {
-        "alert_level": 2,
-        "anchors": [
-          "east scanner",
-          "broken cantilever",
-          "route slate",
-          "processor alcove",
-          "tilted shelter"
-        ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "interior_density": "sparse",
-        "location_archetype": "compressed_survey_node",
-        "location_id": "unknown",
-        "room_summary": "A compressed survey node where a **prospect shelter** leans against a **heavy cantilever**, its **atmospheric processor** hissing under a cracked slate. A.",
-        "room_title": "Base Route Placard",
-        "scene_constraints": [
-          "shelter leans against east cantilever",
-          "processor under cracked slate",
-          "scanner on broken support",
-          "route slate near baseward slope",
-          "no visible alien wall",
-          "hero crystal scanner",
-          "hero crystal cluster",
-          "atmospheric processor flank"
-        ],
-        "spatial_anomalies": [
-          "displaced route marks",
-          "inconsistent slate orientation",
-          "processor venting unevenly"
-        ],
-        "surface_weather": "dusty",
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "prospect shelter",
-          "atmospheric processor",
-          "route slate",
-          "crystal scanner",
-          "sample case (empty)"
-        ],
-        "world_pose_known": true,
-        "world_x": 0.0,
-        "world_z": 0.0
-      }
-    },
-    {
-      "metadata_fallback_used": false,
-      "room_id": "generated:room_0003",
-      "scene_fallback_used": false,
-      "scene_source": "hybrid",
-      "scene_text": "room \"Westward Extraction Cut\"\ncamera eye(0.0,1.84,-9.00) target(0.0,1.22,8.60) up(0.0,1.0,0.0) fov(47.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(72.0)\nsky zenith(0.01) horizon(0.28) nadir(0.00) band(0.37) curve(1.95) noise(0.15) stars(0.0030,1.30,0.095) seed(682)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(107.8,165.0) gray(0.12)\nbox \"compound_mass\" pos(0.0,2.02,10.80) size(11.8,4.0,3.8) gray(0.19)\nbox \"compound_crown\" pos(0.0,3.61,10.80) size(10.0,0.42,2.0) gray(0.25)\nbox \"wall_left\" pos(-8.43,1.35,1.2) size(0.75,2.70,16.5) gray(0.19)\nbox \"wall_right\" pos(8.43,1.35,1.2) size(0.75,2.70,16.5) gray(0.19)\nprefab_quarry_pylon \"quarry_pylon_01\" pos(-1.20,1.75,7.50) size(1.40,3.50,1.20) gray(0.27) detail(0.44)\nprefab_extraction_rig \"extraction_rig_02\" pos(4.00,1.60,5.80) size(2.80,3.20,2.20) gray(0.23) detail(0.42)\nprefab_crate \"sample_crate_dented_03\" pos(5.29,0.55,-2.40) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nprefab_crystal_cluster \"crystal_seam_05\" pos(-0.40,1.15,-0.95) size(1.80,2.30,1.60) gray(0.66) glow(0.34)\nbox \"pylon_east_of_rig_leaning_into_seam_362\" pos(5.29,1.15,-0.40) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nbox \"beacon_signal_warped_by_displaced_marks_364\" pos(-1.20,1.15,4.10) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nprefab_rock_low \"no_visible_alien_wall_only_jagged_rock_405\" pos(1.20,0.50,2.40) size(1.60,1.00,1.30) gray(0.23)\nbox \"maintenance_hatch_123\" pos(-1.20,0.12,1.15) size(1.80,0.24,1.80) gray(0.22)\n",
-      "spatial_state": {
-        "alert_level": 2,
-        "anchors": [
-          "east pylon",
-          "broken fin",
-          "rig arm",
-          "sample crate",
-          "west beacon"
-        ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "interior_density": "sparse",
-        "location_archetype": "deep_field_cut",
-        "location_id": "unknown",
-        "room_summary": "A **broken retaining fin** flanks a **deep-field extraction rig**, its **quarry pylon** casting a jagged shadow over a **sample crate** half-buried in the cut..",
-        "room_title": "Westward Extraction Cut",
-        "scene_constraints": [
-          "extraction rig on broken cut floor",
-          "pylon east of rig, leaning into seam",
-          "sample crate wedged under fin",
-          "beacon signal warped by displaced marks",
-          "no visible alien wall, only jagged rock",
-          "hero crystal cluster",
-          "hero extraction rig",
-          "quarry pylon",
-          "open venus horizon"
-        ],
-        "spatial_anomalies": [
-          "beacon bearing shifts with head movement",
-          "pylon shadow misaligned with cut floor",
-          "crystal seam not aligned with rig axis"
-        ],
-        "surface_weather": "dusty",
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "quarry pylon",
-          "extraction rig",
-          "sample crate (dented)",
-          "broken retaining fin",
-          "crystal seam"
-        ],
-        "world_pose_known": true,
-        "world_x": 0.0,
-        "world_z": 3.0
-      }
-    },
-    {
-      "metadata_fallback_used": false,
-      "room_id": "generated:room_0004",
-      "scene_fallback_used": false,
-      "scene_source": "hybrid",
-      "scene_text": "room \"West Flank Prospect Ledges\"\ncamera eye(0.0,1.72,-7.10) target(0.0,1.18,6.80) up(0.0,1.0,0.0) fov(47.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(27.0) cone(12.0,28.0) intensity(82.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.4,20.0) gray(0.10)\nplane \"ceiling\" pos(0.0,3.40,0.0) normal(0.0,-1.0,0.0) size(12.4,20.0) gray(0.17)\nbox \"wall_back\" pos(0.0,1.70,10.00) size(12.4,3.4,0.60) gray(0.19)\nbox \"wall_left\" pos(-6.20,1.70,0.0) size(0.60,3.4,20.0) gray(0.19)\nbox \"wall_right\" pos(6.20,1.70,0.0) size(0.60,3.4,20.0) gray(0.19)\nprefab_crystal_cluster \"crystal_cluster_01\" pos(-0.40,1.15,-0.90) size(1.80,2.30,1.60) gray(0.66) glow(0.34)\nbox \"distant_beacon_flicker_03\" pos(-1.20,1.15,5.00) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nprefab_crystal_scanner \"hero_crystal_scanner_184\" pos(2.80,1.20,0.60) size(2.20,2.40,1.50) gray(0.25) detail(0.44) glow(0.28)\nprefab_survey_beacon \"survey_beacon_205\" pos(-0.80,1.70,2.50) size(1.10,3.40,1.00) gray(0.24) detail(0.43)\nprefab_prospect_shelter \"field_prospect_shelter_92\" pos(3.35,1.55,3.50) size(4.80,3.10,3.50) gray(0.28) detail(0.40)\nprefab_atmospheric_processor \"shelter_oxygen_service_93\" pos(-3.35,1.50,-1.60) size(2.20,3.00,1.70) gray(0.24) detail(0.40)\nprefab_crate \"sample_case_94\" pos(3.35,0.55,-1.60) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"survey_map_display_95\" pos(0.00,1.42,9.85) size(0.90,0.65,0.14) gray(0.39)\n",
-      "spatial_state": {
-        "alert_level": 2,
-        "anchors": [
-          "crystal cluster",
-          "scanner cantilever",
-          "broken ledge edge"
-        ],
-        "blocked_exits": [
-          "east"
-        ],
-        "canonical_fixture": "",
-        "interior_density": "sparse",
-        "location_archetype": "oblique_ledge_cut",
-        "location_id": "unknown",
-        "room_summary": "A **prospect shelter** clings to a wind-scoured ledge, its **atmospheric processor** hissing as you step onto a **broken retaining slab**. A **crystal...",
-        "room_title": "West Flank Prospect Ledges",
-        "scene_constraints": [
-          "crystal cluster overhangs ledge",
-          "scanner cantilever weak",
-          "no visible path west beyond cluster",
-          "hero crystal scanner",
-          "hero crystal cluster",
-          "survey beacon"
-        ],
-        "spatial_anomalies": [
-          "scanner not aligned with ledge axis",
-          "cluster overhang unstable"
-        ],
-        "surface_weather": "windy",
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "crystal cluster",
-          "scanner cantilever",
-          "distant beacon flicker"
-        ],
-        "world_pose_known": true,
-        "world_x": -3.0,
-        "world_z": 3.0
-      }
-    },
-    {
-      "metadata_fallback_used": false,
-      "room_id": "generated:room_0005",
-      "scene_fallback_used": false,
-      "scene_source": "hybrid",
-      "scene_text": "room \"West Quarry Cut Floor\"\ncamera eye(0.0,1.78,-9.80) target(0.0,1.35,10.00) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(38.0) cone(12.0,28.0) intensity(72.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(48)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(88.0,187.0) gray(0.12)\nbox \"cut_wall_left\" pos(-6.2,2.20,5.0) size(4.4,4.40,25.0) gray(0.18)\nbox \"cut_wall_right\" pos(6.4,1.75,7.0) size(4.8,3.50,23.0) gray(0.19)\nbox \"cut_step_rear\" pos(0.0,0.55,14.0) size(8.0,1.10,4.0) gray(0.21)\nprefab_crate \"sample_crate_01\" pos(4.32,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nprefab_crystal_cluster \"crystal_cluster_02\" pos(-0.40,1.15,-0.34) size(1.80,2.30,1.60) gray(0.66) glow(0.34)\nprefab_extraction_rig \"extraction_rig_03\" pos(-3.60,1.60,8.50) size(2.80,3.20,2.20) gray(0.23) detail(0.42)\nbox \"route_marks_on_pylon_face_364\" pos(1.20,1.15,6.80) size(0.38,2.30,0.38) gray(0.30) emit(2.40)\nprefab_quarry_pylon \"vein_marker_104\" pos(-1.20,1.75,5.10) size(1.40,3.50,1.20) gray(0.27) detail(0.44)\n",
-      "spatial_state": {
-        "alert_level": 2,
-        "anchors": [
-          "broken retaining fin",
-          "quarry pylon west face",
-          "fresh crystal seam"
-        ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "interior_density": "sparse",
-        "location_archetype": "oblique_cut_floor",
-        "location_id": "unknown",
-        "room_summary": "A **broken retaining fin** splits the cut floor, its jagged edge catching the last light. A **sample crate** leans against a **quarry pylon**, its west face.",
-        "room_title": "West Quarry Cut Floor",
-        "scene_constraints": [
-          "extraction rig on work slab",
-          "sample crate against west pylon",
-          "fresh seam under rig",
-          "route marks on pylon face",
-          "hero crystal cluster",
-          "hero extraction rig",
-          "open venus horizon"
-        ],
-        "spatial_anomalies": [
-          "pylon route marks misaligned with cut axis",
-          "seam not aligned with ledge"
-        ],
-        "surface_weather": "windy",
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "sample crate",
-          "crystal cluster",
-          "extraction rig",
-          "route marks"
-        ],
-        "world_pose_known": true,
-        "world_x": -3.0,
-        "world_z": 0.0
-      }
-    },
-    {
-      "metadata_fallback_used": false,
-      "room_id": "generated:room_0006",
-      "scene_fallback_used": false,
-      "scene_source": "hybrid",
-      "scene_text": "room \"Baseward Threshold Gate\"\ncamera eye(0.0,1.72,-7.10) target(0.0,1.18,6.80) up(0.0,1.0,0.0) fov(47.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(27.0) cone(12.0,28.0) intensity(82.0)\nplane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.4,20.0) gray(0.10)\nplane \"ceiling\" pos(0.0,3.40,0.0) normal(0.0,-1.0,0.0) size(12.4,20.0) gray(0.17)\nbox \"wall_back\" pos(0.0,1.70,10.00) size(12.4,3.4,0.60) gray(0.19)\nbox \"wall_left\" pos(-6.20,1.70,0.0) size(0.60,3.4,20.0) gray(0.19)\nbox \"wall_right\" pos(6.20,1.70,0.0) size(0.60,3.4,20.0) gray(0.19)\nprefab_survey_beacon \"survey_beacon_01\" pos(-1.20,1.70,5.00) size(1.10,3.40,1.00) gray(0.24) detail(0.43)\nprefab_crystal_scanner \"crystal_scanner_02\" pos(-2.80,1.20,-0.25) size(2.20,2.40,1.50) gray(0.25) detail(0.44) glow(0.28)\nprefab_gate \"broken_doorframe_03\" pos(-1.50,1.42,9.78) size(2.20,2.50,0.28) gray(0.23) detail(0.42)\nprefab_atmospheric_processor \"atmospheric_processor_04\" pos(-3.35,1.50,-2.25) size(2.20,3.00,1.70) gray(0.24) detail(0.40)\nbox \"route_placard_05\" pos(0.00,1.42,9.85) size(0.90,0.65,0.14) gray(0.39)\nprefab_prospect_shelter \"prospect_shelter_doorframe_intrudes_192\" pos(3.35,1.55,1.02) size(4.80,3.10,3.50) gray(0.28) detail(0.40)\nprefab_crystal_cluster \"hero_crystal_cluster_207\" pos(-0.80,1.15,2.50) size(1.80,2.30,1.60) gray(0.66) glow(0.34)\nprefab_crate \"sample_case_94\" pos(3.35,0.55,-1.82) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nbox \"survey_map_display_95\" pos(2.00,1.72,9.85) size(0.90,0.65,0.14) gray(0.39)\n",
-      "spatial_state": {
-        "alert_level": 2,
-        "anchors": [
-          "split threshold gate east edge",
-          "prospect shelter doorframe",
-          "west pylon survey beacon",
-          "tilted work slab"
-        ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "interior_density": "sparse",
-        "location_archetype": "threshold_gate",
-        "location_id": "unknown",
-        "room_summary": "A **split threshold gate** blocks the baseward path, its east side angled toward a **prospect shelter**’s broken doorframe. A **survey beacon** hums on the.",
-        "room_title": "Baseward Threshold Gate",
-        "scene_constraints": [
-          "split threshold gate with east asymmetry",
-          "prospect shelter doorframe intrudes",
-          "survey beacon on west pylon",
-          "tilted work slab under scanner",
-          "route placard on gate frame",
-          "hero crystal scanner",
-          "hero crystal cluster",
-          "atmospheric processor flank",
-          "survey beacon"
-        ],
-        "spatial_anomalies": [
-          "scanner mounted on tilted slab misaligned with gate axis",
-          "beacon light casts uneven shadows"
-        ],
-        "surface_weather": "windy",
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "survey beacon",
-          "crystal scanner",
-          "broken doorframe",
-          "atmospheric processor",
-          "route placard"
-        ],
-        "world_pose_known": true,
-        "world_x": -3.0,
-        "world_z": -3.0
-      }
-    },
-    {
-      "metadata_fallback_used": false,
-      "room_id": "generated:room_0007",
-      "scene_fallback_used": false,
-      "scene_source": "hybrid",
-      "scene_text": "room \"West-Front Quarry Cut\"\ncamera eye(0.0,1.78,-9.80) target(0.0,1.35,10.00) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(38.0) cone(12.0,28.0) intensity(72.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(19)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(88.0,187.0) gray(0.12)\nbox \"cut_wall_left\" pos(-6.2,2.20,5.0) size(4.4,4.40,25.0) gray(0.18)\nbox \"cut_wall_right\" pos(6.4,1.75,7.0) size(4.8,3.50,23.0) gray(0.19)\nbox \"cut_step_rear\" pos(0.0,0.55,14.0) size(8.0,1.10,4.0) gray(0.21)\nprefab_crystal_scanner \"crystal_scanner_wedged_in_fractured_slab_01\" pos(-3.30,1.20,-0.96) size(2.20,2.40,1.50) gray(0.25) detail(0.44) glow(0.28)\nprefab_survey_beacon \"survey_beacon_west_front_pylon_02\" pos(-1.20,1.70,8.50) size(1.10,3.40,1.00) gray(0.24) detail(0.43)\nprefab_crate \"sample_case_dented_half_buried_03\" pos(4.32,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nprefab_crystal_cluster \"crystal_cluster_exposed_in_cut_04\" pos(0.40,1.15,1.36) size(1.80,2.30,1.60) gray(0.66) glow(0.34)\nprefab_crate \"sample_cargo_case_07\" pos(-4.32,0.55,-2.81) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nprefab_gate \"west_front_beacon_on_pylon_not_aligned_with_gate_342\" pos(-1.50,1.42,16.71) size(4.60,2.90,0.42) gray(0.30) detail(0.42) bars(5)\nprefab_quarry_pylon \"quarry_pylon_207\" pos(1.20,1.75,6.80) size(1.40,3.50,1.20) gray(0.27) detail(0.44)\nprefab_extraction_rig \"cut_drill_103\" pos(-4.32,1.60,1.20) size(2.80,3.20,2.20) gray(0.23) detail(0.42)\n",
-      "spatial_state": {
-        "alert_level": 2,
-        "anchors": [
-          "tilted work slab under scanner",
-          "split threshold gate east edge",
-          "west-front beacon pylon",
-          "dented sample case near cut",
-          "crystal cluster in fractured slab",
-          "quarry_rim",
-          "retaining_slab",
-          "venus_horizon"
-        ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "interior_density": "sparse",
-        "location_archetype": "quarry_seam_instrument_deck",
-        "location_id": "unknown",
-        "room_summary": "A **broken quarry cut** exposes jagged crystal seams beneath a **tilted instrument deck**, its **survey beacon** mounted on a west-facing pylon. A **sample.",
-        "room_title": "West-Front Quarry Cut",
-        "scene_constraints": [
-          "tilted instrument deck over broken quarry cut",
-          "west-front beacon on pylon, not aligned with gate",
-          "dented sample case near exposed crystal seam",
-          "scanner mounted on fractured slab, beam flickering",
-          "split threshold gate’s east edge intrudes into cut",
-          "hero crystal scanner",
-          "hero crystal cluster",
-          "survey beacon",
-          "quarry pylon",
-          "open venus horizon",
-          "brutalist retaining slab"
-        ],
-        "spatial_anomalies": [
-          "scanner beam misaligned with threshold gate axis",
-          "beacon light casts elongated shadows toward east",
-          "sample case lid dented at inconsistent angle"
-        ],
-        "surface_weather": "windy",
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "crystal scanner (wedged in fractured slab)",
-          "survey beacon (west-front pylon)",
-          "sample case (dented, half-buried)",
-          "crystal cluster (exposed in cut)",
-          "broken quarry cut (exposing seams)",
-          "survey beacon plate",
-          "sample cargo case"
-        ],
-        "world_pose_known": true,
-        "world_x": -3.0,
-        "world_z": -6.0
       }
     }
   ],
   "hard_state": {
     "alert_level": 2,
+    "body_temperature_c": 37.20000076293945,
     "current_location_id": "unknown",
+    "external_temperature_c": 462,
     "instrument_power_state": "stable",
     "inventory_items": [
       "survey map slate",
       "boundary chalk",
       "sample tongs"
     ],
-    "move_count": 8,
+    "move_count": 1,
     "named_entities": [
       "prospector",
       "missing prospector Vey"
     ],
     "oxygen_state": "stable",
     "score": 0,
-    "spatial_entropy": 16,
+    "spatial_entropy": 9,
     "suit_state": "stable",
-    "turn_number": 10,
+    "turn_number": 2,
     "unresolved_threats": [
       "locate prospector Vey",
       "verify the invisible obstruction",
@@ -392,86 +85,15 @@
       "clarification": "",
       "intent": "move_north_generated_room",
       "location_id": "unknown",
-      "location_label": "Split Threshold Cut",
-      "narration": "The gate’s shadow stretches unevenly across a jagged slab of exposed rock. To the west, a **quarry pylon** hums with static, its survey beacon flickering weakly. A **crystal cluster**—half-buried in the cut—glows faintly beneath a cracked retaining fin.",
+      "location_label": "Fractured Cut",
+      "narration": "The gate’s rear hinge groans as you step into a sloping trench, its walls lined with jagged retaining fins. A survey beacon flickers on the east flank, its light reflecting off a half-buried extraction rig—its arm bent at an impossible angle. The air hums.",
       "player_command": "NORTH",
       "turn_number": 1
-    },
-    {
-      "clarification": "",
-      "intent": "move_north_generated_room",
-      "location_id": "unknown",
-      "location_label": "Base Route Placard",
-      "narration": "The gate’s shadow vanishes into a narrow, sloping alcove. A **prospect shelter** juts from the rock, its **atmospheric processor** wheezing as you step inside. The air smells of ozone and old metal.",
-      "player_command": "NORTH",
-      "turn_number": 2
-    },
-    {
-      "clarification": "",
-      "intent": "move_north_generated_room",
-      "location_id": "unknown",
-      "location_label": "Westward Extraction Cut",
-      "narration": "The gate’s shadow vanishes into a steep, sloping cut where the rock splits unevenly. A **quarry pylon** stands crooked on the east flank, its beacon flickering through the dust. Below, a **sample crate** lies wedged against a **broken retaining fin**, its.",
-      "player_command": "NORTH",
-      "turn_number": 3
-    },
-    {
-      "clarification": "",
-      "intent": "move_west_generated_room",
-      "location_id": "unknown",
-      "location_label": "West Flank Prospect Ledges",
-      "narration": "The gate’s shadow vanishes into a sloping ledge where the rock splits unevenly. A **prospect shelter** clings to the west flank, its **atmospheric processor** wheezing as you step inside. Below, a **crystal scanner** lies half-buried in the dust beside a.",
-      "player_command": "WEST",
-      "turn_number": 4
-    },
-    {
-      "clarification": "Do you attempt to **climb the cluster** or **retreat east**?",
-      "intent": "move_west_generated_room",
-      "location_id": "unknown",
-      "location_label": "West Flank Prospect Ledges",
-      "narration": "The ledge narrows sharply as you step **west**, the shelter’s shadow stretching thin against the wind. A **crystal cluster** protrudes from the rock above, its edges jagged like a broken tooth. The **scanner**’s cantilever creaks underfoot—it may not support your weight.",
-      "player_command": "ouest",
-      "turn_number": 5
-    },
-    {
-      "clarification": "No new room was generated because the current spatial brief marks that exit as blocked.",
-      "intent": "move_east_blocked",
-      "location_id": "unknown",
-      "location_label": "West Flank Prospect Ledges",
-      "narration": "The way east is blocked. A **prospect shelter** clings to a wind-scoured ledge, its **atmospheric processor** hissing as you step onto a **broken retaining slab**.",
-      "player_command": "EAST",
-      "turn_number": 6
-    },
-    {
-      "clarification": "",
-      "intent": "move_south_generated_room",
-      "location_id": "unknown",
-      "location_label": "West Quarry Cut Floor",
-      "narration": "The ledge drops away beneath you, landing on a sloping cut floor where the rock splits unevenly. The **sample crate**’s lid is ajar, revealing a **crystal cluster** nestled in dust. The **quarry pylon**’s west face bears faded route marks—one points.",
-      "player_command": "SOUTH",
-      "turn_number": 7
-    },
-    {
-      "clarification": "",
-      "intent": "move_south_generated_room",
-      "location_id": "unknown",
-      "location_label": "Baseward Threshold Gate",
-      "narration": "The cut floor slopes downward into a **split threshold gate**, its jagged east edge catching the last light. A **prospect shelter**’s broken doorframe juts into the space, its **atmospheric processor** wheezing. On the west pylon, a **survey beacon** pulses.",
-      "player_command": "SOUTH",
-      "turn_number": 8
-    },
-    {
-      "clarification": "",
-      "intent": "move_south_generated_room",
-      "location_id": "unknown",
-      "location_label": "West-Front Quarry Cut",
-      "narration": "The drop is steeper than expected—you land on a **tilted work slab** where the rock splits unevenly, revealing a **crystal cluster** half-buried in the cut. The **scanner**’s cantilever groans as you step closer, its beam catching on a **split threshold..",
-      "player_command": "SOUTH",
-      "turn_number": 9
     }
   ],
   "invisible_barriers": [],
-  "next_generated_room_index": 8,
+  "language": "fr",
+  "next_generated_room_index": 2,
   "origin_place_id": "canonical:gate",
   "room_links": [
     {
@@ -483,66 +105,6 @@
       "direction": "south",
       "from_place_id": "generated:room_0001",
       "to_place_id": "canonical:gate"
-    },
-    {
-      "direction": "north",
-      "from_place_id": "generated:room_0001",
-      "to_place_id": "generated:room_0002"
-    },
-    {
-      "direction": "south",
-      "from_place_id": "generated:room_0002",
-      "to_place_id": "generated:room_0001"
-    },
-    {
-      "direction": "north",
-      "from_place_id": "generated:room_0002",
-      "to_place_id": "generated:room_0003"
-    },
-    {
-      "direction": "south",
-      "from_place_id": "generated:room_0003",
-      "to_place_id": "generated:room_0002"
-    },
-    {
-      "direction": "west",
-      "from_place_id": "generated:room_0003",
-      "to_place_id": "generated:room_0004"
-    },
-    {
-      "direction": "east",
-      "from_place_id": "generated:room_0004",
-      "to_place_id": "generated:room_0003"
-    },
-    {
-      "direction": "south",
-      "from_place_id": "generated:room_0004",
-      "to_place_id": "generated:room_0005"
-    },
-    {
-      "direction": "north",
-      "from_place_id": "generated:room_0005",
-      "to_place_id": "generated:room_0004"
-    },
-    {
-      "direction": "south",
-      "from_place_id": "generated:room_0005",
-      "to_place_id": "generated:room_0006"
-    },
-    {
-      "direction": "north",
-      "from_place_id": "generated:room_0006",
-      "to_place_id": "generated:room_0005"
-    },
-    {
-      "direction": "south",
-      "from_place_id": "generated:room_0006",
-      "to_place_id": "generated:room_0007"
-    },
-    {
-      "direction": "north",
-      "from_place_id": "generated:room_0007",
-      "to_place_id": "generated:room_0006"
     }
   ],
   "soft_state": {
@@ -551,63 +113,51 @@
       "Vey reached the shelter by a route that cannot be retraced consistently"
     ],
     "atmosphere": "instrumental, mineral, sparse, spatially uncertain",
-    "rolling_summary": "The drop is steeper than expected—you land on a **tilted work slab** where the rock splits unevenly, revealing a **crystal cluster** half-buried in the cut. The **scanner**’s cantilever groans as you step closer, its beam catching on a **split threshold..",
-    "tolerated_incoherences": [
-      "Cluster’s position now anchors a potential climb vector (but risks dislodging). Scanner’s cantilever may block further west movement.",
-      "Beacon flicker persists—likely tied to the cluster’s mineral signature."
-    ]
+    "rolling_summary": "The gate’s rear hinge groans as you step into a sloping trench, its walls lined with jagged retaining fins. A survey beacon flickers on the east flank, its light reflecting off a half-buried extraction rig—its arm bent at an impossible angle. The air hums.",
+    "tolerated_incoherences": []
   },
   "spatial_state": {
     "alert_level": 2,
     "anchors": [
-      "tilted work slab under scanner",
-      "split threshold gate east edge",
-      "west-front beacon pylon",
-      "dented sample case near cut",
-      "crystal cluster in fractured slab",
-      "quarry_rim",
-      "retaining_slab",
-      "venus_horizon"
+      "east beacon",
+      "bent rig",
+      "crystal seam",
+      "processor hum"
     ],
     "blocked_exits": [],
     "canonical_fixture": "",
     "interior_density": "sparse",
-    "location_archetype": "quarry_seam_instrument_deck",
+    "location_archetype": "quarry_cut_threshold",
     "location_id": "unknown",
-    "room_summary": "A **broken quarry cut** exposes jagged crystal seams beneath a **tilted instrument deck**, its **survey beacon** mounted on a west-facing pylon. A **sample.",
-    "room_title": "West-Front Quarry Cut",
+    "room_summary": "A narrow extraction trench where the Erycinian crystal seam has been partially severed, revealing unstable flanks and a half-buried prospector’s rig.",
+    "room_title": "Fractured Cut",
     "scene_constraints": [
-      "tilted instrument deck over broken quarry cut",
-      "west-front beacon on pylon, not aligned with gate",
-      "dented sample case near exposed crystal seam",
-      "scanner mounted on fractured slab, beam flickering",
-      "split threshold gate’s east edge intrudes into cut",
-      "hero crystal scanner",
+      "split threshold masses: retaining fin on east, crystal seam on west",
+      "extraction rig on work slab (tilted toward north)",
+      "exposed crystal seam dominates west wall",
+      "scanner under cantilever (if present) would face south",
       "hero crystal cluster",
+      "hero extraction rig",
       "survey beacon",
       "quarry pylon",
-      "open venus horizon",
-      "brutalist retaining slab"
+      "open venus horizon"
     ],
     "spatial_anomalies": [
-      "scanner beam misaligned with threshold gate axis",
-      "beacon light casts elongated shadows toward east",
-      "sample case lid dented at inconsistent angle"
+      "range sensor conflict: north wall appears absent but returns as solid",
+      "beacon light casts no shadow on the crystal seam"
     ],
-    "surface_weather": "windy",
+    "surface_weather": "still",
     "time_of_day": "dusk",
     "visibility_level": "dusty",
     "visible_objects": [
-      "crystal scanner (wedged in fractured slab)",
-      "survey beacon (west-front pylon)",
-      "sample case (dented, half-buried)",
-      "crystal cluster (exposed in cut)",
-      "broken quarry cut (exposing seams)",
-      "survey beacon plate",
-      "sample cargo case"
+      "survey beacon (east flank, flickering)",
+      "extraction rig (half-buried, arm bent)",
+      "crystal cluster (exposed seam, west wall)",
+      "sample case (propped against retaining fin)",
+      "quarry pylon (cracked, north edge)"
     ],
     "world_pose_known": true,
-    "world_x": -3.0,
-    "world_z": -6.0
+    "world_x": 0.0,
+    "world_z": -3.0
   }
 }

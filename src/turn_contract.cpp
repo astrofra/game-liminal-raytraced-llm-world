@@ -292,6 +292,10 @@ std::string BuildTurnResultSchemaText()
     text += "    \"next_alert_level\": integer,\n";
     text += "    \"spatial_entropy_changed\": boolean,\n";
     text += "    \"next_spatial_entropy\": integer,\n";
+    text += "    \"external_temperature_changed\": boolean,\n";
+    text += "    \"next_external_temperature_c\": integer,\n";
+    text += "    \"body_temperature_changed\": boolean,\n";
+    text += "    \"next_body_temperature_c\": number,\n";
     text += "    \"suit_state_changed\": boolean,\n";
     text += "    \"next_suit_state\": \"stable\" | \"strained\" | \"critical\" | \"unknown\",\n";
     text += "    \"oxygen_state_changed\": boolean,\n";
@@ -338,6 +342,8 @@ std::string BuildGeneratedRoomSchemaText()
     text += "  \"move_cost\": integer,\n";
     text += "  \"score_delta\": integer,\n";
     text += "  \"next_spatial_entropy\": integer,\n";
+    text += "  \"next_external_temperature_c\": integer,\n";
+    text += "  \"next_body_temperature_c\": number,\n";
     text += "  \"spatial_state\": {\n";
     text += "    \"location_archetype\": string,\n";
     text += "    \"time_of_day\": \"day\" | \"dusk\" | \"night\" | \"unknown\",\n";
@@ -429,6 +435,7 @@ std::string BuildSpatialBriefText(const SpatialState& spatial_state)
 }
 
 std::string BuildTurnPrompt(
+    GameLanguage language,
     const HardState& hard_state,
     const SoftState& soft_state,
     const SpatialState& spatial_state,
@@ -444,6 +451,9 @@ std::string BuildTurnPrompt(
         text += "The current room may be an improvised generated room. Keep that room stable unless the player explicitly moves.\n";
     }
     text += "Narration must stay short, concrete, and spatially actionable.\n";
+    text += language == kGameLanguageFrench
+        ? "Write narration and clarification in French. Keep JSON keys, IDs, intent labels, object names used as engine tokens, and all internal mechanics in English.\n"
+        : "Write narration and clarification in English. Keep JSON keys, IDs, intent labels, object names used as engine tokens, and all internal mechanics in English.\n";
     text += "Prefer 2 to 4 short sentences and stay roughly under 70 words.\n";
     text += "Avoid long atmospheric digressions and avoid restating the whole room summary.\n";
     text += "move_count tracks effectful actions only. Increase it only when the command materially changes position, inventory, state or knowledge.\n";
@@ -457,6 +467,7 @@ std::string BuildTurnPrompt(
     text += "When the decor composition becomes clearer or changes materially, update spatial_delta.scene_constraints with short layout cues, never coordinates.\n";
     text += "Good scene_constraints examples: split threshold masses, extraction rig on work slab, exposed crystal seam, scanner under cantilever, sparse beacon line, open horizon, no visible alien wall.\n";
     text += "spatial_entropy is a 0 to 100 confidence measure for accumulated topological contradiction. Raise it only when measurements, route marks, or returns cease to agree.\n";
+    text += "external_temperature_c is the suit's measured Venus environment temperature. body_temperature_c is the wearer's core temperature. You decide whether either changes after the action. Keep them physically correlated but lagged: the exterior may fluctuate first, while the suit slows changes to the body. Shelter or atmospheric equipment may cool the body; open exposure, effort, suit damage, and time may heat it. Use small body changes, usually 0.0 to 0.4 C per turn.\n";
     text += "Invisible topology is never normal visible wall geometry. Describe bodily or instrument contact with apparently open space and preserve engine-owned traversal results.\n";
     text += "Suit, oxygen, and instrument power are hard resources. Change them only when the player's action materially affects them.\n";
     text += "\nCurrent hard state\n";
@@ -468,7 +479,9 @@ std::string BuildTurnPrompt(
     AppendLabelValue(
         &text,
         "spatial_entropy: ",
-        std::to_string(hard_state.datacenter_temperature_c).c_str());
+        std::to_string(hard_state.spatial_entropy).c_str());
+    AppendLabelValue(&text, "external_temperature_c: ", std::to_string(hard_state.external_temperature_c).c_str());
+    AppendLabelValue(&text, "body_temperature_c: ", std::to_string(hard_state.body_temperature_c).c_str());
     AppendLabelValue(&text, "suit_state: ", ResourceStateToString(hard_state.cooling_state));
     AppendLabelValue(&text, "oxygen_state: ", ResourceStateToString(hard_state.water_state));
     AppendLabelValue(&text, "instrument_power_state: ", ResourceStateToString(hard_state.power_state));
@@ -505,6 +518,7 @@ std::string BuildTurnPrompt(
 }
 
 std::string BuildGeneratedRoomPrompt(
+    GameLanguage language,
     const HardState& hard_state,
     const SoftState& soft_state,
     const SpatialState& current_spatial_state,
@@ -522,6 +536,9 @@ std::string BuildGeneratedRoomPrompt(
     text += "Keep the title short.\n";
     text += "Keep the summary compact and concrete.\n";
     text += "Keep arrival_narration under about 60 words and make it immediately playable.\n";
+    text += language == kGameLanguageFrench
+        ? "Write title, summary, and arrival_narration in French. Keep JSON keys, IDs, location_archetype, anchors, object tokens, constraints, and all internal mechanics in English.\n"
+        : "Write title, summary, and arrival_narration in English. Keep JSON keys, IDs, location_archetype, anchors, object tokens, constraints, and all internal mechanics in English.\n";
     text += "Set move_cost to 1 for a normal successful traversal, and use 0 only if the traversal has no meaningful effect.\n";
     text += "Set score_delta conservatively. Use 0 unless entering this room meaningfully advances progress or reveals something important.\n";
     text += "visible_objects must contain 3 to 5 concrete actionable objects or instruments, not vague scenery only.\n";
@@ -532,6 +549,7 @@ std::string BuildGeneratedRoomPrompt(
     text += "Good scene_constraints examples: split threshold masses, extraction rig on work slab, exposed crystal seam, scanner under cantilever, sparse beacon line, open horizon, no visible alien wall.\n";
     text += "spatial_entropy should shape title, summary, and arrival_narration through conflicting bearings, measurements, marks, or retraced paths, without turning it directly into visible geometry.\n";
     text += "Set next_spatial_entropy to the value that should remain after entering the place. Keep it close to the current value unless the traversal produces a concrete contradiction.\n";
+    text += "Set next_external_temperature_c and next_body_temperature_c after arrival. You decide whether heat rises, falls, or remains stable. Keep them correlated but lagged: the suit buffers the body from Venusian exterior heat. Open exposure and exertion may heat the body; shelter or processors may cool it. Keep body changes small, usually 0.0 to 0.4 C per traversal.\n";
     text += "The engine maintains a hidden survey-field drift map. Treat the qualitative world cues below as ground truth.\n";
     text += "If the target world band suggests outer shelf or open venus, avoid inventing a sealed ceiling.\n";
     text += "If the target world band suggests survey camp or inner quarry, prefer compressed human works, quarry cuts, or partial shelter.\n";
@@ -551,7 +569,9 @@ std::string BuildGeneratedRoomPrompt(
     AppendLabelValue(
         &text,
         "spatial_entropy: ",
-        std::to_string(hard_state.datacenter_temperature_c).c_str());
+        std::to_string(hard_state.spatial_entropy).c_str());
+    AppendLabelValue(&text, "external_temperature_c: ", std::to_string(hard_state.external_temperature_c).c_str());
+    AppendLabelValue(&text, "body_temperature_c: ", std::to_string(hard_state.body_temperature_c).c_str());
     AppendLabelValue(&text, "suit_state: ", ResourceStateToString(hard_state.cooling_state));
     AppendLabelValue(&text, "oxygen_state: ", ResourceStateToString(hard_state.water_state));
     AppendLabelValue(&text, "instrument_power_state: ", ResourceStateToString(hard_state.power_state));

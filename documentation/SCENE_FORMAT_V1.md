@@ -87,7 +87,7 @@ Proprietes supportees :
 - `stars(density,intensity,radius)` optionnel
 - `seed(value)` optionnel
 
-Le ciel est pense pour les exterieurs pauvres du projet : degrade bleu sombre, horizon plus clair, nadir sombre, grain fort et etoiles deterministes possibles.
+Le ciel est pense pour les exterieurs vénusiens du projet : dégradé vert au zénith vers jaune clair à l'horizon, nadir sombre, grain fort et étoiles déterministes possibles. Le renderer multiplie sa radiance par deux lorsqu'un chemin ne rencontre aucune géométrie ; les luminances de la directive restent donc des contrôles relatifs de forme et d'exposition.
 
 Exemple :
 
@@ -304,7 +304,7 @@ Le format reste volontairement simple : `gray(value)` est toujours obligatoire p
 
 La couleur finale est appliquée par le moteur selon une palette verrouillée :
 
-- `sky` produit un ciel bleu degrade
+- `sky` produit un ciel vénusien vert vers jaune clair
 - les surfaces nommees `ground`, `desert_*`, `ridge_*`, `outcrop_*` sont teintees en ocre
 - les cristaux et lampes des nouveaux prefabs émettent une lumière blanche dont l'intensité reste bornée par leurs directives
 - `prefab_rack` ajoute des LEDs rouges discrètes dans les scènes legacy

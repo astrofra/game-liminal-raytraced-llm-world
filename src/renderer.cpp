@@ -242,9 +242,9 @@ static Vec3 SampleSkyBackground(const SkyBackground& sky, const Vec3& direction,
     const float abs_y = fabsf(direction.y);
     const float horizon_t = 1.0f - Saturate(abs_y / std::max(sky.horizon_band, 0.0001f));
     const float curved_horizon = powf(horizon_t, sky.horizon_curve);
-    const Vec3 zenith_color = ScaleColorToLuminance(Vec3(0.12f, 0.24f, 0.52f), sky.zenith_luminance);
-    const Vec3 horizon_color = ScaleColorToLuminance(Vec3(0.42f, 0.58f, 0.82f), sky.horizon_luminance);
-    const Vec3 nadir_color = ScaleColorToLuminance(Vec3(0.03f, 0.05f, 0.09f), sky.nadir_luminance);
+    const Vec3 zenith_color = ScaleColorToLuminance(Vec3(0.18f, 0.52f, 0.20f), sky.zenith_luminance);
+    const Vec3 horizon_color = ScaleColorToLuminance(Vec3(1.00f, 0.92f, 0.54f), sky.horizon_luminance);
+    const Vec3 nadir_color = ScaleColorToLuminance(Vec3(0.20f, 0.24f, 0.08f), sky.nadir_luminance);
     const Vec3 base_color = direction.y >= 0.0f ? zenith_color : nadir_color;
 
     Vec3 radiance = Lerp(base_color, horizon_color, curved_horizon);
@@ -799,7 +799,7 @@ static Vec3 TracePath(
     for (int path_event = 0; path_event < max_path_events; ++path_event) {
         Hit hit;
         if (!IntersectScene(scene, ray, kHuge, &hit)) {
-            radiance += throughput * SampleSkyBackground(scene.sky_background, ray.direction, rng);
+            radiance += throughput * SampleSkyBackground(scene.sky_background, ray.direction, rng) * 2.0f;
             break;
         }
 

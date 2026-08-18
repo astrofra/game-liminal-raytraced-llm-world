@@ -19,8 +19,11 @@ Une premiere tranche Eryx est implementee dans le runtime :
 - sept lieux canoniques actifs, de `quarry_threshold` a `prospect_shelter`
 - sept fixtures `.scene` source dans `assets/scenes/eryx_*.scene`
 - prompts de tour, generation de salle et audit visuel migres vers la carriere venusienne
-- etat serialise expose comme `spatial_entropy`, `suit_state`, `oxygen_state` et `instrument_power_state`
-- HUD `ENTROPY` et lieu CLI par defaut `quarry_threshold`
+- etat serialise expose comme `spatial_entropy`, `external_temperature_c`, `body_temperature_c`, `suit_state`, `oxygen_state` et `instrument_power_state`
+- HUD thermique `EXT. TEMPERATURE` / `BODY TEMPERATURE`, traduit en français après sélection `F`
+- température d'échantillonnage effective dérivée de la température corporelle pour les tours et l'imagination des lieux
+- sélection de langue `English (E)` / `Français (F)` au lancement SDL ; champs et mécaniques internes du LLM conservés en anglais
+- masque de visière 2D symétrique et procédural devant le viewport 3D
 - douze liens diriges constituant une route d'arpentage
 - type persistant `InvisibleBarrier`, separe de `blocked_exits`
 - contact invisible au nord de `labyrinth_threshold`, avec preuve et statut `discovered`
@@ -29,7 +32,7 @@ Une premiere tranche Eryx est implementee dans le runtime :
 
 La frontiere encore ouverte est la mutation **live** : le LLM ne produit pas encore de proposition topologique separee, et le moteur n'a pas encore de decision `accepted`, `adjusted`, `rejected` ou `deferred` ni d'historique de mutation. La contradiction actuelle est auteurisee et deterministe.
 
-Les champs membres C++ `datacenter_temperature_c`, `cooling_state`, `water_state` et `power_state` restent temporairement en interne pour la compatibilite des sauvegardes legacy. Les JSON actifs, prompts, traces et HUD utilisent la semantique Eryx. Les lieux, prefabs et fixtures datacenter sont preserves comme baselines historiques. Le helper `play_desert_des_tokens.bat` conserve aussi son nom legacy faute de titre final.
+L'entropie spatiale et les deux températures possèdent maintenant des membres C++ distincts. La lecture de l'ancienne clé `datacenter_temperature_c` reste acceptée comme alias de sauvegarde pour `spatial_entropy`. Les noms membres `cooling_state`, `water_state`, `power_state` et `desert_state` restent legacy. Les lieux, prefabs et fixtures datacenter sont préservés comme baselines historiques.
 
 ## Verrous d'architecture actes
 
@@ -75,11 +78,12 @@ Les champs membres C++ `datacenter_temperature_c`, `cooling_state`, `water_state
 - Validation syntaxique de base pour `room`, `camera`, `spotlight`, `sky`, `plane`, `box` et les premiers `prefab_*`.
 - Spot analytique attache a la camera, avec panneau parametrique, portee limitee et cone progressif.
 - Fond proceduriel `sky` optionnel pour les rayons sans intersection :
-  - zenith sombre
-  - horizon plus clair
+  - zenith vert
+  - horizon jaune clair
   - nadir sombre
   - grain fort
   - etoiles deterministes
+  - radiance d'environnement multipliée par `2` uniquement sur les rayons sans intersection
 - Premiere couche de prefabs expands en primitives simples :
   - `prefab_gate`
   - `prefab_rack`
@@ -139,7 +143,7 @@ Les champs membres C++ `datacenter_temperature_c`, `cooling_state`, `water_state
   - dispersion RGB « poor man's » : un canal héroïque stratifié par sample, IOR central `1.52`, écart inter-bandes nominal `0.035` et jitter d'IOR
   - recomposition Monte-Carlo pondérée des trois canaux sans tripler le nombre de chemins par impact
 - Palette visuelle verrouillee :
-  - ciel bleu degrade
+  - ciel vénusien vert vers jaune clair
   - desert ocre
   - LEDs de racks rouges
   - reste du decor en gris
@@ -196,9 +200,16 @@ Les champs membres C++ `datacenter_temperature_c`, `cooling_state`, `water_state
   - ligne terminal de provenance apres chaque tour pour distinguer scene canonique, salle generee, fallback metadata et fallback scene
   - panneau de transcript joueur avec narration finale seulement
   - rendu TTF joueur via `SDL3_ttf` et fontes `Zilla Slab`
+  - écran de sélection de langue `E`/`F` avant la boucle de commande
+  - interface exposée, narrations déterministes et instructions LLM joueur localisées ; contrats internes conservés en anglais
+  - validation lexicale des sorties joueur françaises, suivie si nécessaire d'une passe de localisation LLM à température nulle puis d'un fallback français déterministe
+  - raccourcis et directions affichés selon la langue (`NORTH`/`NORD`, `WEST`/`OUEST`, etc.)
+  - garde d'affichage française pour les titres et narrations anglophones déjà présents dans une ancienne sauvegarde, sans mutation des données archivées
+  - masque de visière symétrique calculé par scanlines rectangulaires et frontières elliptiques ; extérieur de fenêtre noir et encoche centrale limitée au tiers inférieur
+  - deux panneaux thermiques affichant température extérieure entière et température corporelle décimale
   - segments `*highlightes*` rendus avec `Zilla Slab Highlight`
   - ligne de commande avec edition clavier et historique haut/bas
-  - ligne de statut avec spinner ASCII pour distinguer `llm` et `cpu`
+  - ligne de statut localisée avec spinner ASCII pour distinguer les phases d'imagination et de raytracing
   - annulation best-effort via `Escape`
 - Script Python `scripts/generate_prefab_catalog.py` pour rendre le vocabulaire de prefabs actif, stocker les `.scene`/`.png` d'audit et assembler un unique `documentation/PREFAB_CATALOG.md`.
   - Le catalogue Eryx rend neuf objets à `1024x1024`, `24` samples par pixel, en deux vues chacun, sur un plan de carrière commun.
@@ -526,11 +537,11 @@ Observation importante :
   - pas de proposition LLM de mutation topologique separee des deltas spatiaux ordinaires
   - pas de validateur de frequence, recuperation ou provenance des mutations live
   - pas de registre persistant pour les marques, scans et comparaisons produits par le joueur
-  - noms membres C++ legacy conserves sous les cles JSON Eryx pour la compatibilite des sauvegardes
+- noms membres C++ legacy encore conserves pour le scaphandre, l'oxygène, l'alimentation des instruments et la météo de surface
 
 ## Ecart assume par rapport a la spec longue
 
-La spec longue parlait initialement d'une image strictement grayscale. Le depot a maintenant bifurque vers un RGB tres contraint : ciel bleu, desert ocre, LEDs rouges et tout le reste en gris, tout en conservant la lumiere portee par la camera et le grain brutaliste.
+La spec longue parlait initialement d'une image strictement grayscale. Le depot a maintenant bifurque vers un RGB tres contraint : ciel vénusien vert/jaune, desert ocre, LEDs rouges et tout le reste en gris, tout en conservant la lumiere portee par la camera et le grain brutaliste.
 
 Le depot n'est plus limite a la Cornell Box : il sait maintenant rendre une premiere scene proprietaire a primitives et l'eclairer avec un spot analytique attache a la camera.
 

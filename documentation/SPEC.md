@@ -208,7 +208,8 @@ Inference latency may be presented as visible machine activity rather than hidde
 - Generate short-form prose during active play.
 - Maintain recurring locations, objects, named entities, and discoveries through external state.
 - Optimize for playable coherence rather than maximal literary flourish.
-- Treat environmental or model temperature as optional and subordinate. If used, couple it to Eryx-relevant stress or spatial entropy, not to the superseded datacenter premise.
+- Track `external_temperature_c` and `body_temperature_c` as committed hard state. Let the LLM decide their small, correlated but suit-buffered changes from exposure, effort, shelter, equipment, and suit condition.
+- Derive the effective LLM sampling temperature from body temperature on every turn and room-imagination call. Keep that stochastic influence subordinate to engine validation and never confuse it with topological authority.
 
 ### 7.3 Spatial mediation and mutation
 
@@ -242,6 +243,8 @@ Invisible barriers belong to traversal and collision semantics. Optional diagnos
 ### 7.5 Rendering
 
 - Preserve the current locked palette and an image dominated by grayscale.
+- Use a Venusian sky gradient from green at the zenith to pale yellow near the horizon. Multiply environment radiance by two only when a traced path misses scene geometry.
+- Present the 3D viewport through a symmetric procedural suit-visor mask; pixels outside its rounded rectangular and elliptical boundary are black.
 - Use camera-linked, instrument-like lighting.
 - Include raytraced diffuse bounce or crude radiosity at intentionally low sample counts.
 - Reserve bounded dielectric refraction, Fresnel reflection, thickness-dependent absorption, and deliberately approximate three-band RGB dispersion for crystals; do not expose a general material language to the LLM.
@@ -402,11 +405,15 @@ The interface should feel like a prospecting, mapping, or sensing apparatus rath
 
 Required elements:
 
+- a launch choice between `English (E)` and `Français (F)` before ordinary input begins
 - current rendered image
+- external and body temperature readouts embedded in the visor presentation
 - transcript and command input
 - save/load access
 - clear busy/cancellation state
 - settings for model path and performance profile
+
+Player-facing narration, clarification, location labels, controls, and status text follow the selected language. Prompt instructions, JSON keys, IDs, topology state, scene tokens, and other non-exposed LLM mechanics remain English.
 
 Recommended research and debug elements:
 

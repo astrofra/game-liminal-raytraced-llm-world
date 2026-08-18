@@ -552,6 +552,7 @@ int main(int argc, char** argv)
             printf(
                 "%s\n",
                 liminal::BuildTurnPrompt(
+                    session_state.language,
                     session_state.hard_state,
                     session_state.soft_state,
                     session_state.spatial_state,
@@ -577,6 +578,7 @@ int main(int argc, char** argv)
             printf(
                 "%s\n",
                 liminal::BuildGeneratedRoomPrompt(
+                    session_state.language,
                     session_state.hard_state,
                     session_state.soft_state,
                     session_state.spatial_state,

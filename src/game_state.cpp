@@ -188,7 +188,9 @@ static json MakeHardStateJson(const HardState& state)
     node["score"] = state.score;
     node["current_location_id"] = LocationIdToString(state.current_location_id);
     node["alert_level"] = state.alert_level;
-    node["spatial_entropy"] = ClampDatacenterTemperatureC(state.datacenter_temperature_c);
+    node["spatial_entropy"] = ClampSpatialEntropy(state.spatial_entropy);
+    node["external_temperature_c"] = ClampExternalTemperatureC(state.external_temperature_c);
+    node["body_temperature_c"] = ClampBodyTemperatureC(state.body_temperature_c);
     node["suit_state"] = ResourceStateToString(state.cooling_state);
     node["oxygen_state"] = ResourceStateToString(state.water_state);
     node["instrument_power_state"] = ResourceStateToString(state.power_state);
@@ -305,8 +307,12 @@ static void ParseHardStateNode(const json& node, HardState* state)
     ParseLocationId(ReadStringNode(node, "current_location_id").c_str(), &state->current_location_id);
     state->alert_level = ReadIntNode(node, "alert_level", state->alert_level);
     const char* entropy_key = node.contains("spatial_entropy") ? "spatial_entropy" : "datacenter_temperature_c";
-    state->datacenter_temperature_c =
-        ClampDatacenterTemperatureC(ReadIntNode(node, entropy_key, state->datacenter_temperature_c));
+    state->spatial_entropy =
+        ClampSpatialEntropy(ReadIntNode(node, entropy_key, state->spatial_entropy));
+    state->external_temperature_c = ClampExternalTemperatureC(
+        ReadIntNode(node, "external_temperature_c", state->external_temperature_c));
+    state->body_temperature_c = ClampBodyTemperatureC(
+        ReadFloatNode(node, "body_temperature_c", state->body_temperature_c));
     const std::string suit_state = ReadStringNode(node, node.contains("suit_state") ? "suit_state" : "cooling_state");
     const std::string oxygen_state = ReadStringNode(node, node.contains("oxygen_state") ? "oxygen_state" : "water_state");
     const std::string power_state = ReadStringNode(node, node.contains("instrument_power_state") ? "instrument_power_state" : "power_state");
@@ -539,15 +545,36 @@ static bool TryInferWorldPoseFromLinks(const SessionState& state, const std::str
 
 }  // namespace
 
-int ClampDatacenterTemperatureC(int value)
+int ClampSpatialEntropy(int value)
 {
-    if (value < kMinDatacenterTemperatureC) {
-        return kMinDatacenterTemperatureC;
+    if (value < kMinSpatialEntropy) {
+        return kMinSpatialEntropy;
     }
-    if (value > kMaxDatacenterTemperatureC) {
-        return kMaxDatacenterTemperatureC;
+    if (value > kMaxSpatialEntropy) {
+        return kMaxSpatialEntropy;
     }
     return value;
+}
+
+int ClampExternalTemperatureC(int value)
+{
+    return value < kMinExternalTemperatureC
+        ? kMinExternalTemperatureC
+        : (value > kMaxExternalTemperatureC ? kMaxExternalTemperatureC : value);
+}
+
+float ClampBodyTemperatureC(float value)
+{
+    return value < kMinBodyTemperatureC
+        ? kMinBodyTemperatureC
+        : (value > kMaxBodyTemperatureC ? kMaxBodyTemperatureC : value);
+}
+
+float ComputeLlmSamplingTemperature(float body_temperature_c)
+{
+    const float normalized = (ClampBodyTemperatureC(body_temperature_c) - 37.0f) / 5.0f;
+    const float clamped = normalized < 0.0f ? 0.0f : (normalized > 1.0f ? 1.0f : normalized);
+    return 0.10f + clamped * 0.80f;
 }
 
 const char* LocationIdToString(LocationId value)
@@ -662,6 +689,11 @@ const char* ResourceStateToString(ResourceState value)
     }
 }
 
+const char* GameLanguageToString(GameLanguage value)
+{
+    return value == kGameLanguageFrench ? "fr" : "en";
+}
+
 bool ParseLocationId(const char* text, LocationId* value)
 {
     if (!text || !value) {
@@ -726,19 +758,20 @@ bool ParseCardinalDirection(const char* text, CardinalDirection* value)
         return false;
     }
 
-    if (EqualsAsciiNoCase(text, "north") || EqualsAsciiNoCase(text, "n")) {
+    if (EqualsAsciiNoCase(text, "north") || EqualsAsciiNoCase(text, "n") || EqualsAsciiNoCase(text, "nord")) {
         *value = kDirectionNorth;
         return true;
     }
-    if (EqualsAsciiNoCase(text, "east") || EqualsAsciiNoCase(text, "e")) {
+    if (EqualsAsciiNoCase(text, "east") || EqualsAsciiNoCase(text, "e") || EqualsAsciiNoCase(text, "est")) {
         *value = kDirectionEast;
         return true;
     }
-    if (EqualsAsciiNoCase(text, "south") || EqualsAsciiNoCase(text, "s")) {
+    if (EqualsAsciiNoCase(text, "south") || EqualsAsciiNoCase(text, "s") || EqualsAsciiNoCase(text, "sud")) {
         *value = kDirectionSouth;
         return true;
     }
-    if (EqualsAsciiNoCase(text, "west") || EqualsAsciiNoCase(text, "w")) {
+    if (EqualsAsciiNoCase(text, "west") || EqualsAsciiNoCase(text, "w") || EqualsAsciiNoCase(text, "ouest") ||
+        EqualsAsciiNoCase(text, "o")) {
         *value = kDirectionWest;
         return true;
     }
@@ -858,6 +891,22 @@ bool ParseResourceState(const char* text, ResourceState* value)
     return false;
 }
 
+bool ParseGameLanguage(const char* text, GameLanguage* value)
+{
+    if (!text || !value) {
+        return false;
+    }
+    if (EqualsAsciiNoCase(text, "fr") || EqualsAsciiNoCase(text, "french") || EqualsAsciiNoCase(text, "francais")) {
+        *value = kGameLanguageFrench;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "en") || EqualsAsciiNoCase(text, "english")) {
+        *value = kGameLanguageEnglish;
+        return true;
+    }
+    return false;
+}
+
 CardinalDirection OppositeCardinalDirection(CardinalDirection value)
 {
     switch (value) {
@@ -909,6 +958,26 @@ std::string DescribePlaceLabel(const SessionState& state, const std::string& pla
 {
     LocationId location_id = kLocationUnknown;
     if (ParseCanonicalPlaceId(place_id, &location_id)) {
+        if (state.language == kGameLanguageFrench) {
+            switch (location_id) {
+            case kLocationQuarryThreshold:
+                return "Seuil de la carrière";
+            case kLocationExtractionField:
+                return "Champ d'extraction";
+            case kLocationCrystalCut:
+                return "Entaille cristalline";
+            case kLocationScannerStation:
+                return "Scanner d'affinité";
+            case kLocationSurveyPlateau:
+                return "Plateau de la balise";
+            case kLocationLabyrinthThreshold:
+                return "Repère ouvert";
+            case kLocationProspectShelter:
+                return "Abri de Vey";
+            default:
+                break;
+            }
+        }
         switch (location_id) {
         case kLocationQuarryThreshold:
             return "Quarry Threshold";
@@ -1140,7 +1209,9 @@ HardState MakeInitialHardState()
     state.score = 0;
     state.current_location_id = kLocationQuarryThreshold;
     state.alert_level = 1;
-    state.datacenter_temperature_c = kDefaultDatacenterTemperatureC;
+    state.spatial_entropy = kDefaultSpatialEntropy;
+    state.external_temperature_c = kDefaultExternalTemperatureC;
+    state.body_temperature_c = kDefaultBodyTemperatureC;
     state.cooling_state = kResourceStable;
     state.water_state = kResourceStable;
     state.power_state = kResourceStable;
@@ -1211,8 +1282,11 @@ void NormalizeSessionState(SessionState* state)
     if (state->hard_state.score < 0) {
         state->hard_state.score = 0;
     }
-    state->hard_state.datacenter_temperature_c =
-        ClampDatacenterTemperatureC(state->hard_state.datacenter_temperature_c);
+    state->hard_state.spatial_entropy = ClampSpatialEntropy(state->hard_state.spatial_entropy);
+    state->hard_state.external_temperature_c =
+        ClampExternalTemperatureC(state->hard_state.external_temperature_c);
+    state->hard_state.body_temperature_c =
+        ClampBodyTemperatureC(state->hard_state.body_temperature_c);
 
     if (in_generated_room) {
         state->hard_state.current_location_id = kLocationUnknown;
@@ -1298,6 +1372,7 @@ bool SerializeSessionStateToJsonString(const SessionState& state, std::string* j
     }
 
     json root = json::object();
+    root["language"] = GameLanguageToString(state.language);
     root["hard_state"] = MakeHardStateJson(state.hard_state);
     root["soft_state"] = MakeSoftStateJson(state.soft_state);
     root["spatial_state"] = MakeSpatialStateJson(state.spatial_state);
@@ -1334,6 +1409,7 @@ bool ParseSessionStateFromJson(
         if (root.contains("hard_state")) {
             ParseHardStateNode(root["hard_state"], &state->hard_state);
         }
+        ParseGameLanguage(ReadStringNode(root, "language").c_str(), &state->language);
         if (root.contains("soft_state")) {
             ParseSoftStateNode(root["soft_state"], &state->soft_state);
         }
@@ -1373,7 +1449,9 @@ void PrintHardStateSummary(const HardState& state, FILE* stream)
     fprintf(out, "  score: %d\n", state.score);
     fprintf(out, "  current_location_id: %s\n", LocationIdToString(state.current_location_id));
     fprintf(out, "  alert_level: %d\n", state.alert_level);
-    fprintf(out, "  spatial_entropy: %d\n", state.datacenter_temperature_c);
+    fprintf(out, "  spatial_entropy: %d\n", state.spatial_entropy);
+    fprintf(out, "  external_temperature_c: %d\n", state.external_temperature_c);
+    fprintf(out, "  body_temperature_c: %.1f\n", state.body_temperature_c);
     fprintf(out, "  suit_state: %s\n", ResourceStateToString(state.cooling_state));
     fprintf(out, "  oxygen_state: %s\n", ResourceStateToString(state.water_state));
     fprintf(out, "  instrument_power_state: %s\n", ResourceStateToString(state.power_state));
@@ -1431,6 +1509,7 @@ void PrintSessionStateSummary(const SessionState& state, FILE* stream)
 {
     FILE* out = stream ? stream : stdout;
     fprintf(out, "SessionState\n");
+    fprintf(out, "  language: %s\n", GameLanguageToString(state.language));
     fprintf(out, "  origin_place_id: %s\n", state.origin_place_id.empty() ? "(empty)" : state.origin_place_id.c_str());
     fprintf(out, "  current_place_id: %s\n", state.current_place_id.empty() ? "(empty)" : state.current_place_id.c_str());
     fprintf(out, "  current_place_label: %s\n", DescribeCurrentPlaceLabel(state).c_str());
