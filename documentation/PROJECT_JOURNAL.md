@@ -1318,3 +1318,30 @@ Validation :
 Limite assumée :
 
 - les anciens textes anglais restent intacts dans le JSON de sauvegarde ; la garde française les masque mais ne reconstruit pas rétroactivement leur traduction littéraire
+
+## 2026-08-18 - Iteration 0031 - Titre bilingue définitif
+
+Objectif :
+
+Remplacer les titres provisoires par l'identité choisie collectivement et l'inscrire dans l'écran de sélection linguistique.
+
+Décision :
+
+- anglais : *Within the Latent Walls*
+- français : *Entre les Murs Latents*
+
+Implémentation :
+
+- titre français affiché en `52 pt` sur l'écran de langue
+- titre anglais affiché juste dessous en `24 pt`
+- titre de fenêtre SDL remplacé par *Within the Latent Walls*
+- chargement de deux instances de police dédiées, séparées de la police d'interface
+- helper Windows renommé `play_within_the_latent_walls.bat`
+- titre et commandes de lancement mis à jour dans les documents actifs
+- ancien nom conservé seulement dans les passages documentant explicitement la phase narrative précédente
+
+Validation :
+
+- build CMake `Release` réussi avec les deux nouvelles tailles de police
+- recherche globale sans ancien nom de launcher ni titre provisoire actif
+- `git diff --check` sans erreur

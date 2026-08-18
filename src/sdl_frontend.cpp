@@ -98,12 +98,16 @@ struct UiTextToken {
 struct UiFonts {
     TTF_Font* regular;
     TTF_Font* highlight;
+    TTF_Font* title_large;
+    TTF_Font* title_small;
     int line_skip;
     int line_height;
 
     UiFonts()
         : regular(0)
         , highlight(0)
+        , title_large(0)
+        , title_small(0)
         , line_skip(20)
         , line_height(18)
     {
@@ -388,6 +392,26 @@ static bool LoadUiFonts(UiFonts* fonts, char* error_buffer, size_t error_buffer_
         TTF_Quit();
         return false;
     }
+    if (!OpenFontWithFallbacks("assets/fonts/Zilla_Slab/ZillaSlab-Regular.ttf", 52.0f, &fonts->title_large)) {
+        SetTtfError(error_buffer, error_buffer_size, "Failed to open large title font");
+        TTF_CloseFont(fonts->highlight);
+        TTF_CloseFont(fonts->regular);
+        fonts->highlight = 0;
+        fonts->regular = 0;
+        TTF_Quit();
+        return false;
+    }
+    if (!OpenFontWithFallbacks("assets/fonts/Zilla_Slab/ZillaSlab-Regular.ttf", 24.0f, &fonts->title_small)) {
+        SetTtfError(error_buffer, error_buffer_size, "Failed to open small title font");
+        TTF_CloseFont(fonts->title_large);
+        TTF_CloseFont(fonts->highlight);
+        TTF_CloseFont(fonts->regular);
+        fonts->title_large = 0;
+        fonts->highlight = 0;
+        fonts->regular = 0;
+        TTF_Quit();
+        return false;
+    }
 
     fonts->line_skip = std::max(TTF_GetFontLineSkip(fonts->regular), TTF_GetFontLineSkip(fonts->highlight));
     fonts->line_height = std::max(TTF_GetFontHeight(fonts->regular), TTF_GetFontHeight(fonts->highlight));
@@ -406,6 +430,14 @@ static void DestroyUiFonts(UiFonts* fonts)
         return;
     }
 
+    if (fonts->title_small) {
+        TTF_CloseFont(fonts->title_small);
+        fonts->title_small = 0;
+    }
+    if (fonts->title_large) {
+        TTF_CloseFont(fonts->title_large);
+        fonts->title_large = 0;
+    }
     if (fonts->highlight) {
         TTF_CloseFont(fonts->highlight);
         fonts->highlight = 0;
@@ -821,14 +853,42 @@ static void DrawLanguageSelection(SDL_Renderer* renderer, const UiFonts& fonts, 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    const std::string heading = "SELECT LANGUAGE / CHOISIR LA LANGUE";
+    const std::string french_title = "Entre les Murs Latents";
+    const std::string english_title = "Within the Latent Walls";
+    const int french_title_width = MeasureTextWidth(fonts.title_large, french_title);
+    const int english_title_width = MeasureTextWidth(fonts.title_small, english_title);
+    const int french_title_height = std::max(TTF_GetFontHeight(fonts.title_large), 1);
+    const int english_title_height = std::max(TTF_GetFontHeight(fonts.title_small), 1);
+    const float french_title_y = static_cast<float>(logical_height) * 0.13f;
+    const float english_title_y = french_title_y + static_cast<float>(french_title_height) + 8.0f;
+    DrawTextSpan(
+        renderer,
+        fonts.title_large,
+        french_title,
+        (static_cast<float>(logical_width) - static_cast<float>(french_title_width)) * 0.5f,
+        french_title_y,
+        french_title_height,
+        SDL_Color{255, 255, 255, 255},
+        0);
+    DrawTextSpan(
+        renderer,
+        fonts.title_small,
+        english_title,
+        (static_cast<float>(logical_width) - static_cast<float>(english_title_width)) * 0.5f,
+        english_title_y,
+        english_title_height,
+        SDL_Color{190, 190, 190, 255},
+        0);
+
+    const std::string heading = "CHOISIR LA LANGUE / SELECT LANGUAGE";
     const int heading_width = MeasureTextWidth(fonts.regular, heading);
+    const float heading_y = english_title_y + static_cast<float>(english_title_height) + 40.0f;
     DrawTextSpan(
         renderer,
         fonts.regular,
         heading,
         (static_cast<float>(logical_width) - static_cast<float>(heading_width)) * 0.5f,
-        static_cast<float>(logical_height) * 0.30f,
+        heading_y,
         fonts.line_height,
         SDL_Color{255, 255, 255, 255},
         0);
@@ -836,7 +896,7 @@ static void DrawLanguageSelection(SDL_Renderer* renderer, const UiFonts& fonts, 
     const float panel_width = 360.0f;
     const float panel_height = 58.0f;
     const float panel_x = (static_cast<float>(logical_width) - panel_width) * 0.5f;
-    const float first_y = static_cast<float>(logical_height) * 0.42f;
+    const float first_y = heading_y + static_cast<float>(fonts.line_height) + 52.0f;
     DrawLanguageSelectionCell(renderer, fonts, SDL_FRect{panel_x, first_y, panel_width, panel_height}, "English (E)");
     DrawLanguageSelectionCell(renderer, fonts, SDL_FRect{panel_x, first_y + 90.0f, panel_width, panel_height}, "Français (F)");
 }
@@ -1669,7 +1729,7 @@ bool RunSdlFrontend(
     bool success = false;
 
     if (!SDL_CreateWindowAndRenderer(
-            "Eryx - Quarry Survey Prototype",
+            "Within the Latent Walls",
             config.window_width,
             config.window_height,
             SDL_WINDOW_RESIZABLE,

@@ -482,3 +482,20 @@ Raison :
 Consequence :
 
 Le masque se compose après la texture 3D et avant les instruments HUD. Le facteur lumineux du ciel n'éclaire pas directement les surfaces et ne modifie pas leurs matériaux.
+
+## 2026-08-18 - Adopter un titre bilingue lié aux murs d'Eryx et à l'espace latent
+
+Decision :
+
+Le projet actif porte le titre *Within the Latent Walls* en anglais et *Entre les Murs Latents* en français. L'écran de sélection linguistique présente d'abord le titre français en grand, puis le titre anglais en plus petit.
+
+Raison :
+
+- `Walls` / `Murs` maintient la filiation explicite avec *In the Walls of Eryx*
+- `Latent` / `Latents` relie l'architecture invisible à l'espace latent du modèle de langage
+- les deux formulations sont immédiatement compréhensibles et conservent la même structure conceptuelle
+- le titre décrit mieux le projet vénusien actuel que l'ancien imaginaire du désert et du datacenter
+
+Consequence :
+
+La fenêtre SDL, les documents actifs et le helper Windows emploient la nouvelle identité. Le launcher devient `play_within_the_latent_walls.bat`. *Le Désert des tokens* demeure uniquement comme nom historique de la branche narrative précédente.

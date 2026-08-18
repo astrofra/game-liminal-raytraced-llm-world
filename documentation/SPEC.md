@@ -1,8 +1,8 @@
-# Liminal Raytraced LLM World
+# Within the Latent Walls / Entre les Murs Latents
 
 ## Artistic, Research, and Technical Specification
 
-Status: active direction as of 2026-08-18. The project has no final public title. *Le Désert des tokens* is the previous working title. A first seven-place Eryx slice, typed invisible barrier, and authored impossible return are implemented; live validated LLM topology proposals remain planned.
+Status: active direction as of 2026-08-18. The selected English title is *Within the Latent Walls*; the French title is *Entre les Murs Latents*. *Le Désert des tokens* designates the previous narrative branch. A first seven-place Eryx slice, typed invisible barrier, and authored impossible return are implemented; live validated LLM topology proposals remain planned.
 
 ## 1. Premise
 

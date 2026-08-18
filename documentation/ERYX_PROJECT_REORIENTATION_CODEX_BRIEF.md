@@ -535,7 +535,7 @@ Update the high-level "About" and project description after the documentation ha
 
 Do not claim features not yet implemented.
 
-If helper scripts still use `play_desert_des_tokens.bat`, describe that as a legacy runtime name or leave it untouched until a separate code/refactor task renames it.
+Superseded on 2026-08-18: the dedicated title refactor renamed the active helper to `play_within_the_latent_walls.bat`. The former filename belongs only to repository history.
 
 ## Generated PDFs
 

@@ -1,8 +1,8 @@
-# Eryx-Based Generative Labyrinth
+# Within the Latent Walls / Entre les Murs Latents
 
 ## Current story direction
 
-The project does not yet have a final public title. *Le Désert des tokens* is the previous working title and now designates an earlier narrative branch documented in [`NOTES.md`](./NOTES.md) and [`PROJECT_JOURNAL.md`](./PROJECT_JOURNAL.md).
+The project is titled *Within the Latent Walls* in English and *Entre les Murs Latents* in French. The title connects the invisible architecture of *In the Walls of Eryx* to the latent space in which the LLM constructs and interprets the world. *Le Désert des tokens* now designates only the earlier narrative branch documented in [`NOTES.md`](./NOTES.md) and [`PROJECT_JOURNAL.md`](./PROJECT_JOURNAL.md).
 
 The active fiction places the player in a Venusian extraction zone. The player is a prospector or survey operative moving among a quarry, sparse industrial shelters, extraction machinery, navigation beacons, sample containers, and other human attempts to measure and exploit a hostile environment.
 

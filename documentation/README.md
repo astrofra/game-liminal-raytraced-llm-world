@@ -1,10 +1,10 @@
-# Documentation
+# Within the Latent Walls / Entre les Murs Latents — Documentation
 
 Dernière mise à jour : 2026-08-18
 
 Ce dossier sert de mémoire de travail artistique, scientifique et technique du projet.
 
-La direction active est une œuvre interactive fondée sur la lignée d'Eryx : un monde d'extraction vénusien localement cohérent, traversé par un labyrinthe invisible dont le LLM peut proposer des mutations topologiques contrôlées. *Le Désert des tokens* est l'ancien titre de travail et la phase narrative immédiatement précédente.
+*Within the Latent Walls* / *Entre les Murs Latents* est une œuvre interactive fondée sur la lignée d'Eryx : un monde d'extraction vénusien localement cohérent, traversé par un labyrinthe invisible dont le LLM peut proposer des mutations topologiques contrôlées. *Le Désert des tokens* désigne uniquement la phase narrative immédiatement précédente.
 
 La première tranche jouable Eryx est maintenant implémentée : sept lieux canoniques, neuf prefabs de carrière, prompts et états actifs, une barrière invisible typée et un retour non réciproque volontaire. Les anciens objets et fixtures datacenter restent disponibles comme compatibilité historique. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) sépare cette tranche réelle des mutations topologiques encore planifiées.
 
@@ -65,5 +65,5 @@ Ne pas renommer ni réinterpréter les résultats historiques comme des benchmar
 - conserver les problèmes non résolus visibles ;
 - préserver les anciennes branches dans les notes et le journal ;
 - employer l'ancien récit datacenter uniquement comme histoire, baseline ou dette d'implémentation ;
-- ne pas inventer de titre final ;
+- employer *Within the Latent Walls* en anglais et *Entre les Murs Latents* en français pour désigner le projet actif ;
 - préférer l'anglais technique concis pour les nouveaux documents, sauf lorsqu'un fichier existant est volontairement maintenu en français.

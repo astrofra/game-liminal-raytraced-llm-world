@@ -1,63 +1,11 @@
 {
-  "current_place_id": "generated:room_0001",
-  "generated_rooms": [
-    {
-      "metadata_fallback_used": false,
-      "room_id": "generated:room_0001",
-      "scene_fallback_used": false,
-      "scene_source": "hybrid",
-      "scene_text": "room \"Fractured Cut\"\ncamera eye(0.0,1.78,-9.80) target(0.0,1.35,10.00) up(0.0,1.0,0.0) fov(48.0)\nspotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(38.0) cone(12.0,28.0) intensity(72.0)\nsky zenith(0.01) horizon(0.26) nadir(0.00) band(0.34) curve(1.95) noise(0.14) stars(0.0030,1.30,0.095) seed(770)\nplane \"ground\" pos(0.0,0.0,-1.5) normal(0.0,1.0,0.0) size(88.0,187.0) gray(0.12)\nbox \"cut_wall_left\" pos(-6.2,2.20,5.0) size(4.4,4.40,25.0) gray(0.18)\nbox \"cut_wall_right\" pos(6.4,1.75,7.0) size(4.8,3.50,23.0) gray(0.19)\nbox \"cut_step_rear\" pos(0.0,0.55,14.0) size(8.0,1.10,4.0) gray(0.21)\nprefab_survey_beacon \"survey_beacon_east_flank_flickering_01\" pos(-1.20,1.70,8.50) size(1.10,3.40,1.00) gray(0.24) detail(0.43)\nprefab_extraction_rig \"extraction_rig_half_buried_arm_bent_02\" pos(3.60,1.60,6.80) size(2.80,3.20,2.20) gray(0.23) detail(0.42)\nprefab_crystal_cluster \"crystal_cluster_exposed_seam_west_wall_03\" pos(-0.40,1.15,-0.34) size(1.80,2.30,1.60) gray(0.66) glow(0.34)\nprefab_crate \"sample_case_propped_against_retaining_fin_04\" pos(4.32,0.55,-2.72) size(1.70,1.10,1.40) gray(0.20) detail(0.31)\nprefab_quarry_pylon \"quarry_pylon_206\" pos(-1.20,1.75,5.10) size(1.40,3.50,1.20) gray(0.27) detail(0.44)\n",
-      "spatial_state": {
-        "alert_level": 2,
-        "anchors": [
-          "east beacon",
-          "bent rig",
-          "crystal seam",
-          "processor hum"
-        ],
-        "blocked_exits": [],
-        "canonical_fixture": "",
-        "interior_density": "sparse",
-        "location_archetype": "quarry_cut_threshold",
-        "location_id": "unknown",
-        "room_summary": "A narrow extraction trench where the Erycinian crystal seam has been partially severed, revealing unstable flanks and a half-buried prospector’s rig.",
-        "room_title": "Fractured Cut",
-        "scene_constraints": [
-          "split threshold masses: retaining fin on east, crystal seam on west",
-          "extraction rig on work slab (tilted toward north)",
-          "exposed crystal seam dominates west wall",
-          "scanner under cantilever (if present) would face south",
-          "hero crystal cluster",
-          "hero extraction rig",
-          "survey beacon",
-          "quarry pylon",
-          "open venus horizon"
-        ],
-        "spatial_anomalies": [
-          "range sensor conflict: north wall appears absent but returns as solid",
-          "beacon light casts no shadow on the crystal seam"
-        ],
-        "surface_weather": "still",
-        "time_of_day": "dusk",
-        "visibility_level": "dusty",
-        "visible_objects": [
-          "survey beacon (east flank, flickering)",
-          "extraction rig (half-buried, arm bent)",
-          "crystal cluster (exposed seam, west wall)",
-          "sample case (propped against retaining fin)",
-          "quarry pylon (cracked, north edge)"
-        ],
-        "world_pose_known": true,
-        "world_x": 0.0,
-        "world_z": -3.0
-      }
-    }
-  ],
+  "current_place_id": "canonical:extraction_field",
+  "generated_rooms": [],
   "hard_state": {
-    "alert_level": 2,
+    "alert_level": 1,
     "body_temperature_c": 37.20000076293945,
-    "current_location_id": "unknown",
-    "external_temperature_c": 462,
+    "current_location_id": "extraction_field",
+    "external_temperature_c": 464,
     "instrument_power_state": "stable",
     "inventory_items": [
       "survey map slate",
@@ -71,7 +19,7 @@
     ],
     "oxygen_state": "stable",
     "score": 0,
-    "spatial_entropy": 9,
+    "spatial_entropy": 8,
     "suit_state": "stable",
     "turn_number": 2,
     "unresolved_threats": [
@@ -82,29 +30,86 @@
   },
   "history": [
     {
-      "clarification": "",
-      "intent": "move_north_generated_room",
-      "location_id": "unknown",
-      "location_label": "Fractured Cut",
-      "narration": "The gate’s rear hinge groans as you step into a sloping trench, its walls lined with jagged retaining fins. A survey beacon flickers on the east flank, its light reflecting off a half-buried extraction rig—its arm bent at an impossible angle. The air hums.",
-      "player_command": "NORTH",
+      "clarification": "Le portail est la seule issue vers l’intérieur du site minier. Attention à la pente raide de la rampe descendante qui suit.",
+      "intent": "traverse_north",
+      "location_id": "extraction_field",
+      "location_label": "Champ d'extraction",
+      "narration": "Vous grimpez sur le portail brutaliste et franchissez le seuil du puits de mine. La lumière dorée de la veille s’éteint derrière vous, remplacée par une lueur bleutée des projecteurs de la galerie.",
+      "player_command": "monter sur le portail",
       "turn_number": 1
     }
   ],
-  "invisible_barriers": [],
+  "invisible_barriers": [
+    {
+      "direction": "north",
+      "discovered": false,
+      "evidence": "The contact line runs east-west; the plateau remains reachable to the west and Vey's shelter beacon remains visible to the east.",
+      "place_id": "canonical:labyrinth_threshold"
+    }
+  ],
   "language": "fr",
-  "next_generated_room_index": 2,
-  "origin_place_id": "canonical:gate",
+  "next_generated_room_index": 1,
+  "origin_place_id": "canonical:quarry_threshold",
   "room_links": [
     {
       "direction": "north",
-      "from_place_id": "canonical:gate",
-      "to_place_id": "generated:room_0001"
+      "from_place_id": "canonical:quarry_threshold",
+      "to_place_id": "canonical:extraction_field"
     },
     {
       "direction": "south",
-      "from_place_id": "generated:room_0001",
-      "to_place_id": "canonical:gate"
+      "from_place_id": "canonical:extraction_field",
+      "to_place_id": "canonical:quarry_threshold"
+    },
+    {
+      "direction": "north",
+      "from_place_id": "canonical:extraction_field",
+      "to_place_id": "canonical:crystal_cut"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "canonical:crystal_cut",
+      "to_place_id": "canonical:extraction_field"
+    },
+    {
+      "direction": "east",
+      "from_place_id": "canonical:crystal_cut",
+      "to_place_id": "canonical:scanner_station"
+    },
+    {
+      "direction": "west",
+      "from_place_id": "canonical:scanner_station",
+      "to_place_id": "canonical:crystal_cut"
+    },
+    {
+      "direction": "north",
+      "from_place_id": "canonical:scanner_station",
+      "to_place_id": "canonical:survey_plateau"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "canonical:survey_plateau",
+      "to_place_id": "canonical:scanner_station"
+    },
+    {
+      "direction": "east",
+      "from_place_id": "canonical:survey_plateau",
+      "to_place_id": "canonical:labyrinth_threshold"
+    },
+    {
+      "direction": "west",
+      "from_place_id": "canonical:labyrinth_threshold",
+      "to_place_id": "canonical:survey_plateau"
+    },
+    {
+      "direction": "east",
+      "from_place_id": "canonical:labyrinth_threshold",
+      "to_place_id": "canonical:prospect_shelter"
+    },
+    {
+      "direction": "west",
+      "from_place_id": "canonical:prospect_shelter",
+      "to_place_id": "canonical:scanner_station"
     }
   ],
   "soft_state": {
@@ -113,51 +118,47 @@
       "Vey reached the shelter by a route that cannot be retraced consistently"
     ],
     "atmosphere": "instrumental, mineral, sparse, spatially uncertain",
-    "rolling_summary": "The gate’s rear hinge groans as you step into a sloping trench, its walls lined with jagged retaining fins. A survey beacon flickers on the east flank, its light reflecting off a half-buried extraction rig—its arm bent at an impossible angle. The air hums.",
-    "tolerated_incoherences": []
+    "rolling_summary": "Vous grimpez sur le portail brutaliste et franchissez le seuil du puits de mine. La lumière dorée de la veille s’éteint derrière vous, remplacée par une lueur bleutée des projecteurs de la galerie.",
+    "tolerated_incoherences": [
+      "Le seuil est maintenant derrière vous. La rampe descendante est la seule issue vers le sud.",
+      "Le scanner et les marques de route suggèrent une activité récente, mais incohérente avec la carte."
+    ]
   },
   "spatial_state": {
-    "alert_level": 2,
+    "alert_level": 1,
     "anchors": [
-      "east beacon",
-      "bent rig",
-      "crystal seam",
-      "processor hum"
+      "descending_quarry_ramp",
+      "extraction_rig"
     ],
-    "blocked_exits": [],
-    "canonical_fixture": "",
+    "blocked_exits": [
+      "east",
+      "west"
+    ],
+    "canonical_fixture": "assets/scenes/eryx_extraction_field.scene",
     "interior_density": "sparse",
-    "location_archetype": "quarry_cut_threshold",
-    "location_id": "unknown",
-    "room_summary": "A narrow extraction trench where the Erycinian crystal seam has been partially severed, revealing unstable flanks and a half-buried prospector’s rig.",
-    "room_title": "Fractured Cut",
+    "location_archetype": "extraction_field",
+    "location_id": "extraction_field",
+    "room_summary": "A diamond drill stands among retaining fins and atmospheric machinery; the marked quarry cut continues north.",
+    "room_title": "Extraction Field",
     "scene_constraints": [
-      "split threshold masses: retaining fin on east, crystal seam on west",
-      "extraction rig on work slab (tilted toward north)",
-      "exposed crystal seam dominates west wall",
-      "scanner under cantilever (if present) would face south",
+      "ramp descends steeply",
+      "scanner mounted on work slab",
+      "open horizon to north",
+      "hero crystal scanner",
       "hero crystal cluster",
-      "hero extraction rig",
-      "survey beacon",
-      "quarry pylon",
       "open venus horizon"
     ],
-    "spatial_anomalies": [
-      "range sensor conflict: north wall appears absent but returns as solid",
-      "beacon light casts no shadow on the crystal seam"
-    ],
-    "surface_weather": "still",
-    "time_of_day": "dusk",
-    "visibility_level": "dusty",
+    "spatial_anomalies": [],
+    "surface_weather": "windy",
+    "time_of_day": "night",
+    "visibility_level": "low",
     "visible_objects": [
-      "survey beacon (east flank, flickering)",
-      "extraction rig (half-buried, arm bent)",
-      "crystal cluster (exposed seam, west wall)",
-      "sample case (propped against retaining fin)",
-      "quarry pylon (cracked, north edge)"
+      "crystal scanner",
+      "sample case",
+      "route mark"
     ],
     "world_pose_known": true,
     "world_x": 0.0,
-    "world_z": -3.0
+    "world_z": 4.5
   }
 }

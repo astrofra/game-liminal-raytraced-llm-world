@@ -74,25 +74,6 @@ Piste :
 
 Renommer les quatre membres restants lors d'une migration de schéma versionnée et conserver des tests explicites de chargement des sauvegardes legacy.
 
-### 2026-08-09 - Des noms de scripts et d'exécution conservent l'ancien titre de travail
-
-Statut :
-
-Ouvert, non bloquant.
-
-Description :
-
-Le helper Windows `play_desert_des_tokens.bat` et des exemples associés emploient toujours le nom de l'ancienne fiction.
-
-Impact :
-
-- confusion possible entre direction artistique active et état du runtime
-- coût de migration sur scripts, documentation, habitudes locales et éventuels liens externes
-
-Piste :
-
-Conserver le nom comme legacy tant qu'une tâche de refactor dédiée n'a pas défini un nouveau nom stable. Ne pas inventer de titre final dans une migration technique.
-
 ### 2026-08-18 - Les verbes d'arpentage ne produisent pas encore de marques persistantes
 
 Statut :
@@ -559,6 +540,21 @@ Piste :
 Verifier et normaliser explicitement l'encodage du fichier si cela devient genant pour le travail quotidien.
 
 ## Résolus
+
+### 2026-08-18 - Le projet et son script de lancement conservaient des titres provisoires
+
+Statut :
+
+Résolu le 2026-08-18 après sélection collective du titre bilingue.
+
+Résolution :
+
+- titre anglais actif : *Within the Latent Walls*
+- titre français actif : *Entre les Murs Latents*
+- fenêtre SDL et écran de langue raccordés à la nouvelle identité
+- helper renommé `play_within_the_latent_walls.bat`
+- exemples de lancement et documents actifs mis à jour
+- *Le Désert des tokens* maintenu uniquement dans les passages qui documentent explicitement la branche narrative historique
 
 ### 2026-08-18 - Une salle générée en mode français pouvait encore exposer de l'anglais
 

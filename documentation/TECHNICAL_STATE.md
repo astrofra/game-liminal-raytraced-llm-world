@@ -1,4 +1,4 @@
-# Technical State
+# Technical State — Within the Latent Walls / Entre les Murs Latents
 
 Derniere mise a jour : 2026-08-18
 
@@ -23,6 +23,7 @@ Une premiere tranche Eryx est implementee dans le runtime :
 - HUD thermique `EXT. TEMPERATURE` / `BODY TEMPERATURE`, traduit en français après sélection `F`
 - température d'échantillonnage effective dérivée de la température corporelle pour les tours et l'imagination des lieux
 - sélection de langue `English (E)` / `Français (F)` au lancement SDL ; champs et mécaniques internes du LLM conservés en anglais
+- écran de langue titré `Entre les Murs Latents` en grand, puis `Within the Latent Walls` en plus petit
 - masque de visière 2D symétrique et procédural devant le viewport 3D
 - douze liens diriges constituant une route d'arpentage
 - type persistant `InvisibleBarrier`, separe de `blocked_exits`
@@ -57,7 +58,7 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
 - Helper Windows `run_cornell_test.bat` a la racine pour compiler puis lancer le rendu de verification Cornell Box.
 - Helper Windows `download_ministral.bat` pour telecharger le modele cible.
 - Helper Windows `ask_ministral.bat` pour lancer une question libre contre le modele local via `llama-cli`.
-- Helper Windows legacy `play_desert_des_tokens.bat` pour lancer directement la premiere boucle SDL3. Son nom reflete la fiction precedente.
+- Helper Windows `play_within_the_latent_walls.bat` pour lancer directement la boucle SDL3 sous le titre actif.
 - Helper Windows `generate_prefab_catalog.bat` pour regenerer le catalogue visuel des prefabs.
 - Helper Windows `run_scene_generation_benchmark.bat` pour executer une batterie fixe de generations `.scene` via `Ministral`, puis auditer et rendre chaque cas.
 - Helper Windows `run_hybrid_scene_generation_benchmark.bat` pour executer la chaine runtime `room JSON -> compilateur hybride -> rendu` sur une batterie fixe de briefs source.
@@ -339,7 +340,7 @@ build_release.bat
 run_cornell_test.bat
 download_ministral.bat
 ask_ministral.bat
-play_desert_des_tokens.bat
+play_within_the_latent_walls.bat
 generate_prefab_catalog.bat
 run_scene_generation_benchmark.bat
 ```

@@ -28,16 +28,16 @@ if not exist "%MODEL_PATH%" (
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 echo.
-echo === Launch Desert des Tokens ===
+echo === Within the Latent Walls / Entre les Murs Latents ===
 echo EXE: "%EXE_PATH%"
 echo State: "%STATE_PATH%"
 echo.
 echo Optional extra args:
-echo   play_desert_des_tokens.bat --location roof_watch
-echo   play_desert_des_tokens.bat --load-state output\sdl_session_state.json
+echo   play_within_the_latent_walls.bat --location quarry_threshold
+echo   play_within_the_latent_walls.bat --load-state output\sdl_session_state.json
 echo.
 
-"%EXE_PATH%" --sdl --location gate --save-state "%STATE_PATH%" %*
+"%EXE_PATH%" --sdl --location quarry_threshold --save-state "%STATE_PATH%" %*
 if errorlevel 1 goto :end
 
 :end

@@ -1,14 +1,14 @@
-# Liminal Raytraced-World LLM-Built Game
+# Within the Latent Walls / Entre les Murs Latents
 
 ![alt text](img/liminal-room.png)
 
 ## About
 
-This repository is a native, local-first interactive fiction and raytracing research prototype. It asks what happens when most of a game's computational budget is spent on language inference, interpretation, and world structure while a deliberately constrained CPU raytracer produces the image.
+*Within the Latent Walls* / *Entre les Murs Latents* is a native, local-first interactive fiction and raytracing research prototype. It asks what happens when most of a game's computational budget is spent on language inference, interpretation, and world structure while a deliberately constrained CPU raytracer produces the image.
 
 The active artistic direction follows a four-stage lineage from Lovecraft and Kenneth J. Sterling's *In the Walls of Eryx*, through ASD's *Beyond the Walls of Eryx* and Mandarine's *Within the Mesh*, to an interactive generative labyrinth. The intended player explores Venusian extraction infrastructure while an invisible topology can change through LLM proposals validated by an authoritative engine.
 
-The first playable Eryx slice is now present: seven canonical quarry locations, active Eryx prompts and state labels, a typed invisible barrier, and an authored impossible return. Live LLM topology proposals and their validator remain planned. The historical datacenter fixtures and legacy helper name are preserved as technical baselines. See [`documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md`](documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md) for the route and [`documentation/TECHNICAL_STATE.md`](documentation/TECHNICAL_STATE.md) for the exact implementation boundary.
+The first playable Eryx slice is now present: seven canonical quarry locations, active Eryx prompts and state labels, a typed invisible barrier, and an authored impossible return. Live LLM topology proposals and their validator remain planned. The historical datacenter fixtures remain preserved as technical baselines. See [`documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md`](documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md) for the route and [`documentation/TECHNICAL_STATE.md`](documentation/TECHNICAL_STATE.md) for the exact implementation boundary.
 
 Current state:
 
@@ -57,10 +57,8 @@ build_release.bat
 run_cornell_test.bat
 download_ministral.bat
 ask_ministral.bat
-play_desert_des_tokens.bat
+play_within_the_latent_walls.bat
 ```
-
-`play_desert_des_tokens.bat` retains the previous working title as a legacy runtime name. No final replacement title has been selected.
 
 If you want the vendorized `llama.cpp` build with CUDA enabled, keep the default CMake options:
 
@@ -102,12 +100,12 @@ ask_ministral.bat "Resume-moi ce projet en 3 phrases."
 Launch the SDL3 frontend:
 
 ```bat
-play_desert_des_tokens.bat
-play_desert_des_tokens.bat --location quarry_threshold
-play_desert_des_tokens.bat --load-state output\sdl_session_state.json
+play_within_the_latent_walls.bat
+play_within_the_latent_walls.bat --location quarry_threshold
+play_within_the_latent_walls.bat --load-state output\sdl_session_state.json
 ```
 
-These commands launch the Eryx slice. The helper retains the previous working title until a final title is selected.
+These commands launch the Eryx slice under its selected bilingual title.
 
 ## Run
 
@@ -141,7 +139,7 @@ Useful overrides:
 
 `--sdl` opens the first desktop loop:
 
-- launch screen: choose `English (E)` or `Français (F)`; player-facing text follows that choice while internal LLM contracts remain English
+- launch screen: the large French title `Entre les Murs Latents`, the smaller English title `Within the Latent Walls`, then `English (E)` / `Français (F)`; player-facing text follows that choice while internal LLM contracts remain English
 - top panel: raytraced scene
 - the 3D image is clipped by a symmetric procedural visor assembled from rectangular scanlines and elliptical boundaries; the exterior is black
 - visor HUD: external temperature and body temperature
