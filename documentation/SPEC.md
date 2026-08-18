@@ -2,7 +2,7 @@
 
 ## Artistic, Research, and Technical Specification
 
-Status: active direction as of 2026-08-09. The project has no final public title. *Le Désert des tokens* is the previous working title.
+Status: active direction as of 2026-08-18. The project has no final public title. *Le Désert des tokens* is the previous working title. A first seven-place Eryx slice, typed invisible barrier, and authored impossible return are implemented; live validated LLM topology proposals remain planned.
 
 ## 1. Premise
 

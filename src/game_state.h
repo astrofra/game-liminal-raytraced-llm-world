@@ -10,6 +10,14 @@ namespace liminal {
 
 enum LocationId {
     kLocationUnknown = 0,
+    kLocationQuarryThreshold,
+    kLocationExtractionField,
+    kLocationCrystalCut,
+    kLocationScannerStation,
+    kLocationSurveyPlateau,
+    kLocationLabyrinthThreshold,
+    kLocationProspectShelter,
+    // Historical datacenter fixtures retained as technical baselines.
     kLocationGate,
     kLocationServerAisles,
     kLocationRoofWatch,
@@ -57,9 +65,11 @@ enum ResourceState {
     kResourceCritical,
 };
 
-static const int kDefaultDatacenterTemperatureC = 19;
-static const int kMinDatacenterTemperatureC = 5;
-static const int kMaxDatacenterTemperatureC = 60;
+// Legacy field names below remain for save compatibility during the Eryx migration.
+// Their active runtime meaning is spatial entropy, suit integrity and oxygen state.
+static const int kDefaultDatacenterTemperatureC = 8;
+static const int kMinDatacenterTemperatureC = 0;
+static const int kMaxDatacenterTemperatureC = 100;
 
 struct HardState {
     int turn_number;
@@ -79,7 +89,7 @@ struct HardState {
         : turn_number(0)
         , move_count(0)
         , score(0)
-        , current_location_id(kLocationGate)
+        , current_location_id(kLocationQuarryThreshold)
         , alert_level(1)
         , datacenter_temperature_c(kDefaultDatacenterTemperatureC)
         , cooling_state(kResourceStable)
@@ -274,6 +284,19 @@ struct RoomLink {
     }
 };
 
+struct InvisibleBarrier {
+    std::string place_id;
+    CardinalDirection direction;
+    std::string evidence;
+    bool discovered;
+
+    InvisibleBarrier()
+        : direction(kDirectionUnknown)
+        , discovered(false)
+    {
+    }
+};
+
 struct SessionState {
     HardState hard_state;
     SoftState soft_state;
@@ -284,6 +307,7 @@ struct SessionState {
     int next_generated_room_index;
     std::vector<GeneratedRoom> generated_rooms;
     std::vector<RoomLink> room_links;
+    std::vector<InvisibleBarrier> invisible_barriers;
 
     SessionState()
         : next_generated_room_index(1)

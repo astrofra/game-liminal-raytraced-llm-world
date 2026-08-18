@@ -541,19 +541,41 @@ static void ParseHardStateDeltaNode(const json& node, HardStateDelta* delta)
     delta->next_score = ReadIntValue(node, "next_score", 0);
     delta->alert_level_changed = ReadBoolValue(node, "alert_level_changed", false);
     delta->next_alert_level = ReadIntValue(node, "next_alert_level", 0);
-    const bool has_next_temperature =
+    const bool has_next_entropy =
+        node.contains("next_spatial_entropy") &&
+        node["next_spatial_entropy"].is_number_integer();
+    const bool has_legacy_temperature =
         node.contains("next_datacenter_temperature_c") &&
         node["next_datacenter_temperature_c"].is_number_integer();
-    delta->temperature_changed = ReadBoolValue(node, "temperature_changed", false) && has_next_temperature;
+    delta->temperature_changed =
+        (ReadBoolValue(node, "spatial_entropy_changed", false) && has_next_entropy) ||
+        (ReadBoolValue(node, "temperature_changed", false) && has_legacy_temperature);
     delta->next_datacenter_temperature_c =
         ClampDatacenterTemperatureC(
-            ReadIntValue(node, "next_datacenter_temperature_c", delta->next_datacenter_temperature_c));
-    delta->cooling_state_changed = ReadBoolValue(node, "cooling_state_changed", false);
-    ParseResourceState(ReadStringValue(node, "next_cooling_state").c_str(), &delta->next_cooling_state);
-    delta->water_state_changed = ReadBoolValue(node, "water_state_changed", false);
-    ParseResourceState(ReadStringValue(node, "next_water_state").c_str(), &delta->next_water_state);
-    delta->power_state_changed = ReadBoolValue(node, "power_state_changed", false);
-    ParseResourceState(ReadStringValue(node, "next_power_state").c_str(), &delta->next_power_state);
+            ReadIntValue(
+                node,
+                has_next_entropy ? "next_spatial_entropy" : "next_datacenter_temperature_c",
+                delta->next_datacenter_temperature_c));
+    delta->cooling_state_changed =
+        ReadBoolValue(node, "suit_state_changed", false) ||
+        ReadBoolValue(node, "cooling_state_changed", false);
+    ParseResourceState(
+        ReadStringValue(node, node.contains("next_suit_state") ? "next_suit_state" : "next_cooling_state").c_str(),
+        &delta->next_cooling_state);
+    delta->water_state_changed =
+        ReadBoolValue(node, "oxygen_state_changed", false) ||
+        ReadBoolValue(node, "water_state_changed", false);
+    ParseResourceState(
+        ReadStringValue(node, node.contains("next_oxygen_state") ? "next_oxygen_state" : "next_water_state").c_str(),
+        &delta->next_water_state);
+    delta->power_state_changed =
+        ReadBoolValue(node, "instrument_power_state_changed", false) ||
+        ReadBoolValue(node, "power_state_changed", false);
+    ParseResourceState(
+        ReadStringValue(
+            node,
+            node.contains("next_instrument_power_state") ? "next_instrument_power_state" : "next_power_state").c_str(),
+        &delta->next_power_state);
     delta->inventory_add = ReadStringArray(node.contains("inventory_add") ? node["inventory_add"] : json());
     delta->inventory_remove = ReadStringArray(node.contains("inventory_remove") ? node["inventory_remove"] : json());
     delta->threats_add = ReadStringArray(node.contains("threats_add") ? node["threats_add"] : json());
@@ -572,8 +594,12 @@ static void ParseSpatialStateDeltaNode(const json& node, SpatialStateDelta* delt
     ParseTimeOfDay(ReadStringValue(node, "next_time_of_day").c_str(), &delta->next_time_of_day);
     delta->visibility_changed = ReadBoolValue(node, "visibility_changed", false);
     ParseVisibilityLevel(ReadStringValue(node, "next_visibility_level").c_str(), &delta->next_visibility_level);
-    delta->desert_state_changed = ReadBoolValue(node, "desert_state_changed", false);
-    ParseDesertState(ReadStringValue(node, "next_desert_state").c_str(), &delta->next_desert_state);
+    delta->desert_state_changed =
+        ReadBoolValue(node, "surface_weather_changed", false) ||
+        ReadBoolValue(node, "desert_state_changed", false);
+    ParseDesertState(
+        ReadStringValue(node, node.contains("next_surface_weather") ? "next_surface_weather" : "next_desert_state").c_str(),
+        &delta->next_desert_state);
     delta->interior_density_changed = ReadBoolValue(node, "interior_density_changed", false);
     ParseInteriorDensity(ReadStringValue(node, "next_interior_density").c_str(), &delta->next_interior_density);
     delta->alert_level_changed = ReadBoolValue(node, "alert_level_changed", false);
@@ -755,17 +781,17 @@ static bool ListContainsSubstring(const std::vector<std::string>& values, const 
 
 static bool SpatialFeelsOpenDesert(const SpatialState& state)
 {
-    return strcmp(DescribeSpatialWorldBand(state), "open desert") == 0;
+    return strcmp(DescribeSpatialWorldBand(state), "open venus") == 0;
 }
 
 static bool SpatialFeelsOuterParapet(const SpatialState& state)
 {
-    return strcmp(DescribeSpatialWorldBand(state), "outer parapet") == 0;
+    return strcmp(DescribeSpatialWorldBand(state), "outer shelf") == 0;
 }
 
 static bool SpatialFeelsPerimeterSeam(const SpatialState& state)
 {
-    return strcmp(DescribeSpatialWorldBand(state), "perimeter seam") == 0;
+    return strcmp(DescribeSpatialWorldBand(state), "quarry seam") == 0;
 }
 
 static bool ContainsAnySubstring(const std::string& lower_text, const char* const* patterns, size_t pattern_count)
@@ -864,6 +890,65 @@ static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
     }
 
     const std::string combined = BuildSpatialSemanticText(*spatial_state);
+    const bool eryx =
+        (spatial_state->location_id >= kLocationQuarryThreshold && spatial_state->location_id <= kLocationProspectShelter) ||
+        combined.find("quarry") != std::string::npos ||
+        combined.find("prospect") != std::string::npos ||
+        combined.find("crystal") != std::string::npos ||
+        combined.find("scanner station") != std::string::npos ||
+        combined.find("scanner_station") != std::string::npos ||
+        combined.find("industrial_service") != std::string::npos ||
+        combined.find("survey") != std::string::npos ||
+        combined.find("datum") != std::string::npos ||
+        combined.find("venus") != std::string::npos ||
+        combined.find("labyrinth threshold") != std::string::npos;
+    if (eryx) {
+        if (spatial_state->visible_objects.empty()) {
+            if (combined.find("scanner") != std::string::npos) {
+                AddUniqueString(&spatial_state->visible_objects, "crystal scanner controls");
+                AddUniqueString(&spatial_state->visible_objects, "sample tray");
+            } else if (combined.find("shelter") != std::string::npos) {
+                AddUniqueString(&spatial_state->visible_objects, "route recorder");
+                AddUniqueString(&spatial_state->visible_objects, "oxygen service manifold");
+            } else if (combined.find("extraction") != std::string::npos || combined.find("drill") != std::string::npos) {
+                AddUniqueString(&spatial_state->visible_objects, "rig control lever");
+                AddUniqueString(&spatial_state->visible_objects, "equipment case");
+            } else if (combined.find("threshold") != std::string::npos) {
+                AddUniqueString(&spatial_state->visible_objects, "survey gate control");
+                AddUniqueString(&spatial_state->visible_objects, "chalk datum marker");
+            } else {
+                AddUniqueString(&spatial_state->visible_objects, "survey beacon plate");
+                AddUniqueString(&spatial_state->visible_objects, "sample case");
+            }
+        }
+        if (ListContainsSubstring(spatial_state->visible_objects, "scanner")) {
+            AddUniqueString(&spatial_state->scene_constraints, "hero crystal scanner");
+        }
+        if (ListContainsSubstring(spatial_state->visible_objects, "crystal")) {
+            AddUniqueString(&spatial_state->scene_constraints, "hero crystal cluster");
+        }
+        if (ListContainsSubstring(spatial_state->visible_objects, "rig") ||
+            ListContainsSubstring(spatial_state->visible_objects, "drill")) {
+            AddUniqueString(&spatial_state->scene_constraints, "hero extraction rig");
+        }
+        if (ListContainsSubstring(spatial_state->visible_objects, "oxygen") ||
+            ListContainsSubstring(spatial_state->visible_objects, "atmospheric")) {
+            AddUniqueString(&spatial_state->scene_constraints, "atmospheric processor flank");
+        }
+        if (ListContainsSubstring(spatial_state->visible_objects, "beacon")) {
+            AddUniqueString(&spatial_state->scene_constraints, "survey beacon");
+        }
+        if (ListContainsSubstring(spatial_state->visible_objects, "pylon")) {
+            AddUniqueString(&spatial_state->scene_constraints, "quarry pylon");
+        }
+        if (combined.find("labyrinth") != std::string::npos || combined.find("open datum") != std::string::npos) {
+            AddUniqueString(&spatial_state->scene_constraints, "no visible wall");
+        }
+        if (combined.find("shelter") == std::string::npos) {
+            AddUniqueString(&spatial_state->scene_constraints, "open venus horizon");
+        }
+        return;
+    }
     const bool exterior =
         combined.find("exterior") != std::string::npos ||
         combined.find("roof") != std::string::npos ||
@@ -992,6 +1077,36 @@ static bool SpatialStateBlocksDirection(const SpatialState& state, CardinalDirec
     return false;
 }
 
+static const InvisibleBarrier* FindInvisibleBarrier(
+    const SessionState& session_state,
+    const std::string& place_id,
+    CardinalDirection direction)
+{
+    for (size_t index = 0; index < session_state.invisible_barriers.size(); ++index) {
+        const InvisibleBarrier& barrier = session_state.invisible_barriers[index];
+        if (barrier.place_id == place_id && barrier.direction == direction) {
+            return &barrier;
+        }
+    }
+    return 0;
+}
+
+static void AddOrUpdateInvisibleBarrier(
+    std::vector<InvisibleBarrier>* barriers,
+    const InvisibleBarrier& barrier)
+{
+    if (!barriers || barrier.place_id.empty() || barrier.direction == kDirectionUnknown) {
+        return;
+    }
+    for (size_t index = 0; index < barriers->size(); ++index) {
+        if ((*barriers)[index].place_id == barrier.place_id && (*barriers)[index].direction == barrier.direction) {
+            (*barriers)[index] = barrier;
+            return;
+        }
+    }
+    barriers->push_back(barrier);
+}
+
 static std::string BuildGeneratedPlaceId(int room_index)
 {
     char buffer[64];
@@ -1105,7 +1220,12 @@ static bool SpatialFeelsExterior(const SpatialState& state)
         combined.find("watch") != std::string::npos ||
         combined.find("parapet") != std::string::npos ||
         combined.find("horizon") != std::string::npos ||
-        combined.find("sky") != std::string::npos;
+        combined.find("sky") != std::string::npos ||
+        combined.find("quarry") != std::string::npos ||
+        combined.find("plateau") != std::string::npos ||
+        combined.find("extraction field") != std::string::npos ||
+        combined.find("labyrinth threshold") != std::string::npos ||
+        combined.find("venus") != std::string::npos;
 }
 
 static bool ListContainsSubstring(const std::vector<std::string>& values, const char* pattern)
@@ -1144,21 +1264,18 @@ static bool SpatialSuggestsAiServer(const SpatialState& spatial_state)
     const bool strong_ai =
         combined.find("inference") != std::string::npos ||
         combined.find("mainframe") != std::string::npos ||
+        combined.find("ai server") != std::string::npos ||
         combined.find("accelerator") != std::string::npos ||
         combined.find("gpu") != std::string::npos ||
         combined.find("tensor") != std::string::npos ||
-        combined.find("model") != std::string::npos ||
         combined.find("neural") != std::string::npos ||
         combined.find("compute") != std::string::npos ||
-        combined.find("cluster") != std::string::npos ||
         combined.find("training") != std::string::npos;
     const bool compute_space =
         strong_ai ||
         combined.find("server") != std::string::npos ||
         combined.find("vault") != std::string::npos ||
-        combined.find("backup") != std::string::npos ||
-        combined.find("control") != std::string::npos ||
-        combined.find("switch") != std::string::npos;
+        combined.find("backup") != std::string::npos;
     const bool cooling_dominant =
         combined.find("cooling") != std::string::npos ||
         combined.find("vent") != std::string::npos ||
@@ -1190,18 +1307,20 @@ static void ApplyPerimeterSkyBiasToDraft(GeneratedRoomDraft* draft)
         return;
     }
 
-    draft->spatial_state.location_archetype = "roof parapet exterior";
+    if (draft->spatial_state.location_archetype.empty()) {
+        draft->spatial_state.location_archetype = "quarry_cut";
+    }
     draft->spatial_state.interior_density = kInteriorSparse;
-    AddUniqueString(&draft->spatial_state.anchors, "parapet");
-    AddUniqueString(&draft->spatial_state.anchors, "horizon");
-    AddUniqueString(&draft->spatial_state.anchors, "roof_edge");
-    AddUniqueString(&draft->spatial_state.visible_objects, "roof hatch");
-    AddUniqueString(&draft->spatial_state.visible_objects, "warning beacon");
-    AddUniqueString(&draft->spatial_state.scene_constraints, "open horizon");
-    AddUniqueString(&draft->spatial_state.scene_constraints, "roof parapet");
+    AddUniqueString(&draft->spatial_state.anchors, "quarry_rim");
+    AddUniqueString(&draft->spatial_state.anchors, "retaining_slab");
+    AddUniqueString(&draft->spatial_state.anchors, "venus_horizon");
+    AddUniqueString(&draft->spatial_state.visible_objects, "survey beacon plate");
+    AddUniqueString(&draft->spatial_state.visible_objects, "sample cargo case");
+    AddUniqueString(&draft->spatial_state.scene_constraints, "open venus horizon");
+    AddUniqueString(&draft->spatial_state.scene_constraints, "brutalist retaining slab");
     RemoveString(&draft->spatial_state.scene_constraints, "keep corridor clear");
-    AppendShortSentenceIfMissing(&draft->summary, "The parapet opens to a strip of sky and horizon.");
-    AppendShortSentenceIfMissing(&draft->arrival_narration, "Beyond the concrete lip, the sky and horizon are visible.");
+    AppendShortSentenceIfMissing(&draft->summary, "The quarry rim exposes a narrow strip of Venusian sky.");
+    AppendShortSentenceIfMissing(&draft->arrival_narration, "Beyond the retaining slab, the quarry and sky remain open.");
 }
 
 static void ApplyOpenDesertBiasToDraft(GeneratedRoomDraft* draft)
@@ -1210,22 +1329,22 @@ static void ApplyOpenDesertBiasToDraft(GeneratedRoomDraft* draft)
         return;
     }
 
-    draft->spatial_state.location_archetype = "desert perimeter exterior";
+    if (draft->spatial_state.location_archetype.empty()) {
+        draft->spatial_state.location_archetype = "venus_plateau";
+    }
     draft->spatial_state.interior_density = kInteriorSparse;
-    AddUniqueString(&draft->spatial_state.anchors, "desert");
-    AddUniqueString(&draft->spatial_state.anchors, "horizon");
+    AddUniqueString(&draft->spatial_state.anchors, "venus_plateau");
+    AddUniqueString(&draft->spatial_state.anchors, "survey_line");
     AddUniqueString(&draft->spatial_state.anchors, "open_sky");
-    AddUniqueString(&draft->spatial_state.visible_objects, "survey cache");
-    AddUniqueString(&draft->spatial_state.visible_objects, "range marker");
-    AddUniqueString(&draft->spatial_state.visible_objects, "buried service hatch");
-    AddUniqueString(&draft->spatial_state.visible_objects, "rock outcrop");
-    AddUniqueString(&draft->spatial_state.visible_objects, "cactus cluster");
-    AddUniqueString(&draft->spatial_state.scene_constraints, "open horizon");
-    AddUniqueString(&draft->spatial_state.scene_constraints, "desert scatter");
-    AddUniqueString(&draft->spatial_state.scene_constraints, "rock outcrop");
+    AddUniqueString(&draft->spatial_state.visible_objects, "survey beacon");
+    AddUniqueString(&draft->spatial_state.visible_objects, "quarry datum pylon");
+    AddUniqueString(&draft->spatial_state.visible_objects, "sample case");
+    AddUniqueString(&draft->spatial_state.scene_constraints, "open venus horizon");
+    AddUniqueString(&draft->spatial_state.scene_constraints, "survey beacon line");
+    AddUniqueString(&draft->spatial_state.scene_constraints, "sparse quarry terrain");
     RemoveString(&draft->spatial_state.scene_constraints, "keep corridor clear");
-    AppendShortSentenceIfMissing(&draft->summary, "The datacenter falls away into exposed desert and open sky.");
-    AppendShortSentenceIfMissing(&draft->arrival_narration, "Wind crosses open ground beyond the datacenter edge.");
+    AppendShortSentenceIfMissing(&draft->summary, "The extraction works fall away into a sparse Venusian survey field.");
+    AppendShortSentenceIfMissing(&draft->arrival_narration, "Wind crosses the open survey line beyond the quarry rim.");
 }
 
 static void ApplyGeneratedRoomWorldBiases(GeneratedRoomDraft* draft, CardinalDirection direction)
@@ -1234,7 +1353,9 @@ static void ApplyGeneratedRoomWorldBiases(GeneratedRoomDraft* draft, CardinalDir
         return;
     }
 
-    ApplyAiServerBiasToDraft(draft);
+    if (SpatialSuggestsAiServer(draft->spatial_state)) {
+        ApplyAiServerBiasToDraft(draft);
+    }
     if (SpatialFeelsOpenDesert(draft->spatial_state)) {
         ApplyOpenDesertBiasToDraft(draft);
     } else if (SpatialFeelsOuterParapet(draft->spatial_state) || SpatialFeelsPerimeterSeam(draft->spatial_state)) {
@@ -1269,44 +1390,44 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(
 
     switch (direction) {
     case kDirectionNorth:
-        draft.title = desert ? "North Desert Reach" : (exterior ? "North Perimeter Walk" : "North Service Bay");
+        draft.title = desert ? "North Survey Shelf" : (exterior ? "North Quarry Ramp" : "North Service Cell");
         draft.summary = desert
-            ? "Open ground stretching away from the datacenter, with wind, markers and scattered rock."
+            ? "Open Venusian ground extends between a survey beacon, a datum pylon and a low quarry ridge."
             : (exterior
-            ? "A narrow exterior walk skirting the datacenter shell, open to dust and horizon."
-            : "A service bay beyond the main route, lined with maintenance hardware and heavy shadow.");
+            ? "A narrow quarry ramp runs between retaining slabs and atmospheric service hardware."
+            : "A compact pressure-service cell contains oxygen hardware, cargo and a marked return passage.");
         break;
     case kDirectionEast:
-        draft.title = desert ? "East Desert Margin" : (exterior ? "East Service Yard" : "East Switching Hall");
+        draft.title = desert ? "East Datum Field" : (exterior ? "East Extraction Apron" : "East Instrument Bay");
         draft.summary = desert
-            ? "A dry flank where the compound gives way to sand, range markers and sparse cover."
+            ? "Sparse ground lies between two route datums and an apparently open horizon."
             : (exterior
-            ? "An exposed yard of crates, conduit and service fixtures at the edge of the compound."
-            : "A lateral switching hall with conduit runs, racks and a hard industrial silence.");
+            ? "An exposed extraction apron holds a rig, cargo and a split quarry marker."
+            : "A lateral instrument bay contains a specimen tray, oxygen service and a survey display.");
         break;
     case kDirectionSouth:
-        draft.title = desert ? "South Dune Cut" : (exterior ? "South Ramp" : "South Cooling Trench");
+        draft.title = desert ? "South Quarry Cut" : (exterior ? "South Retaining Ramp" : "South Pressure Trench");
         draft.summary = desert
-            ? "A shallow cut in the sand near buried service hardware and a half-lost warning sign."
+            ? "A shallow excavation exposes a crystal trace beside a survey pylon and sample case."
             : (exterior
-            ? "A sloped service ramp where the compound thins toward the outer ground."
-            : "A cooling trench and access lane where airflow and machinery dominate the room.");
+            ? "A sloped service ramp descends between severe concrete fins toward the quarry floor."
+            : "A pressure trench links atmospheric machinery to a narrow marked access lane.");
         break;
     case kDirectionWest:
-        draft.title = desert ? "West Wind Margin" : (exterior ? "West Maintenance Apron" : "West Access Lane");
+        draft.title = desert ? "West Beacon Spur" : (exterior ? "West Prospect Apron" : "West Shelter Lane");
         draft.summary = desert
-            ? "A wind-scoured margin of stone, cactus silhouettes and abandoned service traces."
+            ? "A wind-scoured beacon spur ends near a pylon whose bearing conflicts with the survey slate."
             : (exterior
-            ? "A maintenance apron of parapets, housings and scattered equipment facing the darkening desert."
-            : "An access lane between utility blocks, with spare equipment stacked against the walls.");
+            ? "A prospecting apron of heavy slabs, oxygen machinery and sample cargo faces the open field."
+            : "A shelter lane passes stored samples, suit service equipment and a scratched route mark.");
         break;
     default:
-        draft.title = desert ? "Outer Desert" : (exterior ? "Peripheral Exterior" : "Utility Interior");
+        draft.title = desert ? "Venus Survey Field" : (exterior ? "Quarry Service Zone" : "Prospecting Service Cell");
         draft.summary = desert
-            ? "Open desert beyond the datacenter perimeter."
+            ? "A sparse Venusian field holds only a beacon, a datum and an uncertain horizon."
             : (exterior
-            ? "A sparse exterior threshold around the datacenter perimeter."
-            : "A utility interior neighboring the current room.");
+            ? "A sparse extraction zone sits between the quarry and human service infrastructure."
+            : "A compact prospecting cell neighbors the current route.");
         break;
     }
 
@@ -1314,28 +1435,28 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(
     draft.spatial_state.room_title = draft.title;
     draft.spatial_state.room_summary = draft.summary;
     draft.spatial_state.location_archetype =
-        desert ? "generated_desert_exterior" : (exterior ? "generated_perimeter_space" : "generated_service_interior");
-    draft.spatial_state.anchors.push_back(desert ? "desert" : (exterior ? "perimeter" : "service_lane"));
-    draft.spatial_state.anchors.push_back(desert ? "horizon" : (exterior ? "compound_wall" : "utility_wall"));
-    draft.spatial_state.anchors.push_back(desert ? "open_sky" : (exterior ? "equipment_pad" : "maintenance_lane"));
+        desert ? "venus_plateau" : (exterior ? "extraction_field" : "industrial_service_zone");
+    draft.spatial_state.anchors.push_back(desert ? "survey_line" : (exterior ? "quarry_rim" : "service_lane"));
+    draft.spatial_state.anchors.push_back(desert ? "venus_horizon" : (exterior ? "retaining_slab" : "pressure_wall"));
+    draft.spatial_state.anchors.push_back(desert ? "open_sky" : (exterior ? "equipment_pad" : "marked_passage"));
     if (desert) {
-        draft.spatial_state.visible_objects.push_back("survey cache");
-        draft.spatial_state.visible_objects.push_back("range marker");
-        draft.spatial_state.visible_objects.push_back("rock outcrop");
-        draft.spatial_state.scene_constraints.push_back("open horizon");
-        draft.spatial_state.scene_constraints.push_back("desert scatter");
+        draft.spatial_state.visible_objects.push_back("survey beacon");
+        draft.spatial_state.visible_objects.push_back("quarry datum pylon");
+        draft.spatial_state.visible_objects.push_back("sample case");
+        draft.spatial_state.scene_constraints.push_back("open venus horizon");
+        draft.spatial_state.scene_constraints.push_back("survey beacon line");
     } else if (exterior) {
-        draft.spatial_state.visible_objects.push_back("service crate");
-        draft.spatial_state.visible_objects.push_back("warning placard");
-        draft.spatial_state.visible_objects.push_back("maintenance hatch");
-        draft.spatial_state.scene_constraints.push_back("open horizon");
-        draft.spatial_state.scene_constraints.push_back("perimeter seam");
+        draft.spatial_state.visible_objects.push_back("atmospheric processor");
+        draft.spatial_state.visible_objects.push_back("prospecting cargo crate");
+        draft.spatial_state.visible_objects.push_back("quarry pylon");
+        draft.spatial_state.scene_constraints.push_back("open venus horizon");
+        draft.spatial_state.scene_constraints.push_back("brutalist retaining slab");
     } else {
-        draft.spatial_state.visible_objects.push_back("rack access door");
-        draft.spatial_state.visible_objects.push_back("service panel");
-        draft.spatial_state.visible_objects.push_back("maintenance crate");
-        draft.spatial_state.scene_constraints.push_back("keep corridor clear");
-        draft.spatial_state.scene_constraints.push_back("rack bank");
+        draft.spatial_state.visible_objects.push_back("oxygen service manifold");
+        draft.spatial_state.visible_objects.push_back("sample crate");
+        draft.spatial_state.visible_objects.push_back("survey map panel");
+        draft.spatial_state.scene_constraints.push_back("keep marked passage clear");
+        draft.spatial_state.scene_constraints.push_back("atmospheric processor flank");
     }
     ApplyGeneratedRoomWorldBiases(&draft, direction);
     return draft;
@@ -1343,70 +1464,63 @@ static GeneratedRoomDraft MakeFallbackGeneratedRoomDraft(
 
 static std::string BuildFallbackGeneratedRoomSceneText(const SpatialState& spatial_state)
 {
-    const bool desert = SpatialFeelsOpenDesert(spatial_state);
+    const bool plateau = SpatialFeelsOpenDesert(spatial_state);
     const bool exterior = SpatialFeelsExterior(spatial_state);
     const bool wants_gate =
         ListContainsSubstring(spatial_state.visible_objects, "gate") ||
         ListContainsSubstring(spatial_state.scene_constraints, "gate") ||
         ListContainsSubstring(spatial_state.scene_constraints, "door");
-    const bool wants_ai_server =
-        ListContainsSubstring(spatial_state.scene_constraints, "ai server") ||
-        ListContainsSubstring(spatial_state.scene_constraints, "mainframe") ||
-        ListContainsSubstring(spatial_state.scene_constraints, "gpu") ||
-        ListContainsSubstring(spatial_state.scene_constraints, "accelerator") ||
-        ListContainsSubstring(spatial_state.scene_constraints, "inference");
-    const bool wants_racks =
-        ListContainsSubstring(spatial_state.visible_objects, "rack") ||
-        ListContainsSubstring(spatial_state.scene_constraints, "rack") ||
-        ListContainsSubstring(spatial_state.scene_constraints, "server bank");
+    const bool wants_crystal =
+        ListContainsSubstring(spatial_state.visible_objects, "crystal") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "crystal");
+    const bool wants_scanner =
+        ListContainsSubstring(spatial_state.visible_objects, "scanner") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "scanner") ||
+        ListContainsSubstring(spatial_state.scene_constraints, "instrument");
     std::string text;
     text += "room \"generated room\"\n";
 
-    if (desert) {
+    if (plateau) {
         text += "camera eye(0.0,1.82,-9.6) target(0.0,1.18,9.8) up(0.0,1.0,0.0) fov(48.0)\n";
         text += "spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(36.0) cone(12.0,28.0) intensity(60.0)\n";
         text += "sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(97)\n";
         text += "plane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(120.0,170.0) gray(0.13)\n";
-        text += "box \"desert_ridge_left\" pos(-5.2,0.55,7.0) size(3.0,1.10,8.2) gray(0.14)\n";
-        text += "box \"desert_ridge_right\" pos(5.4,0.50,8.2) size(3.4,1.00,7.8) gray(0.15)\n";
-        text += "box \"desert_back_ridge\" pos(0.0,0.72,12.6) size(12.6,1.44,4.8) gray(0.16)\n";
-        text += "prefab_cactus_fork \"cactus_watch\" pos(-4.8,1.2,6.4) size(1.2,2.4,1.2) gray(0.25)\n";
-        text += "prefab_cactus_cluster \"cactus_patch\" pos(4.2,1.0,8.1) size(1.4,2.0,1.4) gray(0.24)\n";
-        text += "prefab_rock_wide \"rock_shelf\" pos(2.8,0.7,5.8) size(2.0,1.4,1.6) gray(0.23)\n";
-        text += "prefab_rock_low \"rock_low\" pos(-2.4,0.5,9.2) size(1.6,1.0,1.3) gray(0.22)\n";
-        text += "prefab_crate \"survey_cache\" pos(0.6,0.55,3.8) size(1.5,1.0,1.2) gray(0.20) detail(0.30)\n";
+        text += "box \"quarry_ridge_left\" pos(-7.8,0.42,11.0) size(7.0,0.84,4.2) gray(0.14)\n";
+        text += "box \"quarry_ridge_right\" pos(8.6,0.36,14.0) size(8.5,0.72,3.4) gray(0.15)\n";
+        text += "prefab_survey_beacon \"route_beacon_near\" pos(-3.6,1.15,3.8) size(0.9,2.3,0.9) gray(0.27) detail(0.42)\n";
+        text += "prefab_survey_beacon \"route_beacon_far\" pos(2.2,0.90,9.4) size(0.7,1.8,0.7) gray(0.24) detail(0.40)\n";
+        text += "prefab_quarry_pylon \"datum_pylon\" pos(5.2,1.35,5.8) size(1.1,2.7,1.1) gray(0.23) detail(0.32)\n";
+        text += "prefab_crate \"sample_case\" pos(0.6,0.55,3.8) size(1.5,1.0,1.2) gray(0.20) detail(0.30)\n";
     } else if (exterior) {
         text += "camera eye(0.0,1.82,-8.4) target(0.0,1.20,8.2) up(0.0,1.0,0.0) fov(46.0)\n";
         text += "spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(72.0)\n";
         text += "sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(91)\n";
         text += "plane \"ground\" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(90.0,150.0) gray(0.13)\n";
-        text += "box \"wall_back\" pos(0.0,2.1,10.4) size(18.0,4.2,0.8) gray(0.18)\n";
-        text += "box \"parapet_left\" pos(-7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\n";
-        text += "box \"parapet_right\" pos(7.2,0.65,0.0) size(0.8,1.3,20.0) gray(0.25)\n";
-        text += "box \"parapet_front\" pos(0.0,0.65,1.9) size(14.0,1.3,0.8) gray(0.26)\n";
+        text += "box \"retaining_mass\" pos(-5.2,1.8,8.8) size(5.4,3.6,2.2) gray(0.18)\n";
+        text += "box \"cantilever\" pos(-2.8,3.35,6.8) size(9.8,1.0,4.8) gray(0.23)\n";
+        text += "box \"work_slab\" pos(2.0,0.18,2.8) size(8.8,0.36,8.0) gray(0.21)\n";
         if (wants_gate) {
             text += "prefab_gate \"aux_gate\" pos(0.0,1.4,7.2) size(4.6,2.8,0.5) gray(0.28) detail(0.40)\n";
         }
-        text += "prefab_crate \"service_crate\" pos(2.6,0.55,-1.8) size(1.8,1.1,1.5) gray(0.20) detail(0.31)\n";
-        text += "box \"warning_beacon\" pos(-4.1,1.15,-2.8) size(0.40,2.30,0.40) gray(0.30) emit(2.4)\n";
-        text += "box \"maintenance_hatch\" pos(-0.8,0.12,5.8) size(1.8,0.24,1.8) gray(0.22)\n";
+        text += "prefab_extraction_rig \"field_rig\" pos(2.5,1.35,4.6) size(2.4,2.7,2.4) gray(0.22) detail(0.38)\n";
+        text += "prefab_atmospheric_processor \"air_processor\" pos(-4.6,1.25,1.6) size(1.8,2.5,1.8) gray(0.24) detail(0.36)\n";
+        text += "prefab_crate \"sample_case\" pos(4.6,0.55,-0.8) size(1.8,1.1,1.5) gray(0.20) detail(0.31)\n";
+        text += "prefab_survey_beacon \"route_beacon\" pos(-1.0,1.05,-1.2) size(0.8,2.1,0.8) gray(0.29) detail(0.42)\n";
     } else {
         text += "camera eye(0.0,1.78,-7.8) target(0.0,1.20,8.4) up(0.0,1.0,0.0) fov(46.0)\n";
         text += "spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(30.0) cone(12.0,28.0) intensity(78.0)\n";
         text += "plane \"floor\" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(14.0,24.0) gray(0.12)\n";
-        text += "plane \"ceiling\" pos(0.0,3.2,0.0) normal(0.0,-1.0,0.0) size(14.0,24.0) gray(0.19)\n";
-        text += "box \"wall_back\" pos(0.0,1.6,11.4) size(14.0,3.2,0.6) gray(0.20)\n";
-        text += "box \"wall_left\" pos(-6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\n";
-        text += "box \"wall_right\" pos(6.8,1.6,0.0) size(0.6,3.2,24.0) gray(0.18)\n";
-        text += "box \"threshold_frame\" pos(0.0,1.5,8.8) size(3.6,3.0,0.45) gray(0.24)\n";
-        if (wants_ai_server) {
-            text += "prefab_ai_server \"inference_mainframe\" pos(0.0,1.40,3.6) size(1.70,2.80,1.70) gray(0.16) detail(0.28)\n";
-        } else if (wants_racks) {
-            text += "prefab_rack \"rack_left\" pos(-3.0,1.25,2.8) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\n";
-            text += "prefab_rack \"rack_right\" pos(3.0,1.25,4.4) size(1.8,2.5,3.6) gray(0.18) detail(0.34)\n";
+        text += "box \"pressure_wall\" pos(-6.4,1.9,1.5) size(0.8,3.8,21.0) gray(0.18)\n";
+        text += "box \"heavy_roof\" pos(-1.7,3.5,4.4) size(9.8,0.9,8.8) gray(0.21)\n";
+        text += "box \"open_side_pier\" pos(4.8,1.7,6.8) size(1.2,3.4,1.2) gray(0.23)\n";
+        if (wants_scanner) {
+            text += "prefab_crystal_scanner \"survey_scanner\" pos(0.3,1.25,3.8) size(2.1,2.5,1.8) gray(0.23) detail(0.43)\n";
         }
-        text += "prefab_cooling_unit \"cooling_block\" pos(-4.4,1.0,-2.5) size(1.1,2.0,1.1) gray(0.31) detail(0.39)\n";
-        text += "prefab_crate \"maintenance_crate\" pos(2.4,0.55,-1.6) size(1.7,1.0,1.4) gray(0.20) detail(0.30)\n";
+        if (wants_crystal) {
+            text += "prefab_crystal_cluster \"reference_crystal\" pos(3.6,0.95,6.4) size(1.6,1.9,1.6) gray(0.28) detail(0.46)\n";
+        }
+        text += "prefab_atmospheric_processor \"suit_service\" pos(-3.8,1.0,-1.8) size(1.5,2.0,1.5) gray(0.28) detail(0.38)\n";
+        text += "prefab_crate \"sample_case\" pos(2.7,0.55,-1.2) size(1.7,1.0,1.4) gray(0.20) detail(0.30)\n";
     }
 
     return text;
@@ -1549,6 +1663,18 @@ static std::string BuildBlockedTraversalNarration(const SpatialState& spatial_st
     return ConstrainNarrationText(narration, 220, 2);
 }
 
+static std::string BuildInvisibleBarrierNarration(const InvisibleBarrier& barrier)
+{
+    std::string narration = "You advance ";
+    narration += CardinalDirectionToString(barrier.direction);
+    narration += " across apparently open ground. Your probe and suit strike a smooth plane where the viewport shows only sky.";
+    if (!barrier.evidence.empty()) {
+        narration += " ";
+        narration += barrier.evidence;
+    }
+    return ConstrainNarrationText(narration, 300, 3);
+}
+
 static std::string BuildTraversalNarrationForKnownPlace(const SessionState& session_state, const std::string& place_id, CardinalDirection direction)
 {
     std::string narration = "You go ";
@@ -1561,6 +1687,15 @@ static std::string BuildTraversalNarrationForKnownPlace(const SessionState& sess
     if (room && !room->spatial_state.room_summary.empty()) {
         narration += " ";
         narration += room->spatial_state.room_summary;
+    } else {
+        LocationId location_id = kLocationUnknown;
+        SpatialState canonical_state;
+        if (ParseCanonicalPlaceId(place_id, &location_id) &&
+            BuildCanonicalSpatialState(location_id, &canonical_state) &&
+            !canonical_state.room_summary.empty()) {
+            narration += " ";
+            narration += canonical_state.room_summary;
+        }
     }
     return ConstrainNarrationText(narration, 240, 3);
 }
@@ -1578,8 +1713,8 @@ static void FinalizeGeneratedRoomDraft(GeneratedRoomDraft* draft, CardinalDirect
 
     if (draft->summary.empty()) {
         draft->summary = SpatialFeelsExterior(draft->spatial_state)
-            ? "A sparse exterior service pocket at the edge of the datacenter."
-            : "A compact service room branching away from the current route.";
+            ? "A sparse survey pocket between the Venusian quarry and a marked human datum."
+            : "A compact pressure-service cell branching away from the prospecting route.";
     }
     draft->summary = ConstrainNarrationText(draft->summary, 160, 2);
 
@@ -1614,7 +1749,9 @@ static bool ParseGeneratedSpatialStateNode(const json& node, SpatialState* spati
     spatial_state->location_archetype = ReadStringValue(node, "location_archetype");
     ParseTimeOfDay(ReadStringValue(node, "time_of_day").c_str(), &spatial_state->time_of_day);
     ParseVisibilityLevel(ReadStringValue(node, "visibility_level").c_str(), &spatial_state->visibility_level);
-    ParseDesertState(ReadStringValue(node, "desert_state").c_str(), &spatial_state->desert_state);
+    ParseDesertState(
+        ReadStringValue(node, node.contains("surface_weather") ? "surface_weather" : "desert_state").c_str(),
+        &spatial_state->desert_state);
     ParseInteriorDensity(ReadStringValue(node, "interior_density").c_str(), &spatial_state->interior_density);
     spatial_state->alert_level = ReadIntValue(node, "alert_level", spatial_state->alert_level);
     spatial_state->anchors = ReadStringArray(node.contains("anchors") ? node["anchors"] : json());
@@ -1659,12 +1796,20 @@ static bool ParseGeneratedRoomJson(
         draft->arrival_narration = ReadStringValue(root, "arrival_narration");
         draft->move_cost = ReadIntValue(root, "move_cost", draft->move_cost);
         draft->score_delta = ReadIntValue(root, "score_delta", draft->score_delta);
-        if (root.contains("next_datacenter_temperature_c") &&
-            root["next_datacenter_temperature_c"].is_number_integer()) {
+        const bool has_next_entropy =
+            root.contains("next_spatial_entropy") &&
+            root["next_spatial_entropy"].is_number_integer();
+        const bool has_legacy_temperature =
+            root.contains("next_datacenter_temperature_c") &&
+            root["next_datacenter_temperature_c"].is_number_integer();
+        if (has_next_entropy || has_legacy_temperature) {
             draft->temperature_changed = true;
             draft->next_datacenter_temperature_c =
                 ClampDatacenterTemperatureC(
-                    ReadIntValue(root, "next_datacenter_temperature_c", draft->next_datacenter_temperature_c));
+                    ReadIntValue(
+                        root,
+                        has_next_entropy ? "next_spatial_entropy" : "next_datacenter_temperature_c",
+                        draft->next_datacenter_temperature_c));
         }
         if (root.contains("spatial_state")) {
             ParseGeneratedSpatialStateNode(root["spatial_state"], &draft->spatial_state);
@@ -1748,6 +1893,12 @@ static bool ApplyPlaceToState(
             SetSpatialWorldPose(spatial_state, world_x, world_z);
         }
         EnsureActionableVisibleObjects(spatial_state);
+        for (size_t barrier_index = 0; barrier_index < session_state.invisible_barriers.size(); ++barrier_index) {
+            const InvisibleBarrier& barrier = session_state.invisible_barriers[barrier_index];
+            if (barrier.place_id == place_id && barrier.discovered && !barrier.evidence.empty()) {
+                AddUniqueString(&spatial_state->spatial_anomalies, barrier.evidence);
+            }
+        }
         hard_state->current_location_id = location_id;
         if (spatial_state->alert_level > 0) {
             hard_state->alert_level = spatial_state->alert_level;
@@ -1786,6 +1937,83 @@ static std::string DetermineUpdatedPlaceIdAfterStandardTurn(
         return BuildCanonicalPlaceId(initial_session_state.hard_state.current_location_id);
     }
     return std::string();
+}
+
+static bool IsEryxLocation(LocationId location_id)
+{
+    return location_id >= kLocationQuarryThreshold && location_id <= kLocationProspectShelter;
+}
+
+static void ApplyEryxSpatialEntropy(LocationId location_id, HardState* hard_state)
+{
+    if (!hard_state) {
+        return;
+    }
+
+    int minimum_entropy = kDefaultDatacenterTemperatureC;
+    switch (location_id) {
+    case kLocationExtractionField:
+        minimum_entropy = 12;
+        break;
+    case kLocationCrystalCut:
+        minimum_entropy = 18;
+        break;
+    case kLocationScannerStation:
+        minimum_entropy = 26;
+        break;
+    case kLocationSurveyPlateau:
+        minimum_entropy = 34;
+        break;
+    case kLocationLabyrinthThreshold:
+        minimum_entropy = 48;
+        break;
+    case kLocationProspectShelter:
+        minimum_entropy = 55;
+        break;
+    default:
+        break;
+    }
+    if (hard_state->datacenter_temperature_c < minimum_entropy) {
+        hard_state->datacenter_temperature_c = minimum_entropy;
+    }
+}
+
+static void AddAuthoredEryxTopology(SessionState* session_state)
+{
+    if (!session_state) {
+        return;
+    }
+
+    const std::string threshold = BuildCanonicalPlaceId(kLocationQuarryThreshold);
+    const std::string extraction = BuildCanonicalPlaceId(kLocationExtractionField);
+    const std::string crystal = BuildCanonicalPlaceId(kLocationCrystalCut);
+    const std::string scanner = BuildCanonicalPlaceId(kLocationScannerStation);
+    const std::string plateau = BuildCanonicalPlaceId(kLocationSurveyPlateau);
+    const std::string labyrinth = BuildCanonicalPlaceId(kLocationLabyrinthThreshold);
+    const std::string shelter = BuildCanonicalPlaceId(kLocationProspectShelter);
+
+    AddRoomLinkUnique(&session_state->room_links, threshold, kDirectionNorth, extraction);
+    AddRoomLinkUnique(&session_state->room_links, extraction, kDirectionSouth, threshold);
+    AddRoomLinkUnique(&session_state->room_links, extraction, kDirectionNorth, crystal);
+    AddRoomLinkUnique(&session_state->room_links, crystal, kDirectionSouth, extraction);
+    AddRoomLinkUnique(&session_state->room_links, crystal, kDirectionEast, scanner);
+    AddRoomLinkUnique(&session_state->room_links, scanner, kDirectionWest, crystal);
+    AddRoomLinkUnique(&session_state->room_links, scanner, kDirectionNorth, plateau);
+    AddRoomLinkUnique(&session_state->room_links, plateau, kDirectionSouth, scanner);
+    AddRoomLinkUnique(&session_state->room_links, plateau, kDirectionEast, labyrinth);
+    AddRoomLinkUnique(&session_state->room_links, labyrinth, kDirectionWest, plateau);
+    AddRoomLinkUnique(&session_state->room_links, labyrinth, kDirectionEast, shelter);
+
+    // The shelter's west return is intentionally non-reciprocal: it bypasses the
+    // open datum and returns to the locally recognizable scanner station.
+    AddRoomLinkUnique(&session_state->room_links, shelter, kDirectionWest, scanner);
+
+    InvisibleBarrier northern_plane;
+    northern_plane.place_id = labyrinth;
+    northern_plane.direction = kDirectionNorth;
+    northern_plane.evidence =
+        "The contact line runs east-west; the plateau remains reachable to the west and Vey's shelter beacon remains visible to the east.";
+    AddOrUpdateInvisibleBarrier(&session_state->invisible_barriers, northern_plane);
 }
 
 }  // namespace
@@ -1867,6 +2095,10 @@ bool InitializeSessionState(
     }
     EnsureActionableVisibleObjects(&session_state->spatial_state);
     session_state->hard_state.alert_level = session_state->spatial_state.alert_level;
+    if (IsEryxLocation(initial_location_id)) {
+        AddAuthoredEryxTopology(session_state);
+        ApplyEryxSpatialEntropy(initial_location_id, &session_state->hard_state);
+    }
     NormalizeSessionState(session_state);
     return true;
 }
@@ -1941,6 +2173,11 @@ void UpdateSessionStateFromTurn(
             turn_result.room_links_to_add[index].direction,
             turn_result.room_links_to_add[index].to_place_id);
     }
+    for (size_t index = 0; index < turn_result.invisible_barriers_to_update.size(); ++index) {
+        AddOrUpdateInvisibleBarrier(
+            &session_state->invisible_barriers,
+            turn_result.invisible_barriers_to_update[index]);
+    }
 
     SessionTurnRecord record;
     record.turn_number = turn_result.initial_hard_state.turn_number;
@@ -1986,6 +2223,34 @@ bool RunHeadlessTurnFromState(
         result->traversal_requested = true;
         result->traversal_direction = traversal_direction;
 
+        const InvisibleBarrier* invisible_barrier = FindInvisibleBarrier(
+            initial_session_state,
+            result->initial_place_id,
+            traversal_direction);
+        if (invisible_barrier) {
+            InvisibleBarrier discovered_barrier = *invisible_barrier;
+            discovered_barrier.discovered = true;
+            result->invisible_barriers_to_update.push_back(discovered_barrier);
+            result->invisible_barrier_contact = true;
+            result->turn_result.intent =
+                std::string("move_") + CardinalDirectionToString(traversal_direction) + "_invisible_barrier";
+            result->turn_result.narration = BuildInvisibleBarrierNarration(discovered_barrier);
+            result->turn_result.clarification =
+                "Traversal was recognized; an invisible barrier, not a parser failure or visible obstacle, refused the move.";
+            result->updated_soft_state.rolling_summary = result->turn_result.narration;
+            AddUniqueString(&result->updated_spatial_state.spatial_anomalies, discovered_barrier.evidence);
+            ++result->updated_hard_state.turn_number;
+            CaptureSceneDebugArtifacts(
+                result->updated_spatial_state,
+                0,
+                &result->rendered_scene_text,
+                &result->rendered_scene_debug_text);
+            if (!LoadSceneForPlace(initial_session_state, result->updated_place_id, &result->rendered_scene, error_buffer, error_buffer_size)) {
+                return false;
+            }
+            return true;
+        }
+
         if (SpatialStateBlocksDirection(result->initial_spatial_state, traversal_direction)) {
             result->turn_result.intent = std::string("move_") + CardinalDirectionToString(traversal_direction) + "_blocked";
             result->turn_result.narration = BuildBlockedTraversalNarration(result->initial_spatial_state, traversal_direction);
@@ -2017,6 +2282,7 @@ bool RunHeadlessTurnFromState(
                     error_buffer_size)) {
                 return false;
             }
+            ApplyEryxSpatialEntropy(result->updated_hard_state.current_location_id, &result->updated_hard_state);
             result->updated_soft_state.rolling_summary = result->turn_result.narration;
             ++result->updated_hard_state.move_count;
             ++result->updated_hard_state.turn_number;
@@ -2388,6 +2654,7 @@ void PrintHeadlessTurnDebugTrace(const HeadlessTurnResult& result, FILE* stream)
     }
     fprintf(out, "Generated room created: %s\n", result.generated_room_created ? "yes" : "no");
     fprintf(out, "Generated room cache refreshed: %s\n", result.generated_room_cache_refreshed ? "yes" : "no");
+    fprintf(out, "Invisible barrier contact: %s\n", result.invisible_barrier_contact ? "yes" : "no");
     fprintf(out, "Turn fallback: %s\n", result.used_turn_fallback ? "yes" : "no");
     fprintf(out, "Turn repair: %s\n", result.used_turn_repair ? "yes" : "no");
     fprintf(out, "Prompt tokens: %d\n", result.prompt_tokens);

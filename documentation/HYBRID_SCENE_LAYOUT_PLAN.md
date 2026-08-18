@@ -1,6 +1,6 @@
 # Hybrid Scene Layout Plan
 
-Dernière mise à jour : 2026-08-09
+Dernière mise à jour : 2026-08-18
 
 ## Rôle du document
 
@@ -14,9 +14,9 @@ L'objectif reste un pipeline stable, déterministe, auditable et assez expressif
 
 ## Statut
 
-Une première voie hybride fonctionne déjà pour les salles datacenter/désert : metadata JSON, `SpatialState`, choix procédural d'une coque, placement 2.5D simple, compilation `.scene` et fallback.
+La voie hybride active possède les huit archétypes Eryx proposés dans ce document, les neuf prefabs de prospection/extraction, des coques dédiées et des fallbacks de carrière. Les sept lieux canoniques utilisent des fixtures source afin de garantir la composition de la première tranche.
 
-Le code actuel ne possède pas encore les archétypes Eryx proposés dans ce document ni la représentation topologique des barrières invisibles. En revanche, la première bibliothèque de prefabs de prospection/extraction est implémentée, documentée et reconnue lexicalement par le compilateur. Les coques, fallbacks et benchmarks datacenter restent une baseline d'implémentation pendant la suite de la migration.
+La barrière invisible est maintenant représentée dans l'état de traversal et reste absente de la géométrie visible. Les benchmarks datacenter restent une baseline historique ; ils ne décrivent pas les prompts actifs. Le validateur de propositions topologiques live reste à implémenter.
 
 ## Hypothèse directrice
 
@@ -108,7 +108,7 @@ notes
 
 Les barrières invisibles et adjacences ne doivent pas être cachées dans `object_specs`. Elles appartiennent à un contrat topologique distinct.
 
-## Archétypes Eryx planifiés
+## Archétypes Eryx implémentés
 
 Le premier vocabulaire doit rester petit :
 
@@ -121,7 +121,7 @@ Le premier vocabulaire doit rester petit :
 - `labyrinth_threshold` : lieu où la traversal cesse de correspondre au visible
 - `quarry_cut` : tranchée, rampe ou excavation guidant localement le mouvement
 
-Ces noms sont des cibles documentaires. Ils ne sont pas encore des valeurs acceptées par le runtime.
+Ces huit valeurs sont reconnues par le runtime et possèdent des coques, proportions et prefabs par défaut distincts.
 
 ## Échelles, montages et zones
 

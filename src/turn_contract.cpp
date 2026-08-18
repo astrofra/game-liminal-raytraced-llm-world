@@ -116,26 +116,26 @@ static int ComputeSpatialOctant(const SpatialState& spatial_state)
 static const char* DescribeSpatialBearingNarrative(const SpatialState& spatial_state)
 {
     if (!spatial_state.world_pose_known) {
-        return "Its bearing around the datacenter is unknown, so distinguish it with one clear local motif instead of generic filler.";
+        return "Its bearing in the Erycinian survey field is unknown, so distinguish it with one clear datum, quarry mass, or instrument motif.";
     }
 
     switch (ComputeSpatialOctant(spatial_state)) {
     case 0:
-        return "It sits on the direct gate approach, so frontal threshold silhouettes, inspection cues and road-facing hardware make sense.";
+        return "It sits on the baseward approach, so frontal threshold silhouettes, split gate masses, and route datums make sense.";
     case 1:
-        return "It sits between the gate approach and the east side, favoring oblique service traces, offset fixtures and a slight lateral lean.";
+        return "It sits between the base approach and east quarry flank, favoring oblique retaining slabs and offset survey hardware.";
     case 2:
-        return "It sits on the east service flank, so side-running infrastructure and asymmetry pulling east are a good fit.";
+        return "It sits on the east quarry flank, so lateral extraction traces and an asymmetry pulling east are a good fit.";
     case 3:
-        return "It sits between the east flank and the datacenter rear, where crosswind exposure and rearward service masses should start to dominate.";
+        return "It sits between the east flank and deep field, where open sky, sparse datums, and low horizon masses should dominate.";
     case 4:
-        return "It sits on the far side opposite the entry gate, where rear bastions, exhaust masses and long horizon cuts are plausible.";
+        return "It sits deep beyond the survey base, where long quarry cuts, isolated beacons, and ambiguous open ground are plausible.";
     case 5:
-        return "It sits between the rear line and the west flank, favoring shadowed recesses, oblique cover and weather-worn service remains.";
+        return "It sits between deep field and the west flank, favoring wind-scoured ledges, oblique cover, and abandoned prospecting traces.";
     case 6:
-        return "It sits on the west weather flank, so wind-shadow details, rough cover and laterally offset maintenance cues fit best.";
+        return "It sits on the west weather flank, so wind-shadow details, rough quarry cover, and laterally offset route marks fit best.";
     case 7:
-        return "It sits between the west flank and the gate approach, where caution hardware and drifting exterior traces can mix with threshold leftovers.";
+        return "It sits between the west flank and the base approach, where warning hardware, cargo, and threshold remnants can mix.";
     default:
         return "Its bearing is ambiguous; prefer a strong side bias instead of a mirrored room.";
     }
@@ -144,22 +144,22 @@ static const char* DescribeSpatialBearingNarrative(const SpatialState& spatial_s
 static const char* DescribeSpatialBandNarrative(const SpatialState& spatial_state)
 {
     const char* world_band = DescribeSpatialWorldBand(spatial_state);
-    if (strcmp(world_band, "central core") == 0) {
-        return "Treat it as buried inside the datacenter mass: enclosed, technical, compressed, and dominated by hard infrastructure.";
+    if (strcmp(world_band, "survey camp") == 0) {
+        return "Treat it as the human survey base: compressed, pressure-serviced, and dominated by a few heavy brutalist masses.";
     }
-    if (strcmp(world_band, "inner technical ring") == 0) {
-        return "Treat it as service-heavy datacenter territory: enclosed but uneven, with technical clutter, airflow, and machine-scale hints.";
+    if (strcmp(world_band, "inner quarry") == 0) {
+        return "Treat it as worked quarry ground: retaining slabs, extraction equipment, sample handling, and legible return routes.";
     }
-    if (strcmp(world_band, "perimeter seam") == 0) {
-        return "Treat it as a mixed threshold where the datacenter shell starts leaking exterior cues through vents, slits, decks or broken edges.";
+    if (strcmp(world_band, "quarry seam") == 0) {
+        return "Treat it as a seam between human works and the field: exposed crystal, scanning instruments, broken cuts, and partial shelter.";
     }
-    if (strcmp(world_band, "outer parapet") == 0) {
-        return "Treat it as exposed perimeter architecture: open sky, warning hardware, roof access, and one strong datacenter mass against the horizon.";
+    if (strcmp(world_band, "outer shelf") == 0) {
+        return "Treat it as an exposed quarry shelf: open sky, sparse route beacons, and one severe human mass against the horizon.";
     }
-    if (strcmp(world_band, "open desert") == 0) {
-        return "Treat it as open desert margin: sparse cover, buried infrastructure remnants, navigation cues, and no generic sealed ceiling.";
+    if (strcmp(world_band, "open venus") == 0) {
+        return "Treat it as open Venusian field: hostile emptiness, sparse datums, low geology, and no generic sealed enclosure.";
     }
-    return "Treat it as a liminal neighboring space and distinguish it through a single dominant architectural or desert-facing mass.";
+    return "Treat it as a liminal Erycinian place and distinguish it through one dominant quarry mass, datum, or instrument.";
 }
 
 static void BuildSpatialVariationMotifs(
@@ -172,78 +172,77 @@ static void BuildSpatialVariationMotifs(
     }
 
     const char* world_band = DescribeSpatialWorldBand(spatial_state);
-    if (strcmp(world_band, "central core") == 0) {
-        AppendWorldMotif(favor_terms, "service panel");
-        AppendWorldMotif(favor_terms, "maintenance hatch");
-        AppendWorldMotif(favor_terms, "relay cabinet");
-        AppendWorldMotif(favor_terms, "warning placard");
-        AppendWorldMotif(favor_terms, "cooling vent");
+    if (strcmp(world_band, "survey camp") == 0) {
+        AppendWorldMotif(favor_terms, "prospecting shelter");
+        AppendWorldMotif(favor_terms, "atmospheric processor");
+        AppendWorldMotif(favor_terms, "sample case");
+        AppendWorldMotif(favor_terms, "route slate");
+        AppendWorldMotif(favor_terms, "heavy cantilever");
         AppendWorldMotif(avoid_terms, "open horizon");
-        AppendWorldMotif(avoid_terms, "cactus cluster");
-        AppendWorldMotif(avoid_terms, "rock outcrop");
-    } else if (strcmp(world_band, "inner technical ring") == 0) {
-        AppendWorldMotif(favor_terms, "service crate");
-        AppendWorldMotif(favor_terms, "cooling vent");
-        AppendWorldMotif(favor_terms, "relay cabinet");
-        AppendWorldMotif(favor_terms, "maintenance hatch");
-        AppendWorldMotif(favor_terms, "ai server column");
+        AppendWorldMotif(avoid_terms, "server rack");
+        AppendWorldMotif(avoid_terms, "office clutter");
+    } else if (strcmp(world_band, "inner quarry") == 0) {
+        AppendWorldMotif(favor_terms, "extraction rig");
+        AppendWorldMotif(favor_terms, "retaining fin");
+        AppendWorldMotif(favor_terms, "sample crate");
+        AppendWorldMotif(favor_terms, "quarry pylon");
+        AppendWorldMotif(favor_terms, "cut floor");
         AppendWorldMotif(avoid_terms, "open horizon");
-        AppendWorldMotif(avoid_terms, "cactus cluster");
-    } else if (strcmp(world_band, "perimeter seam") == 0) {
-        AppendWorldMotif(favor_terms, "roof hatch");
-        AppendWorldMotif(favor_terms, "warning beacon");
-        AppendWorldMotif(favor_terms, "service crate");
-        AppendWorldMotif(favor_terms, "maintenance hatch");
-        AppendWorldMotif(favor_terms, "warning placard");
-        AppendWorldMotif(avoid_terms, "dense rack maze");
-        AppendWorldMotif(avoid_terms, "sealed vault");
-    } else if (strcmp(world_band, "outer parapet") == 0) {
-        AppendWorldMotif(favor_terms, "roof hatch");
-        AppendWorldMotif(favor_terms, "warning beacon");
-        AppendWorldMotif(favor_terms, "service crate");
-        AppendWorldMotif(favor_terms, "maintenance hatch");
+        AppendWorldMotif(avoid_terms, "server rack");
+    } else if (strcmp(world_band, "quarry seam") == 0) {
+        AppendWorldMotif(favor_terms, "crystal cluster");
+        AppendWorldMotif(favor_terms, "crystal scanner");
+        AppendWorldMotif(favor_terms, "survey beacon");
+        AppendWorldMotif(favor_terms, "broken quarry cut");
+        AppendWorldMotif(favor_terms, "instrument deck");
+        AppendWorldMotif(avoid_terms, "visible alien wall");
+        AppendWorldMotif(avoid_terms, "dense machinery maze");
+    } else if (strcmp(world_band, "outer shelf") == 0) {
+        AppendWorldMotif(favor_terms, "survey beacon");
+        AppendWorldMotif(favor_terms, "quarry pylon");
+        AppendWorldMotif(favor_terms, "low horizon mass");
+        AppendWorldMotif(favor_terms, "sample case");
         AppendWorldMotif(favor_terms, "open horizon");
         AppendWorldMotif(avoid_terms, "sealed ceiling");
-        AppendWorldMotif(avoid_terms, "dense rack maze");
-    } else if (strcmp(world_band, "open desert") == 0) {
-        AppendWorldMotif(favor_terms, "range marker");
-        AppendWorldMotif(favor_terms, "survey cache");
-        AppendWorldMotif(favor_terms, "buried service hatch");
-        AppendWorldMotif(favor_terms, "rock outcrop");
-        AppendWorldMotif(favor_terms, "cactus cluster");
-        AppendWorldMotif(avoid_terms, "badge reader");
-        AppendWorldMotif(avoid_terms, "dense rack maze");
+        AppendWorldMotif(avoid_terms, "visible alien wall");
+    } else if (strcmp(world_band, "open venus") == 0) {
+        AppendWorldMotif(favor_terms, "distant survey light");
+        AppendWorldMotif(favor_terms, "isolated route datum");
+        AppendWorldMotif(favor_terms, "wind-scoured shelf");
+        AppendWorldMotif(favor_terms, "apparently open ground");
+        AppendWorldMotif(avoid_terms, "visible alien wall");
+        AppendWorldMotif(avoid_terms, "dense machinery maze");
         AppendWorldMotif(avoid_terms, "sealed ceiling");
     }
 
     const char* gate_relation = DescribeSpatialGateRelation(spatial_state);
-    if (strcmp(gate_relation, "entry-facing side") == 0) {
-        AppendWorldMotif(favor_terms, "checkpoint gate");
-        AppendWorldMotif(favor_terms, "warning placard");
-        AppendWorldMotif(favor_terms, "service crate");
-    } else if (strcmp(gate_relation, "east flank") == 0) {
-        AppendWorldMotif(favor_terms, "east service cabinet");
-        AppendWorldMotif(favor_terms, "east warning beacon");
-        AppendWorldMotif(favor_terms, "east maintenance hatch");
-    } else if (strcmp(gate_relation, "west flank") == 0) {
-        AppendWorldMotif(favor_terms, "west service crate");
-        AppendWorldMotif(favor_terms, "west warning placard");
-        AppendWorldMotif(favor_terms, "west rock outcrop");
-    } else if (strcmp(gate_relation, "far side opposite the entry gate") == 0) {
-        AppendWorldMotif(favor_terms, "rear hatch");
-        AppendWorldMotif(favor_terms, "rear warning beacon");
-        AppendWorldMotif(favor_terms, "rear service cabinet");
+    if (strcmp(gate_relation, "baseward approach") == 0) {
+        AppendWorldMotif(favor_terms, "split threshold gate");
+        AppendWorldMotif(favor_terms, "base route placard");
+        AppendWorldMotif(favor_terms, "survey cargo");
+    } else if (strcmp(gate_relation, "east quarry flank") == 0) {
+        AppendWorldMotif(favor_terms, "east survey beacon");
+        AppendWorldMotif(favor_terms, "east retaining slab");
+        AppendWorldMotif(favor_terms, "east datum pylon");
+    } else if (strcmp(gate_relation, "west quarry flank") == 0) {
+        AppendWorldMotif(favor_terms, "west sample case");
+        AppendWorldMotif(favor_terms, "west route mark");
+        AppendWorldMotif(favor_terms, "west quarry outcrop");
+    } else if (strcmp(gate_relation, "deep field beyond the survey base") == 0) {
+        AppendWorldMotif(favor_terms, "deep-field datum");
+        AppendWorldMotif(favor_terms, "distant survey light");
+        AppendWorldMotif(favor_terms, "long horizon cut");
     }
 
     static const char* const kOctantVariants[8][3] = {
-        { "front inspection placard", "approach-side service crate", "front maintenance hatch" },
-        { "angled warning beacon", "east-leaning service crate", "lateral placard" },
-        { "east relay cabinet", "east maintenance hatch", "east warning marker" },
-        { "rear-east beacon", "crosswind hatch", "offset service cabinet" },
-        { "rear service crate", "rear hatch", "backline warning beacon" },
-        { "rear-west outcrop", "shadowed service crate", "west rear marker" },
-        { "west warning placard", "west maintenance hatch", "wind-shadow rock outcrop" },
-        { "gate-west barrier", "angled service crate", "west-front beacon" },
+        { "front route placard", "approach sample case", "front datum pylon" },
+        { "angled survey beacon", "east-leaning cargo", "lateral route slate" },
+        { "east crystal scanner", "east retaining fin", "east datum marker" },
+        { "deep-east beacon", "crosswind instrument stand", "offset pylon" },
+        { "distant survey light", "deep-field datum", "backline beacon" },
+        { "deep-west outcrop", "shadowed sample case", "west rear marker" },
+        { "west route placard", "west quarry pylon", "wind-shadow outcrop" },
+        { "base-west buttress", "angled survey cargo", "west-front beacon" },
     };
     const int octant = ComputeSpatialOctant(spatial_state);
     const uint32_t seed = HashSpatialVariationSeed(spatial_state);
@@ -253,9 +252,9 @@ static void BuildSpatialVariationMotifs(
 static std::string BuildSpatialVariationGuideText(const SpatialState& spatial_state)
 {
     std::string text;
-    text += "Hidden spatial drift guide\n";
+    text += "Hidden Erycinian survey-field guide\n";
     AppendLabelValue(&text, "world_band: ", DescribeSpatialWorldBand(spatial_state));
-    AppendLabelValue(&text, "gate_relation: ", DescribeSpatialGateRelation(spatial_state));
+    AppendLabelValue(&text, "survey_base_relation: ", DescribeSpatialGateRelation(spatial_state));
     AppendLabelValue(&text, "sky_exposure: ", DescribeSpatialSkyExposure(spatial_state));
 
     AppendLabelValue(&text, "radial_narrative: ", DescribeSpatialBandNarrative(spatial_state));
@@ -267,7 +266,7 @@ static std::string BuildSpatialVariationGuideText(const SpatialState& spatial_st
     AppendStringList(&text, "favor_terms: ", favor_terms);
     AppendStringList(&text, "avoid_terms: ", avoid_terms);
     text += "metadata_pressure: let title, location_archetype, anchors, visible_objects and scene_constraints echo at least two favor_terms.\n";
-    text += "layout_pressure: prefer one dominant asymmetry and side-qualified constraints such as east hatch, rear beacon, west crate or central console.\n";
+    text += "layout_pressure: prefer one dominant asymmetry and side-qualified constraints such as east pylon, deep-field beacon, west sample case or central scanner.\n";
     text += "anti_repetition: do not collapse unrelated rooms into the same generic room family if the drift guide points elsewhere.\n";
     return text;
 }
@@ -284,21 +283,21 @@ std::string BuildTurnResultSchemaText()
     text += "  \"clarification\": string,\n";
     text += "  \"hard_state_delta\": {\n";
     text += "    \"location_changed\": boolean,\n";
-    text += "    \"next_location_id\": \"gate\" | \"server_aisles\" | \"roof_watch\" | \"unknown\",\n";
+    text += "    \"next_location_id\": \"quarry_threshold\" | \"extraction_field\" | \"crystal_cut\" | \"scanner_station\" | \"survey_plateau\" | \"labyrinth_threshold\" | \"prospect_shelter\" | \"unknown\",\n";
     text += "    \"move_count_changed\": boolean,\n";
     text += "    \"next_move_count\": integer,\n";
     text += "    \"score_changed\": boolean,\n";
     text += "    \"next_score\": integer,\n";
     text += "    \"alert_level_changed\": boolean,\n";
     text += "    \"next_alert_level\": integer,\n";
-    text += "    \"temperature_changed\": boolean,\n";
-    text += "    \"next_datacenter_temperature_c\": integer,\n";
-    text += "    \"cooling_state_changed\": boolean,\n";
-    text += "    \"next_cooling_state\": \"stable\" | \"strained\" | \"critical\" | \"unknown\",\n";
-    text += "    \"water_state_changed\": boolean,\n";
-    text += "    \"next_water_state\": \"stable\" | \"strained\" | \"critical\" | \"unknown\",\n";
-    text += "    \"power_state_changed\": boolean,\n";
-    text += "    \"next_power_state\": \"stable\" | \"strained\" | \"critical\" | \"unknown\",\n";
+    text += "    \"spatial_entropy_changed\": boolean,\n";
+    text += "    \"next_spatial_entropy\": integer,\n";
+    text += "    \"suit_state_changed\": boolean,\n";
+    text += "    \"next_suit_state\": \"stable\" | \"strained\" | \"critical\" | \"unknown\",\n";
+    text += "    \"oxygen_state_changed\": boolean,\n";
+    text += "    \"next_oxygen_state\": \"stable\" | \"strained\" | \"critical\" | \"unknown\",\n";
+    text += "    \"instrument_power_state_changed\": boolean,\n";
+    text += "    \"next_instrument_power_state\": \"stable\" | \"strained\" | \"critical\" | \"unknown\",\n";
     text += "    \"inventory_add\": [string],\n";
     text += "    \"inventory_remove\": [string],\n";
     text += "    \"threats_add\": [string],\n";
@@ -306,13 +305,13 @@ std::string BuildTurnResultSchemaText()
     text += "  },\n";
     text += "  \"spatial_delta\": {\n";
     text += "    \"location_changed\": boolean,\n";
-    text += "    \"next_location_id\": \"gate\" | \"server_aisles\" | \"roof_watch\" | \"unknown\",\n";
+    text += "    \"next_location_id\": \"quarry_threshold\" | \"extraction_field\" | \"crystal_cut\" | \"scanner_station\" | \"survey_plateau\" | \"labyrinth_threshold\" | \"prospect_shelter\" | \"unknown\",\n";
     text += "    \"time_of_day_changed\": boolean,\n";
     text += "    \"next_time_of_day\": \"day\" | \"dusk\" | \"night\" | \"unknown\",\n";
     text += "    \"visibility_changed\": boolean,\n";
     text += "    \"next_visibility_level\": \"clear\" | \"dusty\" | \"low\" | \"unknown\",\n";
-    text += "    \"desert_state_changed\": boolean,\n";
-    text += "    \"next_desert_state\": \"still\" | \"windy\" | \"dusty\" | \"unknown\",\n";
+    text += "    \"surface_weather_changed\": boolean,\n";
+    text += "    \"next_surface_weather\": \"still\" | \"windy\" | \"dusty\" | \"unknown\",\n";
     text += "    \"interior_density_changed\": boolean,\n";
     text += "    \"next_interior_density\": \"sparse\" | \"dense\" | \"unknown\",\n";
     text += "    \"alert_level_changed\": boolean,\n";
@@ -338,12 +337,12 @@ std::string BuildGeneratedRoomSchemaText()
     text += "  \"arrival_narration\": string,\n";
     text += "  \"move_cost\": integer,\n";
     text += "  \"score_delta\": integer,\n";
-    text += "  \"next_datacenter_temperature_c\": integer,\n";
+    text += "  \"next_spatial_entropy\": integer,\n";
     text += "  \"spatial_state\": {\n";
     text += "    \"location_archetype\": string,\n";
     text += "    \"time_of_day\": \"day\" | \"dusk\" | \"night\" | \"unknown\",\n";
     text += "    \"visibility_level\": \"clear\" | \"dusty\" | \"low\" | \"unknown\",\n";
-    text += "    \"desert_state\": \"still\" | \"windy\" | \"dusty\" | \"unknown\",\n";
+    text += "    \"surface_weather\": \"still\" | \"windy\" | \"dusty\" | \"unknown\",\n";
     text += "    \"interior_density\": \"sparse\" | \"dense\" | \"unknown\",\n";
     text += "    \"alert_level\": integer,\n";
     text += "    \"anchors\": [string],\n";
@@ -364,7 +363,7 @@ std::string BuildSceneFormatRuleText()
     text += "- one directive per line\n";
     text += "- do not use indented property blocks; every directive must be complete on one line\n";
     text += "- names must be quoted like \"roof\" or \"service_crate\"\n";
-    text += "- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_crate, prefab_survey_beacon, prefab_crystal_scanner, prefab_crystal_cluster, prefab_extraction_rig, prefab_prospect_shelter, prefab_quarry_pylon, prefab_atmospheric_processor, prefab_rack, prefab_cooling_unit, prefab_ai_server, prefab_cactus_sentinel, prefab_cactus_fork, prefab_cactus_cluster, prefab_rock_low, prefab_rock_wide, prefab_rock_tall, prefab_rock_spire\n";
+    text += "- active Eryx directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_crate, prefab_survey_beacon, prefab_crystal_scanner, prefab_crystal_cluster, prefab_extraction_rig, prefab_prospect_shelter, prefab_quarry_pylon, prefab_atmospheric_processor, prefab_rock_low, prefab_rock_wide, prefab_rock_tall, prefab_rock_spire\n";
     text += "- every scene must declare one room and one camera\n";
     text += "- keep geometry sparse and legible\n";
     text += "- prefer stable repeated objects through prefab_* directives\n";
@@ -372,7 +371,7 @@ std::string BuildSceneFormatRuleText()
     text += "- keep the place readable at 800x400 palette-limited noisy rendering\n";
     text += "- stay inside the Venusian crystal-quarry fiction: brutalist extraction infrastructure, sparse hostile terrain, prospecting instruments, and invisible topology\n";
     text += "- use gray(), not color() or opacity()\n";
-    text += "- gray() controls luminance only; the engine applies locked semantic colors to sky, terrain surfaces, and legacy rack LEDs\n";
+    text += "- gray() controls luminance only; the engine applies locked semantic colors to sky, terrain, crystals, and instrument lights\n";
     text += "- prefer names like ground, quarry_*, clay_*, ridge_* or outcrop_* for exterior terrain masses\n";
     text += "- valid examples:\n";
     text += "  room \"Erycinian crystal quarry survey shelf\"\n";
@@ -411,10 +410,10 @@ std::string BuildSpatialBriefText(const SpatialState& spatial_state)
         spatial_state.canonical_fixture.empty() ? "unknown" : spatial_state.canonical_fixture.c_str());
     AppendLabelValue(&text, "time_of_day: ", TimeOfDayToString(spatial_state.time_of_day));
     AppendLabelValue(&text, "visibility_level: ", VisibilityLevelToString(spatial_state.visibility_level));
-    AppendLabelValue(&text, "desert_state: ", DesertStateToString(spatial_state.desert_state));
+    AppendLabelValue(&text, "surface_weather: ", DesertStateToString(spatial_state.desert_state));
     AppendLabelValue(&text, "interior_density: ", InteriorDensityToString(spatial_state.interior_density));
     AppendLabelValue(&text, "world_band: ", DescribeSpatialWorldBand(spatial_state));
-    AppendLabelValue(&text, "gate_relation: ", DescribeSpatialGateRelation(spatial_state));
+    AppendLabelValue(&text, "survey_base_relation: ", DescribeSpatialGateRelation(spatial_state));
     AppendLabelValue(&text, "sky_exposure: ", DescribeSpatialSkyExposure(spatial_state));
 
     char alert_buffer[64];
@@ -440,7 +439,7 @@ std::string BuildTurnPrompt(
     std::string text;
     text += "You are the structured turn engine for a local interactive fiction prototype.\n";
     text += "Return concise playable output. Preserve hard-state continuity. Do not write markdown.\n";
-    text += "Do not invent new locations outside gate, server_aisles, roof_watch unless explicitly required.\n";
+    text += "Stay within the Erycinian crystal-quarry expedition and its seven canonical places unless an unexplored cardinal exit explicitly requires one neighboring place.\n";
     if (spatial_state.location_id == kLocationUnknown) {
         text += "The current room may be an improvised generated room. Keep that room stable unless the player explicitly moves.\n";
     }
@@ -450,16 +449,16 @@ std::string BuildTurnPrompt(
     text += "move_count tracks effectful actions only. Increase it only when the command materially changes position, inventory, state or knowledge.\n";
     text += "score should stay conservative and stable. Increase it only for meaningful progress, discoveries, access breakthroughs or solved obstacles.\n";
     text += "Whenever the room contains usable objects or interfaces, mention at least one concrete actionable affordance.\n";
-    text += "Prefer nouns the player can inspect, open, read, unlock, press, pull, enter, take, or switch.\n";
-    text += "Good actionable examples: hatch, crate, keypad, badge reader, placard, cabinet, switch, console, intercom, lockbox.\n";
+    text += "Prefer nouns the player can survey, mark, scan, sample, inspect, open, read, take, or operate.\n";
+    text += "Good actionable examples: survey beacon, quarry pylon, crystal scanner, crystal cluster, sample case, extraction rig, oxygen processor, shelter slate, route mark.\n";
     text += "If visible_objects are present in the spatial brief, reuse at least one of them directly in the narration when relevant.\n";
     text += "When the room topology is clear, keep spatial_delta.blocked_exits accurate so closed cardinal directions stay closed.\n";
     text += "If topology is clear, explicitly decide which cardinal directions are blocked instead of leaving the room ambiguous.\n";
     text += "When the decor composition becomes clearer or changes materially, update spatial_delta.scene_constraints with short layout cues, never coordinates.\n";
-    text += "Good scene_constraints examples: hero ai server, rack bank, cooling flank, central console, rear hatch, service crate, checkpoint gate, open horizon, keep corridor clear.\n";
-    text += "datacenter_temperature_c is the ambient technical temperature in Celsius. Let it influence the feel of the prose, the airflow, the discomfort, or the operational tension.\n";
-    text += "Use temperature as a narrative cue, not as a reason to invent new geometry or random props.\n";
-    text += "Set hard_state_delta.temperature_changed only when heat, cooling, airflow, load, or power conditions materially shift.\n";
+    text += "Good scene_constraints examples: split threshold masses, extraction rig on work slab, exposed crystal seam, scanner under cantilever, sparse beacon line, open horizon, no visible alien wall.\n";
+    text += "spatial_entropy is a 0 to 100 confidence measure for accumulated topological contradiction. Raise it only when measurements, route marks, or returns cease to agree.\n";
+    text += "Invisible topology is never normal visible wall geometry. Describe bodily or instrument contact with apparently open space and preserve engine-owned traversal results.\n";
+    text += "Suit, oxygen, and instrument power are hard resources. Change them only when the player's action materially affects them.\n";
     text += "\nCurrent hard state\n";
     AppendLabelValue(&text, "turn_number: ", std::to_string(hard_state.turn_number).c_str());
     AppendLabelValue(&text, "move_count: ", std::to_string(hard_state.move_count).c_str());
@@ -468,11 +467,11 @@ std::string BuildTurnPrompt(
     AppendLabelValue(&text, "alert_level: ", std::to_string(hard_state.alert_level).c_str());
     AppendLabelValue(
         &text,
-        "datacenter_temperature_c: ",
+        "spatial_entropy: ",
         std::to_string(hard_state.datacenter_temperature_c).c_str());
-    AppendLabelValue(&text, "cooling_state: ", ResourceStateToString(hard_state.cooling_state));
-    AppendLabelValue(&text, "water_state: ", ResourceStateToString(hard_state.water_state));
-    AppendLabelValue(&text, "power_state: ", ResourceStateToString(hard_state.power_state));
+    AppendLabelValue(&text, "suit_state: ", ResourceStateToString(hard_state.cooling_state));
+    AppendLabelValue(&text, "oxygen_state: ", ResourceStateToString(hard_state.water_state));
+    AppendLabelValue(&text, "instrument_power_state: ", ResourceStateToString(hard_state.power_state));
     AppendStringList(&text, "inventory_items: ", hard_state.inventory_items);
     AppendStringList(&text, "named_entities: ", hard_state.named_entities);
     AppendStringList(&text, "unresolved_threats: ", hard_state.unresolved_threats);
@@ -516,7 +515,7 @@ std::string BuildGeneratedRoomPrompt(
     std::string text;
     text += "You invent one neighboring room for a local interactive-fiction prototype.\n";
     text += "Return valid JSON only. Do not write markdown fences. Do not return explanations.\n";
-    text += "The new room must stay inside the same liminal datacenter / desert fiction.\n";
+    text += "The new place must stay inside the Erycinian Venus crystal-quarry expedition: human brutalist extraction works, hostile sparse terrain, and an alien topology that remains optically absent.\n";
     text += "It must be spatially readable, sparse, and suitable for grayscale raytracing.\n";
     text += "Do not describe a whole region. Describe one immediate neighboring room only.\n";
     text += "The reverse direction back to the source room should usually remain possible.\n";
@@ -525,19 +524,19 @@ std::string BuildGeneratedRoomPrompt(
     text += "Keep arrival_narration under about 60 words and make it immediately playable.\n";
     text += "Set move_cost to 1 for a normal successful traversal, and use 0 only if the traversal has no meaningful effect.\n";
     text += "Set score_delta conservatively. Use 0 unless entering this room meaningfully advances progress or reveals something important.\n";
-    text += "visible_objects must contain 3 to 5 concrete actionable objects or interfaces, not vague scenery only.\n";
-    text += "Include at least two directly usable things such as a hatch, crate, keypad, badge reader, placard, switch, cabinet, console, lockbox or intercom.\n";
-    text += "When the room suggests compute, model storage, restricted inference, accelerator hardware or machine authority, include a concrete machine-scale cue such as inference mainframe, ai server column, accelerator cabinet or tensor stack.\n";
-    text += "If such a machine dominates the room, prefer scene_constraints containing hero ai server.\n";
+    text += "visible_objects must contain 3 to 5 concrete actionable objects or instruments, not vague scenery only.\n";
+    text += "Include at least two directly usable things such as a survey beacon, quarry pylon, crystal scanner, crystal cluster, sample case, extraction rig, oxygen processor, shelter slate, or route mark.\n";
+    text += "Use recurring human prefabs to make the expedition readable: gate, crate, survey beacon, crystal scanner, crystal cluster, extraction rig, prospect shelter, quarry pylon, and atmospheric processor.\n";
+    text += "Never render the alien labyrinth as ordinary opaque walls, force fields, glowing grids, doors, or corridors. Its presence is inferred from contact, failed range data, displaced marks, and contradictory returns.\n";
     text += "scene_constraints should contain 1 to 4 short decor cues for the engine, describing dominant masses or layout bias, never coordinates.\n";
-    text += "Good scene_constraints examples: hero ai server, rack bank, cooling flank, central console, rear hatch, service crate, checkpoint gate, open horizon, keep corridor clear.\n";
-    text += "datacenter_temperature_c should shape title, summary, and arrival_narration through heat, air, hum, or strain, without turning it directly into scene geometry.\n";
-    text += "Set next_datacenter_temperature_c to the temperature that should remain on the HUD after entering the room. Keep it close to the current value unless the room is materially hotter or colder.\n";
-    text += "The engine maintains a hidden spatial drift map around the datacenter. Treat the qualitative world cues below as ground truth.\n";
-    text += "If the target world band suggests outer parapet or open desert, avoid inventing a sealed ceiling.\n";
-    text += "If the target world band suggests central core or inner technical ring, prefer enclosed datacenter rooms unless there is a strong reason not to.\n";
-    text += "At the perimeter seam, partial openings, vents, service decks, broken roofs, or side exposures are plausible.\n";
-    text += "When the target world band is open desert, use desert-facing objects and cues, not only interior datacenter interfaces.\n";
+    text += "Good scene_constraints examples: split threshold masses, extraction rig on work slab, exposed crystal seam, scanner under cantilever, sparse beacon line, open horizon, no visible alien wall.\n";
+    text += "spatial_entropy should shape title, summary, and arrival_narration through conflicting bearings, measurements, marks, or retraced paths, without turning it directly into visible geometry.\n";
+    text += "Set next_spatial_entropy to the value that should remain after entering the place. Keep it close to the current value unless the traversal produces a concrete contradiction.\n";
+    text += "The engine maintains a hidden survey-field drift map. Treat the qualitative world cues below as ground truth.\n";
+    text += "If the target world band suggests outer shelf or open venus, avoid inventing a sealed ceiling.\n";
+    text += "If the target world band suggests survey camp or inner quarry, prefer compressed human works, quarry cuts, or partial shelter.\n";
+    text += "At the quarry seam, exposed crystal, instrument decks, broken cuts, and partial shelter are plausible.\n";
+    text += "When the target world band is open venus, use sparse route datums and hostile terrain rather than generic interior interfaces.\n";
     text += "Do not reuse a generic location_archetype across unrelated rooms. Let the hidden drift cues change the lexical family of the room.\n";
     text += "If the drift guide suggests east, west, front or rear asymmetry, reflect it verbally in anchors or scene_constraints.\n";
     text += "Scene constraints may include side words such as east, west, rear, front or central; keep them qualitative, not numeric.\n";
@@ -551,11 +550,11 @@ std::string BuildGeneratedRoomPrompt(
     AppendLabelValue(&text, "alert_level: ", std::to_string(hard_state.alert_level).c_str());
     AppendLabelValue(
         &text,
-        "datacenter_temperature_c: ",
+        "spatial_entropy: ",
         std::to_string(hard_state.datacenter_temperature_c).c_str());
-    AppendLabelValue(&text, "cooling_state: ", ResourceStateToString(hard_state.cooling_state));
-    AppendLabelValue(&text, "water_state: ", ResourceStateToString(hard_state.water_state));
-    AppendLabelValue(&text, "power_state: ", ResourceStateToString(hard_state.power_state));
+    AppendLabelValue(&text, "suit_state: ", ResourceStateToString(hard_state.cooling_state));
+    AppendLabelValue(&text, "oxygen_state: ", ResourceStateToString(hard_state.water_state));
+    AppendLabelValue(&text, "instrument_power_state: ", ResourceStateToString(hard_state.power_state));
     AppendStringList(&text, "unresolved_threats: ", hard_state.unresolved_threats);
 
     text += "\nCurrent soft state\n";
@@ -606,7 +605,7 @@ std::string BuildSceneAuditPrompt(const SpatialState& spatial_state)
     text += BuildSceneFormatRuleText();
     text += "\nSpatial brief\n";
     text += BuildSpatialBriefText(spatial_state);
-    text += "\nHidden spatial drift guide\n";
+    text += "\nErycinian survey-field guide\n";
     text += BuildSpatialVariationGuideText(spatial_state);
     return text;
 }

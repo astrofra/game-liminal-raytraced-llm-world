@@ -74,6 +74,8 @@ struct HeadlessTurnResult {
     std::string candidate_scene_error;
     std::vector<GeneratedRoom> generated_rooms_to_add;
     std::vector<RoomLink> room_links_to_add;
+    std::vector<InvisibleBarrier> invisible_barriers_to_update;
+    bool invisible_barrier_contact;
     int prompt_tokens;
     int generated_tokens;
     double inference_time_ms;
@@ -90,6 +92,7 @@ struct HeadlessTurnResult {
         , generated_room_cache_refreshed(false)
         , generated_room_metadata_fallback_used(false)
         , generated_room_scene_fallback_used(false)
+        , invisible_barrier_contact(false)
         , prompt_tokens(0)
         , generated_tokens(0)
         , inference_time_ms(0.0)

@@ -1,6 +1,6 @@
 # Functional Pipeline V1
 
-Dernière mise à jour : 2026-08-09
+Dernière mise à jour : 2026-08-18
 
 ## Rôle du document
 
@@ -31,15 +31,21 @@ La chaîne suivante existe déjà :
 - rendu headless et interface SDL3
 - audit `.scene` séparé
 
-La chaîne actuelle emploie encore des prompts, états, archétypes, prefabs et identifiants liés au datacenter et au désert. Elle ne représente pas encore explicitement :
+La chaîne active emploie maintenant les prompts, états, archétypes, prefabs et identifiants Eryx. Elle représente explicitement :
 
-- une barrière invisible distincte d'une sortie simplement bloquée
+- une barrière invisible distincte d'une sortie ordinaire bloquée
+- la preuve de contact et son statut de découverte
+- des liens dirigés non réciproques
+- sept lieux canoniques et une contradiction déterministe de référence
+- des repères locaux stables lors d'un retour impossible
+
+Elle ne représente pas encore :
+
 - une proposition de mutation topologique avec décision de validation
 - un historique des mutations acceptées
-- les archétypes et objets de prospection Eryx
-- des règles de préservation de repères locaux lors d'un changement de connectivité
+- une action joueur persistante pour poser puis comparer des marques
 
-Les sections Eryx ci-dessous décrivent donc la cible fonctionnelle, pas l'état actuel du binaire. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) reste la référence factuelle.
+Les sections Eryx ci-dessous décrivent à la fois la tranche implémentée et la prochaine cible de mutation live. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) reste la référence factuelle.
 
 ## Hypothèse directrice
 
@@ -264,7 +270,7 @@ Le compilateur de scène reste côté moteur :
 5. traduire les contraintes acceptées ;
 6. produire et auditer une scène v1.
 
-Exemples de cibles Eryx planifiées :
+Compositions Eryx implémentées :
 
 - `quarry_threshold` + portail de prospection + ciel ouvert
 - `scanner_station` + beacon + spécimen + grande zone apparemment libre
@@ -272,7 +278,7 @@ Exemples de cibles Eryx planifiées :
 - `extraction_field` + rig + pylônes + horizon
 - `venus_plateau` + repères locaux rares + sous-structure invisible
 
-Ces archétypes et prefabs ne sont pas encore implémentés. Les identifiants courants `gate`, `server_aisles`, `roof_watch` et les salles datacenter restent des fixtures legacy utiles pour vérifier le pipeline.
+Ces archétypes et prefabs sont implémentés. Les identifiants `gate`, `server_aisles`, `roof_watch` et les salles datacenter restent des fixtures legacy utiles pour vérifier la rétrocompatibilité du pipeline.
 
 ## Fallbacks
 

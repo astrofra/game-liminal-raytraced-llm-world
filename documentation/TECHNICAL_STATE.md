@@ -1,6 +1,6 @@
 # Technical State
 
-Derniere mise a jour : 2026-08-09
+Derniere mise a jour : 2026-08-18
 
 ## Resume
 
@@ -14,19 +14,22 @@ Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat
 
 ## Frontiere entre reorientation et implementation
 
-La documentation artistique active est maintenant orientee vers une zone d'extraction venusienne et un labyrinthe invisible dont certaines relations topologiques pourront changer.
+Une premiere tranche Eryx est implementee dans le runtime :
 
-Cette reorientation n'est pas encore implementee dans le runtime. L'etat factuel du depot reste celui decrit ci-dessous :
+- sept lieux canoniques actifs, de `quarry_threshold` a `prospect_shelter`
+- sept fixtures `.scene` source dans `assets/scenes/eryx_*.scene`
+- prompts de tour, generation de salle et audit visuel migres vers la carriere venusienne
+- etat serialise expose comme `spatial_entropy`, `suit_state`, `oxygen_state` et `instrument_power_state`
+- HUD `ENTROPY` et lieu CLI par defaut `quarry_threshold`
+- douze liens diriges constituant une route d'arpentage
+- type persistant `InvisibleBarrier`, separe de `blocked_exits`
+- contact invisible au nord de `labyrinth_threshold`, avec preuve et statut `discovered`
+- retour non reciproque `prospect_shelter --west--> scanner_station`
+- huit archetypes Eryx dans le compilateur hybride et integration des neuf prefabs actifs
 
-- prompts et vocabulaire de monde encore centres sur le datacenter et le desert
-- lieux canoniques `gate`, `server_aisles` et `roof_watch`
-- hard state et HUD encore exposes via `datacenter_temperature_c`
-- graphe cardinal persistant et pose cachee vaguement euclidienne, sans mutation topologique explicite
-- pas de distinction typee entre une barriere invisible et une sortie ordinaire bloquee
-- catalogue de prefabs et primitives de carrière Eryx désormais implémentés, mais prompts, archétypes, fixtures et benchmarks encore majoritairement liés au datacenter
-- helper `play_desert_des_tokens.bat` conserve sous son nom legacy
+La frontiere encore ouverte est la mutation **live** : le LLM ne produit pas encore de proposition topologique separee, et le moteur n'a pas encore de decision `accepted`, `adjusted`, `rejected` ou `deferred` ni d'historique de mutation. La contradiction actuelle est auteurisee et deterministe.
 
-Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun benchmark ou rendu existant ne constitue une validation de cette cible.
+Les champs membres C++ `datacenter_temperature_c`, `cooling_state`, `water_state` et `power_state` restent temporairement en interne pour la compatibilite des sauvegardes legacy. Les JSON actifs, prompts, traces et HUD utilisent la semantique Eryx. Les lieux, prefabs et fixtures datacenter sont preserves comme baselines historiques. Le helper `play_desert_des_tokens.bat` conserve aussi son nom legacy faute de titre final.
 
 ## Verrous d'architecture actes
 
@@ -36,6 +39,13 @@ Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun b
 - couche multimedia multi-OS : `SDL3`
 
 ## Fonctionnalites presentes
+
+- Tranche canonique Eryx documentee dans `ERYX_PLAYABLE_SPATIAL_ROADMAP.md` : seuil, extraction, coupe cristalline, scanner, plateau, seuil du labyrinthe et abri de Vey.
+- Topologie de traversal Eryx installee sans appel LLM pour garantir un parcours de reference reproductible.
+- Une barriere invisible est serialisee avec `place_id`, direction, preuve et statut de decouverte ; elle refuse le mouvement sans incrementer `move_count`.
+- Les liens diriges peuvent etre volontairement non reciproques ; le premier retour impossible contourne deux lieux connus tout en conservant l'identite locale du scanner.
+- Les bandes cachees actives sont `survey camp`, `inner quarry`, `quarry seam`, `outer shelf` et `open venus`.
+- Les archetypes hybrides actifs incluent `quarry_threshold`, `extraction_field`, `quarry_cut`, `scanner_station`, `venus_plateau`, `labyrinth_threshold`, `prospecting_shelter` et `industrial_service_zone`.
 
 - Build natif via CMake et Visual Studio 2022.
 - Options CMake `LIMINAL_ENABLE_LLAMA_CPP`, `LIMINAL_ENABLE_LLAMA_CUDA`, `LIMINAL_ENABLE_OPENMP` et `LIMINAL_ENABLE_SDL3_FRONTEND` pour raccorder un `llama.cpp` vendorise, activer le parallelisme CPU si disponible et construire la boucle desktop interactive.
@@ -92,7 +102,15 @@ Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun b
   - `prefab_rock_spire`
 - Conversion des primitives `plane` et `box` vers le backend triangle/BVH existant.
 - Premiere scene liminale handcraftee dans `assets/scenes/liminal_service_corridor.scene`.
-- Trois scenes canoniques de validation spatiale handcraftees :
+- Sept scenes canoniques Eryx handcraftees :
+  - `assets/scenes/eryx_quarry_threshold.scene`
+  - `assets/scenes/eryx_extraction_field.scene`
+  - `assets/scenes/eryx_crystal_cut.scene`
+  - `assets/scenes/eryx_scanner_station.scene`
+  - `assets/scenes/eryx_survey_plateau.scene`
+  - `assets/scenes/eryx_labyrinth_threshold.scene`
+  - `assets/scenes/eryx_prospect_shelter.scene`
+- Trois scenes canoniques historiques de validation spatiale :
   - `assets/scenes/datacenter_entry_gate.scene`
   - `assets/scenes/datacenter_server_aisles.scene`
   - `assets/scenes/datacenter_roof_watch.scene`
@@ -136,7 +154,7 @@ Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun b
   - structs `HardState`, `SoftState`, `SpatialState`, `TurnResult`
   - contrat de tour structure et prompt builder v1
   - prompt d'audit direct pour une sortie `.scene`
-  - compilateur deterministe des trois lieux canoniques depuis `SpatialState`
+  - compilateur deterministe des sept lieux Eryx et des trois baselines datacenter depuis `SpatialState`
 - Premier runtime headless `Ministral` branche au moteur :
   - `GenerateChatCompletion()` via `llama.cpp`
   - callback de streaming token par token exploitable par l'HMI
@@ -155,21 +173,21 @@ Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun b
   - coexistence entre lieux canoniques et lieux generes dans la meme session
 - Premier etat cache de monde "vaguement euclidien" pour les salles improvisees :
   - pose cachee `world_x/world_z` stockee dans `SpatialState`
-  - derives publics `world_band`, `gate_relation` et `sky_exposure`
-  - bandes qualitatives `central core`, `inner technical ring`, `perimeter seam`, `outer parapet`, `open desert`
+  - derives publics `world_band`, `survey_base_relation` et `sky_exposure`
+  - bandes qualitatives `survey camp`, `inner quarry`, `quarry seam`, `outer shelf`, `open venus`
   - propagation de la pose a travers les liens cardinaux et conservation en session JSON
 - Generation de salles maintenant guidee par cette derive cachee :
   - le prompt de metadata ne recoit plus un simple seuil de distance
-  - il recoit des cues qualitatifs sur la bande du monde, le cote du datacenter et l'ouverture vers le ciel
+  - il recoit des cues qualitatifs sur la bande du monde, le cote de la base d'arpentage et l'ouverture vers le ciel
   - un **guide de derive textuel cache** traduit maintenant distance + angle en pression narrative, asymetries laterales, motifs preferes et vocabulaire a eviter
   - le LLM est explicitement pousse a laisser ces cues contaminer `title`, `location_archetype`, `anchors`, `visible_objects` et `scene_constraints`
-  - les `scene_constraints` peuvent maintenant porter plus clairement une dissymetrie verbale (`east hatch`, `rear beacon`, `west crate`, etc.)
-  - les salles lointaines peuvent donc tendre vers parapet puis desert sans plafond, plutot que rester des interieurs fermes
+  - les `scene_constraints` peuvent porter une dissymetrie verbale (`east pylon`, `deep-field beacon`, `west sample case`, etc.)
+  - les lieux lointains tendent vers le shelf puis le champ venusien sans plafond, plutot que rester des interieurs fermes
 - Compilateur hybride `SpatialState -> .scene` etendu :
-  - bascule entre interieur, parapet et desert ouvert selon l'etat cache et les cues semantiques
-  - shells desertiques sans masse de datacenter ni plafond
-  - injection procedurale de cactus, rochers et marqueurs de desert
-  - reconnaissance lexicale un peu plus large pour convertir des cues verbaux comme `barrier`, `fence`, `rail`, `post`, `mast`, `pylon`, `duct`, `conduit`, `pipe`, `trench`, `ridge` ou `berm` vers les familles de prefabs existantes
+  - bascule entre service pressurise, carriere, plateau et champ ouvert selon l'etat cache et les cues semantiques
+  - shells Eryx distincts : couronne fendue, work slab, cut walls, cantilever, ligne d'horizon et abri
+  - injection procedurale de rigs, scanners, cristaux, pylones, balises, cargo et traitement atmospherique
+  - les cactus, racks et masses datacenter ne restent accessibles que par les archetypes et fixtures legacy
   - reconnaissance dédiée des cues `crystal`, `scanner`, `drill`, `prospect shelter`, `survey beacon`, `quarry pylon` et `atmospheric processor` vers les nouvelles primitives Eryx
 - Premiere HMI `SDL3` desktop :
   - event loop non bloquante
@@ -238,7 +256,9 @@ Les documents de conception decrivent la cible Eryx comme **planifiee**. Aucun b
 - [../assets/cornell/cornell_box.obj](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.obj:1) : scene de reference vendorisee.
 - [../assets/cornell/cornell_box.mtl](/C:/works/projects/game-liminal-raytraced-llm-world/assets/cornell/cornell_box.mtl:1) : materiaux de reference.
 - [../assets/scenes/liminal_service_corridor.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/liminal_service_corridor.scene:1) : premiere scene proprietaire liminale.
-- [../assets/scenes/datacenter_entry_gate.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_entry_gate.scene:1) : fixture canonique du portail d'entree.
+- [../assets/scenes/eryx_quarry_threshold.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/eryx_quarry_threshold.scene:1) : premiere fixture de la route canonique Eryx.
+- [ERYX_PLAYABLE_SPATIAL_ROADMAP.md](./ERYX_PLAYABLE_SPATIAL_ROADMAP.md) : carte, grammaire visuelle et recette du parcours Eryx.
+- [../assets/scenes/datacenter_entry_gate.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_entry_gate.scene:1) : fixture historique du portail datacenter.
 - [../assets/scenes/datacenter_server_aisles.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_server_aisles.scene:1) : fixture canonique des travees de serveurs.
 - [../assets/scenes/datacenter_roof_watch.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_roof_watch.scene:1) : fixture canonique du toit / tour de ronde.
 - [../scripts/download_ministral.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/download_ministral.py:1) : telechargement et validation du modele cible.
@@ -292,14 +312,13 @@ Exemple avec scene explicite :
 Exemples du noyau fonctionnel :
 
 ```powershell
-.\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location roof_watch --command "observe the horizon"
-.\build\Release\liminal_cornell_renderer.exe --dump-scene-audit-prompt --location server_aisles
-.\build\Release\liminal_cornell_renderer.exe --compile-location gate --output output\compiled_gate.png
-.\build\Release\liminal_cornell_renderer.exe --audit-scene-text assets\scenes\datacenter_roof_watch.scene --output output\audited_roof_watch.png
-.\build\Release\liminal_cornell_renderer.exe --sdl --location gate --save-state output\sdl_session_state.json
-.\build\Release\liminal_cornell_renderer.exe --run-turn --location roof_watch --command "observe the horizon" --dump-raw-turn --output output\turn_roof_watch.png
-.\build\Release\liminal_cornell_renderer.exe --run-session --location roof_watch --command "observe the horizon" --command "inspect the cooling unit" --save-state output\session_state.json --output output\session.png
-.\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\session_state.json --command "check the crate" --save-state output\session_state_2.json --output output\session_2.png
+.\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location labyrinth_threshold --command "inspect the northern datum"
+.\build\Release\liminal_cornell_renderer.exe --dump-scene-audit-prompt --location scanner_station
+.\build\Release\liminal_cornell_renderer.exe --compile-location quarry_threshold --output output\compiled_eryx_threshold.png
+.\build\Release\liminal_cornell_renderer.exe --audit-scene-text assets\scenes\eryx_labyrinth_threshold.scene --output output\audited_labyrinth_threshold.png
+.\build\Release\liminal_cornell_renderer.exe --sdl --location quarry_threshold --save-state output\eryx_session_state.json
+.\build\Release\liminal_cornell_renderer.exe --run-session --location quarry_threshold --command north --command north --command east --command north --command east --command north --command east --command west --save-state output\eryx_route.json --output output\eryx_route.png
+.\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\eryx_route.json --command west --save-state output\eryx_route_2.json --output output\eryx_route_2.png
 ```
 
 Helper Windows :
@@ -503,12 +522,11 @@ Observation importante :
 - les prefabs actuels augmentent fortement le nombre de triangles et de materiaux
 - pas de telemetrie CPU/GPU/memoire
 - pas de tests automatises
-- pas encore de semantique runtime Eryx :
-  - pas d'archetypes quarry / extraction / prospecting
-  - pas de proposition de mutation topologique separee des deltas spatiaux ordinaires
-  - pas de validateur de frequence, recuperation ou preservation des reperes locaux
-  - pas de barriere invisible typee avec feedback de traversal
-  - les nouveaux prefabs Eryx sont reconnus par le compilateur, mais les archétypes par défaut et les fallbacks de salles n'en font pas encore un monde Eryx complet
+- semantique runtime Eryx encore partielle :
+  - pas de proposition LLM de mutation topologique separee des deltas spatiaux ordinaires
+  - pas de validateur de frequence, recuperation ou provenance des mutations live
+  - pas de registre persistant pour les marques, scans et comparaisons produits par le joueur
+  - noms membres C++ legacy conserves sous les cles JSON Eryx pour la compatibilite des sauvegardes
 
 ## Ecart assume par rapport a la spec longue
 

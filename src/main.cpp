@@ -30,7 +30,7 @@ static void PrintUsage()
     printf("  --direct-samples <n>     Direct light samples per hit\n");
     printf("  --seed <n>               Random seed\n");
     printf("  --exposure <f>           Tone mapping exposure\n");
-    printf("  --location <id>          Canonical location id (gate, server_aisles, roof_watch)\n");
+    printf("  --location <id>          Canonical Eryx location id (quarry_threshold, extraction_field, crystal_cut, scanner_station, survey_plateau, labyrinth_threshold, prospect_shelter)\n");
     printf("  --compile-location <id>  Compile a canonical spatial state and render it\n");
     printf("  --audit-scene-text <path> Load a .scene as text in memory, validate it, then render it\n");
     printf("  --run-turn               Run one real headless turn through Ministral and render the resulting place\n");
@@ -311,7 +311,7 @@ int main(int argc, char** argv)
     const char* command_file_path = 0;
     const char* load_state_path = 0;
     const char* save_state_path = 0;
-    liminal::LocationId selected_location = liminal::kLocationGate;
+    liminal::LocationId selected_location = liminal::kLocationQuarryThreshold;
     liminal::CardinalDirection generated_room_direction = liminal::kDirectionNorth;
     liminal::HeadlessTurnConfig headless_turn_config;
     std::vector<std::string> session_commands;

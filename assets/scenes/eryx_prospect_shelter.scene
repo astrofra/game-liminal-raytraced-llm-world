@@ -1,0 +1,20 @@
+# Scene format v1
+# Canonical Eryx shelter and impossible-return fixture EV-005
+
+room "Eryx prospect shelter"
+
+camera eye(0.0,1.72,-10.6) target(0.0,1.62,7.2) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(11.0,28.0) intensity(82.0)
+sky zenith(0.01) horizon(0.23) nadir(0.00) band(0.32) curve(1.96) noise(0.13) stars(0.0028,1.42,0.090) seed(241)
+
+plane "shelter_apron" pos(0.0,0.0,1.0) normal(0.0,1.0,0.0) size(28.0,40.0) gray(0.13)
+box "west_weather_mass" pos(-8.2,2.5,7.0) size(6.0,5.0,11.0) gray(0.20)
+box "split_roof_left" pos(-4.5,5.0,7.0) size(9.0,1.1,10.0) gray(0.21)
+box "split_roof_right" pos(5.6,4.4,8.5) size(7.2,1.0,7.0) gray(0.22)
+box "open_side_pier" pos(6.4,2.0,6.5) size(1.3,4.0,1.3) gray(0.25)
+
+prefab_prospect_shelter "vey_field_shelter" pos(0.2,1.7,7.3) size(5.6,3.4,4.2) gray(0.28) detail(0.41)
+prefab_atmospheric_processor "suit_service" pos(-4.5,1.6,0.6) size(2.5,3.2,2.0) gray(0.24) detail(0.41)
+prefab_survey_beacon "scratched_return_datum" pos(5.1,1.55,1.8) size(1.0,3.1,0.9) gray(0.25) detail(0.44)
+prefab_crate "vey_sample_case" pos(2.6,0.62,-1.0) size(2.0,1.2,1.6) gray(0.20) detail(0.34)
+prefab_quarry_pylon "shelter_bearing" pos(-7.0,1.75,9.7) size(1.4,3.5,1.2) gray(0.27) detail(0.44)

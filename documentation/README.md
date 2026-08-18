@@ -1,12 +1,12 @@
 # Documentation
 
-Dernière mise à jour : 2026-08-09
+Dernière mise à jour : 2026-08-18
 
 Ce dossier sert de mémoire de travail artistique, scientifique et technique du projet.
 
 La direction active est une œuvre interactive fondée sur la lignée d'Eryx : un monde d'extraction vénusien localement cohérent, traversé par un labyrinthe invisible dont le LLM peut proposer des mutations topologiques contrôlées. *Le Désert des tokens* est l'ancien titre de travail et la phase narrative immédiatement précédente.
 
-La migration du vocabulaire visuel a commencé dans le code : le catalogue actif et neuf prefabs décrivent désormais la carrière de cristal, tandis que les anciens objets datacenter restent disponibles comme compatibilité historique. Les prompts, fixtures, lieux canoniques et états de monde restent encore largement datacenter/désert. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) sépare les faits implémentés des intentions Eryx.
+La première tranche jouable Eryx est maintenant implémentée : sept lieux canoniques, neuf prefabs de carrière, prompts et états actifs, une barrière invisible typée et un retour non réciproque volontaire. Les anciens objets et fixtures datacenter restent disponibles comme compatibilité historique. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) sépare cette tranche réelle des mutations topologiques encore planifiées.
 
 ## Point d'entrée
 
@@ -14,6 +14,7 @@ La migration du vocabulaire visuel a commencé dans le code : le catalogue actif
 - [`SPEC.md`](./SPEC.md) : spécification artistique, scientifique et technique active.
 - [`ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md`](./ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md) : brief source de la migration documentaire du 2026-08-09.
 - [`AMBIANCE_MOODBOARD.md`](./AMBIANCE_MOODBOARD.md) : lecture du corpus visuel comme espace incomplet mais opératoire, de la micro-informatique au labyrinthe génératif.
+- [`ERYX_PLAYABLE_SPATIAL_ROADMAP.md`](./ERYX_PLAYABLE_SPATIAL_ROADMAP.md) : traduction opérationnelle des trois moodboards, carte des sept lieux et parcours dramatique en huit actions.
 
 ## Source littéraire
 
@@ -24,7 +25,7 @@ La migration du vocabulaire visuel a commencé dans le code : le catalogue actif
 - [`FUNCTIONAL_PIPELINE_V1.md`](./FUNCTIONAL_PIPELINE_V1.md) : chaîne autoritative `commande -> résultat structuré -> état spatial -> compilation -> rendu` et cible de mutation topologique.
 - [`SPATIAL_VALIDATION_PLAN.md`](./SPATIAL_VALIDATION_PLAN.md) : protocole Eryx pour barrières invisibles, revisites, chemins impossibles, fréquence des mutations et cartographie.
 - [`HYBRID_SCENE_LAYOUT_PLAN.md`](./HYBRID_SCENE_LAYOUT_PLAN.md) : migration du compositeur hybride vers carrière, plateau, abri, scanner et seuil invisible.
-- [`SCENE_FORMAT_V1.md`](./SCENE_FORMAT_V1.md) : format de scène réellement implémenté, y compris les prefabs de prospection/extraction. Les murs invisibles n'y sont pas encore représentés.
+- [`SCENE_FORMAT_V1.md`](./SCENE_FORMAT_V1.md) : format de scène réellement implémenté, y compris les prefabs de prospection/extraction. Les murs invisibles restent volontairement dans l'état de traversal, pas dans la géométrie visible.
 - [`LLAMA_CUDA_SPECS.md`](./LLAMA_CUDA_SPECS.md) : procédure de build et de validation de `Ministral 3 8B` avec `llama.cpp` et CUDA.
 - [`MULTIPROCESSING_FEASIBILITY.md`](./MULTIPROCESSING_FEASIBILITY.md) : étude et base de validation du rendu CPU parallèle, concrétisée par OpenMP.
 

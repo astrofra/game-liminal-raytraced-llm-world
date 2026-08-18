@@ -8,7 +8,7 @@ This repository is a native, local-first interactive fiction and raytracing rese
 
 The active artistic direction follows a four-stage lineage from Lovecraft and Kenneth J. Sterling's *In the Walls of Eryx*, through ASD's *Beyond the Walls of Eryx* and Mandarine's *Within the Mesh*, to an interactive generative labyrinth. The intended player explores Venusian extraction infrastructure while an invisible topology can change through LLM proposals validated by an authoritative engine.
 
-The first code-level migration is now present: the active prefab catalog provides Venusian crystal-quarry, prospecting, extraction, shelter, and atmospheric-service geometry. The working runtime still uses the earlier *Le Désert des tokens* prompts, canonical locations, fixtures, state names, and helper names. Eryx-specific invisible barriers and controlled topology mutations remain planned, not implemented. See [`documentation/README.md`](documentation/README.md) for the active design and [`documentation/TECHNICAL_STATE.md`](documentation/TECHNICAL_STATE.md) for the exact implementation boundary.
+The first playable Eryx slice is now present: seven canonical quarry locations, active Eryx prompts and state labels, a typed invisible barrier, and an authored impossible return. Live LLM topology proposals and their validator remain planned. The historical datacenter fixtures and legacy helper name are preserved as technical baselines. See [`documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md`](documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md) for the route and [`documentation/TECHNICAL_STATE.md`](documentation/TECHNICAL_STATE.md) for the exact implementation boundary.
 
 Current state:
 
@@ -29,7 +29,8 @@ Current state:
 - first SDL3 interactive frontend with streaming LLM output
 - first generated-room graph for improvised cardinal navigation
 - authoritative hard/soft/spatial state with deterministic and hybrid scene compilation
-- legacy datacenter/desert runtime semantics pending the broader Eryx migration
+- seven-place Eryx survey route with deterministic invisible contact and non-reciprocal traversal
+- legacy datacenter/desert scenes retained as historical baselines
 - Python helper to download `Ministral 3 8B Instruct 2512` GGUF
 - first headless `Ministral` turn pipeline wired to the renderer
 - explicit provenance for the reused 2003 raytracer ideas
@@ -98,11 +99,11 @@ Launch the SDL3 frontend:
 
 ```bat
 play_desert_des_tokens.bat
-play_desert_des_tokens.bat --location roof_watch
+play_desert_des_tokens.bat --location quarry_threshold
 play_desert_des_tokens.bat --load-state output\sdl_session_state.json
 ```
 
-These commands launch the currently implemented datacenter/desert build, not the planned Eryx content.
+These commands launch the Eryx slice. The helper retains the previous working title until a final title is selected.
 
 ## Run
 
@@ -127,12 +128,11 @@ Useful overrides:
 ```powershell
 .\build\Release\liminal_cornell_renderer.exe --scene assets\scenes\liminal_service_corridor.scene --samples 16 --width 256 --height 256
 .\build\Release\liminal_cornell_renderer.exe --scene assets\cornell\cornell_box.obj --output output\cornell_box_512.png --samples 64 --width 512 --height 512
-.\build\Release\liminal_cornell_renderer.exe --sdl --location gate --save-state output\sdl_session_state.json
-.\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location roof_watch --command "observe the horizon"
-.\build\Release\liminal_cornell_renderer.exe --compile-location gate --output output\compiled_gate.png
-.\build\Release\liminal_cornell_renderer.exe --run-turn --location roof_watch --command "observe the horizon" --dump-raw-turn --output output\turn_roof_watch.png
-.\build\Release\liminal_cornell_renderer.exe --run-session --location roof_watch --command "observe the horizon" --command "inspect the cooling unit" --save-state output\session_state.json --output output\session.png
-.\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\session_state.json --command "check the crate" --dump-session-history --output output\session_2.png
+.\build\Release\liminal_cornell_renderer.exe --sdl --location quarry_threshold --save-state output\sdl_session_state.json
+.\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location labyrinth_threshold --command "inspect the northern datum"
+.\build\Release\liminal_cornell_renderer.exe --compile-location quarry_threshold --output output\compiled_eryx_threshold.png
+.\build\Release\liminal_cornell_renderer.exe --run-session --location quarry_threshold --command north --command north --command east --command north --command east --command north --command east --command west --save-state output\eryx_route.json --output output\eryx_route.png
+.\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\eryx_route.json --command west --dump-session-history --output output\eryx_route_2.png
 ``` 
 
 `--sdl` opens the first desktop loop:

@@ -188,10 +188,10 @@ static json MakeHardStateJson(const HardState& state)
     node["score"] = state.score;
     node["current_location_id"] = LocationIdToString(state.current_location_id);
     node["alert_level"] = state.alert_level;
-    node["datacenter_temperature_c"] = ClampDatacenterTemperatureC(state.datacenter_temperature_c);
-    node["cooling_state"] = ResourceStateToString(state.cooling_state);
-    node["water_state"] = ResourceStateToString(state.water_state);
-    node["power_state"] = ResourceStateToString(state.power_state);
+    node["spatial_entropy"] = ClampDatacenterTemperatureC(state.datacenter_temperature_c);
+    node["suit_state"] = ResourceStateToString(state.cooling_state);
+    node["oxygen_state"] = ResourceStateToString(state.water_state);
+    node["instrument_power_state"] = ResourceStateToString(state.power_state);
     node["inventory_items"] = state.inventory_items;
     node["named_entities"] = state.named_entities;
     node["unresolved_threats"] = state.unresolved_threats;
@@ -221,7 +221,7 @@ static json MakeSpatialStateJson(const SpatialState& state)
     node["world_z"] = state.world_z;
     node["time_of_day"] = TimeOfDayToString(state.time_of_day);
     node["visibility_level"] = VisibilityLevelToString(state.visibility_level);
-    node["desert_state"] = DesertStateToString(state.desert_state);
+    node["surface_weather"] = DesertStateToString(state.desert_state);
     node["interior_density"] = InteriorDensityToString(state.interior_density);
     node["alert_level"] = state.alert_level;
     node["anchors"] = state.anchors;
@@ -279,6 +279,20 @@ static json MakeRoomLinksJson(const std::vector<RoomLink>& links)
     return node;
 }
 
+static json MakeInvisibleBarriersJson(const std::vector<InvisibleBarrier>& barriers)
+{
+    json node = json::array();
+    for (size_t index = 0; index < barriers.size(); ++index) {
+        json item = json::object();
+        item["place_id"] = barriers[index].place_id;
+        item["direction"] = CardinalDirectionToString(barriers[index].direction);
+        item["evidence"] = barriers[index].evidence;
+        item["discovered"] = barriers[index].discovered;
+        node.push_back(item);
+    }
+    return node;
+}
+
 static void ParseHardStateNode(const json& node, HardState* state)
 {
     if (!state || !node.is_object()) {
@@ -290,12 +304,15 @@ static void ParseHardStateNode(const json& node, HardState* state)
     state->score = ReadIntNode(node, "score", state->score);
     ParseLocationId(ReadStringNode(node, "current_location_id").c_str(), &state->current_location_id);
     state->alert_level = ReadIntNode(node, "alert_level", state->alert_level);
+    const char* entropy_key = node.contains("spatial_entropy") ? "spatial_entropy" : "datacenter_temperature_c";
     state->datacenter_temperature_c =
-        ClampDatacenterTemperatureC(
-            ReadIntNode(node, "datacenter_temperature_c", state->datacenter_temperature_c));
-    ParseResourceState(ReadStringNode(node, "cooling_state").c_str(), &state->cooling_state);
-    ParseResourceState(ReadStringNode(node, "water_state").c_str(), &state->water_state);
-    ParseResourceState(ReadStringNode(node, "power_state").c_str(), &state->power_state);
+        ClampDatacenterTemperatureC(ReadIntNode(node, entropy_key, state->datacenter_temperature_c));
+    const std::string suit_state = ReadStringNode(node, node.contains("suit_state") ? "suit_state" : "cooling_state");
+    const std::string oxygen_state = ReadStringNode(node, node.contains("oxygen_state") ? "oxygen_state" : "water_state");
+    const std::string power_state = ReadStringNode(node, node.contains("instrument_power_state") ? "instrument_power_state" : "power_state");
+    ParseResourceState(suit_state.c_str(), &state->cooling_state);
+    ParseResourceState(oxygen_state.c_str(), &state->water_state);
+    ParseResourceState(power_state.c_str(), &state->power_state);
     if (node.contains("inventory_items")) {
         state->inventory_items = ReadStringArrayNode(node["inventory_items"]);
     }
@@ -339,7 +356,9 @@ static void ParseSpatialStateNode(const json& node, SpatialState* state)
     state->world_z = ReadFloatNode(node, "world_z", state->world_z);
     ParseTimeOfDay(ReadStringNode(node, "time_of_day").c_str(), &state->time_of_day);
     ParseVisibilityLevel(ReadStringNode(node, "visibility_level").c_str(), &state->visibility_level);
-    ParseDesertState(ReadStringNode(node, "desert_state").c_str(), &state->desert_state);
+    ParseDesertState(
+        ReadStringNode(node, node.contains("surface_weather") ? "surface_weather" : "desert_state").c_str(),
+        &state->desert_state);
     ParseInteriorDensity(ReadStringNode(node, "interior_density").c_str(), &state->interior_density);
     state->alert_level = ReadIntNode(node, "alert_level", state->alert_level);
     if (node.contains("anchors")) {
@@ -435,6 +454,29 @@ static void ParseRoomLinksNode(const json& node, std::vector<RoomLink>* links)
     }
 }
 
+static void ParseInvisibleBarriersNode(const json& node, std::vector<InvisibleBarrier>* barriers)
+{
+    if (!barriers || !node.is_array()) {
+        return;
+    }
+
+    barriers->clear();
+    for (size_t index = 0; index < node.size(); ++index) {
+        if (!node[index].is_object()) {
+            continue;
+        }
+
+        InvisibleBarrier barrier;
+        barrier.place_id = ReadStringNode(node[index], "place_id");
+        ParseCardinalDirection(ReadStringNode(node[index], "direction").c_str(), &barrier.direction);
+        barrier.evidence = ReadStringNode(node[index], "evidence");
+        barrier.discovered = ReadBoolNode(node[index], "discovered", false);
+        if (!barrier.place_id.empty() && barrier.direction != kDirectionUnknown) {
+            barriers->push_back(barrier);
+        }
+    }
+}
+
 static bool VectorContainsString(const std::vector<std::string>& values, const std::string& value)
 {
     for (size_t index = 0; index < values.size(); ++index) {
@@ -511,6 +553,20 @@ int ClampDatacenterTemperatureC(int value)
 const char* LocationIdToString(LocationId value)
 {
     switch (value) {
+    case kLocationQuarryThreshold:
+        return "quarry_threshold";
+    case kLocationExtractionField:
+        return "extraction_field";
+    case kLocationCrystalCut:
+        return "crystal_cut";
+    case kLocationScannerStation:
+        return "scanner_station";
+    case kLocationSurveyPlateau:
+        return "survey_plateau";
+    case kLocationLabyrinthThreshold:
+        return "labyrinth_threshold";
+    case kLocationProspectShelter:
+        return "prospect_shelter";
     case kLocationGate:
         return "gate";
     case kLocationServerAisles:
@@ -612,6 +668,41 @@ bool ParseLocationId(const char* text, LocationId* value)
         return false;
     }
 
+    if (EqualsAsciiNoCase(text, "quarry_threshold") || EqualsAsciiNoCase(text, "quarry-threshold") ||
+        EqualsAsciiNoCase(text, "quarry")) {
+        *value = kLocationQuarryThreshold;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "extraction_field") || EqualsAsciiNoCase(text, "extraction-field") ||
+        EqualsAsciiNoCase(text, "extraction")) {
+        *value = kLocationExtractionField;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "crystal_cut") || EqualsAsciiNoCase(text, "crystal-cut") ||
+        EqualsAsciiNoCase(text, "cut")) {
+        *value = kLocationCrystalCut;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "scanner_station") || EqualsAsciiNoCase(text, "scanner-station") ||
+        EqualsAsciiNoCase(text, "scanner")) {
+        *value = kLocationScannerStation;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "survey_plateau") || EqualsAsciiNoCase(text, "survey-plateau") ||
+        EqualsAsciiNoCase(text, "plateau")) {
+        *value = kLocationSurveyPlateau;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "labyrinth_threshold") || EqualsAsciiNoCase(text, "labyrinth-threshold") ||
+        EqualsAsciiNoCase(text, "labyrinth")) {
+        *value = kLocationLabyrinthThreshold;
+        return true;
+    }
+    if (EqualsAsciiNoCase(text, "prospect_shelter") || EqualsAsciiNoCase(text, "prospect-shelter") ||
+        EqualsAsciiNoCase(text, "shelter")) {
+        *value = kLocationProspectShelter;
+        return true;
+    }
     if (EqualsAsciiNoCase(text, "gate")) {
         *value = kLocationGate;
         return true;
@@ -818,6 +909,24 @@ std::string DescribePlaceLabel(const SessionState& state, const std::string& pla
 {
     LocationId location_id = kLocationUnknown;
     if (ParseCanonicalPlaceId(place_id, &location_id)) {
+        switch (location_id) {
+        case kLocationQuarryThreshold:
+            return "Quarry Threshold";
+        case kLocationExtractionField:
+            return "Extraction Field";
+        case kLocationCrystalCut:
+            return "Crystal Cut";
+        case kLocationScannerStation:
+            return "Affinity Scanner";
+        case kLocationSurveyPlateau:
+            return "Beacon Plateau";
+        case kLocationLabyrinthThreshold:
+            return "Open Datum";
+        case kLocationProspectShelter:
+            return "Vey Shelter";
+        default:
+            break;
+        }
         return LocationIdToString(location_id);
     }
 
@@ -849,6 +958,34 @@ bool GetCanonicalWorldPose(LocationId location_id, float* world_x, float* world_
     }
 
     switch (location_id) {
+    case kLocationQuarryThreshold:
+        *world_x = 0.0f;
+        *world_z = 0.0f;
+        return true;
+    case kLocationExtractionField:
+        *world_x = 0.0f;
+        *world_z = 4.5f;
+        return true;
+    case kLocationCrystalCut:
+        *world_x = 0.0f;
+        *world_z = 9.0f;
+        return true;
+    case kLocationScannerStation:
+        *world_x = 4.5f;
+        *world_z = 9.0f;
+        return true;
+    case kLocationSurveyPlateau:
+        *world_x = 4.5f;
+        *world_z = 13.5f;
+        return true;
+    case kLocationLabyrinthThreshold:
+        *world_x = 9.0f;
+        *world_z = 13.5f;
+        return true;
+    case kLocationProspectShelter:
+        *world_x = 13.5f;
+        *world_z = 13.5f;
+        return true;
     case kLocationGate:
         *world_x = 0.0f;
         *world_z = -6.0f;
@@ -948,15 +1085,15 @@ const char* DescribeSpatialWorldBand(const SpatialState& state)
 {
     switch (ClassifyHiddenWorldBandFromRadius(ComputeSpatialWorldRadius(state))) {
     case kHiddenWorldBandCentralCore:
-        return "central core";
+        return "survey camp";
     case kHiddenWorldBandInnerTechnicalRing:
-        return "inner technical ring";
+        return "inner quarry";
     case kHiddenWorldBandPerimeterSeam:
-        return "perimeter seam";
+        return "quarry seam";
     case kHiddenWorldBandOuterParapet:
-        return "outer parapet";
+        return "outer shelf";
     case kHiddenWorldBandOpenDesert:
-        return "open desert";
+        return "open venus";
     default:
         return "unknown";
     }
@@ -970,12 +1107,12 @@ const char* DescribeSpatialGateRelation(const SpatialState& state)
 
     const float abs_x = fabsf(state.world_x);
     if (state.world_z <= -abs_x * 0.75f) {
-        return "entry-facing side";
+        return "baseward approach";
     }
     if (state.world_z >= abs_x * 0.75f) {
-        return "far side opposite the entry gate";
+        return "deep field beyond the survey base";
     }
-    return state.world_x >= 0.0f ? "east flank" : "west flank";
+    return state.world_x >= 0.0f ? "east quarry flank" : "west quarry flank";
 }
 
 const char* DescribeSpatialSkyExposure(const SpatialState& state)
@@ -983,13 +1120,13 @@ const char* DescribeSpatialSkyExposure(const SpatialState& state)
     switch (ClassifyHiddenWorldBandFromRadius(ComputeSpatialWorldRadius(state))) {
     case kHiddenWorldBandCentralCore:
     case kHiddenWorldBandInnerTechnicalRing:
-        return "sealed interior likely";
+        return "shelter or cut walls may constrain the sky";
     case kHiddenWorldBandPerimeterSeam:
-        return "partial openings plausible";
+        return "broken quarry sky likely";
     case kHiddenWorldBandOuterParapet:
-        return "open sky likely";
+        return "open venusian sky likely";
     case kHiddenWorldBandOpenDesert:
-        return "fully open desert";
+        return "fully open venusian field";
     default:
         return "unknown";
     }
@@ -1001,14 +1138,20 @@ HardState MakeInitialHardState()
     state.turn_number = 1;
     state.move_count = 0;
     state.score = 0;
-    state.current_location_id = kLocationGate;
+    state.current_location_id = kLocationQuarryThreshold;
     state.alert_level = 1;
     state.datacenter_temperature_c = kDefaultDatacenterTemperatureC;
     state.cooling_state = kResourceStable;
     state.water_state = kResourceStable;
     state.power_state = kResourceStable;
-    state.named_entities.push_back("duty_officer");
-    state.unresolved_threats.push_back("possible_external_attack");
+    state.inventory_items.push_back("survey map slate");
+    state.inventory_items.push_back("boundary chalk");
+    state.inventory_items.push_back("sample tongs");
+    state.named_entities.push_back("prospector");
+    state.named_entities.push_back("missing prospector Vey");
+    state.unresolved_threats.push_back("locate prospector Vey");
+    state.unresolved_threats.push_back("verify the invisible obstruction");
+    state.unresolved_threats.push_back("recover a crystal sample");
     return state;
 }
 
@@ -1016,10 +1159,10 @@ SoftState MakeInitialSoftState()
 {
     SoftState state;
     state.rolling_summary =
-        "An officer has just arrived at an isolated datacenter built at the edge of a desert.";
-    state.atmosphere = "administrative, dry, watchful";
-    state.active_hypotheses.push_back("the threat may be real");
-    state.active_hypotheses.push_back("the institution may be manufacturing the threat");
+        "A survey prospector has entered an Erycinian crystal quarry to recover a specimen, locate Vey, and test a route that no longer agrees with the map.";
+    state.atmosphere = "instrumental, mineral, sparse, spatially uncertain";
+    state.active_hypotheses.push_back("the open field is divided by surfaces the viewport cannot resolve");
+    state.active_hypotheses.push_back("Vey reached the shelter by a route that cannot be retraced consistently");
     return state;
 }
 
@@ -1081,7 +1224,7 @@ void NormalizeSessionState(SessionState* state)
         state->spatial_state.location_id = state->hard_state.current_location_id;
     }
     if (!in_generated_room && state->hard_state.current_location_id == kLocationUnknown) {
-        state->hard_state.current_location_id = kLocationGate;
+        state->hard_state.current_location_id = kLocationQuarryThreshold;
     }
     if (!in_generated_room && state->spatial_state.location_id == kLocationUnknown) {
         state->spatial_state.location_id = state->hard_state.current_location_id;
@@ -1164,6 +1307,7 @@ bool SerializeSessionStateToJsonString(const SessionState& state, std::string* j
     root["next_generated_room_index"] = state.next_generated_room_index;
     root["generated_rooms"] = MakeGeneratedRoomsJson(state.generated_rooms);
     root["room_links"] = MakeRoomLinksJson(state.room_links);
+    root["invisible_barriers"] = MakeInvisibleBarriersJson(state.invisible_barriers);
     *json_text = root.dump(2);
     return true;
 }
@@ -1208,6 +1352,9 @@ bool ParseSessionStateFromJson(
         if (root.contains("room_links")) {
             ParseRoomLinksNode(root["room_links"], &state->room_links);
         }
+        if (root.contains("invisible_barriers")) {
+            ParseInvisibleBarriersNode(root["invisible_barriers"], &state->invisible_barriers);
+        }
 
         NormalizeSessionState(state);
         return true;
@@ -1226,10 +1373,10 @@ void PrintHardStateSummary(const HardState& state, FILE* stream)
     fprintf(out, "  score: %d\n", state.score);
     fprintf(out, "  current_location_id: %s\n", LocationIdToString(state.current_location_id));
     fprintf(out, "  alert_level: %d\n", state.alert_level);
-    fprintf(out, "  datacenter_temperature_c: %d\n", state.datacenter_temperature_c);
-    fprintf(out, "  cooling_state: %s\n", ResourceStateToString(state.cooling_state));
-    fprintf(out, "  water_state: %s\n", ResourceStateToString(state.water_state));
-    fprintf(out, "  power_state: %s\n", ResourceStateToString(state.power_state));
+    fprintf(out, "  spatial_entropy: %d\n", state.datacenter_temperature_c);
+    fprintf(out, "  suit_state: %s\n", ResourceStateToString(state.cooling_state));
+    fprintf(out, "  oxygen_state: %s\n", ResourceStateToString(state.water_state));
+    fprintf(out, "  instrument_power_state: %s\n", ResourceStateToString(state.power_state));
     PrintStringList("  inventory_items", state.inventory_items, out);
     PrintStringList("  named_entities", state.named_entities, out);
     PrintStringList("  unresolved_threats", state.unresolved_threats, out);
@@ -1257,7 +1404,7 @@ void PrintSpatialStateSummary(const SpatialState& state, FILE* stream)
     if (state.world_pose_known) {
         fprintf(
             out,
-            "  world_pose: (%.2f, %.2f) radius=%.2f angle=%.1f band=%s gate_relation=%s sky=%s\n",
+            "  world_pose: (%.2f, %.2f) radius=%.2f angle=%.1f band=%s survey_base_relation=%s sky=%s\n",
             state.world_x,
             state.world_z,
             ComputeSpatialWorldRadius(state),
@@ -1270,7 +1417,7 @@ void PrintSpatialStateSummary(const SpatialState& state, FILE* stream)
     }
     fprintf(out, "  time_of_day: %s\n", TimeOfDayToString(state.time_of_day));
     fprintf(out, "  visibility_level: %s\n", VisibilityLevelToString(state.visibility_level));
-    fprintf(out, "  desert_state: %s\n", DesertStateToString(state.desert_state));
+    fprintf(out, "  surface_weather: %s\n", DesertStateToString(state.desert_state));
     fprintf(out, "  interior_density: %s\n", InteriorDensityToString(state.interior_density));
     fprintf(out, "  alert_level: %d\n", state.alert_level);
     PrintStringList("  anchors", state.anchors, out);
@@ -1289,6 +1436,17 @@ void PrintSessionStateSummary(const SessionState& state, FILE* stream)
     fprintf(out, "  current_place_label: %s\n", DescribeCurrentPlaceLabel(state).c_str());
     fprintf(out, "  generated_rooms: %zu\n", state.generated_rooms.size());
     fprintf(out, "  room_links: %zu\n", state.room_links.size());
+    fprintf(out, "  invisible_barriers: %zu\n", state.invisible_barriers.size());
+    for (size_t index = 0; index < state.invisible_barriers.size(); ++index) {
+        const InvisibleBarrier& barrier = state.invisible_barriers[index];
+        fprintf(
+            out,
+            "    %s %s discovered=%s evidence=%s\n",
+            barrier.place_id.c_str(),
+            CardinalDirectionToString(barrier.direction),
+            barrier.discovered ? "yes" : "no",
+            barrier.evidence.empty() ? "(none)" : barrier.evidence.c_str());
+    }
     PrintHardStateSummary(state.hard_state, out);
     PrintSoftStateSummary(state.soft_state, out);
     PrintSpatialStateSummary(state.spatial_state, out);

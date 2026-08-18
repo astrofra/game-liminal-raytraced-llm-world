@@ -1,6 +1,6 @@
 # Decisions
 
-Derniere mise a jour : 2026-08-09
+Derniere mise a jour : 2026-08-18
 
 ## 2026-07-29 - Base du renderer en C++11
 
@@ -399,3 +399,38 @@ Raison :
 Consequence :
 
 Le renderer possède désormais deux familles de transport : diffus et diélectrique. Les ombres traversent approximativement le verre avec le même filtre d'épaisseur ; la dispersion continue, l'absorption spectrale et les caustiques restent hors périmètre afin de préserver le budget CPU.
+
+## 2026-08-18 - Fonder la première tranche Eryx sur une boucle d'arpentage en sept lieux
+
+Decision :
+
+La première carte active suit une progression fixe : seuil de carrière, champ d'extraction, coupe cristalline, scanner, plateau de balises, seuil du labyrinthe et abri de Vey. Le retour ouest depuis l'abri mène directement au scanner et n'est volontairement pas réciproque.
+
+Raison :
+
+- une chaîne d'abord fiable donne au joueur des repères à perdre
+- les moodboards `objects` demandent une navigation par lumières rares plutôt qu'un décor dense
+- `brutalism` fournit les masses humaines lourdes qui stabilisent chaque lieu
+- `origins` justifie une contradiction de projection et de connexion plutôt qu'un couloir alien visible
+- huit commandes suffisent à établir le monde, rencontrer une barrière, contourner puis constater un retour impossible
+
+Consequence :
+
+Les sept fixtures source et douze liens dirigés constituent la recette canonique de référence. Cette contradiction auteurisée doit rester reproductible même lorsque les mutations live seront ajoutées.
+
+## 2026-08-18 - Séparer la barrière invisible de la géométrie et des sorties bloquées
+
+Decision :
+
+Une barrière alien est un état de traversal persistant, distinct de `SpatialState.blocked_exits` et absent de la scène visible. Elle enregistre lieu, direction, preuve et découverte. Un contact reconnu consomme un tour, mais ne déplace pas le joueur et n'augmente pas `move_count`.
+
+Raison :
+
+- une sortie bloquée décrit une fermeture locale ordinaire ; la barrière doit rester apparemment traversable
+- rendre un mur, une grille ou un champ de force contredirait la source littéraire et le brief visuel
+- un type séparé permet au feedback de distinguer collision intentionnelle, commande incomprise et erreur technique
+- la persistance rend la découverte testable après sauvegarde et rechargement
+
+Consequence :
+
+Le viewport montre le champ ouvert tandis que le moteur refuse le mouvement et produit une preuve instrumentale. Les futures mutations devront modifier cette couche topologique sans demander au LLM de dessiner la collision.

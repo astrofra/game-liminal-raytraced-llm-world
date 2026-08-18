@@ -1,0 +1,224 @@
+{
+  "current_place_id": "canonical:scanner_station",
+  "generated_rooms": [],
+  "hard_state": {
+    "alert_level": 2,
+    "current_location_id": "scanner_station",
+    "instrument_power_state": "stable",
+    "inventory_items": [
+      "survey map slate",
+      "boundary chalk",
+      "sample tongs"
+    ],
+    "move_count": 7,
+    "named_entities": [
+      "prospector",
+      "missing prospector Vey"
+    ],
+    "oxygen_state": "stable",
+    "score": 0,
+    "spatial_entropy": 55,
+    "suit_state": "stable",
+    "turn_number": 9,
+    "unresolved_threats": [
+      "locate prospector Vey",
+      "verify the invisible obstruction",
+      "recover a crystal sample"
+    ]
+  },
+  "history": [
+    {
+      "clarification": "",
+      "intent": "move_north_known_room",
+      "location_id": "extraction_field",
+      "location_label": "extraction_field",
+      "narration": "You go north and enter extraction_field. A diamond drill stands among retaining fins and atmospheric machinery; the marked quarry cut continues north.",
+      "player_command": "north",
+      "turn_number": 1
+    },
+    {
+      "clarification": "",
+      "intent": "move_north_known_room",
+      "location_id": "crystal_cut",
+      "location_label": "crystal_cut",
+      "narration": "You go north and enter crystal_cut. An exposed crystal vein interrupts a narrow excavation; the sample track turns east toward the affinity scanner.",
+      "player_command": "north",
+      "turn_number": 2
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "scanner_station",
+      "location_label": "scanner_station",
+      "narration": "You go east and enter scanner_station. A scanner hangs beneath a heavy cantilever with a reference crystal beneath it; the beacon route climbs north.",
+      "player_command": "east",
+      "turn_number": 3
+    },
+    {
+      "clarification": "",
+      "intent": "move_north_known_room",
+      "location_id": "survey_plateau",
+      "location_label": "survey_plateau",
+      "narration": "You go north and enter survey_plateau. A sparse line of survey beacons crosses the plateau toward an eastern pair of pylons; every lamp agrees on distance but not direction.",
+      "player_command": "north",
+      "turn_number": 4
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "labyrinth_threshold",
+      "location_label": "labyrinth_threshold",
+      "narration": "You go east and enter labyrinth_threshold. Two quarry pylons frame an apparently open northern field; a suspended fragment and an interrupted scan trace imply contact with empty space.",
+      "player_command": "east",
+      "turn_number": 5
+    },
+    {
+      "clarification": "Traversal was recognized; an invisible barrier, not a parser failure or visible obstacle, refused the move.",
+      "intent": "move_north_invisible_barrier",
+      "location_id": "labyrinth_threshold",
+      "location_label": "labyrinth_threshold",
+      "narration": "You advance north across apparently open ground. Your probe and suit strike a smooth plane where the viewport shows only sky. The contact line runs east-west; the plateau remains reachable to the west and Vey's shelter beacon remains visible to the east.",
+      "player_command": "north",
+      "turn_number": 6
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "prospect_shelter",
+      "location_label": "prospect_shelter",
+      "narration": "You go east and enter prospect_shelter. A low pressure shelter preserves Vey's equipment and route marks; its west hatch is logged as returning directly to the scanner.",
+      "player_command": "east",
+      "turn_number": 7
+    },
+    {
+      "clarification": "",
+      "intent": "move_west_known_room",
+      "location_id": "scanner_station",
+      "location_label": "scanner_station",
+      "narration": "You go west and enter scanner_station. A scanner hangs beneath a heavy cantilever with a reference crystal beneath it; the beacon route climbs north.",
+      "player_command": "west",
+      "turn_number": 8
+    }
+  ],
+  "invisible_barriers": [
+    {
+      "direction": "north",
+      "discovered": true,
+      "evidence": "The contact line runs east-west; the plateau remains reachable to the west and Vey's shelter beacon remains visible to the east.",
+      "place_id": "canonical:labyrinth_threshold"
+    }
+  ],
+  "next_generated_room_index": 1,
+  "origin_place_id": "canonical:quarry_threshold",
+  "room_links": [
+    {
+      "direction": "north",
+      "from_place_id": "canonical:quarry_threshold",
+      "to_place_id": "canonical:extraction_field"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "canonical:extraction_field",
+      "to_place_id": "canonical:quarry_threshold"
+    },
+    {
+      "direction": "north",
+      "from_place_id": "canonical:extraction_field",
+      "to_place_id": "canonical:crystal_cut"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "canonical:crystal_cut",
+      "to_place_id": "canonical:extraction_field"
+    },
+    {
+      "direction": "east",
+      "from_place_id": "canonical:crystal_cut",
+      "to_place_id": "canonical:scanner_station"
+    },
+    {
+      "direction": "west",
+      "from_place_id": "canonical:scanner_station",
+      "to_place_id": "canonical:crystal_cut"
+    },
+    {
+      "direction": "north",
+      "from_place_id": "canonical:scanner_station",
+      "to_place_id": "canonical:survey_plateau"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "canonical:survey_plateau",
+      "to_place_id": "canonical:scanner_station"
+    },
+    {
+      "direction": "east",
+      "from_place_id": "canonical:survey_plateau",
+      "to_place_id": "canonical:labyrinth_threshold"
+    },
+    {
+      "direction": "west",
+      "from_place_id": "canonical:labyrinth_threshold",
+      "to_place_id": "canonical:survey_plateau"
+    },
+    {
+      "direction": "east",
+      "from_place_id": "canonical:labyrinth_threshold",
+      "to_place_id": "canonical:prospect_shelter"
+    },
+    {
+      "direction": "west",
+      "from_place_id": "canonical:prospect_shelter",
+      "to_place_id": "canonical:scanner_station"
+    }
+  ],
+  "soft_state": {
+    "active_hypotheses": [
+      "the open field is divided by surfaces the viewport cannot resolve",
+      "Vey reached the shelter by a route that cannot be retraced consistently"
+    ],
+    "atmosphere": "instrumental, mineral, sparse, spatially uncertain",
+    "rolling_summary": "You go west and enter scanner_station. A scanner hangs beneath a heavy cantilever with a reference crystal beneath it; the beacon route climbs north.",
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "alert_level": 2,
+    "anchors": [
+      "scanner_cantilever",
+      "reference_crystal",
+      "north_beacon"
+    ],
+    "blocked_exits": [
+      "east",
+      "south"
+    ],
+    "canonical_fixture": "assets/scenes/eryx_scanner_station.scene",
+    "interior_density": "sparse",
+    "location_archetype": "scanner_station",
+    "location_id": "scanner_station",
+    "room_summary": "A scanner hangs beneath a heavy cantilever with a reference crystal beneath it; the beacon route climbs north.",
+    "room_title": "Affinity Scanner",
+    "scene_constraints": [
+      "hero crystal scanner",
+      "heavy cantilever frame",
+      "reference crystal center",
+      "north survey beacon",
+      "hero crystal cluster",
+      "survey beacon",
+      "open venus horizon"
+    ],
+    "spatial_anomalies": [],
+    "surface_weather": "still",
+    "time_of_day": "night",
+    "visibility_level": "clear",
+    "visible_objects": [
+      "affinity scanner controls",
+      "reference crystal",
+      "route comparison display",
+      "survey beacon access plate"
+    ],
+    "world_pose_known": true,
+    "world_x": 4.5,
+    "world_z": 9.0
+  }
+}

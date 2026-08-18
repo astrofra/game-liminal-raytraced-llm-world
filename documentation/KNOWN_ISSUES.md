@@ -1,10 +1,10 @@
 # Known Issues
 
-Derniere mise a jour : 2026-08-09
+Derniere mise a jour : 2026-08-18
 
 ## Ouverts
 
-### 2026-08-09 - La réorientation Eryx n'est pas encore implémentée dans les prompts et le runtime
+### 2026-08-18 - Le labyrinthe Eryx n'accepte pas encore de mutations proposées par le LLM
 
 Statut :
 
@@ -12,50 +12,49 @@ Ouvert.
 
 Description :
 
-La documentation active situe désormais le projet dans une zone d'extraction vénusienne et un labyrinthe invisible. Le code et les contenus runtime restent centrés sur la phase *Le Désert des tokens* :
+La première route Eryx, une barrière invisible typée et un retour impossible sont implémentés. Cette topologie est cependant auteurisée et installée de manière déterministe. Le contrat de tour ne possède pas encore de proposition topologique séparée avec :
 
-- prompts et cues qualitatifs datacenter / désert
-- identifiants `gate`, `server_aisles`, `roof_watch`
-- champ de hard state et HUD `datacenter_temperature_c`
-- bandes `central core`, `perimeter seam`, `outer parapet`, `open desert`
-- fixtures et cas de benchmark datacenter
-- commandes d'exemple liées aux racks, au refroidissement et au toit de surveillance
-
-Impact :
-
-- le binaire actuel ne réalise pas encore la fiction décrite par `STORY.md` et `SPEC.md`
-- une démonstration du build ne doit pas être présentée comme une validation d'Eryx
-- une réécriture seulement cosmétique des prompts risquerait de conserver les structures de l'ancien récit
-
-Piste :
-
-Migrer explicitement le vocabulaire, les archétypes, les états initiaux, les briefs de benchmark et les fallbacks. Préserver les fixtures historiques comme baselines techniques plutôt que les renommer silencieusement.
-
-### 2026-08-09 - Le spatial state ne distingue pas encore les barrières invisibles des sorties bloquées
-
-Statut :
-
-Ouvert.
-
-Description :
-
-Le graphe courant conserve des liens cardinaux et des scènes de salles, mais il ne possède pas de type dédié pour :
-
-- barrière invisible rencontrée ou supposée
-- preuve de contact ou résultat de scanner
-- proposition de mutation topologique
+- relation visée et ancienne relation
+- type de mutation
+- preuves joueur requises
 - décision `accepted`, `adjusted`, `rejected` ou `deferred`
-- historique des relations anciennes et nouvelles
+- raison de validation et historique persistant
 
 Impact :
 
-- le moteur ne peut pas encore distinguer proprement la fiction du labyrinthe d'un mouvement simplement impossible
-- une contradiction produite aujourd'hui serait accidentelle, pas contrôlée ni auditable
-- le joueur risquerait de confondre collision, parser failure et mutation
+- la tranche actuelle valide l'incident de référence, pas un labyrinthe générativement mutable
+- la fréquence, la récupération et la provenance des mutations ne peuvent pas encore être testées
+- le LLM reste interprète et narrateur, sans autorité topologique effective
 
 Piste :
 
-Ajouter le plus petit contrat topologique séparé du layout visible, puis le tester avec EV-002 et EV-003 dans `SPATIAL_VALIDATION_PLAN.md` avant d'autoriser des reconnexions plus complexes.
+Ajouter un `TopologyProposal` borné, un validateur déterministe et un journal de décisions avant d'autoriser les mutations live.
+
+### 2026-08-18 - Des noms membres d'état restent liés à la phase datacenter/désert
+
+Statut :
+
+Ouvert.
+
+Description :
+
+Le JSON, les prompts, les traces et le HUD exposent désormais `spatial_entropy`, `suit_state`, `oxygen_state`, `instrument_power_state` et `surface_weather`. Les membres C++ sous-jacents restent toutefois nommés :
+
+- `datacenter_temperature_c`
+- `cooling_state`
+- `water_state`
+- `power_state`
+- `desert_state`
+
+Impact :
+
+- dette de lecture et risque d'erreur lors des prochains changements de ressources
+- le clamp de température sert temporairement de clamp `0..100` pour l'entropie
+- la compatibilité de lecture des anciennes sauvegardes dépend de ce mapping
+
+Piste :
+
+Introduire de vrais noms membres lors d'une migration de schéma versionnée, après avoir ajouté un test explicite de chargement des sauvegardes legacy.
 
 ### 2026-08-09 - Des noms de scripts et d'exécution conservent l'ancien titre de travail
 
@@ -76,6 +75,25 @@ Piste :
 
 Conserver le nom comme legacy tant qu'une tâche de refactor dédiée n'a pas défini un nouveau nom stable. Ne pas inventer de titre final dans une migration technique.
 
+### 2026-08-18 - Les verbes d'arpentage ne produisent pas encore de marques persistantes
+
+Statut :
+
+Ouvert.
+
+Description :
+
+Le parcours fournit une ardoise, de la craie, des pylônes et des scanners, mais les actions `mark`, `survey`, `compare` ou `scan` ne créent pas encore un objet de preuve structuré et persistant. La découverte de la barrière est actuellement déclenchée par le mouvement nord.
+
+Impact :
+
+- le joueur peut vivre la contradiction mais pas encore construire méthodiquement sa propre démonstration
+- la boucle `mesurer -> marquer -> retracer -> comparer` reste surtout narrative
+
+Piste :
+
+Ajouter un petit registre de mesures et de marques relié aux lieux, aux directions et au tour d'observation.
+
 ### 2026-08-03 - La derive cachee du monde reste locale et ne reconcilie pas encore les boucles spatiales
 
 Statut :
@@ -84,7 +102,7 @@ Ouvert.
 
 Description :
 
-Le runtime maintient maintenant une pose cachee `world_x/world_z` et des bandes qualitatives (`central core`, `perimeter seam`, `outer parapet`, `open desert`) pour guider la generation de salles et la transition vers l'exterieur. Ce mécanisme appartient encore à la sémantique datacenter/désert.
+Le runtime maintient une pose cachee `world_x/world_z` et des bandes qualitatives Eryx (`survey camp`, `inner quarry`, `quarry seam`, `outer shelf`, `open venus`) pour guider la generation de salles et la transition vers le champ ouvert.
 
 Cette derive reste volontairement simple :
 
@@ -102,7 +120,6 @@ Piste :
 
 Ne pas chercher automatiquement à rétablir un monde globalement euclidien. Pour Eryx :
 
-- remplacer les bandes datacenter par des relations de prospection, carrière, plateau et proximité du labyrinthe
 - rendre les contradictions explicites dans un état topologique et un historique de mutation
 - préserver la cohérence locale et les repères d'un lieu revisité
 - benchmarker le seuil auquel les boucles incompatibles deviennent frustrantes
@@ -524,6 +541,29 @@ Piste :
 Verifier et normaliser explicitement l'encodage du fichier si cela devient genant pour le travail quotidien.
 
 ## Résolus
+
+### 2026-08-18 - Les prompts, lieux canoniques et fallbacks restaient liés au datacenter
+
+Statut :
+
+Résolu le 2026-08-18 pour la première tranche jouable Eryx.
+
+Résolution :
+
+- sept identifiants et fixtures canoniques Eryx
+- prompts, schémas JSON, états initiaux, HUD, bandes cachées et fallbacks migrés
+- huit archétypes de layout et intégration contextuelle des neuf prefabs actifs
+- conservation explicite des fixtures et directives datacenter comme baselines historiques
+
+### 2026-08-18 - Les barrières invisibles étaient confondues avec `blocked_exits`
+
+Statut :
+
+Résolu le 2026-08-18 pour le contact déterministe de référence.
+
+Résolution :
+
+`InvisibleBarrier` possède un lieu, une direction, une preuve et un statut de découverte persistants. Le mouvement reconnu peut être refusé sans géométrie visible, sans changement de lieu et sans incrément de `move_count`. La narration distingue explicitement ce cas d'un échec de parser ou d'un obstacle visible.
 
 ### 2026-08-09 - Les prefabs et leur catalogue restaient sémantiquement liés au datacenter
 

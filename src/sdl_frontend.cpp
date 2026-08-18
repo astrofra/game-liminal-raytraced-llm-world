@@ -865,7 +865,7 @@ static void DrawExitCompass(
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest));
 }
 
-static void DrawTemperatureHud(
+static void DrawSpatialEntropyHud(
     SDL_Renderer* renderer,
     const UiFonts& fonts,
     const SessionState& session_state,
@@ -879,7 +879,7 @@ static void DrawTemperatureHud(
     snprintf(
         label_buffer,
         sizeof(label_buffer),
-        "TEMP %dC",
+        "ENTROPY %d",
         session_state.hard_state.datacenter_temperature_c);
     const std::string label_text = label_buffer;
 
@@ -1493,7 +1493,7 @@ bool RunSdlFrontend(
     bool success = false;
 
     if (!SDL_CreateWindowAndRenderer(
-            "Le desert des tokens",
+            "Eryx - Quarry Survey Prototype",
             config.window_width,
             config.window_height,
             SDL_WINDOW_RESIZABLE,
@@ -1833,7 +1833,7 @@ bool RunSdlFrontend(
         SDL_RenderTexture(renderer, scene_texture, 0, &scene_rect);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderRect(renderer, &scene_frame);
-        DrawTemperatureHud(renderer, ui_fonts, current_session_state, scene_rect);
+        DrawSpatialEntropyHud(renderer, ui_fonts, current_session_state, scene_rect);
         DrawExitCompass(renderer, ui_fonts, current_session_state, scene_rect);
         DrawConsoleText(renderer, ui_fonts, console_rect, transcript_lines, console_line_capacity);
 

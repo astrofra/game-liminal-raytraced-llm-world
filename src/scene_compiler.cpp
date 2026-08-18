@@ -11,6 +11,14 @@ namespace {
 
 enum LayoutArchetype {
     kLayoutArchetypeUnknown = 0,
+    kLayoutArchetypeQuarryThreshold,
+    kLayoutArchetypeExtractionField,
+    kLayoutArchetypeVenusPlateau,
+    kLayoutArchetypeIndustrialServiceZone,
+    kLayoutArchetypeProspectingShelter,
+    kLayoutArchetypeScannerStation,
+    kLayoutArchetypeLabyrinthThreshold,
+    kLayoutArchetypeQuarryCut,
     kLayoutArchetypeThresholdExterior,
     kLayoutArchetypeRoofExterior,
     kLayoutArchetypeYardExterior,
@@ -143,6 +151,22 @@ struct PlacedLayoutObject {
 static const char* LayoutArchetypeToString(LayoutArchetype archetype)
 {
     switch (archetype) {
+    case kLayoutArchetypeQuarryThreshold:
+        return "quarry_threshold";
+    case kLayoutArchetypeExtractionField:
+        return "extraction_field";
+    case kLayoutArchetypeVenusPlateau:
+        return "venus_plateau";
+    case kLayoutArchetypeIndustrialServiceZone:
+        return "industrial_service_zone";
+    case kLayoutArchetypeProspectingShelter:
+        return "prospecting_shelter";
+    case kLayoutArchetypeScannerStation:
+        return "scanner_station";
+    case kLayoutArchetypeLabyrinthThreshold:
+        return "labyrinth_threshold";
+    case kLayoutArchetypeQuarryCut:
+        return "quarry_cut";
     case kLayoutArchetypeThresholdExterior:
         return "threshold_exterior";
     case kLayoutArchetypeRoofExterior:
@@ -307,6 +331,20 @@ static bool ReadTextFile(const char* path, std::string* text, char* error_buffer
 static const char* CanonicalFixturePath(LocationId location_id)
 {
     switch (location_id) {
+    case kLocationQuarryThreshold:
+        return "assets/scenes/eryx_quarry_threshold.scene";
+    case kLocationExtractionField:
+        return "assets/scenes/eryx_extraction_field.scene";
+    case kLocationCrystalCut:
+        return "assets/scenes/eryx_crystal_cut.scene";
+    case kLocationScannerStation:
+        return "assets/scenes/eryx_scanner_station.scene";
+    case kLocationSurveyPlateau:
+        return "assets/scenes/eryx_survey_plateau.scene";
+    case kLocationLabyrinthThreshold:
+        return "assets/scenes/eryx_labyrinth_threshold.scene";
+    case kLocationProspectShelter:
+        return "assets/scenes/eryx_prospect_shelter.scene";
     case kLocationGate:
         return "assets/scenes/datacenter_entry_gate.scene";
     case kLocationServerAisles:
@@ -316,6 +354,190 @@ static const char* CanonicalFixturePath(LocationId location_id)
     default:
         return 0;
     }
+}
+
+static void SetCommonQuarryThresholdSpatialState(SpatialState* state)
+{
+    state->room_title = "Quarry Threshold";
+    state->room_summary = "A split-crown pressure gate opens north onto the Erycinian quarry; a survey beacon and descending ramp establish the first reliable datum.";
+    state->location_archetype = "quarry_threshold";
+    state->canonical_fixture = CanonicalFixturePath(kLocationQuarryThreshold);
+    state->time_of_day = kTimeDusk;
+    state->visibility_level = kVisibilityDusty;
+    state->desert_state = kDesertStill;
+    state->interior_density = kInteriorSparse;
+    state->alert_level = 1;
+    state->anchors.push_back("split_crown_gate");
+    state->anchors.push_back("datum_beacon_zero");
+    state->anchors.push_back("descending_quarry_ramp");
+    state->visible_objects.push_back("survey gate control");
+    state->visible_objects.push_back("route beacon");
+    state->visible_objects.push_back("sample cargo case");
+    state->visible_objects.push_back("map slate cradle");
+    state->blocked_exits.push_back("east");
+    state->blocked_exits.push_back("south");
+    state->blocked_exits.push_back("west");
+    state->scene_constraints.push_back("hero quarry gate");
+    state->scene_constraints.push_back("split brutalist crown");
+    state->scene_constraints.push_back("survey beacon north");
+    state->scene_constraints.push_back("open venus horizon");
+}
+
+static void SetCommonExtractionFieldSpatialState(SpatialState* state)
+{
+    state->room_title = "Extraction Field";
+    state->room_summary = "A diamond drill stands among retaining fins and atmospheric machinery; the marked quarry cut continues north.";
+    state->location_archetype = "extraction_field";
+    state->canonical_fixture = CanonicalFixturePath(kLocationExtractionField);
+    state->time_of_day = kTimeDusk;
+    state->visibility_level = kVisibilityDusty;
+    state->desert_state = kDesertWindy;
+    state->interior_density = kInteriorSparse;
+    state->alert_level = 1;
+    state->anchors.push_back("diamond_drill");
+    state->anchors.push_back("retaining_fins");
+    state->anchors.push_back("atmospheric_processor");
+    state->visible_objects.push_back("drill service lever");
+    state->visible_objects.push_back("oxygen manifold");
+    state->visible_objects.push_back("quarry datum pylon");
+    state->visible_objects.push_back("sealed equipment crate");
+    state->blocked_exits.push_back("east");
+    state->blocked_exits.push_back("west");
+    state->scene_constraints.push_back("hero extraction rig");
+    state->scene_constraints.push_back("brutalist retaining fins");
+    state->scene_constraints.push_back("atmospheric processor flank");
+    state->scene_constraints.push_back("keep quarry ramp clear");
+}
+
+static void SetCommonCrystalCutSpatialState(SpatialState* state)
+{
+    state->room_title = "Crystal Cut";
+    state->room_summary = "An exposed crystal vein interrupts a narrow excavation; the sample track turns east toward the affinity scanner.";
+    state->location_archetype = "quarry_cut";
+    state->canonical_fixture = CanonicalFixturePath(kLocationCrystalCut);
+    state->time_of_day = kTimeDusk;
+    state->visibility_level = kVisibilityLow;
+    state->desert_state = kDesertStill;
+    state->interior_density = kInteriorSparse;
+    state->alert_level = 2;
+    state->anchors.push_back("exposed_crystal_vein");
+    state->anchors.push_back("stepped_cut_wall");
+    state->anchors.push_back("east_sample_track");
+    state->visible_objects.push_back("loose crystal sample");
+    state->visible_objects.push_back("sample case");
+    state->visible_objects.push_back("vein marker");
+    state->visible_objects.push_back("drill cutoff");
+    state->blocked_exits.push_back("north");
+    state->blocked_exits.push_back("west");
+    state->scene_constraints.push_back("hero crystal cluster");
+    state->scene_constraints.push_back("deep quarry cut");
+    state->scene_constraints.push_back("east route clear");
+    state->scene_constraints.push_back("faceted specimen glow");
+}
+
+static void SetCommonScannerStationSpatialState(SpatialState* state)
+{
+    state->room_title = "Affinity Scanner";
+    state->room_summary = "A scanner hangs beneath a heavy cantilever with a reference crystal beneath it; the beacon route climbs north.";
+    state->location_archetype = "scanner_station";
+    state->canonical_fixture = CanonicalFixturePath(kLocationScannerStation);
+    state->time_of_day = kTimeNight;
+    state->visibility_level = kVisibilityClear;
+    state->desert_state = kDesertStill;
+    state->interior_density = kInteriorSparse;
+    state->alert_level = 2;
+    state->anchors.push_back("scanner_cantilever");
+    state->anchors.push_back("reference_crystal");
+    state->anchors.push_back("north_beacon");
+    state->visible_objects.push_back("affinity scanner controls");
+    state->visible_objects.push_back("reference crystal");
+    state->visible_objects.push_back("route comparison display");
+    state->visible_objects.push_back("survey beacon access plate");
+    state->blocked_exits.push_back("east");
+    state->blocked_exits.push_back("south");
+    state->scene_constraints.push_back("hero crystal scanner");
+    state->scene_constraints.push_back("heavy cantilever frame");
+    state->scene_constraints.push_back("reference crystal center");
+    state->scene_constraints.push_back("north survey beacon");
+}
+
+static void SetCommonSurveyPlateauSpatialState(SpatialState* state)
+{
+    state->room_title = "Beacon Plateau";
+    state->room_summary = "A sparse line of survey beacons crosses the plateau toward an eastern pair of pylons; every lamp agrees on distance but not direction.";
+    state->location_archetype = "venus_plateau";
+    state->canonical_fixture = CanonicalFixturePath(kLocationSurveyPlateau);
+    state->time_of_day = kTimeNight;
+    state->visibility_level = kVisibilityLow;
+    state->desert_state = kDesertWindy;
+    state->interior_density = kInteriorSparse;
+    state->alert_level = 3;
+    state->anchors.push_back("beacon_line");
+    state->anchors.push_back("split_horizon_mass");
+    state->anchors.push_back("east_datum_pair");
+    state->visible_objects.push_back("route beacon plate");
+    state->visible_objects.push_back("survey mark post");
+    state->visible_objects.push_back("wind-scoured sample crate");
+    state->blocked_exits.push_back("north");
+    state->blocked_exits.push_back("west");
+    state->scene_constraints.push_back("hero survey beacon line");
+    state->scene_constraints.push_back("east datum pylons");
+    state->scene_constraints.push_back("minimal venus plateau");
+    state->scene_constraints.push_back("open horizon");
+}
+
+static void SetCommonLabyrinthThresholdSpatialState(SpatialState* state)
+{
+    state->room_title = "Open Datum";
+    state->room_summary = "Two quarry pylons frame an apparently open northern field; a suspended fragment and an interrupted scan trace imply contact with empty space.";
+    state->location_archetype = "labyrinth_threshold";
+    state->canonical_fixture = CanonicalFixturePath(kLocationLabyrinthThreshold);
+    state->time_of_day = kTimeNight;
+    state->visibility_level = kVisibilityClear;
+    state->desert_state = kDesertStill;
+    state->interior_density = kInteriorSparse;
+    state->alert_level = 4;
+    state->anchors.push_back("paired_datum_pylons");
+    state->anchors.push_back("suspended_fragment");
+    state->anchors.push_back("eastern_shelter_beacon");
+    state->visible_objects.push_back("boundary probe head");
+    state->visible_objects.push_back("chalk datum marker");
+    state->visible_objects.push_back("suspended crystal fragment");
+    state->visible_objects.push_back("shelter route beacon");
+    state->blocked_exits.push_back("south");
+    state->spatial_anomalies.push_back("the northern scan line terminates without visible geometry");
+    state->scene_constraints.push_back("hero labyrinth threshold");
+    state->scene_constraints.push_back("paired quarry pylons");
+    state->scene_constraints.push_back("suspended contact evidence");
+    state->scene_constraints.push_back("no visible wall");
+}
+
+static void SetCommonProspectShelterSpatialState(SpatialState* state)
+{
+    state->room_title = "Vey Shelter";
+    state->room_summary = "A low pressure shelter preserves Vey's equipment and route marks; its west hatch is logged as returning directly to the scanner.";
+    state->location_archetype = "prospecting_shelter";
+    state->canonical_fixture = CanonicalFixturePath(kLocationProspectShelter);
+    state->time_of_day = kTimeNight;
+    state->visibility_level = kVisibilityLow;
+    state->desert_state = kDesertStill;
+    state->interior_density = kInteriorDense;
+    state->alert_level = 4;
+    state->anchors.push_back("split_roof_shelter");
+    state->anchors.push_back("oxygen_stacks");
+    state->anchors.push_back("vey_route_map");
+    state->visible_objects.push_back("Vey route recorder");
+    state->visible_objects.push_back("scratched survey map");
+    state->visible_objects.push_back("oxygen service manifold");
+    state->visible_objects.push_back("sealed crystal sample case");
+    state->blocked_exits.push_back("north");
+    state->blocked_exits.push_back("east");
+    state->blocked_exits.push_back("south");
+    state->spatial_anomalies.push_back("the west return relation bypasses the open datum");
+    state->scene_constraints.push_back("hero prospect shelter");
+    state->scene_constraints.push_back("split brutalist roof");
+    state->scene_constraints.push_back("atmospheric processor rear");
+    state->scene_constraints.push_back("west hatch clear");
 }
 
 static void SetCommonGateSpatialState(SpatialState* state)
@@ -426,17 +648,17 @@ static bool ContainsSubstring(const std::string& lower_text, const char* pattern
 
 static bool SpatialFeelsOpenDesert(const SpatialState& state)
 {
-    return strcmp(DescribeSpatialWorldBand(state), "open desert") == 0;
+    return strcmp(DescribeSpatialWorldBand(state), "open venus") == 0;
 }
 
 static bool SpatialFeelsOuterParapet(const SpatialState& state)
 {
-    return strcmp(DescribeSpatialWorldBand(state), "outer parapet") == 0;
+    return strcmp(DescribeSpatialWorldBand(state), "outer shelf") == 0;
 }
 
 static bool SpatialFeelsPerimeterSeam(const SpatialState& state)
 {
-    return strcmp(DescribeSpatialWorldBand(state), "perimeter seam") == 0;
+    return strcmp(DescribeSpatialWorldBand(state), "quarry seam") == 0;
 }
 
 static bool LabelLooksInteriorOnly(const std::string& lower)
@@ -497,7 +719,14 @@ static bool LabelLooksOpenExteriorSafe(const std::string& lower)
         ContainsSubstring(lower, "ridge") ||
         ContainsSubstring(lower, "berm") ||
         ContainsSubstring(lower, "outcrop") ||
-        ContainsSubstring(lower, "boulder");
+        ContainsSubstring(lower, "boulder") ||
+        ContainsSubstring(lower, "crystal") ||
+        ContainsSubstring(lower, "scanner") ||
+        ContainsSubstring(lower, "drill") ||
+        ContainsSubstring(lower, "extraction") ||
+        ContainsSubstring(lower, "shelter") ||
+        ContainsSubstring(lower, "atmospheric") ||
+        ContainsSubstring(lower, "oxygen");
 }
 
 static bool ShouldSkipLabelForShell(const RoomShell& shell, const std::string& lower)
@@ -536,7 +765,12 @@ static bool SpatialFeelsExterior(const SpatialState& state)
         ContainsSubstring(combined, "parapet") ||
         ContainsSubstring(combined, "horizon") ||
         ContainsSubstring(combined, "sky") ||
-        ContainsSubstring(combined, "outside");
+        ContainsSubstring(combined, "outside") ||
+        ContainsSubstring(combined, "quarry") ||
+        ContainsSubstring(combined, "plateau") ||
+        ContainsSubstring(combined, "extraction field") ||
+        ContainsSubstring(combined, "labyrinth threshold") ||
+        ContainsSubstring(combined, "venus");
     if (hard_exterior) {
         return true;
     }
@@ -575,6 +809,36 @@ static LayoutArchetype InferLayoutArchetype(const SpatialState& spatial_state)
 {
     const std::string combined = BuildSpatialSemanticText(spatial_state);
     const bool exterior = SpatialFeelsExterior(spatial_state);
+
+    if (ContainsSubstring(combined, "quarry_threshold") || ContainsSubstring(combined, "quarry threshold")) {
+        return kLayoutArchetypeQuarryThreshold;
+    }
+    if (ContainsSubstring(combined, "extraction_field") || ContainsSubstring(combined, "extraction field")) {
+        return kLayoutArchetypeExtractionField;
+    }
+    if (ContainsSubstring(combined, "venus_plateau") || ContainsSubstring(combined, "venus plateau") ||
+        ContainsSubstring(combined, "survey plateau")) {
+        return kLayoutArchetypeVenusPlateau;
+    }
+    if (ContainsSubstring(combined, "industrial_service_zone") || ContainsSubstring(combined, "industrial service zone")) {
+        return kLayoutArchetypeIndustrialServiceZone;
+    }
+    if (ContainsSubstring(combined, "prospecting_shelter") || ContainsSubstring(combined, "prospecting shelter") ||
+        ContainsSubstring(combined, "prospect shelter")) {
+        return kLayoutArchetypeProspectingShelter;
+    }
+    if (ContainsSubstring(combined, "scanner_station") || ContainsSubstring(combined, "scanner station") ||
+        ContainsSubstring(combined, "affinity scanner")) {
+        return kLayoutArchetypeScannerStation;
+    }
+    if (ContainsSubstring(combined, "labyrinth_threshold") || ContainsSubstring(combined, "labyrinth threshold") ||
+        ContainsSubstring(combined, "open datum")) {
+        return kLayoutArchetypeLabyrinthThreshold;
+    }
+    if (ContainsSubstring(combined, "quarry_cut") || ContainsSubstring(combined, "quarry cut") ||
+        ContainsSubstring(combined, "crystal cut")) {
+        return kLayoutArchetypeQuarryCut;
+    }
 
     if (SpatialFeelsOpenDesert(spatial_state) ||
         ContainsSubstring(combined, "cactus") ||
@@ -617,6 +881,135 @@ static RoomShell BuildRoomShell(const SpatialState& spatial_state)
     shell.archetype = InferLayoutArchetype(spatial_state);
 
     switch (shell.archetype) {
+    case kLayoutArchetypeQuarryThreshold:
+        shell.exterior = true;
+        shell.half_width = 9.6f;
+        shell.half_depth = 14.5f;
+        shell.height = 5.0f;
+        shell.corridor_half_width = 2.5f;
+        shell.front_margin = 4.4f;
+        shell.camera_eye_y = 1.82f;
+        shell.camera_eye_z = -9.2f;
+        shell.camera_target_y = 1.25f;
+        shell.camera_target_z = 8.8f;
+        shell.camera_fov = 48.0f;
+        shell.spotlight_range = 36.0f;
+        shell.spotlight_intensity = 70.0f;
+        shell.floor_gray = 0.13f;
+        shell.wall_gray = 0.18f;
+        shell.trim_gray = 0.27f;
+        break;
+    case kLayoutArchetypeExtractionField:
+        shell.exterior = true;
+        shell.half_width = 11.5f;
+        shell.half_depth = 17.0f;
+        shell.height = 5.2f;
+        shell.corridor_half_width = 2.8f;
+        shell.front_margin = 3.8f;
+        shell.camera_eye_y = 1.86f;
+        shell.camera_eye_z = -10.0f;
+        shell.camera_target_y = 1.30f;
+        shell.camera_target_z = 10.5f;
+        shell.camera_fov = 49.0f;
+        shell.spotlight_range = 40.0f;
+        shell.spotlight_intensity = 66.0f;
+        shell.floor_gray = 0.13f;
+        shell.wall_gray = 0.19f;
+        shell.trim_gray = 0.26f;
+        break;
+    case kLayoutArchetypeVenusPlateau:
+    case kLayoutArchetypeLabyrinthThreshold:
+        shell.exterior = true;
+        shell.half_width = 13.0f;
+        shell.half_depth = 19.0f;
+        shell.height = 4.5f;
+        shell.corridor_half_width = 0.0f;
+        shell.front_margin = 3.2f;
+        shell.camera_eye_y = 1.82f;
+        shell.camera_eye_z = -10.4f;
+        shell.camera_target_y = 1.15f;
+        shell.camera_target_z = 12.0f;
+        shell.camera_fov = 50.0f;
+        shell.spotlight_range = 42.0f;
+        shell.spotlight_intensity = shell.archetype == kLayoutArchetypeLabyrinthThreshold ? 58.0f : 62.0f;
+        shell.floor_gray = 0.12f;
+        shell.wall_gray = 0.17f;
+        shell.trim_gray = 0.25f;
+        break;
+    case kLayoutArchetypeIndustrialServiceZone:
+        shell.exterior = false;
+        shell.half_width = 7.0f;
+        shell.half_depth = 12.0f;
+        shell.height = 4.0f;
+        shell.corridor_half_width = 1.8f;
+        shell.front_margin = 3.5f;
+        shell.camera_eye_y = 1.80f;
+        shell.camera_eye_z = -8.0f;
+        shell.camera_target_y = 1.22f;
+        shell.camera_target_z = 8.5f;
+        shell.camera_fov = 47.0f;
+        shell.spotlight_range = 31.0f;
+        shell.spotlight_intensity = 76.0f;
+        shell.floor_gray = 0.11f;
+        shell.ceiling_gray = 0.18f;
+        shell.wall_gray = 0.18f;
+        shell.trim_gray = 0.25f;
+        break;
+    case kLayoutArchetypeProspectingShelter:
+        shell.exterior = false;
+        shell.half_width = 6.2f;
+        shell.half_depth = 10.0f;
+        shell.height = 3.4f;
+        shell.corridor_half_width = 1.5f;
+        shell.front_margin = 3.2f;
+        shell.camera_eye_y = 1.72f;
+        shell.camera_eye_z = -7.1f;
+        shell.camera_target_y = 1.18f;
+        shell.camera_target_z = 6.8f;
+        shell.camera_fov = 47.0f;
+        shell.spotlight_range = 27.0f;
+        shell.spotlight_intensity = 82.0f;
+        shell.floor_gray = 0.10f;
+        shell.ceiling_gray = 0.17f;
+        shell.wall_gray = 0.19f;
+        shell.trim_gray = 0.27f;
+        break;
+    case kLayoutArchetypeScannerStation:
+        shell.exterior = true;
+        shell.half_width = 9.8f;
+        shell.half_depth = 15.0f;
+        shell.height = 5.0f;
+        shell.corridor_half_width = 2.2f;
+        shell.front_margin = 4.0f;
+        shell.camera_eye_y = 1.80f;
+        shell.camera_eye_z = -9.2f;
+        shell.camera_target_y = 1.25f;
+        shell.camera_target_z = 8.8f;
+        shell.camera_fov = 47.0f;
+        shell.spotlight_range = 36.0f;
+        shell.spotlight_intensity = 74.0f;
+        shell.floor_gray = 0.12f;
+        shell.wall_gray = 0.19f;
+        shell.trim_gray = 0.28f;
+        break;
+    case kLayoutArchetypeQuarryCut:
+        shell.exterior = true;
+        shell.half_width = 8.0f;
+        shell.half_depth = 17.0f;
+        shell.height = 5.8f;
+        shell.corridor_half_width = 2.0f;
+        shell.front_margin = 3.8f;
+        shell.camera_eye_y = 1.78f;
+        shell.camera_eye_z = -9.8f;
+        shell.camera_target_y = 1.35f;
+        shell.camera_target_z = 10.0f;
+        shell.camera_fov = 48.0f;
+        shell.spotlight_range = 38.0f;
+        shell.spotlight_intensity = 72.0f;
+        shell.floor_gray = 0.12f;
+        shell.wall_gray = 0.18f;
+        shell.trim_gray = 0.25f;
+        break;
     case kLayoutArchetypeThresholdExterior:
         shell.exterior = true;
         shell.half_width = 8.6f;
@@ -1597,6 +1990,96 @@ static void AddArchetypeDefaults(
     }
 
     switch (shell.archetype) {
+    case kLayoutArchetypeQuarryThreshold:
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabGate)) {
+            AddGateSpec(specs, shell, "survey pressure gate", 80);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabSurveyBeacon)) {
+            AddSurveyBeaconSpec(specs, "datum beacon zero", kLayoutZoneBack, 81);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabCrate)) {
+            AddCrateSpec(specs, "prospecting cargo", kLayoutZoneRight, 82);
+        }
+        break;
+    case kLayoutArchetypeExtractionField:
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabExtractionRig)) {
+            AddExtractionRigSpec(specs, "diamond extraction rig", kLayoutZoneCenter, 83);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabQuarryPylon)) {
+            AddQuarryPylonSpec(specs, "quarry datum pylon", kLayoutZoneBack, 84);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabAtmosphericProcessor)) {
+            AddAtmosphericProcessorSpec(specs, "field oxygen processor", kLayoutZoneRight, 85);
+        }
+        break;
+    case kLayoutArchetypeVenusPlateau:
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabSurveyBeacon)) {
+            AddSurveyBeaconSpec(specs, "near route beacon", kLayoutZoneLeft, 86);
+            AddSurveyBeaconSpec(specs, "far route beacon", kLayoutZoneBack, 87);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabQuarryPylon)) {
+            AddQuarryPylonSpec(specs, "plateau datum", kLayoutZoneRight, 88);
+        }
+        break;
+    case kLayoutArchetypeIndustrialServiceZone:
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabAtmosphericProcessor)) {
+            AddAtmosphericProcessorSpec(specs, "atmospheric processor", kLayoutZoneLeft, 89);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabCrate)) {
+            AddCrateSpec(specs, "service cargo", kLayoutZoneRight, 90);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabGate)) {
+            AddGateSpec(specs, shell, "pressure threshold", 91);
+        }
+        break;
+    case kLayoutArchetypeProspectingShelter:
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabProspectShelter)) {
+            AddProspectShelterSpec(specs, "field prospect shelter", kLayoutZoneBack, 91);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabAtmosphericProcessor)) {
+            AddAtmosphericProcessorSpec(specs, "shelter oxygen service", kLayoutZoneLeft, 92);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabCrate)) {
+            AddCrateSpec(specs, "sample case", kLayoutZoneRight, 93);
+        }
+        if (!HasSpecNameContaining(*specs, "map")) {
+            AddWallControlSpec(specs, "survey map display", kLayoutMountWallBack, kLayoutZoneBack, 94);
+        }
+        break;
+    case kLayoutArchetypeScannerStation:
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabCrystalScanner)) {
+            AddCrystalScannerSpec(specs, "affinity scanner", kLayoutZoneCenter, 95);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabCrystalCluster)) {
+            AddCrystalClusterSpec(specs, "reference crystal", kLayoutZoneRight, 96);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabSurveyBeacon)) {
+            AddSurveyBeaconSpec(specs, "route comparison beacon", kLayoutZoneBack, 97);
+        }
+        break;
+    case kLayoutArchetypeLabyrinthThreshold:
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabQuarryPylon)) {
+            AddQuarryPylonSpec(specs, "west datum pylon", kLayoutZoneLeft, 98);
+            AddQuarryPylonSpec(specs, "east datum pylon", kLayoutZoneRight, 99);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabSurveyBeacon)) {
+            AddSurveyBeaconSpec(specs, "detour beacon", kLayoutZoneBack, 100);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabCrystalCluster)) {
+            AddCrystalClusterSpec(specs, "suspended contact fragment", kLayoutZoneCenter, 101);
+        }
+        break;
+    case kLayoutArchetypeQuarryCut:
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabCrystalCluster)) {
+            AddCrystalClusterSpec(specs, "exposed crystal vein", kLayoutZoneCenter, 101);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabExtractionRig)) {
+            AddExtractionRigSpec(specs, "cut drill", kLayoutZoneLeft, 102);
+        }
+        if (!HasPrimitive(*specs, kScenePrimitivePrefabQuarryPylon)) {
+            AddQuarryPylonSpec(specs, "vein marker", kLayoutZoneBack, 103);
+        }
+        break;
     case kLayoutArchetypeThresholdExterior:
         if (!HasPrimitive(*specs, kScenePrimitivePrefabGate)) {
             AddGateSpec(specs, shell, "checkpoint gate", 100);
@@ -1999,6 +2482,40 @@ static void AppendExteriorShell(const RoomShell& shell, const SpatialState& spat
         shell.half_width * 11.0f,
         shell.half_depth * 11.0f,
         shell.floor_gray);
+
+    if (shell.archetype == kLayoutArchetypeVenusPlateau ||
+        shell.archetype == kLayoutArchetypeLabyrinthThreshold) {
+        AppendLine(
+            scene_text,
+            "box \"horizon_mass_left\" pos(-11.0,0.45,16.0) size(18.0,0.90,5.0) gray(%.2f)\n",
+            shell.floor_gray + 0.02f);
+        AppendLine(
+            scene_text,
+            "box \"horizon_mass_right\" pos(12.0,0.35,18.0) size(19.0,0.70,4.2) gray(%.2f)\n",
+            shell.floor_gray + 0.01f);
+        return;
+    } else if (shell.archetype == kLayoutArchetypeExtractionField) {
+        AppendLine(scene_text, "box \"work_slab\" pos(0.0,0.18,3.0) size(14.0,0.36,19.0) gray(0.16)\n");
+        AppendLine(scene_text, "box \"retaining_fin_left\" pos(-7.4,1.60,7.0) size(0.70,3.20,11.0) gray(0.20)\n");
+        AppendLine(scene_text, "box \"retaining_fin_right\" pos(7.2,1.25,9.0) size(0.70,2.50,10.0) gray(0.19)\n");
+        return;
+    } else if (shell.archetype == kLayoutArchetypeQuarryCut) {
+        AppendLine(scene_text, "box \"cut_wall_left\" pos(-6.2,2.20,5.0) size(4.4,4.40,25.0) gray(0.18)\n");
+        AppendLine(scene_text, "box \"cut_wall_right\" pos(6.4,1.75,7.0) size(4.8,3.50,23.0) gray(0.19)\n");
+        AppendLine(scene_text, "box \"cut_step_rear\" pos(0.0,0.55,14.0) size(8.0,1.10,4.0) gray(0.21)\n");
+        return;
+    } else if (shell.archetype == kLayoutArchetypeScannerStation) {
+        AppendLine(scene_text, "box \"scanner_deck\" pos(0.0,0.22,3.0) size(15.0,0.44,19.0) gray(0.15)\n");
+        AppendLine(scene_text, "box \"cantilever_left\" pos(-5.8,2.10,5.5) size(1.0,4.20,8.0) gray(0.20)\n");
+        AppendLine(scene_text, "box \"cantilever_beam\" pos(-1.2,4.00,5.5) size(10.2,0.80,3.0) gray(0.22)\n");
+        return;
+    } else if (shell.archetype == kLayoutArchetypeQuarryThreshold) {
+        AppendLine(scene_text, "box \"threshold_buttress_left\" pos(-6.8,2.10,8.0) size(2.2,4.20,5.0) gray(0.20)\n");
+        AppendLine(scene_text, "box \"threshold_buttress_right\" pos(6.8,2.10,8.0) size(2.2,4.20,5.0) gray(0.20)\n");
+        AppendLine(scene_text, "box \"split_crown_left\" pos(-3.7,4.10,8.0) size(4.6,1.0,5.0) gray(0.25)\n");
+        AppendLine(scene_text, "box \"split_crown_right\" pos(3.7,4.10,8.0) size(4.6,1.0,5.0) gray(0.25)\n");
+        return;
+    }
 
     if (shell.archetype == kLayoutArchetypeDesertExterior) {
         AppendLine(
@@ -2563,7 +3080,7 @@ static bool BuildProceduralSceneDebugReport(
     AppendLine(report_text, "  room_title=%s\n", spatial_state.room_title.empty() ? "(empty)" : spatial_state.room_title.c_str());
     AppendLine(report_text, "  location_archetype=%s\n", spatial_state.location_archetype.empty() ? "(empty)" : spatial_state.location_archetype.c_str());
     AppendLine(report_text, "  world_band=%s\n", DescribeSpatialWorldBand(spatial_state));
-    AppendLine(report_text, "  gate_relation=%s\n", DescribeSpatialGateRelation(spatial_state));
+    AppendLine(report_text, "  survey_base_relation=%s\n", DescribeSpatialGateRelation(spatial_state));
     AppendLine(report_text, "  sky_exposure=%s\n", DescribeSpatialSkyExposure(spatial_state));
 
     AppendLine(report_text, "Resolved specs: %zu\n", specs.size());
@@ -2623,6 +3140,27 @@ bool BuildCanonicalSpatialState(LocationId location_id, SpatialState* spatial_st
     spatial_state->location_id = location_id;
 
     switch (location_id) {
+    case kLocationQuarryThreshold:
+        SetCommonQuarryThresholdSpatialState(spatial_state);
+        return true;
+    case kLocationExtractionField:
+        SetCommonExtractionFieldSpatialState(spatial_state);
+        return true;
+    case kLocationCrystalCut:
+        SetCommonCrystalCutSpatialState(spatial_state);
+        return true;
+    case kLocationScannerStation:
+        SetCommonScannerStationSpatialState(spatial_state);
+        return true;
+    case kLocationSurveyPlateau:
+        SetCommonSurveyPlateauSpatialState(spatial_state);
+        return true;
+    case kLocationLabyrinthThreshold:
+        SetCommonLabyrinthThresholdSpatialState(spatial_state);
+        return true;
+    case kLocationProspectShelter:
+        SetCommonProspectShelterSpatialState(spatial_state);
+        return true;
     case kLocationGate:
         SetCommonGateSpatialState(spatial_state);
         return true;
@@ -2680,7 +3218,7 @@ bool BuildSceneDebugReportFromSpatialState(
         AppendLine(report_text, "Room title: %s\n", spatial_state.room_title.empty() ? "(empty)" : spatial_state.room_title.c_str());
         AppendLine(report_text, "Location archetype: %s\n", spatial_state.location_archetype.empty() ? "(empty)" : spatial_state.location_archetype.c_str());
         AppendLine(report_text, "World band: %s\n", DescribeSpatialWorldBand(spatial_state));
-        AppendLine(report_text, "Gate relation: %s\n", DescribeSpatialGateRelation(spatial_state));
+        AppendLine(report_text, "Survey base relation: %s\n", DescribeSpatialGateRelation(spatial_state));
         AppendLine(report_text, "Sky exposure: %s\n", DescribeSpatialSkyExposure(spatial_state));
         return true;
     }

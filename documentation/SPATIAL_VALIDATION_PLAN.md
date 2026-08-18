@@ -1,6 +1,6 @@
 # Spatial Validation Plan
 
-Dernière mise à jour : 2026-08-09
+Dernière mise à jour : 2026-08-18
 
 ## Objet
 
@@ -23,9 +23,11 @@ La question centrale est :
 
 Les fixtures historiques du datacenter ont validé trois régimes visuels utiles : seuil extérieur, intérieur dense et point d'observation ouvert. Les fichiers `assets/scenes/datacenter_*.scene` et leurs mesures restent des baselines techniques, pas des lieux canoniques de la fiction active.
 
-Le runtime ne possède pas encore de barrière invisible typée ni de validateur de mutation topologique. Les tests Eryx décrits ici sont donc un plan de conception et de recette. Aucun résultat n'est présupposé.
+Le runtime possède maintenant une barrière invisible typée et une contradiction auteurisée, mais pas encore de validateur de propositions topologiques live. EV-001, EV-002 et le retour impossible d'EV-005 ont une première recette déterministe ; les tests de mutation pilotée par LLM restent un plan.
 
 Le format rendu réellement supporté reste celui de [`SCENE_FORMAT_V1.md`](./SCENE_FORMAT_V1.md). Le test d'une barrière invisible ne demande pas l'ajout d'une directive visuelle tant que la sémantique de traversal et le feedback joueur suffisent.
+
+Recette observée le 2026-08-18 : parcours de huit commandes depuis `quarry_threshold`, sept mouvements effectifs, contact nord refusé à `labyrinth_threshold`, barrière marquée `discovered`, détour par `prospect_shelter`, retour ouest direct vers `scanner_station`, puis sauvegarde/rechargement réussis. Les sept fixtures ont été compilées et rendues à `320x180`, `2 spp`.
 
 ## Hypothèses à tester
 

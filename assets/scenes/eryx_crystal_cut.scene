@@ -1,0 +1,20 @@
+# Scene format v1
+# Canonical Eryx exposed crystal seam
+
+room "Eryx crystal cut"
+
+camera eye(0.0,1.72,-10.4) target(0.3,1.35,7.2) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(32.0) cone(11.0,28.0) intensity(76.0)
+sky zenith(0.01) horizon(0.23) nadir(0.00) band(0.32) curve(1.96) noise(0.14) stars(0.0028,1.42,0.090) seed(227)
+
+plane "cut_floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(24.0,42.0) gray(0.12)
+box "west_cut_wall" pos(-8.2,2.3,5.2) size(5.2,4.6,18.0) gray(0.18)
+box "east_cut_wall" pos(8.3,1.6,7.0) size(5.0,3.2,15.0) gray(0.17)
+box "west_overhang" pos(-6.0,4.9,8.5) size(9.6,1.2,8.0) gray(0.20)
+box "seam_step" pos(2.2,0.42,7.4) size(8.8,0.84,4.8) gray(0.22)
+
+prefab_crystal_cluster "primary_eryx_vein" pos(2.9,1.45,7.0) size(2.2,2.9,2.0) gray(0.66) glow(0.34)
+prefab_crystal_cluster "fractured_sample" pos(-1.8,0.85,4.2) size(1.2,1.7,1.1) gray(0.60) glow(0.25)
+prefab_extraction_rig "abandoned_drill" pos(-3.5,1.45,7.9) size(2.4,2.9,2.0) gray(0.21) detail(0.39)
+prefab_quarry_pylon "seam_datum" pos(5.7,1.7,2.5) size(1.3,3.4,1.1) gray(0.27) detail(0.44)
+prefab_crate "open_sample_case" pos(-3.3,0.55,0.6) size(1.8,1.1,1.5) gray(0.20) detail(0.34)

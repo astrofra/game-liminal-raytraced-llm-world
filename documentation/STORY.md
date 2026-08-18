@@ -29,6 +29,20 @@ The setting is a mediated, speculative Venus rather than an exercise in historic
 
 > human brutalist extraction infrastructure + sparse hostile planetary environment + invisible alien topology
 
+## Current playable incident
+
+The implemented slice begins at a split-crown quarry threshold. The prospector follows a reliable chain of human evidence: an extraction rig, an exposed crystal cut, an affinity scanner, and a sparse beacon plateau. Each place has a practical function and a return cue before the route reaches the open datum.
+
+At that datum, two quarry pylons frame an unobstructed northern field. Moving north produces bodily and instrumental contact with a smooth surface, although the image continues to show open sky. The player can detour east to Vey's pressure shelter. Vey is absent, but the shelter preserves a route recorder, scratched map, oxygen service, and a sealed crystal sample.
+
+The first hard contradiction occurs on return: moving west from the shelter arrives directly at the affinity scanner, bypassing both the open datum and the beacon plateau. The scanner remains locally recognizable. The journey is therefore not erased or randomized; the relation between known places has become impossible.
+
+This incident establishes the active dramatic grammar:
+
+```text
+measure -> traverse -> contact -> detour -> find evidence -> retrace -> contradict
+```
+
 ## The labyrinth changes under controlled rules
 
 The system maintains an authoritative world state outside the language model. Inventory, collected specimens, survival resources if used, named discoveries, and the player's committed current position must not disappear because a model improvises.

@@ -1211,3 +1211,46 @@ Limites assumées :
 - absorption RGB artistique, pas mesure spectrale d'un cristal réel
 - pas de diffusion volumique ni d'inclusions internes
 - rayon d'ombre filtré mais non dévié : aucune caustique dispersive
+
+## 2026-08-18 - Iteration 0028 - Première traversée jouable d'Eryx
+
+Objectif :
+
+Transformer la nouvelle roadmap, le lore et les moodboards `objects`, `brutalism` et `origins` en récit jouable, lieux canoniques, composition de prefabs et structure de traversal.
+
+Lecture des références :
+
+- `objects` devient une ligne rare de balises et de lampes servant réellement à s'orienter
+- `brutalism` devient une grammaire de couronnes fendues, porte-à-faux, retraits, piles isolées et masses supérieures lourdes
+- `origins` devient une topologie contradictoire, des traces instrumentales interrompues et un fragment suspendu, sans mur alien visible
+
+Implémentation :
+
+- ajout de sept lieux Eryx : `quarry_threshold`, `extraction_field`, `crystal_cut`, `scanner_station`, `survey_plateau`, `labyrinth_threshold`, `prospect_shelter`
+- ajout de sept fixtures source `assets/scenes/eryx_*.scene`
+- composition de chaque lieu avec les prefabs actifs de seuil, balise, scanner, cristal, extraction, abri, pylône, cargo et traitement atmosphérique
+- ajout de huit archétypes Eryx au compilateur hybride et migration des fallbacks de génération
+- remplacement du vocabulaire datacenter dans les prompts de tour, de salle et d'audit
+- exposition JSON de `spatial_entropy`, `suit_state`, `oxygen_state`, `instrument_power_state` et `surface_weather`, avec lecture rétrocompatible des anciennes clés
+- ajout d'une structure persistante `InvisibleBarrier`, indépendante de `blocked_exits`
+- installation d'une route canonique de douze liens dirigés
+- contact invisible au nord de `labyrinth_threshold`
+- retour non réciproque `prospect_shelter --west--> scanner_station`
+- passage du HUD à `ENTROPY` et du lieu CLI par défaut à `quarry_threshold`
+- conservation des scènes et directives datacenter comme baselines historiques
+
+Validation :
+
+- build CMake `Release` réussi sous Windows avec SDL3, `llama.cpp`, CUDA et OpenMP
+- compilation et rendu des sept fixtures à `320x180`, `2 spp`
+- inspection visuelle d'une planche-contact et du shelter
+- parcours headless de huit commandes : sept mouvements effectifs, barrière découverte, détour et retour impossible
+- état final vérifié : `scanner_station`, `spatial_entropy=55`, douze liens, une barrière découverte et huit tours d'historique
+- sauvegarde puis rechargement réussis ; un mouvement ouest supplémentaire rejoint `crystal_cut`
+- prompts actifs inspectés sans vocabulaire datacenter dans le contrat de tour ou de génération de salle
+
+Limites assumées :
+
+- la contradiction actuelle est auteurisée, pas proposée live par le LLM
+- les verbes de mesure et de marquage ne produisent pas encore de preuves persistantes
+- les noms membres C++ du hard state restent legacy jusqu'à une migration de schéma versionnée
