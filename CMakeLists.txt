@@ -14,6 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(LIMINAL_SOURCES
+    src/animated_view.cpp
     src/main.cpp
     src/game_state.cpp
     src/llm_runtime.cpp

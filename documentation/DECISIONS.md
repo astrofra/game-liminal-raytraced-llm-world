@@ -516,3 +516,21 @@ Raison :
 Consequence :
 
 Une connexion Internet et environ 5.20 Go de telechargement sont requis pendant l'installation. Le jeu fonctionne ensuite localement. Le build de distribution produit aussi une archive de sources correspondantes pour accompagner le binaire GPL.
+
+## 2026-08-18 - Separer le worker de tour du worker de vue animee
+
+Decision :
+
+Chaque vue SDL possede un `AnimatedView` local, borne a huit images. Le worker de tour calcule uniquement l'etat, la scene et l'image `0` prioritaire. Un second worker calcule ensuite sequentiellement les poses A vers B pour les images `1` a `7`, pendant que la boucle SDL continue de traiter la saisie et de recomposer le HUD.
+
+Raison :
+
+- publier l'image `0` sans attendre la boucle complete
+- ne pas faire dependre la saisie clavier de la duree du raytracing
+- conserver l'ancienne vue pendant l'inference et le rendu de la nouvelle image `0`
+- rendre explicites la propriete des images, l'annulation et le rejet des generations obsoletes
+- ne jamais rendre une sequence B vers A distincte
+
+Consequence :
+
+La camera seule varie selon une interpolation cosinus deterministe. La presentation utilise une texture SDL streaming unique et lit les images disponibles en ping-pong a `6 images/s`. Le HUD reste hors des images raytracees et suit toujours le dernier etat de jeu valide.

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <vector>
 
+#include "animated_view.h"
 #include "game_state.h"
 #include "llm_runtime.h"
 #include "renderer.h"
@@ -36,6 +37,12 @@ static void PrintUsage()
     printf("  --run-turn               Run one real headless turn through Ministral and render the resulting place\n");
     printf("  --run-session            Run a multi-turn headless session through Ministral and render the last place\n");
     printf("  --sdl                    Launch the SDL3 interactive frontend with streaming LLM output\n");
+    printf("  --view-animation-fps <f> Animated viewport playback rate (default: 6)\n");
+    printf("  --animated-view-fail-frame <n> Force animation image 1..7 to fail for diagnostics\n");
+    printf("  --animated-view-debug    Log displayed image, direction, generation and worker state\n");
+    printf("  --animated-view-self-test Validate camera endpoints and N=1/2/4/8 ping-pong sequences\n");
+    printf("  --sdl-smoke-test-ms <n> Auto-select English and close SDL cleanly after n milliseconds\n");
+    printf("  --sdl-smoke-command <text> Inject text and Return during the timed SDL smoke test\n");
     printf("  --model <path>           GGUF model path for --run-turn\n");
     printf("  --llm-temperature <f>    Sampling temperature for --run-turn\n");
     printf("  --llm-predict <n>        Maximum generated tokens for --run-turn\n");
@@ -304,6 +311,12 @@ int main(int argc, char** argv)
     bool run_turn = false;
     bool run_session = false;
     bool run_sdl = false;
+    bool run_animated_view_self_test = false;
+    float view_animation_fps = 6.0f;
+    int animated_view_fail_frame = -1;
+    bool animated_view_debug = false;
+    int sdl_smoke_test_duration_ms = 0;
+    const char* sdl_smoke_test_command = 0;
     bool prefer_candidate_scene = false;
     bool dump_raw_turn = false;
     bool dump_session_state = false;
@@ -414,6 +427,40 @@ int main(int argc, char** argv)
             run_sdl = true;
             continue;
         }
+        if (strcmp(argv[index], "--view-animation-fps") == 0 && index + 1 < argc) {
+            if (!ReadFloat(argv[++index], &view_animation_fps) || view_animation_fps <= 0.0f) {
+                fprintf(stderr, "Invalid view animation FPS value.\n");
+                return 1;
+            }
+            continue;
+        }
+        if (strcmp(argv[index], "--animated-view-fail-frame") == 0 && index + 1 < argc) {
+            if (!ReadInt(argv[++index], &animated_view_fail_frame) ||
+                animated_view_fail_frame < 1 || animated_view_fail_frame >= liminal::kAnimatedViewImageCapacity) {
+                fprintf(stderr, "Animated view failure frame must be between 1 and 7.\n");
+                return 1;
+            }
+            continue;
+        }
+        if (strcmp(argv[index], "--animated-view-self-test") == 0) {
+            run_animated_view_self_test = true;
+            continue;
+        }
+        if (strcmp(argv[index], "--animated-view-debug") == 0) {
+            animated_view_debug = true;
+            continue;
+        }
+        if (strcmp(argv[index], "--sdl-smoke-test-ms") == 0 && index + 1 < argc) {
+            if (!ReadInt(argv[++index], &sdl_smoke_test_duration_ms) || sdl_smoke_test_duration_ms <= 0) {
+                fprintf(stderr, "SDL smoke-test duration must be positive.\n");
+                return 1;
+            }
+            continue;
+        }
+        if (strcmp(argv[index], "--sdl-smoke-command") == 0 && index + 1 < argc) {
+            sdl_smoke_test_command = argv[++index];
+            continue;
+        }
         if (strcmp(argv[index], "--model") == 0 && index + 1 < argc) {
             headless_turn_config.generation_config.model_path = argv[++index];
             continue;
@@ -515,6 +562,10 @@ int main(int argc, char** argv)
         fprintf(stderr, "Choose either --run-turn, --run-session or --sdl.\n");
         return 1;
     }
+    if (sdl_smoke_test_command && sdl_smoke_test_duration_ms <= 0) {
+        fprintf(stderr, "--sdl-smoke-command requires --sdl-smoke-test-ms.\n");
+        return 1;
+    }
 
     if (command_file_path && !ReadCommandFile(command_file_path, &session_commands)) {
         fprintf(stderr, "Cannot read command file: %s\n", command_file_path);
@@ -534,6 +585,10 @@ int main(int argc, char** argv)
         liminal::PrintLlmRuntimeInfo(stdout);
         liminal::ShutdownLlmRuntime();
         return 0;
+    }
+
+    if (run_animated_view_self_test) {
+        return liminal::RunAnimatedViewSelfTest(stdout) ? 0 : 1;
     }
 
     if (dump_turn_contract || dump_generated_room_prompt || dump_scene_audit_prompt) {
@@ -609,6 +664,13 @@ int main(int argc, char** argv)
         sdl_config.render_config = config;
         sdl_config.turn_config = headless_turn_config;
         sdl_config.turn_config.prefer_candidate_scene = prefer_candidate_scene;
+        sdl_config.animated_view_config.playback_images_per_second = view_animation_fps;
+        sdl_config.animated_view_config.forced_failure_image_index = animated_view_fail_frame;
+        sdl_config.animated_view_config.debug_logging = animated_view_debug;
+        sdl_config.automated_smoke_test_duration_ms = sdl_smoke_test_duration_ms;
+        if (sdl_smoke_test_command) {
+            sdl_config.automated_smoke_test_command = sdl_smoke_test_command;
+        }
 
         liminal::SessionState final_session_state;
         if (!liminal::RunSdlFrontend(sdl_config, session_state, &final_session_state, error_buffer, sizeof(error_buffer))) {

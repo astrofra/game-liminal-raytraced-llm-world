@@ -1377,3 +1377,38 @@ Limites assumees :
 - le telechargement complet du modele de `5,198,911,904` octets n'a pas ete lance pendant cette validation
 - le setup n'est pas encore signe Authenticode
 - le pilote NVIDIA reste un prerequis de la machine cible
+
+## 2026-08-18 - Iteration 0033 - Vues raytracees animees
+
+Objectif :
+
+Transformer chaque plan fixe du viewport en courte boucle animee de respiration, calculee progressivement sans bloquer la saisie ni figer le HUD.
+
+Implementation :
+
+- ajout de `src/animated_view.h/.cpp` avec etat borne, poses A/B, buffer RGB et playback
+- pose B derivee dans le repere camera : `+0.025 m` vertical, `+0.012 m` avant, pitch `+0.35 deg`, roll `+0.15 deg`, yaw nul
+- huit positions A vers B avec `0.5 - 0.5 * cos(pi * t)` et interpolation normalisee de la base camera
+- ping-pong dynamique sur toutes les images contigues disponibles, sans dupliquer les endpoints
+- worker de tour limite a l'image `0`, publiee avec la nouvelle session
+- worker d'animation separe pour les images `1` a `7`
+- conservation de l'ancienne animation pendant l'inference et le rendu de la prochaine image `0`
+- identifiants de generation atomiques, rejet des frames tardives et annulation best-effort
+- texture SDL streaming unique mise a jour seulement lors d'un changement d'image affichee
+- HUD, visiere, titre, boussole, transcript et saisie toujours recomposes apres le viewport
+- options de diagnostic et smoke test ajoutees a la CLI
+
+Validation :
+
+- build CMake `Release` reussi
+- self-test : sequences exactes pour `1`, `2`, `4` et `8` images, endpoints exacts, dix cycles sans derive et publication obsolete refusee
+- smoke SDL `160x80`, `1 spp` : huit images publiees et ordre observe `0 -> 1 -> ... -> 7 -> 6`
+- echec force sur l'image `4` : images `0` a `3` conservees, input et fermeture propres
+- test avec commande synthetique `north` pendant le rendu : tour LLM execute, passage generation `1` vers `2` uniquement apres la nouvelle image `0`, puis huit nouvelles images publiees
+- preset normal `800x400`, `16 spp` : remplissage en environ `15.15 s`, `7,680,000` octets RGB et texture RGBA de `1,280,000` octets
+
+Limites assumees :
+
+- l'annulation intervient entre les images, pas au milieu d'une ligne de raytracing
+- la concurrence entre animation, image `0` et inference peut creer une contention CPU ponctuelle
+- aucune animation de decor, accumulation temporelle ou serialization de l'etat d'animation

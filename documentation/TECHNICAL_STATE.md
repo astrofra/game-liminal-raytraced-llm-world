@@ -200,7 +200,12 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - reconnaissance dédiée des cues `crystal`, `scanner`, `drill`, `prospect shelter`, `survey beacon`, `quarry pylon` et `atmospheric processor` vers les nouvelles primitives Eryx
 - Premiere HMI `SDL3` desktop :
   - event loop non bloquante
-  - worker thread dedie a l'inference et au raytracing
+  - worker de tour dedie a l'inference et a l'image `0`, plus worker de vue separe pour les images `1` a `7`
+  - buffer `AnimatedView` borne a huit images RGB contigues, publiees une fois terminees
+  - mouvement de respiration deterministe entre pose camera A et pose B : `+0.025 m` vertical, `+0.012 m` avant, `+0.35 deg` pitch et `+0.15 deg` roll
+  - interpolation ease-in/ease-out cosinus et lecture ping-pong dynamique a `6 images/s`
+  - generation identifiee par compteur monotone, rejet des publications obsoletes et annulation entre deux images
+  - image courante chargee dans une texture SDL streaming unique ; HUD, visiere, transcript et saisie recomposes ensuite a chaque passe
   - flux brut du modele et `.scene` dans le terminal
   - ligne terminal de provenance apres chaque tour pour distinguer scene canonique, salle generee, fallback metadata et fallback scene
   - panneau de transcript joueur avec narration finale seulement
@@ -232,6 +237,8 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - rendre les scenes generees par la chaine hybride
   - assembler `documentation/HYBRID_SCENE_GENERATION_BENCHMARK.md`
 - Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`, desormais en buffer RGB.
+- Self-test `--animated-view-self-test` pour les sequences `1/2/4/8`, les endpoints camera, l'absence de derive et le rejet des generations obsoletes.
+- Diagnostics `--animated-view-debug`, `--animated-view-fail-frame`, `--sdl-smoke-test-ms` et `--sdl-smoke-command` pour observer le worker, forcer un mode degrade et automatiser une session SDL courte.
 - Options CLI de boucle fonctionnelle :
   - `--run-turn`
   - `--run-session`
@@ -256,8 +263,10 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
 - [../src/scene.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.h:1) : structures de scene et BVH.
 - [../src/scene.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/scene.cpp:1) : chargement `.scene` et `.obj`, parseur scene v1 fichier ou memoire, conversion des primitives, materiaux, lumiere Cornell, construction BVH.
 - [../src/renderer.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/renderer.cpp:1) : camera, spotlight analytique, intersections, visibilite, integrateur, export PNG/PGM.
+- [../src/animated_view.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/animated_view.h:1) : etat borne de la vue, configuration du mouvement et interface de playback.
+- [../src/animated_view.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/animated_view.cpp:1) : pose B, interpolation cosinus, ping-pong, garde de generation et self-test.
 - [../src/sdl_frontend.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/sdl_frontend.h:1) : interface de la premiere boucle interactive `SDL3`.
-- [../src/sdl_frontend.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/sdl_frontend.cpp:1) : fenetre, transcript, saisie texte, worker thread et presentation streaming.
+- [../src/sdl_frontend.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/sdl_frontend.cpp:1) : fenetre, transcript, saisie texte, workers de tour et d'animation, publication progressive et presentation streaming.
 - [../src/main.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/main.cpp:76) : point d'entree CLI, parsing des options, telemetrie basique et premieres commandes de debug fonctionnel.
 - [../src/game_state.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/game_state.h:1) : structures du monde, des deltas et du contrat de tour.
 - [../src/game_state.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/game_state.cpp:1) : enums, etats initiaux, pose cachee du monde et resumes de debug.
@@ -333,6 +342,8 @@ Exemples du noyau fonctionnel :
 .\build\Release\liminal_cornell_renderer.exe --compile-location quarry_threshold --output output\compiled_eryx_threshold.png
 .\build\Release\liminal_cornell_renderer.exe --audit-scene-text assets\scenes\eryx_labyrinth_threshold.scene --output output\audited_labyrinth_threshold.png
 .\build\Release\liminal_cornell_renderer.exe --sdl --location quarry_threshold --save-state output\eryx_session_state.json
+.\build\Release\liminal_cornell_renderer.exe --animated-view-self-test
+.\build\Release\liminal_cornell_renderer.exe --sdl --animated-view-debug --view-animation-fps 6
 .\build\Release\liminal_cornell_renderer.exe --run-session --location quarry_threshold --command north --command north --command east --command north --command east --command north --command east --command west --save-state output\eryx_route.json --output output\eryx_route.png
 .\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\eryx_route.json --command west --save-state output\eryx_route_2.json --output output\eryx_route_2.png
 ```
@@ -537,7 +548,7 @@ Observation importante :
 - pas encore de couche compacte d'instanciation ou de repetition pour les prefabs
 - les prefabs actuels augmentent fortement le nombre de triangles et de materiaux
 - pas de telemetrie CPU/GPU/memoire
-- pas de tests automatises
+- pas de suite globale de tests automatises ; la vue animee possede toutefois un self-test deterministe et des smoke tests SDL temporises
 - semantique runtime Eryx encore partielle :
   - pas de proposition LLM de mutation topologique separee des deltas spatiaux ordinaires
   - pas de validateur de frequence, recuperation ou provenance des mutations live

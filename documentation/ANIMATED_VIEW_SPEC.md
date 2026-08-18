@@ -1,8 +1,10 @@
 # Animated Raytraced View Specification
 
-Status: proposed  
+Status: implemented
 Date: 2026-08-18  
 Scope: SDL viewport presentation and background raytracing only
+
+Implementation: `src/animated_view.h/.cpp`, `src/sdl_frontend.cpp`, and the `--animated-view-self-test` diagnostic path.
 
 ## 1. Purpose
 
@@ -272,6 +274,17 @@ The feature is complete when all of the following checks pass:
 11. Replacing a view cannot publish a late image from the preceding generation.
 12. A forced failure on image `4` leaves images `0` through `3` playable and keeps keyboard input responsive.
 13. Closing the application during background image generation terminates without a worker-thread or texture-resource leak.
+
+### 13.1 Validation evidence
+
+Validated on 2026-08-18 with the `Release` build:
+
+- `--animated-view-self-test` passes the exact `N=1`, `N=2`, `N=4`, and `N=8` playback sequences, the eight-image capacity guard, eased translation, exact A/B endpoints, ten drift-free cycles, and stale-generation rejection;
+- an SDL dummy-driver smoke test at `160x80`, `1 spp` published all eight images and logged the displayed transition `0 -> 1 -> ... -> 7 -> 6`;
+- a forced failure on image `4` retained four contiguous playable images, `0` through `3`, and exited cleanly;
+- a timed SDL test injected `north` while the first animation worker was rendering, completed the LLM turn, swapped from generation `1` to generation `2` only after the new image `0` was ready, and filled the replacement buffer;
+- the default `800x400`, `16 spp` view filled eight images in approximately `15.15 s`, using `7,680,000` bytes of raw RGB image storage and one `1,280,000`-byte RGBA streaming texture;
+- the visor, title, thermal HUD, compass, transcript, and input remain in the per-pass SDL compositor after texture selection and are not stored in animation images.
 
 ## 14. Recommended implementation order
 

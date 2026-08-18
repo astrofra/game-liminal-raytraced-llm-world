@@ -27,6 +27,7 @@ Current state:
 - optional `llama.cpp` runtime wiring in CMake
 - optional OpenMP line-parallel rendering in CMake
 - first SDL3 interactive frontend with streaming LLM output
+- progressively generated eight-image raytraced viewport loops with deterministic breathing-camera motion and live HUD composition
 - first generated-room graph for improvised cardinal navigation
 - authoritative hard/soft/spatial state with deterministic and hybrid scene compilation
 - seven-place Eryx survey route with deterministic invisible contact and non-reciprocal traversal
@@ -119,6 +120,13 @@ play_within_the_latent_walls.bat --load-state output\sdl_session_state.json
 ```
 
 These commands launch the Eryx slice under its selected bilingual title.
+
+Animated-view diagnostics:
+
+```powershell
+.\build\Release\liminal_cornell_renderer.exe --animated-view-self-test
+.\build\Release\liminal_cornell_renderer.exe --sdl --animated-view-debug --view-animation-fps 6
+```
 
 ## Run
 

@@ -4,6 +4,26 @@ Derniere mise a jour : 2026-08-18
 
 ## Ouverts
 
+### 2026-08-18 - L'annulation d'une image raytracee n'est verifiee qu'entre deux images
+
+Statut :
+
+Ouvert, non bloquant.
+
+Description :
+
+Le worker de vue controle l'annulation et l'identifiant de generation avant et apres chaque image. `RenderSceneToPixels()` ne possede pas encore de token d'annulation par ligne ou par sample. Une fermeture ou un remplacement de vue peut donc attendre la fin de l'image en cours avant de joindre le worker ; sa publication est ensuite rejetee si elle est obsolete.
+
+Impact :
+
+- l'UI reste non bloquante pendant le rendu normal
+- l'arret propre peut attendre environ la duree d'une image
+- un rendu d'animation concurrent avec une inference ou une nouvelle image `0` peut provoquer une contention CPU temporaire
+
+Piste :
+
+Ajouter un callback d'annulation optionnel au renderer memoire, controle entre les lignes, sans modifier le rendu headless ni introduire de cible partiellement publiee.
+
 ### 2026-08-18 - L'installeur Windows n'est pas encore signe ni valide sur une machine vierge
 
 Statut :

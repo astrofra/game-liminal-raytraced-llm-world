@@ -2,16 +2,19 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <math.h>
 #include <mutex>
 #include <stdio.h>
 #include <string.h>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
+#include "animated_view.h"
 #include "renderer.h"
 #include "scene_compiler.h"
 
@@ -41,6 +44,7 @@ struct WorkerSharedState {
     SessionState session_state;
     HeadlessTurnResult turn_result;
     std::vector<unsigned char> pixels;
+    double first_image_render_duration_ms;
 
     WorkerSharedState()
         : stop_requested(false)
@@ -49,6 +53,51 @@ struct WorkerSharedState {
         , error_ready(false)
         , activity(kWorkerActivityIdle)
         , terminal_stream_open(false)
+        , first_image_render_duration_ms(0.0)
+    {
+    }
+};
+
+struct AnimationFramePublication {
+    uint64_t generation_id;
+    int image_index;
+    std::vector<unsigned char> pixels;
+    double render_duration_ms;
+
+    AnimationFramePublication()
+        : generation_id(0)
+        , image_index(-1)
+        , render_duration_ms(0.0)
+    {
+    }
+};
+
+struct AnimationWorkerSharedState {
+    std::mutex mutex;
+    std::atomic<bool> stop_requested;
+    std::atomic<uint64_t> active_generation_id;
+    bool busy;
+    uint64_t worker_generation_id;
+    int image_being_rendered;
+    std::vector<AnimationFramePublication> completed_frames;
+    bool completion_ready;
+    uint64_t completion_generation_id;
+    double total_generation_duration_ms;
+    bool failure_ready;
+    uint64_t failure_generation_id;
+    std::string failure_text;
+
+    AnimationWorkerSharedState()
+        : stop_requested(false)
+        , active_generation_id(0)
+        , busy(false)
+        , worker_generation_id(0)
+        , image_being_rendered(-1)
+        , completion_ready(false)
+        , completion_generation_id(0)
+        , total_generation_duration_ms(0.0)
+        , failure_ready(false)
+        , failure_generation_id(0)
     {
     }
 };
@@ -1416,11 +1465,14 @@ static void RunTurnWorker(
         shared_state->status_text = "Raytracing scene...";
     }
 
+    const std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();
     std::vector<unsigned char> pixels;
     if (!RenderSceneToPixels(turn_result.rendered_scene, config.render_config, &pixels)) {
         FinalizeWorkerFailure(shared_state, "Rendering failed.");
         return;
     }
+    const double render_duration_ms = std::chrono::duration<double, std::milli>(
+        std::chrono::steady_clock::now() - render_start).count();
 
     if (shared_state->stop_requested.load()) {
         FinalizeWorkerFailure(shared_state, "Turn cancelled.");
@@ -1435,10 +1487,184 @@ static void RunTurnWorker(
         shared_state->error_ready = false;
         shared_state->activity = kWorkerActivityComplete;
         shared_state->status_text = "Turn complete.";
-        shared_state->session_state = updated_session_state;
-        shared_state->turn_result = turn_result;
+        std::swap(shared_state->session_state, updated_session_state);
+        std::swap(shared_state->turn_result, turn_result);
         shared_state->pixels.swap(pixels);
+        shared_state->first_image_render_duration_ms = render_duration_ms;
     }
+}
+
+static void RunAnimationWorker(
+    RenderConfig render_config,
+    AnimatedViewConfig animation_config,
+    Scene scene_snapshot,
+    Camera pose_a,
+    Camera pose_b,
+    uint64_t generation_id,
+    double first_image_render_duration_ms,
+    AnimationWorkerSharedState* shared_state)
+{
+    if (!shared_state) {
+        return;
+    }
+
+    const std::chrono::steady_clock::time_point generation_start = std::chrono::steady_clock::now();
+    fprintf(
+        stdout,
+        "[animated-view] generation=%llu started available=1 image_bytes=%zu texture_bytes=%zu\n",
+        static_cast<unsigned long long>(generation_id),
+        static_cast<size_t>(render_config.width) * static_cast<size_t>(render_config.height) * 3u,
+        static_cast<size_t>(render_config.width) * static_cast<size_t>(render_config.height) * 4u);
+    fflush(stdout);
+
+    bool failed = false;
+    bool cancelled = false;
+    std::string failure_text;
+
+    for (int image_index = 1; image_index < kAnimatedViewImageCapacity; ++image_index) {
+        if (shared_state->stop_requested.load() ||
+            shared_state->active_generation_id.load() != generation_id) {
+            cancelled = true;
+            break;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(shared_state->mutex);
+            shared_state->image_being_rendered = image_index;
+        }
+        if (animation_config.debug_logging) {
+            fprintf(
+                stdout,
+                "[animated-view] generation=%llu rendering=%d\n",
+                static_cast<unsigned long long>(generation_id),
+                image_index);
+            fflush(stdout);
+        }
+
+        if (animation_config.forced_failure_image_index == image_index) {
+            failed = true;
+            failure_text = "Forced animated-view render failure.";
+            break;
+        }
+
+        scene_snapshot.camera = CalculateAnimatedCameraPose(pose_a, pose_b, image_index);
+        const std::chrono::steady_clock::time_point frame_start = std::chrono::steady_clock::now();
+        std::vector<unsigned char> pixels;
+        if (!RenderSceneToPixels(scene_snapshot, render_config, &pixels)) {
+            failed = true;
+            failure_text = "Animated-view raytracing failed.";
+            break;
+        }
+        const double render_duration_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - frame_start).count();
+
+        if (shared_state->stop_requested.load() ||
+            shared_state->active_generation_id.load() != generation_id) {
+            fprintf(
+                stdout,
+                "[animated-view] generation=%llu stale image=%d discarded duration_ms=%.2f\n",
+                static_cast<unsigned long long>(generation_id),
+                image_index,
+                render_duration_ms);
+            fflush(stdout);
+            cancelled = true;
+            break;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(shared_state->mutex);
+            shared_state->completed_frames.push_back(AnimationFramePublication());
+            AnimationFramePublication& publication = shared_state->completed_frames.back();
+            publication.generation_id = generation_id;
+            publication.image_index = image_index;
+            publication.pixels.swap(pixels);
+            publication.render_duration_ms = render_duration_ms;
+        }
+
+        fprintf(
+            stdout,
+            "[animated-view] generation=%llu image=%d rendered duration_ms=%.2f\n",
+            static_cast<unsigned long long>(generation_id),
+            image_index,
+            render_duration_ms);
+        fflush(stdout);
+    }
+
+    const double worker_duration_ms = std::chrono::duration<double, std::milli>(
+        std::chrono::steady_clock::now() - generation_start).count();
+    {
+        std::lock_guard<std::mutex> lock(shared_state->mutex);
+        shared_state->busy = false;
+        shared_state->image_being_rendered = -1;
+        if (shared_state->active_generation_id.load() == generation_id && !cancelled) {
+            if (failed) {
+                shared_state->failure_ready = true;
+                shared_state->failure_generation_id = generation_id;
+                shared_state->failure_text = failure_text;
+            } else {
+                shared_state->completion_ready = true;
+                shared_state->completion_generation_id = generation_id;
+                shared_state->total_generation_duration_ms =
+                    first_image_render_duration_ms + worker_duration_ms;
+            }
+        }
+    }
+
+    if (cancelled) {
+        fprintf(
+            stdout,
+            "[animated-view] generation=%llu cancelled or superseded\n",
+            static_cast<unsigned long long>(generation_id));
+    } else if (failed) {
+        fprintf(
+            stderr,
+            "[animated-view] generation=%llu failed: %s\n",
+            static_cast<unsigned long long>(generation_id),
+            failure_text.c_str());
+    } else {
+        fprintf(
+            stdout,
+            "[animated-view] generation=%llu complete total_ms=%.2f\n",
+            static_cast<unsigned long long>(generation_id),
+            first_image_render_duration_ms + worker_duration_ms);
+    }
+    fflush(stdout);
+}
+
+static void StartAnimationWorker(
+    const RenderConfig& render_config,
+    const AnimatedViewConfig& animation_config,
+    const AnimatedView& view,
+    AnimationWorkerSharedState* shared_state,
+    std::thread* worker_thread)
+{
+    if (!shared_state || !worker_thread || worker_thread->joinable() ||
+        view.available_image_count < 1 || view.available_image_count >= kAnimatedViewImageCapacity ||
+        view.generation_complete || view.generation_failed) {
+        return;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(shared_state->mutex);
+        shared_state->busy = true;
+        shared_state->worker_generation_id = view.generation_id;
+        shared_state->image_being_rendered = 1;
+        shared_state->completion_ready = false;
+        shared_state->failure_ready = false;
+        shared_state->failure_text.clear();
+    }
+    shared_state->stop_requested.store(false);
+    shared_state->active_generation_id.store(view.generation_id);
+    *worker_thread = std::thread(
+        RunAnimationWorker,
+        render_config,
+        animation_config,
+        view.scene_snapshot,
+        view.pose_a,
+        view.pose_b,
+        view.generation_id,
+        view.total_generation_duration_ms,
+        shared_state);
 }
 
 static std::string BuildStatusLine(
@@ -1711,11 +1937,14 @@ bool RunSdlFrontend(
         return false;
     }
 
+    const std::chrono::steady_clock::time_point initial_render_start = std::chrono::steady_clock::now();
     std::vector<unsigned char> rgb_pixels;
     if (!RenderSceneToPixels(initial_scene, config.render_config, &rgb_pixels)) {
         SetError(error_buffer, error_buffer_size, "Cannot render initial scene.");
         return false;
     }
+    const double initial_render_duration_ms = std::chrono::duration<double, std::milli>(
+        std::chrono::steady_clock::now() - initial_render_start).count();
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SetSdlError(error_buffer, error_buffer_size, "SDL_Init failed");
@@ -1786,13 +2015,34 @@ bool RunSdlFrontend(
         return false;
     }
 
+    AnimatedView active_animated_view;
+    uint64_t next_generation_id = 1u;
+    if (!InitializeAnimatedView(
+            &active_animated_view,
+            next_generation_id,
+            initial_scene,
+            config.animated_view_config,
+            &rgb_pixels,
+            initial_render_duration_ms)) {
+        SetError(error_buffer, error_buffer_size, "Cannot initialize animated view.");
+        SDL_DestroyTexture(scene_texture);
+        SDL_StopTextInput(window);
+        DestroyUiFonts(&ui_fonts);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return false;
+    }
+
     std::vector<unsigned char> texture_rgba_pixels;
     UploadSceneTexture(
-        rgb_pixels,
+        active_animated_view.images[0].pixels,
         config.render_config.width,
         config.render_config.height,
         &texture_rgba_pixels,
         scene_texture);
+    uint64_t uploaded_generation_id = active_animated_view.generation_id;
+    int uploaded_image_index = 0;
 
     const SDL_FRect title_rect = {40.0f, 4.0f, 920.0f, 22.0f};
     const SDL_FRect scene_frame = {40.0f, 28.0f, 920.0f, 460.0f};
@@ -1813,6 +2063,16 @@ bool RunSdlFrontend(
     WorkerSharedState worker_shared_state;
     std::thread worker_thread;
     bool worker_joined = true;
+    AnimationWorkerSharedState animation_shared_state;
+    std::thread animation_worker_thread;
+    animation_shared_state.active_generation_id.store(active_animated_view.generation_id);
+    StartAnimationWorker(
+        config.render_config,
+        config.animated_view_config,
+        active_animated_view,
+        &animation_shared_state,
+        &animation_worker_thread);
+    Uint64 playback_last_ticks = SDL_GetTicks();
     bool running = true;
     bool language_selected = false;
     bool have_last_turn = false;
@@ -1829,12 +2089,21 @@ bool RunSdlFrontend(
     std::vector<UiTextLine> transcript_lines;
     bool worker_busy = false;
     Uint64 text_input_suppressed_until = 0;
+    const Uint64 smoke_test_start_ticks = SDL_GetTicks();
+    bool smoke_test_text_pushed = false;
+    bool smoke_test_return_pushed = false;
+    if (config.automated_smoke_test_duration_ms > 0) {
+        current_session_state.language = kGameLanguageEnglish;
+        language_selected = true;
+        persistent_hint = "Automated animated-view smoke test.";
+    }
 
     while (running) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT || event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
                 worker_shared_state.stop_requested.store(true);
+                animation_shared_state.stop_requested.store(true);
                 running = false;
                 break;
             }
@@ -1847,6 +2116,7 @@ bool RunSdlFrontend(
                             command_history[index] = ExpandInfocomShortcutCommand(command_history[index], current_session_state.language);
                         }
                         language_selected = true;
+                        playback_last_ticks = SDL_GetTicks();
                         text_input_suppressed_until = SDL_GetTicks() + 250;
                         persistent_hint = "Ready. Press Enter to send a command.";
                     } else if (event.key.key == SDLK_F) {
@@ -1855,6 +2125,7 @@ bool RunSdlFrontend(
                             command_history[index] = ExpandInfocomShortcutCommand(command_history[index], current_session_state.language);
                         }
                         language_selected = true;
+                        playback_last_ticks = SDL_GetTicks();
                         text_input_suppressed_until = SDL_GetTicks() + 250;
                         persistent_hint = "Prêt. Appuyez sur Entrée pour envoyer une commande.";
                     }
@@ -1987,6 +2258,7 @@ bool RunSdlFrontend(
 
                 if (IsQuitCommand(command)) {
                     worker_shared_state.stop_requested.store(true);
+                    animation_shared_state.stop_requested.store(true);
                     running = false;
                     break;
                 }
@@ -2024,6 +2296,38 @@ bool RunSdlFrontend(
             }
         }
 
+        const Uint64 smoke_test_elapsed_ticks = SDL_GetTicks() - smoke_test_start_ticks;
+        if (!config.automated_smoke_test_command.empty() && !smoke_test_text_pushed &&
+            smoke_test_elapsed_ticks >= 250u) {
+            SDL_Event text_event;
+            SDL_zero(text_event);
+            text_event.type = SDL_EVENT_TEXT_INPUT;
+            text_event.text.windowID = SDL_GetWindowID(window);
+            text_event.text.text = config.automated_smoke_test_command.c_str();
+            SDL_PushEvent(&text_event);
+            smoke_test_text_pushed = true;
+        }
+        if (smoke_test_text_pushed && !smoke_test_return_pushed && smoke_test_elapsed_ticks >= 350u) {
+            SDL_Event return_event;
+            SDL_zero(return_event);
+            return_event.type = SDL_EVENT_KEY_DOWN;
+            return_event.key.windowID = SDL_GetWindowID(window);
+            return_event.key.key = SDLK_RETURN;
+            return_event.key.down = true;
+            return_event.key.repeat = false;
+            SDL_PushEvent(&return_event);
+            smoke_test_return_pushed = true;
+        }
+
+        if (config.automated_smoke_test_duration_ms > 0 &&
+            smoke_test_elapsed_ticks >=
+                static_cast<Uint64>(config.automated_smoke_test_duration_ms)) {
+            worker_shared_state.stop_requested.store(true);
+            animation_shared_state.stop_requested.store(true);
+            running = false;
+            break;
+        }
+
         if (!language_selected && running) {
             DrawLanguageSelection(renderer, ui_fonts, config.logical_width, config.logical_height);
             SDL_RenderPresent(renderer);
@@ -2034,6 +2338,11 @@ bool RunSdlFrontend(
         bool turn_completed = false;
         bool turn_failed = false;
         std::string failure_text;
+        bool turn_result_ready = false;
+        SessionState completed_session_state;
+        HeadlessTurnResult completed_turn_result;
+        std::vector<unsigned char> completed_first_image;
+        double completed_first_image_duration_ms = 0.0;
 
         {
             std::lock_guard<std::mutex> lock(worker_shared_state.mutex);
@@ -2042,20 +2351,12 @@ bool RunSdlFrontend(
             worker_status = worker_shared_state.status_text.empty() ? "idle" : worker_shared_state.status_text;
 
             if (worker_shared_state.result_ready) {
-                current_session_state = worker_shared_state.session_state;
-                last_turn_result = worker_shared_state.turn_result;
-                have_last_turn = true;
-                pending_command.clear();
-                rgb_pixels = worker_shared_state.pixels;
-                UploadSceneTexture(
-                    rgb_pixels,
-                    config.render_config.width,
-                    config.render_config.height,
-                    &texture_rgba_pixels,
-                    scene_texture);
+                std::swap(completed_session_state, worker_shared_state.session_state);
+                std::swap(completed_turn_result, worker_shared_state.turn_result);
+                completed_first_image.swap(worker_shared_state.pixels);
+                completed_first_image_duration_ms = worker_shared_state.first_image_render_duration_ms;
                 worker_shared_state.result_ready = false;
-                turn_completed = true;
-                ui_message.clear();
+                turn_result_ready = true;
             } else if (worker_shared_state.error_ready) {
                 failure_text = worker_shared_state.error_text;
                 worker_shared_state.error_ready = false;
@@ -2066,15 +2367,191 @@ bool RunSdlFrontend(
             }
         }
 
+        if (turn_result_ready) {
+            AnimatedView replacement_view;
+            ++next_generation_id;
+            if (!InitializeAnimatedView(
+                    &replacement_view,
+                    next_generation_id,
+                    completed_turn_result.rendered_scene,
+                    config.animated_view_config,
+                    &completed_first_image,
+                    completed_first_image_duration_ms)) {
+                turn_failed = true;
+                failure_text = "Cannot initialize the replacement animated view.";
+                ui_message = current_session_state.language == kGameLanguageFrench
+                    ? "La nouvelle vue n'a pas pu être initialisée."
+                    : failure_text;
+            } else {
+                animation_shared_state.active_generation_id.store(replacement_view.generation_id);
+                animation_shared_state.stop_requested.store(true);
+                active_animated_view = std::move(replacement_view);
+                current_session_state = std::move(completed_session_state);
+                last_turn_result = std::move(completed_turn_result);
+                have_last_turn = true;
+                pending_command.clear();
+                playback_last_ticks = SDL_GetTicks();
+                UploadSceneTexture(
+                    active_animated_view.images[0].pixels,
+                    config.render_config.width,
+                    config.render_config.height,
+                    &texture_rgba_pixels,
+                    scene_texture);
+                uploaded_generation_id = active_animated_view.generation_id;
+                uploaded_image_index = 0;
+                turn_completed = true;
+                ui_message.clear();
+                fprintf(
+                    stdout,
+                    "[animated-view] active generation=%llu swapped on image=0 duration_ms=%.2f\n",
+                    static_cast<unsigned long long>(active_animated_view.generation_id),
+                    completed_first_image_duration_ms);
+                fflush(stdout);
+            }
+        }
+
         if (!worker_joined && !worker_busy && worker_thread.joinable()) {
             worker_thread.join();
             worker_joined = true;
+        }
+
+        std::vector<AnimationFramePublication> animation_publications;
+        bool animation_worker_busy = false;
+        uint64_t animation_worker_generation_id = 0;
+        int animation_image_being_rendered = -1;
+        bool animation_completion_ready = false;
+        uint64_t animation_completion_generation_id = 0;
+        double animation_total_generation_duration_ms = 0.0;
+        bool animation_failure_ready = false;
+        uint64_t animation_failure_generation_id = 0;
+        std::string animation_failure_text;
+        {
+            std::lock_guard<std::mutex> lock(animation_shared_state.mutex);
+            animation_worker_busy = animation_shared_state.busy;
+            animation_worker_generation_id = animation_shared_state.worker_generation_id;
+            animation_image_being_rendered = animation_shared_state.image_being_rendered;
+            animation_publications.swap(animation_shared_state.completed_frames);
+            if (animation_shared_state.completion_ready) {
+                animation_completion_ready = true;
+                animation_completion_generation_id = animation_shared_state.completion_generation_id;
+                animation_total_generation_duration_ms = animation_shared_state.total_generation_duration_ms;
+                animation_shared_state.completion_ready = false;
+            }
+            if (animation_shared_state.failure_ready) {
+                animation_failure_ready = true;
+                animation_failure_generation_id = animation_shared_state.failure_generation_id;
+                animation_failure_text = animation_shared_state.failure_text;
+                animation_shared_state.failure_ready = false;
+            }
+        }
+
+        active_animated_view.image_being_rendered =
+            animation_worker_generation_id == active_animated_view.generation_id
+            ? animation_image_being_rendered
+            : -1;
+        for (size_t publication_index = 0; publication_index < animation_publications.size(); ++publication_index) {
+            AnimationFramePublication& publication = animation_publications[publication_index];
+            if (publication.generation_id != active_animated_view.generation_id) {
+                fprintf(
+                    stdout,
+                    "[animated-view] active=%llu stale publication generation=%llu image=%d discarded\n",
+                    static_cast<unsigned long long>(active_animated_view.generation_id),
+                    static_cast<unsigned long long>(publication.generation_id),
+                    publication.image_index);
+                continue;
+            }
+
+            if (!AppendAnimatedViewImage(
+                    &active_animated_view,
+                    publication.generation_id,
+                    publication.image_index,
+                    &publication.pixels,
+                    publication.render_duration_ms)) {
+                active_animated_view.generation_failed = true;
+                animation_failure_ready = true;
+                animation_failure_generation_id = active_animated_view.generation_id;
+                animation_failure_text = "Non-contiguous animated-view publication rejected.";
+                break;
+            }
+
+            fprintf(
+                stdout,
+                "[animated-view] generation=%llu available=%d memory_bytes=%zu\n",
+                static_cast<unsigned long long>(active_animated_view.generation_id),
+                active_animated_view.available_image_count,
+                AnimatedViewImageMemoryBytes(active_animated_view));
+            fflush(stdout);
+        }
+
+        if (animation_completion_ready &&
+            animation_completion_generation_id == active_animated_view.generation_id) {
+            active_animated_view.generation_complete = true;
+            active_animated_view.image_being_rendered = -1;
+            active_animated_view.total_generation_duration_ms = animation_total_generation_duration_ms;
+        }
+        if (animation_failure_ready &&
+            animation_failure_generation_id == active_animated_view.generation_id) {
+            active_animated_view.generation_failed = true;
+            active_animated_view.image_being_rendered = -1;
+            ui_message = current_session_state.language == kGameLanguageFrench
+                ? "L'animation s'est arrêtée ; les images disponibles restent utilisables."
+                : (animation_failure_text.empty()
+                    ? "Animation generation stopped; available images remain playable."
+                    : animation_failure_text);
+        }
+
+        if (!animation_worker_busy && animation_worker_thread.joinable()) {
+            animation_worker_thread.join();
+        }
+        if (!animation_worker_thread.joinable() &&
+            !active_animated_view.generation_complete &&
+            !active_animated_view.generation_failed &&
+            active_animated_view.available_image_count < kAnimatedViewImageCapacity) {
+            StartAnimationWorker(
+                config.render_config,
+                config.animated_view_config,
+                active_animated_view,
+                &animation_shared_state,
+                &animation_worker_thread);
         }
 
         if (turn_completed) {
             persistent_hint.clear();
         } else if (turn_failed) {
             persistent_hint.clear();
+        }
+
+        const Uint64 playback_now_ticks = SDL_GetTicks();
+        const double playback_elapsed_seconds =
+            static_cast<double>(playback_now_ticks - playback_last_ticks) / 1000.0;
+        playback_last_ticks = playback_now_ticks;
+        AdvanceAnimatedViewPlayback(
+            &active_animated_view,
+            playback_elapsed_seconds,
+            config.animated_view_config.playback_images_per_second);
+        if (active_animated_view.displayed_image_index >= 0 &&
+            active_animated_view.displayed_image_index < active_animated_view.available_image_count &&
+            (uploaded_generation_id != active_animated_view.generation_id ||
+                uploaded_image_index != active_animated_view.displayed_image_index)) {
+            UploadSceneTexture(
+                active_animated_view.images[static_cast<size_t>(active_animated_view.displayed_image_index)].pixels,
+                config.render_config.width,
+                config.render_config.height,
+                &texture_rgba_pixels,
+                scene_texture);
+            uploaded_generation_id = active_animated_view.generation_id;
+            uploaded_image_index = active_animated_view.displayed_image_index;
+            if (config.animated_view_config.debug_logging) {
+                fprintf(
+                    stdout,
+                    "[animated-view] generation=%llu displayed=%d direction=%d available=%d rendering=%d\n",
+                    static_cast<unsigned long long>(active_animated_view.generation_id),
+                    active_animated_view.displayed_image_index,
+                    active_animated_view.playback_direction,
+                    active_animated_view.available_image_count,
+                    active_animated_view.image_being_rendered);
+                fflush(stdout);
+            }
         }
 
         const std::string status_line = BuildStatusLine(
@@ -2153,8 +2630,12 @@ bool RunSdlFrontend(
     }
 
     worker_shared_state.stop_requested.store(true);
+    animation_shared_state.stop_requested.store(true);
     if (worker_thread.joinable()) {
         worker_thread.join();
+    }
+    if (animation_worker_thread.joinable()) {
+        animation_worker_thread.join();
     }
 
     if (final_session_state) {
