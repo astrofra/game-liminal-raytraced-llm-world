@@ -245,6 +245,8 @@ Invisible barriers belong to traversal and collision semantics. Optional diagnos
 - Preserve the current locked palette and an image dominated by grayscale.
 - Use a Venusian sky gradient from green at the zenith to pale yellow near the horizon. Multiply environment radiance by two only when a traced path misses scene geometry.
 - Present the 3D viewport through a symmetric procedural suit-visor mask; pixels outside its rounded rectangular and elliptical boundary are black.
+- Apply progressive peripheral optical blur and a radial red/blue pixel offset around an undisplaced green channel, with a default maximum displacement of `6 source pixels`.
+- Add fine deterministic RGB grain after the optical pass so that the image retains sharp film-like texture instead of exhibiting digitally smooth blur.
 - Use camera-linked, instrument-like lighting.
 - Include raytraced diffuse bounce or crude radiosity at intentionally low sample counts.
 - Reserve bounded dielectric refraction, Fresnel reflection, thickness-dependent absorption, and deliberately approximate three-band RGB dispersion for crystals; do not expose a general material language to the LLM.
@@ -312,6 +314,8 @@ player command
     -> deterministic scene compilation
     -> scene audit / safe fallback
     -> raytraced rendering
+    -> software view post-processing
+    -> visor and HUD composition
     -> player-facing text and image
 ```
 
@@ -410,7 +414,9 @@ Required elements:
 - a launch choice between `English (E)`, `Français (F)`, `Norsk (N)` in Bokmål, `Dansk (D)`, `Deutsch (G)`, and `Italiano (I)` before ordinary input begins
 - the centered footer `(c) Resistance 2026` at the bottom of the launch screen
 - current rendered image
-- external and body temperature readouts embedded in the visor presentation
+- a sharp central optical field with progressive peripheral blur, low-cost radial RGB dispersion, and post-optical RGB grain applied only to the 3D image
+- external and body temperature readouts and a compass composited additively in yellow-green phosphor over the visor view
+- blocked compass directions rendered at exactly half the phosphor RGB intensity used by open directions
 - transcript and command input
 - save/load access
 - clear busy/cancellation state

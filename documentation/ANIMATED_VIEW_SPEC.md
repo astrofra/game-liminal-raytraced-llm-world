@@ -175,13 +175,17 @@ Endpoint images **MUST NOT** be duplicated at the direction change. For example,
 
 ## 7. HUD and viewport composition
 
-1. Animation images **MUST** contain only the raytraced 3D view.
-2. The procedural visor mask, thermal panels, compass, title, score, status, transcript, input field, cursor, and language-specific text **MUST** be composed after selection of the current animation image.
-3. The HUD **MUST** be redrawn on every UI presentation pass, whether the viewport has one image or eight.
-4. HUD values **MUST** reflect the latest committed game state; they **MUST NOT** be frozen to the state that existed when an animation image was rendered.
-5. The HUD, visor mask, and text **MUST NOT** move with the breathing camera.
-6. Switching between animation images **MUST NOT** erase, smear, or temporally accumulate HUD pixels.
-7. The animated and static paths **MUST** share the same final compositor so that a one-image view and an eight-image view expose identical interface elements.
+1. Animation images **MUST** contain only the raytraced and software-post-processed 3D view.
+2. Each completed raytraced RGB buffer **MUST** receive the same deterministic optical pass before publication: a sharp central field, progressive peripheral blur, and radial differential pixel offsets for the red and blue channels around an undisplaced green channel.
+3. Fine RGB film grain **MUST** be added after the optical pass, so the blur does not soften or erase its high-frequency structure. The grain pattern **MUST** be deterministic for a given `generation_id` and image index and **SHOULD** differ between the precomputed images of the breathing loop.
+4. The complete post-process **MUST** run once per completed image, not once per UI presentation pass.
+5. The procedural visor mask, thermal panels, compass, title, score, status, transcript, input field, cursor, and language-specific text **MUST** be composed after selection of the current animation image.
+6. The thermal panels and compass **MUST** be composited additively over the view in a yellow-green phosphorescent color. Blocked compass directions **MUST** use exactly half the RGB intensity of open directions.
+7. The HUD **MUST** be redrawn on every UI presentation pass, whether the viewport has one image or eight.
+8. HUD values **MUST** reflect the latest committed game state; they **MUST NOT** be frozen to the state that existed when an animation image was rendered.
+9. The HUD, visor mask, and text **MUST NOT** move with the breathing camera.
+10. Switching between animation images **MUST NOT** erase, smear, or temporally accumulate HUD pixels.
+11. The animated and static paths **MUST** share the same final compositor so that a one-image view and an eight-image view expose identical interface elements.
 
 ## 8. Runtime state model
 
@@ -240,6 +244,7 @@ Debug output **SHOULD** expose, without adding mandatory player-facing HUD eleme
 - total time required to fill the buffer;
 - cancellation and stale-image discard events;
 - estimated image and texture memory use.
+- post-process duration, configured blur radius and dispersion distance, and affected pixel count.
 
 The existing HUD must remain visually unchanged unless a separate interface specification explicitly requests animation diagnostics.
 
@@ -274,6 +279,9 @@ The feature is complete when all of the following checks pass:
 11. Replacing a view cannot publish a late image from the preceding generation.
 12. A forced failure on image `4` leaves images `0` through `3` playable and keeps keyboard input responsive.
 13. Closing the application during background image generation terminates without a worker-thread or texture-resource leak.
+14. With grain disabled, the center pixel remains unchanged by the optical pass, a uniform image remains uniform, and a peripheral grayscale gradient exhibits ordered red/green/blue separation.
+15. With the optical effects disabled, the grain pass creates deterministic, approximately zero-mean RGB variation on a uniform field and does not blur that variation.
+16. Temperature readouts and compass cells are additive yellow-green overlays, and the RGB values of blocked compass directions are exactly half those of open directions.
 
 ### 13.1 Validation evidence
 
@@ -284,7 +292,10 @@ Validated on 2026-08-18 with the `Release` build:
 - a forced failure on image `4` retained four contiguous playable images, `0` through `3`, and exited cleanly;
 - a timed SDL test injected `north` while the first animation worker was rendering, completed the LLM turn, swapped from generation `1` to generation `2` only after the new image `0` was ready, and filled the replacement buffer;
 - the default `800x400`, `16 spp` view filled eight images in approximately `15.15 s`, using `7,680,000` bytes of raw RGB image storage and one `1,280,000`-byte RGBA streaming texture;
-- the visor, title, thermal HUD, compass, transcript, and input remain in the per-pass SDL compositor after texture selection and are not stored in animation images.
+- the visor, title, thermal HUD, compass, transcript, and input remain in the per-pass SDL compositor after texture selection and are not stored in animation images;
+- the thermal HUD and compass use additive composition with phosphor RGB `(184, 254, 80)`; blocked directions use the exact half-intensity RGB `(92, 127, 40)`;
+- `--view-post-process-self-test` validates a deterministic optical pass, a mathematically clear optical center, peripheral blur/RGB separation, post-optical balanced RGB grain, disabled bypass, and invalid-buffer rejection;
+- an SDL smoke test at `800x400`, `1 spp` published all eight grain-bearing images with the default `6 px` maximum dispersion and `7`-level grain amplitude.
 
 ## 14. Recommended implementation order
 

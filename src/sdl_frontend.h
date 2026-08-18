@@ -7,6 +7,7 @@
 #include "animated_view.h"
 #include "game_state.h"
 #include "turn_runner.h"
+#include "view_post_process.h"
 
 namespace liminal {
 
@@ -14,6 +15,7 @@ struct SdlFrontendConfig {
     RenderConfig render_config;
     HeadlessTurnConfig turn_config;
     AnimatedViewConfig animated_view_config;
+    PeripheralPostProcessConfig post_process_config;
     int logical_width;
     int logical_height;
     int window_width;

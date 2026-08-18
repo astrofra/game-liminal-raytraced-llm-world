@@ -12,6 +12,7 @@
 #include "scene_compiler.h"
 #include "turn_contract.h"
 #include "turn_runner.h"
+#include "view_post_process.h"
 
 namespace {
 
@@ -41,6 +42,12 @@ static void PrintUsage()
     printf("  --animated-view-fail-frame <n> Force animation image 1..7 to fail for diagnostics\n");
     printf("  --animated-view-debug    Log displayed image, direction, generation and worker state\n");
     printf("  --animated-view-self-test Validate camera endpoints and N=1/2/4/8 ping-pong sequences\n");
+    printf("  --view-post-process-self-test Validate optical effects and post-optical RGB grain\n");
+    printf("  --no-view-post-process  Disable peripheral optics and RGB grain in SDL\n");
+    printf("  --view-blur-radius <n>  Peripheral blur radius in source pixels (default: 3)\n");
+    printf("  --view-dispersion <f>   Maximum peripheral RGB shift in source pixels (default: 6)\n");
+    printf("  --view-grain <f>        Post-optical RGB grain amplitude (default: 7)\n");
+    printf("  --view-post-process-debug Log post-process cost and affected pixel count\n");
     printf("  --sdl-smoke-test-ms <n> Auto-select English and close SDL cleanly after n milliseconds\n");
     printf("  --sdl-smoke-command <text> Inject text and Return during the timed SDL smoke test\n");
     printf("  --model <path>           GGUF model path for --run-turn\n");
@@ -312,9 +319,11 @@ int main(int argc, char** argv)
     bool run_session = false;
     bool run_sdl = false;
     bool run_animated_view_self_test = false;
+    bool run_view_post_process_self_test = false;
     float view_animation_fps = 6.0f;
     int animated_view_fail_frame = -1;
     bool animated_view_debug = false;
+    liminal::PeripheralPostProcessConfig view_post_process_config;
     int sdl_smoke_test_duration_ms = 0;
     const char* sdl_smoke_test_command = 0;
     bool prefer_candidate_scene = false;
@@ -448,6 +457,42 @@ int main(int argc, char** argv)
         }
         if (strcmp(argv[index], "--animated-view-debug") == 0) {
             animated_view_debug = true;
+            continue;
+        }
+        if (strcmp(argv[index], "--view-post-process-self-test") == 0) {
+            run_view_post_process_self_test = true;
+            continue;
+        }
+        if (strcmp(argv[index], "--no-view-post-process") == 0) {
+            view_post_process_config.enabled = false;
+            continue;
+        }
+        if (strcmp(argv[index], "--view-blur-radius") == 0 && index + 1 < argc) {
+            if (!ReadInt(argv[++index], &view_post_process_config.blur_radius_pixels) ||
+                view_post_process_config.blur_radius_pixels < 0 || view_post_process_config.blur_radius_pixels > 12) {
+                fprintf(stderr, "View blur radius must be between 0 and 12.\n");
+                return 1;
+            }
+            continue;
+        }
+        if (strcmp(argv[index], "--view-dispersion") == 0 && index + 1 < argc) {
+            if (!ReadFloat(argv[++index], &view_post_process_config.dispersion_pixels) ||
+                view_post_process_config.dispersion_pixels < 0.0f || view_post_process_config.dispersion_pixels > 16.0f) {
+                fprintf(stderr, "View dispersion must be between 0 and 16 source pixels.\n");
+                return 1;
+            }
+            continue;
+        }
+        if (strcmp(argv[index], "--view-grain") == 0 && index + 1 < argc) {
+            if (!ReadFloat(argv[++index], &view_post_process_config.grain_strength) ||
+                view_post_process_config.grain_strength < 0.0f || view_post_process_config.grain_strength > 32.0f) {
+                fprintf(stderr, "View grain amplitude must be between 0 and 32.\n");
+                return 1;
+            }
+            continue;
+        }
+        if (strcmp(argv[index], "--view-post-process-debug") == 0) {
+            view_post_process_config.debug_logging = true;
             continue;
         }
         if (strcmp(argv[index], "--sdl-smoke-test-ms") == 0 && index + 1 < argc) {
@@ -590,6 +635,9 @@ int main(int argc, char** argv)
     if (run_animated_view_self_test) {
         return liminal::RunAnimatedViewSelfTest(stdout) ? 0 : 1;
     }
+    if (run_view_post_process_self_test) {
+        return liminal::RunPeripheralViewPostProcessSelfTest(stdout) ? 0 : 1;
+    }
 
     if (dump_turn_contract || dump_generated_room_prompt || dump_scene_audit_prompt) {
         liminal::SessionState session_state;
@@ -667,6 +715,7 @@ int main(int argc, char** argv)
         sdl_config.animated_view_config.playback_images_per_second = view_animation_fps;
         sdl_config.animated_view_config.forced_failure_image_index = animated_view_fail_frame;
         sdl_config.animated_view_config.debug_logging = animated_view_debug;
+        sdl_config.post_process_config = view_post_process_config;
         sdl_config.automated_smoke_test_duration_ms = sdl_smoke_test_duration_ms;
         if (sdl_smoke_test_command) {
             sdl_config.automated_smoke_test_command = sdl_smoke_test_command;

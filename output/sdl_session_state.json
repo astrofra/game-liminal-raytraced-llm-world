@@ -21,7 +21,7 @@
     "score": 0,
     "spatial_entropy": 12,
     "suit_state": "stable",
-    "turn_number": 4,
+    "turn_number": 5,
     "unresolved_threats": [
       "locate prospector Vey",
       "verify the invisible obstruction",
@@ -30,31 +30,40 @@
   },
   "history": [
     {
-      "clarification": "",
-      "intent": "move_north_known_room",
-      "location_id": "extraction_field",
-      "location_label": "Abbaugebiet",
-      "narration": "Du gehst nach Norden und erreichst Abbaugebiet.",
-      "player_command": "NORD",
+      "clarification": "Vous pouvez inspecter la porte, la rampe, le casier ou la tablette. Le repère lumineux semble indiquer une direction fiable vers l’intérieur de la carrière.",
+      "intent": "observe_environment",
+      "location_id": "quarry_threshold",
+      "location_label": "Seuil de la carrière",
+      "narration": "Le seuil de la carrière s’ouvre sur un horizon venusien strié de poussière. La porte en deux voûtes, marquée d’un repère lumineux, domine une rampe descendante vers l’intérieur. Un casier de prélèvement et une tablette de relevé reposent près de l’entrée.",
+      "player_command": "regarder autour de moi",
       "turn_number": 1
     },
     {
-      "clarification": "Möchtest du den Schrank mit den **Prospektorklammer** (Tongs) öffnen oder etwas anderes tun? Alternativ kannst du die **Grenztafel** (Boundary Chalk) verwenden, um die Umgebung zu markieren oder die **Datenpyramide**...",
+      "clarification": "Vous pouvez **marquer** la tablette avec votre craie de limite ou **surveiller** le repère lumineux pour confirmer sa direction. Le casier de prélèvement reste accessible pour y déposer un échantillon si...",
       "intent": "interact_with_object",
-      "location_id": "extraction_field",
-      "location_label": "Abbaugebiet",
-      "narration": "Der verschlossene Technikschrank steht auf einem stabilen Sockel zwischen den Retentionsflügeln. Der Schlossmechanismus ist mit einer rostigen Klappe verdeckt, die sich nicht ohne Werkzeug öffnen lässt. Der Schrank scheint jedoch keine offensichtlichen Beschädigungen...",
-      "player_command": "ich will den Technikshranck offnen",
+      "location_id": "quarry_threshold",
+      "location_label": "Seuil de la carrière",
+      "narration": "Votre paume effleure la tablette de relevé, encore tiède de la chaleur résiduelle du soleil couchant. Les gravures y tracent une ligne brisée vers l’est, mais les symboles près du repère lumineux semblent effacés par l’usure.",
+      "player_command": "poser ma main sur la tablette de relevé",
       "turn_number": 2
     },
     {
-      "clarification": "Möchtest du den **Datenpylon** scannen (verbraucht Instrumentenenergie), die Bohrvorrichtung auf Defekte prüfen oder die **Grenztafel** nutzen, um die unsichtbare Grenze zu markieren?",
-      "intent": "observe_extraction_equipment",
-      "location_id": "extraction_field",
-      "location_label": "Abbaugebiet",
-      "narration": "Der **Extraktionsrig** dominiert den Bereich zwischen den Retentionsflügeln. Die Bohrvorrichtung ist mit einem **Datenpylon** verankert, der die Quarry-Koordinaten anzeigt. Der **Atmosphärenprozessor** daneben zeigt leichte Druckschwankungen an – möglicherweise ein Hinweis...",
-      "player_command": "regarde le dispositif d'extraction. Réponds en Français.",
+      "clarification": "Cette fois, la tablette usée et le repère lumineux semblent confirmer une direction, mais l’absence de marquages récents sur la rampe descendante vous intrigue. **Vérifiez** les symboles effacés avec votre craie...",
+      "intent": "recall_previous_mission",
+      "location_id": "quarry_threshold",
+      "location_label": "Seuil de la carrière",
+      "narration": "Votre esprit revient à la mission de l’an dernier, près des carrières d’Éryx. Vous aviez découvert une faille dans le système de ventilation du labyrinthe, causant une surchauffe mortelle. Les prospecteurs avaient ignoré les marquages de sécurité, et un collègue...",
+      "player_command": "se rappeler de la derniere mission qui avait failli me coûter la vie.",
       "turn_number": 3
+    },
+    {
+      "clarification": "",
+      "intent": "move_north_known_room",
+      "location_id": "extraction_field",
+      "location_label": "Champ d'extraction",
+      "narration": "Vous allez vers le nord et atteignez Champ d'extraction.",
+      "player_command": "NORD",
+      "turn_number": 4
     }
   ],
   "invisible_barriers": [
@@ -65,7 +74,7 @@
       "place_id": "canonical:labyrinth_threshold"
     }
   ],
-  "language": "de",
+  "language": "fr",
   "next_generated_room_index": 1,
   "origin_place_id": "canonical:quarry_threshold",
   "room_links": [
@@ -136,18 +145,17 @@
       "Vey reached the shelter by a route that cannot be retraced consistently"
     ],
     "atmosphere": "instrumental, mineral, sparse, spatially uncertain",
-    "rolling_summary": "Der **Extraktionsrig** dominiert den Bereich zwischen den Retentionsflügeln. Die Bohrvorrichtung ist mit einem **Datenpylon** verankert, der die Quarry-Koordinaten anzeigt. Der **Atmosphärenprozessor** daneben zeigt leichte Druckschwankungen an – möglicherweise ein Hinweis...",
+    "rolling_summary": "Vous allez vers le nord et atteignez Champ d'extraction.",
     "tolerated_incoherences": [
-      "Datenpylon könnte Koordinaten der unsichtbaren Barriere enthalten, aber nur mit Instrumenten nutzbar.",
-      "Atmosphärenprozessor deutet auf lokale Druckanomalie hin – möglicherweise Hinweis auf Vey’s Route."
+      "L’hypothèse d’un marquage manuel ou obsolète est renforcée par la mémoire de la mission précédente. La craie de limite pourrait servir à clarifier les symboles effacés."
     ]
   },
   "spatial_state": {
     "alert_level": 1,
     "anchors": [
       "diamond_drill",
-      "atmospheric_processor",
-      "quarry_datum_pylon"
+      "retaining_fins",
+      "atmospheric_processor"
     ],
     "blocked_exits": [
       "east",
@@ -160,9 +168,11 @@
     "room_summary": "A diamond drill stands among retaining fins and atmospheric machinery; the marked quarry cut continues north.",
     "room_title": "Extraction Field",
     "scene_constraints": [
-      "hero extraction rig on work slab, quarry datum pylon aligned north, atmospheric processor flank, open horizon",
       "hero extraction rig",
+      "brutalist retaining fins",
       "atmospheric processor flank",
+      "keep quarry ramp clear",
+      "quarry pylon",
       "open venus horizon"
     ],
     "spatial_anomalies": [],
@@ -170,9 +180,10 @@
     "time_of_day": "dusk",
     "visibility_level": "dusty",
     "visible_objects": [
-      "drill_service_lever",
-      "oxygen_manifold",
-      "sealed_equipment_crate"
+      "drill service lever",
+      "oxygen manifold",
+      "quarry datum pylon",
+      "sealed equipment crate"
     ],
     "world_pose_known": true,
     "world_x": 0.0,

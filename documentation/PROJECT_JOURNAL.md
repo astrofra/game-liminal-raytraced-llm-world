@@ -1435,3 +1435,52 @@ Validation :
 - build CMake `Release` réussi
 - police Zilla Slab vérifiée pour `å`, `ø`, `æ`, `ö`, `ü`, `ß`, les capitales correspondantes et les diacritiques français et italiens
 - contrats internes, clés JSON, identifiants et tokens de scène maintenus en anglais
+
+## 2026-08-18 - Iteration 0035 - Optique périphérique logicielle
+
+Objectif :
+
+Donner à la vue du scaphandre une périphérie optiquement imparfaite sans alourdir le raytraceur ni dégrader le HUD.
+
+Implémentation :
+
+- ajout de `src/view_post_process.h/.cpp`, indépendant du renderer et de SDL
+- masque elliptique `smoothstep` nul au centre et progressif vers les bords
+- flou triangulaire séparable de rayon `3 px`, mélangé selon le poids périphérique
+- dispersion radiale « du pauvre » : échantillonnage bilinéaire opposé du rouge et du bleu autour d'un vert non décalé, jusqu'à `3 px`
+- traitement de chaque RGB une seule fois après son raytracing, pour l'image initiale, l'image `0` d'un nouveau tour et les images animées `1..7`
+- composition inchangée de la visière et du HUD après chargement de la texture
+- options CLI de désactivation, réglage et diagnostic, plus self-test déterministe
+
+Validation :
+
+- build CMake `Release` réussi
+- self-test : centre inchangé, champ uniforme préservé, séparation `R > G > B` sur une pente périphérique, déterminisme, bypass et rejet d'un buffer invalide
+- smoke SDL `800x400`, `1 spp` : huit images publiées, environ `80 ms` de post-process par image et interface réactive
+- `192 435` pixels modifiés sur `320 000` pour la première image du test ; aucune donnée HUD incluse dans le buffer traité
+
+## 2026-08-18 - Iteration 0036 - Grain argentique et HUD phosphorescent
+
+Objectif :
+
+Renforcer la dispersion périphérique sans produire un flou numériquement lisse, puis intégrer les instruments directement à la lumière de la vue.
+
+Implémentation :
+
+- dispersion chromatique périphérique doublée par défaut, de `3 px` à `6 px`
+- grain RGB fin d'amplitude `7` ajouté après le flou et la dispersion, avec une composante commune et une composante chromatique indépendante
+- modulation légère du grain selon la luminance pour conserver de la matière dans les ombres et les hautes lumières sans écraser les tons moyens
+- graine déterministe dérivée de la génération et de l'indice d'image : chaque frame précalculée possède sa matière, puis le ping-pong la rejoue à l'identique
+- ajout du réglage CLI `--view-grain`, borné de `0` à `32`
+- séparation des compteurs de diagnostic : pixels modifiés par l'optique, par le grain et par l'ensemble de la chaîne
+- suppression des aplats noir/blanc des panneaux thermiques et des cellules de boussole
+- composition additive des contours et glyphes instrumentaux avec un phosphore vert-jaune `(184,254,80)`
+- directions bloquées composées à la demi-intensité RGB exacte `(92,127,40)`
+
+Validation :
+
+- build CMake `Release` réussi avec SDL3, SDL3_ttf, `llama.cpp`, CUDA et OpenMP
+- self-test post-process réussi : déterminisme optique, centre optiquement intact quand le grain est désactivé, séparation RGB, flou, grain RGB post-optique équilibré, bypass et rejet des buffers invalides
+- smoke SDL `800x400`, `1 spp` : huit images publiées et arrêt propre
+- première image du smoke : `239 812` pixels modifiés par la passe optique, `315 178` par le grain et `318 486` par la chaîne complète sur `320 000`
+- coût observé du post-process complet : environ `94 ms` par image à `800x400`

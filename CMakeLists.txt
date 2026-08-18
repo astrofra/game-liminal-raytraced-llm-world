@@ -22,7 +22,8 @@ set(LIMINAL_SOURCES
     src/scene_compiler.cpp
     src/renderer.cpp
     src/turn_contract.cpp
-    src/turn_runner.cpp)
+    src/turn_runner.cpp
+    src/view_post_process.cpp)
 
 if (LIMINAL_ENABLE_SDL3_FRONTEND)
     list(APPEND LIMINAL_SOURCES src/sdl_frontend.cpp)

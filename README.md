@@ -28,6 +28,7 @@ Current state:
 - optional OpenMP line-parallel rendering in CMake
 - first SDL3 interactive frontend with streaming LLM output
 - progressively generated eight-image raytraced viewport loops with deterministic breathing-camera motion and live HUD composition
+- software viewport post-processing with a sharp central field, progressive peripheral blur, and low-cost radial RGB dispersion
 - first generated-room graph for improvised cardinal navigation
 - authoritative hard/soft/spatial state with deterministic and hybrid scene compilation
 - seven-place Eryx survey route with deterministic invisible contact and non-reciprocal traversal
@@ -126,6 +127,8 @@ Animated-view diagnostics:
 ```powershell
 .\build\Release\liminal_cornell_renderer.exe --animated-view-self-test
 .\build\Release\liminal_cornell_renderer.exe --sdl --animated-view-debug --view-animation-fps 6
+.\build\Release\liminal_cornell_renderer.exe --view-post-process-self-test
+.\build\Release\liminal_cornell_renderer.exe --sdl --view-post-process-debug --view-blur-radius 3 --view-dispersion 6 --view-grain 7
 ```
 
 ## Run
@@ -161,9 +164,9 @@ Useful overrides:
 `--sdl` opens the first desktop loop:
 
 - launch screen: the large French title `Entre les Murs Latents`, the smaller English title `Within the Latent Walls`, a two-column selector for `English (E)`, `Français (F)`, `Norsk (N)`, `Dansk (D)`, `Deutsch (G)`, and `Italiano (I)`, then `(c) Resistance 2026` at the bottom; player-facing text follows that choice while internal LLM contracts remain English
-- top panel: raytraced scene
+- top panel: raytraced scene with a software peripheral blur and radial R/G/B pixel dispersion; the central field remains sharp
 - the 3D image is clipped by a symmetric procedural visor assembled from rectangular scanlines and elliptical boundaries; the exterior is black
-- visor HUD: external temperature and body temperature
+- visor HUD: external temperature and body temperature, composed after post-processing so it remains sharp
 - lower panel: transcript joueur avec la narration finale seulement
 - input line: text entry with edition, history on arrow up/down, submit on Enter
 - localized status line with an ASCII activity spinner

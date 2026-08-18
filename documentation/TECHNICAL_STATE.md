@@ -25,6 +25,7 @@ Une premiere tranche Eryx est implementee dans le runtime :
 - sélection SDL parmi `English (E)`, `Français (F)`, `Norsk (N, Bokmål)`, `Dansk (D)`, `Deutsch (G)` et `Italiano (I)` ; champs et mécaniques internes du LLM conservés en anglais
 - écran de langue titré `Entre les Murs Latents` en grand, puis `Within the Latent Walls` en plus petit, avec `(c) Resistance 2026` centré en bas
 - masque de visière 2D symétrique et procédural devant le viewport 3D
+- post-process logiciel du viewport : centre optiquement net, flou périphérique progressif, dispersion chromatique radiale de `6 px` et grain RGB ajouté après le flou
 - douze liens diriges constituant une route d'arpentage
 - type persistant `InvisibleBarrier`, separe de `blocked_exits`
 - contact invisible au nord de `labyrinth_threshold`, avec preuve et statut `discovered`
@@ -206,6 +207,7 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - interpolation ease-in/ease-out cosinus et lecture ping-pong dynamique a `6 images/s`
   - generation identifiee par compteur monotone, rejet des publications obsoletes et annulation entre deux images
   - image courante chargee dans une texture SDL streaming unique ; HUD, visiere, transcript et saisie recomposes ensuite a chaque passe
+  - chaque buffer RGB est post-traité une seule fois après raytracing et avant publication dans `AnimatedView`; le flou et la dispersion précèdent un grain RGB déterministe propre à chaque image précalculée
   - flux brut du modele et `.scene` dans le terminal
   - ligne terminal de provenance apres chaque tour pour distinguer scene canonique, salle generee, fallback metadata et fallback scene
   - panneau de transcript joueur avec narration finale seulement
@@ -217,6 +219,7 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - garde d'affichage non anglophone pour les titres et narrations anglaises déjà présents dans une ancienne sauvegarde, sans mutation des données archivées
   - masque de visière symétrique calculé par scanlines rectangulaires et frontières elliptiques ; extérieur de fenêtre noir et encoche centrale limitée au tiers inférieur
   - deux panneaux thermiques affichant température extérieure entière et température corporelle décimale
+  - panneaux thermiques et boussole composités en additif avec un phosphore `(184,254,80)` ; directions bloquées à la demi-intensité exacte `(92,127,40)`
   - segments `*highlightes*` rendus avec `Zilla Slab Highlight`
   - ligne de commande avec edition clavier et historique haut/bas
   - ligne de statut localisée avec spinner ASCII pour distinguer les phases d'imagination et de raytracing
@@ -238,7 +241,8 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - assembler `documentation/HYBRID_SCENE_GENERATION_BENCHMARK.md`
 - Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`, desormais en buffer RGB.
 - Self-test `--animated-view-self-test` pour les sequences `1/2/4/8`, les endpoints camera, l'absence de derive et le rejet des generations obsoletes.
-- Diagnostics `--animated-view-debug`, `--animated-view-fail-frame`, `--sdl-smoke-test-ms` et `--sdl-smoke-command` pour observer le worker, forcer un mode degrade et automatiser une session SDL courte.
+- Self-test `--view-post-process-self-test` pour le centre optiquement net, la dispersion périphérique, le grain RGB post-optique équilibré, le bypass et la validation des buffers.
+- Diagnostics `--animated-view-debug`, `--animated-view-fail-frame`, `--view-post-process-debug`, `--view-blur-radius`, `--view-dispersion`, `--view-grain`, `--no-view-post-process`, `--sdl-smoke-test-ms` et `--sdl-smoke-command`.
 - Options CLI de boucle fonctionnelle :
   - `--run-turn`
   - `--run-session`
@@ -265,6 +269,8 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
 - [../src/renderer.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/renderer.cpp:1) : camera, spotlight analytique, intersections, visibilite, integrateur, export PNG/PGM.
 - [../src/animated_view.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/animated_view.h:1) : etat borne de la vue, configuration du mouvement et interface de playback.
 - [../src/animated_view.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/animated_view.cpp:1) : pose B, interpolation cosinus, ping-pong, garde de generation et self-test.
+- [../src/view_post_process.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/view_post_process.h:1) : paramètres, graine déterministe, statistiques optiques/grain et contrat du post-process périphérique.
+- [../src/view_post_process.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/view_post_process.cpp:1) : flou triangulaire séparable, masque elliptique, échantillonnage bilinéaire R/G/B, grain RGB post-optique et self-test.
 - [../src/sdl_frontend.h](/C:/works/projects/game-liminal-raytraced-llm-world/src/sdl_frontend.h:1) : interface de la premiere boucle interactive `SDL3`.
 - [../src/sdl_frontend.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/sdl_frontend.cpp:1) : fenetre, transcript, saisie texte, workers de tour et d'animation, publication progressive et presentation streaming.
 - [../src/main.cpp](/C:/works/projects/game-liminal-raytraced-llm-world/src/main.cpp:76) : point d'entree CLI, parsing des options, telemetrie basique et premieres commandes de debug fonctionnel.
@@ -344,6 +350,8 @@ Exemples du noyau fonctionnel :
 .\build\Release\liminal_cornell_renderer.exe --sdl --location quarry_threshold --save-state output\eryx_session_state.json
 .\build\Release\liminal_cornell_renderer.exe --animated-view-self-test
 .\build\Release\liminal_cornell_renderer.exe --sdl --animated-view-debug --view-animation-fps 6
+.\build\Release\liminal_cornell_renderer.exe --view-post-process-self-test
+.\build\Release\liminal_cornell_renderer.exe --sdl --view-post-process-debug --view-blur-radius 3 --view-dispersion 6 --view-grain 7
 .\build\Release\liminal_cornell_renderer.exe --run-session --location quarry_threshold --command north --command north --command east --command north --command east --command north --command east --command west --save-state output\eryx_route.json --output output\eryx_route.png
 .\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\eryx_route.json --command west --save-state output\eryx_route_2.json --output output\eryx_route_2.png
 ```

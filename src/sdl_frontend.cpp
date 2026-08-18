@@ -926,7 +926,8 @@ static void DrawTextSpan(
     float y,
     int line_height,
     SDL_Color color,
-    float* advance_x);
+    float* advance_x,
+    SDL_BlendMode blend_mode = SDL_BLENDMODE_BLEND);
 
 static void DrawPanel(SDL_Renderer* renderer, const SDL_FRect& rect, Uint8 fill, Uint8 border)
 {
@@ -1121,6 +1122,13 @@ static bool SpatialStateBlocksDirectionForUi(const SpatialState& spatial_state, 
     return false;
 }
 
+static SDL_Color HudPhosphorColor(bool full_intensity)
+{
+    return full_intensity
+        ? SDL_Color{184, 254, 80, 255}
+        : SDL_Color{92, 127, 40, 255};
+}
+
 static void DrawCompassDirectionCell(
     SDL_Renderer* renderer,
     TTF_Font* font,
@@ -1132,28 +1140,18 @@ static void DrawCompassDirectionCell(
         return;
     }
 
-    const SDL_FRect outer_rect = {rect.x - 2.0f, rect.y - 2.0f, rect.w + 4.0f, rect.h + 4.0f};
-    if (open) {
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderFillRect(renderer, &outer_rect);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderFillRect(renderer, &rect);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderRect(renderer, &rect);
-    } else {
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderFillRect(renderer, &outer_rect);
-        SDL_SetRenderDrawColor(renderer, 242, 242, 242, 255);
-        SDL_RenderFillRect(renderer, &rect);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderRect(renderer, &rect);
-    }
+    const SDL_Color phosphor = HudPhosphorColor(open);
+    const SDL_FRect outer_rect = {rect.x - 1.0f, rect.y - 1.0f, rect.w + 2.0f, rect.h + 2.0f};
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+    SDL_SetRenderDrawColor(renderer, phosphor.r, phosphor.g, phosphor.b, phosphor.a);
+    SDL_RenderRect(renderer, &outer_rect);
+    SDL_RenderRect(renderer, &rect);
 
     if (!font || !label || !label[0]) {
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         return;
     }
 
-    const SDL_Color label_color = open ? SDL_Color{255, 255, 255, 255} : SDL_Color{0, 0, 0, 255};
     const int label_width = MeasureTextWidth(font, label);
     const int label_height = std::max(TTF_GetFontHeight(font), 1);
     DrawTextSpan(
@@ -1163,8 +1161,10 @@ static void DrawCompassDirectionCell(
         rect.x + (rect.w - static_cast<float>(label_width)) * 0.5f,
         rect.y + (rect.h - static_cast<float>(label_height)) * 0.5f - 1.0f,
         label_height,
-        label_color,
-        0);
+        phosphor,
+        0,
+        SDL_BLENDMODE_ADD);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 }
 
 static void DrawExitCompass(
@@ -1221,13 +1221,12 @@ static void DrawThermalIndicator(
 {
     const int label_height = std::max(TTF_GetFontHeight(fonts.regular), 1);
     const float padding_x = 10.0f;
-    const SDL_FRect outer_rect = {rect.x - 2.0f, rect.y - 2.0f, rect.w + 4.0f, rect.h + 4.0f};
+    const SDL_Color phosphor = HudPhosphorColor(true);
+    const SDL_FRect outer_rect = {rect.x - 1.0f, rect.y - 1.0f, rect.w + 2.0f, rect.h + 2.0f};
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderFillRect(renderer, &outer_rect);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderFillRect(renderer, &rect);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+    SDL_SetRenderDrawColor(renderer, phosphor.r, phosphor.g, phosphor.b, phosphor.a);
+    SDL_RenderRect(renderer, &outer_rect);
     SDL_RenderRect(renderer, &rect);
 
     DrawTextSpan(
@@ -1237,8 +1236,10 @@ static void DrawThermalIndicator(
         rect.x + padding_x,
         rect.y + (rect.h - static_cast<float>(label_height)) * 0.5f - 1.0f,
         label_height,
-        SDL_Color{255, 255, 255, 255},
-        0);
+        phosphor,
+        0,
+        SDL_BLENDMODE_ADD);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 }
 
 static void DrawThermalHud(
@@ -1512,10 +1513,23 @@ static void FinalizeWorkerFailure(WorkerSharedState* shared_state, const char* m
     shared_state->error_text = message ? message : "Unknown error.";
 }
 
+static PeripheralPostProcessConfig PostProcessConfigForAnimationImage(
+    const PeripheralPostProcessConfig& base_config,
+    uint64_t generation_id,
+    int image_index)
+{
+    PeripheralPostProcessConfig image_config = base_config;
+    image_config.grain_seed ^= static_cast<unsigned int>(generation_id);
+    image_config.grain_seed ^= static_cast<unsigned int>(generation_id >> 32) * 0x85ebca6bu;
+    image_config.grain_seed ^= static_cast<unsigned int>(image_index + 1) * 0x9e3779b9u;
+    return image_config;
+}
+
 static void RunTurnWorker(
     SdlFrontendConfig config,
     SessionState initial_session_state,
     std::string player_command,
+    uint64_t target_generation_id,
     WorkerSharedState* shared_state)
 {
     if (!shared_state) {
@@ -1577,6 +1591,15 @@ static void RunTurnWorker(
         FinalizeWorkerFailure(shared_state, "Rendering failed.");
         return;
     }
+    if (!ApplyPeripheralViewPostProcess(
+            &pixels,
+            config.render_config.width,
+            config.render_config.height,
+            PostProcessConfigForAnimationImage(config.post_process_config, target_generation_id, 0),
+            0)) {
+        FinalizeWorkerFailure(shared_state, "View post-processing failed.");
+        return;
+    }
     const double render_duration_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - render_start).count();
 
@@ -1603,6 +1626,7 @@ static void RunTurnWorker(
 static void RunAnimationWorker(
     RenderConfig render_config,
     AnimatedViewConfig animation_config,
+    PeripheralPostProcessConfig post_process_config,
     Scene scene_snapshot,
     Camera pose_a,
     Camera pose_b,
@@ -1659,6 +1683,16 @@ static void RunAnimationWorker(
         if (!RenderSceneToPixels(scene_snapshot, render_config, &pixels)) {
             failed = true;
             failure_text = "Animated-view raytracing failed.";
+            break;
+        }
+        if (!ApplyPeripheralViewPostProcess(
+                &pixels,
+                render_config.width,
+                render_config.height,
+                PostProcessConfigForAnimationImage(post_process_config, generation_id, image_index),
+                0)) {
+            failed = true;
+            failure_text = "Animated-view post-processing failed.";
             break;
         }
         const double render_duration_ms = std::chrono::duration<double, std::milli>(
@@ -1740,6 +1774,7 @@ static void RunAnimationWorker(
 static void StartAnimationWorker(
     const RenderConfig& render_config,
     const AnimatedViewConfig& animation_config,
+    const PeripheralPostProcessConfig& post_process_config,
     const AnimatedView& view,
     AnimationWorkerSharedState* shared_state,
     std::thread* worker_thread)
@@ -1765,6 +1800,7 @@ static void StartAnimationWorker(
         RunAnimationWorker,
         render_config,
         animation_config,
+        post_process_config,
         view.scene_snapshot,
         view.pose_a,
         view.pose_b,
@@ -1864,7 +1900,8 @@ static void DrawTextSpan(
     float y,
     int line_height,
     SDL_Color color,
-    float* advance_x)
+    float* advance_x,
+    SDL_BlendMode blend_mode)
 {
     if (advance_x) {
         *advance_x = 0.0f;
@@ -1891,6 +1928,7 @@ static void DrawTextSpan(
         SDL_DestroySurface(surface);
         return;
     }
+    SDL_SetTextureBlendMode(texture, blend_mode);
 
     const SDL_FRect dst = {
         x,
@@ -2050,6 +2088,15 @@ bool RunSdlFrontend(
         SetError(error_buffer, error_buffer_size, "Cannot render initial scene.");
         return false;
     }
+    if (!ApplyPeripheralViewPostProcess(
+            &rgb_pixels,
+            config.render_config.width,
+            config.render_config.height,
+            PostProcessConfigForAnimationImage(config.post_process_config, 1u, 0),
+            0)) {
+        SetError(error_buffer, error_buffer_size, "Cannot post-process initial scene.");
+        return false;
+    }
     const double initial_render_duration_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - initial_render_start).count();
 
@@ -2176,6 +2223,7 @@ bool RunSdlFrontend(
     StartAnimationWorker(
         config.render_config,
         config.animated_view_config,
+        config.post_process_config,
         active_animated_view,
         &animation_shared_state,
         &animation_worker_thread);
@@ -2391,6 +2439,7 @@ bool RunSdlFrontend(
                     config,
                     current_session_state,
                     command,
+                    next_generation_id + 1u,
                     &worker_shared_state);
                 worker_joined = false;
                 ui_message.clear();
@@ -2633,6 +2682,7 @@ bool RunSdlFrontend(
             StartAnimationWorker(
                 config.render_config,
                 config.animated_view_config,
+                config.post_process_config,
                 active_animated_view,
                 &animation_shared_state,
                 &animation_worker_thread);

@@ -535,3 +535,21 @@ Raison :
 Consequence :
 
 La camera seule varie selon une interpolation cosinus deterministe. La presentation utilise une texture SDL streaming unique et lit les images disponibles en ping-pong a `6 images/s`. Le HUD reste hors des images raytracees et suit toujours le dernier etat de jeu valide.
+
+## 2026-08-18 - Traiter optiquement la périphérie dans une couche logicielle
+
+Decision :
+
+Chaque image RGB destinée au viewport reçoit, après raytracing et avant publication, un post-process CPU déterministe. Un masque radial elliptique conserve le centre optiquement net et augmente progressivement un flou triangulaire ainsi qu'une dispersion chromatique simplifiée : rouge et bleu échantillonnés en sens radial opposés autour d'un vert non décalé. Un grain RGB fin est ensuite ajouté après cette passe optique, afin que le flou ne puisse pas lisser sa structure.
+
+Raison :
+
+- suggérer les limites optiques du scaphandre sans augmenter le coût spectral du raytraceur
+- réserver l'effet à la perception du monde 3D et préserver la lisibilité instrumentale
+- calculer l'effet une seule fois par image animée plutôt qu'à chaque présentation SDL
+- conserver une implémentation observable, désactivable et réglable en pixels source
+- conserver une matière de film argentique jusque dans les zones floues au lieu d'obtenir une périphérie numériquement lisse
+
+Consequence :
+
+La visière, le transcript et la saisie sont composés après la texture post-traitée et restent nets. Les températures et la boussole sont compositées en additif avec un phosphore vert-jaune `(184,254,80)` ; les directions bloquées utilisent exactement la demi-intensité `(92,127,40)`. Les exports PNG/PGM de référence du raytraceur restent bruts ; le post-process appartient au viewport interactif. Les valeurs par défaut sont un rayon de flou de `3 px`, une dispersion maximale de `6 px`, un grain d'amplitude `7`, un début d'effet à un rayon elliptique normalisé de `0.48` et un plein effet à `1.05`.
