@@ -499,3 +499,20 @@ Raison :
 Consequence :
 
 La fenêtre SDL, les documents actifs et le helper Windows emploient la nouvelle identité. Le launcher devient `play_within_the_latent_walls.bat`. *Le Désert des tokens* demeure uniquement comme nom historique de la branche narrative précédente.
+
+## 2026-08-18 - Distribuer le modele 8B hors de l'installeur Windows
+
+Decision :
+
+Le setup Windows contient le jeu natif, ses assets et les bibliotheques runtime requises, mais pas les poids IA. Pendant l'installation, Inno Setup telecharge `Ministral-3-8B-Instruct-2512-Q4_K_M.gguf` depuis une revision epinglee du depot officiel Mistral AI, puis verifie sa taille exacte et son SHA-256.
+
+Raison :
+
+- le setup partage reste d'une taille raisonnable
+- l'origine et l'integrite du modele sont explicites
+- le paquet du jeu et les poids Apache 2.0 restent distincts
+- aucune dependance Python ou Ollama n'est imposee au joueur
+
+Consequence :
+
+Une connexion Internet et environ 5.20 Go de telechargement sont requis pendant l'installation. Le jeu fonctionne ensuite localement. Le build de distribution produit aussi une archive de sources correspondantes pour accompagner le binaire GPL.

@@ -22,7 +22,7 @@ EXPECTED_SHA256 = (
     "33e7a72cf5e6e2cfc2f2847075acc013"
     "d68bba023e35310cef86b5cf8fdca761"
 )
-MIN_EXPECTED_SIZE = 4_000_000_000
+EXPECTED_SIZE = 5_198_911_904
 
 
 def sha256_file(path: Path, chunk_size: int = 16 * 1024 * 1024) -> str:
@@ -43,8 +43,10 @@ def validate_gguf(path: Path) -> None:
         raise FileNotFoundError(f"Model file not found: {path}")
 
     file_size = path.stat().st_size
-    if file_size < MIN_EXPECTED_SIZE:
-        raise RuntimeError(f"Model file is unexpectedly small: {file_size:,} bytes")
+    if file_size != EXPECTED_SIZE:
+        raise RuntimeError(
+            f"Model file size mismatch: expected {EXPECTED_SIZE:,} bytes, got {file_size:,} bytes"
+        )
 
     with path.open("rb") as stream:
         magic = stream.read(4)

@@ -4,6 +4,26 @@ Derniere mise a jour : 2026-08-18
 
 ## Ouverts
 
+### 2026-08-18 - L'installeur Windows n'est pas encore signe ni valide sur une machine vierge
+
+Statut :
+
+Ouvert, non bloquant pour les builds internes.
+
+Description :
+
+Le setup `0.1.0` compile, son payload sans modele demarre et expose correctement `llama.cpp` avec CUDA. L'installation complete n'a volontairement pas ete executee localement, car elle declenche le telechargement de 5.20 Go. Le binaire de setup n'a pas encore de signature Authenticode.
+
+Impact :
+
+- Windows SmartScreen peut afficher un avertissement lors d'une distribution publique
+- il reste a confirmer le parcours complet sur un Windows 10/11 x64 sans Visual Studio ni CUDA Toolkit
+- un pilote NVIDIA compatible reste un prerequis systeme et n'est pas embarque
+
+Piste :
+
+Signer le setup et le binaire, publier leurs SHA-256, puis effectuer un test d'installation/desinstallation sur une machine virtuelle propre avec reprise d'un telechargement interrompu et lancement d'une premiere session.
+
 ### 2026-08-18 - Le labyrinthe Eryx n'accepte pas encore de mutations proposées par le LLM
 
 Statut :

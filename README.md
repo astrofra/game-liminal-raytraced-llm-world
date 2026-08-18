@@ -54,11 +54,24 @@ Windows helper:
 
 ```bat
 build_release.bat
+build_installer.bat --version 0.1.0
 run_cornell_test.bat
 download_ministral.bat
 ask_ministral.bat
 play_within_the_latent_walls.bat
 ```
+
+## Windows distribution
+
+Build the distributable installer from a Windows development machine with:
+
+```bat
+build_installer.bat --version 0.1.0
+```
+
+The resulting setup executable and GPL corresponding-source archive are written to `output/installer/dist/`. The setup contains the native game, assets, CUDA runtime libraries, and Microsoft runtime libraries, but not the AI weights. During installation it downloads the pinned official `Ministral 3 8B Instruct 2512 Q4_K_M` GGUF (about 5.20 GB), verifies its SHA-256 digest, and installs it beside the game. Internet access is required only during setup; the installed game then runs locally.
+
+See [`documentation/WINDOWS_DISTRIBUTION.md`](documentation/WINDOWS_DISTRIBUTION.md) for prerequisites, package contents, release checks, and signing notes.
 
 If you want the vendorized `llama.cpp` build with CUDA enabled, keep the default CMake options:
 

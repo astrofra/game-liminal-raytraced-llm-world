@@ -41,6 +41,7 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
 - acceleration principale de developpement : `CUDA`
 - modele cible v1 : `Ministral 3 8B Instruct 2512`
 - couche multimedia multi-OS : `SDL3`
+- distribution Windows : installeur Inno Setup natif, poids GGUF externe telecharge et verifie pendant l'installation
 
 ## Fonctionnalites presentes
 
@@ -55,6 +56,7 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
 - Options CMake `LIMINAL_ENABLE_LLAMA_CPP`, `LIMINAL_ENABLE_LLAMA_CUDA`, `LIMINAL_ENABLE_OPENMP` et `LIMINAL_ENABLE_SDL3_FRONTEND` pour raccorder un `llama.cpp` vendorise, activer le parallelisme CPU si disponible et construire la boucle desktop interactive.
 - Fallback `find_package(SDL3)` puis `FetchContent` automatique sur `SDL 3.4.12` si la bibliotheque n'est pas deja installee localement.
 - Helper Windows `build_release.bat` a la racine pour configurer et compiler la version `Release`.
+- Helper Windows `build_installer.bat` pour fabriquer le setup, le manifeste de distribution et l'archive des sources correspondantes.
 - Helper Windows `run_cornell_test.bat` a la racine pour compiler puis lancer le rendu de verification Cornell Box.
 - Helper Windows `download_ministral.bat` pour telecharger le modele cible.
 - Helper Windows `ask_ministral.bat` pour lancer une question libre contre le modele local via `llama-cli`.
@@ -154,6 +156,8 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
 - Mesure du temps de chargement et du temps de rendu.
 - Arborescence `vendor/llama.cpp` ajoutee au depot comme base d'integration locale du runtime LLM.
 - Script Python `scripts/download_ministral.py` pour telecharger et valider `Ministral 3 8B Instruct 2512` en GGUF `Q4_K_M`.
+- Script Python `scripts/build_installer.py` pour assembler un payload sans `.gguf`, resoudre les DLL non-systeme requises, tester `--llama-info`, amorcer un compilateur Inno Setup epingle si necessaire et produire les artefacts de distribution.
+- Installeur Windows `0.1.0` valide localement : payload stage de `576,120,309` octets, setup compresse de `406,824,953` octets, modele externe de `5,198,911,904` octets.
 - Smoke test local `llama-cli` valide sur `Ministral 3 8B`, avec reponse effective a une question libre.
 - Premier noyau fonctionnel pour la future boucle de tour :
   - structs `HardState`, `SoftState`, `SpatialState`, `TurnResult`

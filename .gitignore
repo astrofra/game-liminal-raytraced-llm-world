@@ -4,6 +4,7 @@ output/*.pgm
 output/*.ppm
 output/*.bmp
 output/*.png
+output/installer/
 models/*.gguf
 models/**/*.gguf
 vendor/llama.cpp/build*/

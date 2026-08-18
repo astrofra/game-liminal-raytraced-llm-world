@@ -1,0 +1,27 @@
+WITHIN THE LATENT WALLS - MODEL NOTICE
+======================================
+
+The installer does not contain AI model weights.
+
+During installation it downloads this official Mistral AI artifact:
+
+Repository:
+  https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512-GGUF
+
+File:
+  Ministral-3-8B-Instruct-2512-Q4_K_M.gguf
+
+Pinned repository revision:
+  0102285ad796bd99af90f58de616092e5630e970
+
+Expected size:
+  5,198,911,904 bytes
+
+Expected SHA-256:
+  33e7a72cf5e6e2cfc2f2847075acc013d68bba023e35310cef86b5cf8fdca761
+
+Model license:
+  Apache License 2.0
+
+The model is downloaded directly from the publisher's Hugging Face repository.
+The game does not require the multimodal projector GGUF.

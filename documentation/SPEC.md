@@ -256,6 +256,8 @@ Invisible barriers belong to traversal and collision semantics. Optional diagnos
 
 - Distribute a native desktop build.
 - Use `llama.cpp`; do not require Ollama.
+- On Windows, distribute the game and its application-local runtime libraries through the project installer.
+- Do not embed the AI weights in the setup executable. Download the pinned official `Ministral 3 8B Instruct 2512 Q4_K_M` GGUF during installation and verify its exact size and SHA-256 digest before accepting it.
 - Run offline after setup.
 - Support save/load.
 - Keep CPU-only inference possible, even if slower, while supporting available hardware acceleration.
@@ -450,7 +452,7 @@ Goals:
 - no Python or Ollama requirement for players
 - no mandatory network dependency after setup
 
-Model weights may be bundled, downloaded on first run, or shipped separately. The final choice depends on redistribution terms, artifact size, and installation testing.
+For the active Windows distribution, model weights are downloaded during installation from Mistral AI's official Hugging Face repository. The game payload and corresponding source archive are distributed separately from those weights. Other platforms still require platform-specific packaging decisions.
 
 ## 15. Prototype priorities and roadmap
 

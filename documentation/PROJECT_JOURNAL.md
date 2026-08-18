@@ -1345,3 +1345,35 @@ Validation :
 - build CMake `Release` réussi avec les deux nouvelles tailles de police
 - recherche globale sans ancien nom de launcher ni titre provisoire actif
 - `git diff --check` sans erreur
+
+## 2026-08-18 - Iteration 0032 - Installeur Windows et modele externe
+
+Objectif :
+
+Produire un installeur distribuable contenant tous les fichiers d'application requis sauf le modele IA, telecharge automatiquement pendant l'installation.
+
+Implementation :
+
+- ajout de `build_installer.bat` et `scripts/build_installer.py`
+- staging du binaire renomme `WithinTheLatentWalls.exe`, des assets, licences et notices
+- resolution recursive des imports PE et copie locale des runtimes CUDA, MSVC et OpenMP non-systeme
+- rejet explicite de tout fichier `.gguf` dans le payload
+- generation d'un manifeste JSON avec tailles et SHA-256
+- smoke test du binaire stage via `--llama-info`
+- amorcage verifie d'Inno Setup `6.7.3` si `ISCC.exe` est absent
+- telechargement d'installation epingle sur le `Ministral 3 8B Instruct 2512 Q4_K_M` officiel, avec taille exacte et SHA-256
+- production par defaut d'une archive des sources correspondantes
+
+Validation :
+
+- build CMake `Release` reussi
+- six DLL runtime non-systeme detectees et embarquees, dont `cublas64_13.dll` et `cublasLt64_13.dll`
+- stage de `53` fichiers et `576,120,309` octets sans poids IA
+- setup `0.1.0` compile avec succes : `406,824,953` octets
+- SHA-256 du setup : `d675af1ba6b5645deaac69cac7572dae7913657b96e1f5ec2f9c03156c07fc64`
+
+Limites assumees :
+
+- le telechargement complet du modele de `5,198,911,904` octets n'a pas ete lance pendant cette validation
+- le setup n'est pas encore signe Authenticode
+- le pilote NVIDIA reste un prerequis de la machine cible
