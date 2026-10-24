@@ -797,15 +797,18 @@ bool ParseCardinalDirection(const char* text, CardinalDirection* value)
         return true;
     }
     if (EqualsAsciiNoCase(text, "east") || EqualsAsciiNoCase(text, "e") || EqualsAsciiNoCase(text, "est") ||
-        EqualsAsciiNoCase(text, "ost") || EqualsAsciiNoCase(text, "osten") || EqualsAsciiNoCase(text, "ostover") ||
+        EqualsAsciiNoCase(text, "ost") || EqualsAsciiNoCase(text, "oest") ||
+        EqualsAsciiNoCase(text, "osten") || EqualsAsciiNoCase(text, "ostover") ||
+        EqualsAsciiNoCase(text, "oesten") || EqualsAsciiNoCase(text, "oestover") ||
         strcmp(text, "øst") == 0 || strcmp(text, "Øst") == 0 || strcmp(text, "ØST") == 0 ||
         strcmp(text, "østover") == 0 || strcmp(text, "Østover") == 0) {
         *value = kDirectionEast;
         return true;
     }
     if (EqualsAsciiNoCase(text, "south") || EqualsAsciiNoCase(text, "s") || EqualsAsciiNoCase(text, "sud") ||
-        EqualsAsciiNoCase(text, "syd") || EqualsAsciiNoCase(text, "sor") || EqualsAsciiNoCase(text, "suden") ||
-        EqualsAsciiNoCase(text, "sorover") ||
+        EqualsAsciiNoCase(text, "syd") || EqualsAsciiNoCase(text, "sor") || EqualsAsciiNoCase(text, "soer") ||
+        EqualsAsciiNoCase(text, "suden") || EqualsAsciiNoCase(text, "sorover") ||
+        EqualsAsciiNoCase(text, "soer over") || EqualsAsciiNoCase(text, "soerover") ||
         strcmp(text, "sør") == 0 || strcmp(text, "Sør") == 0 || strcmp(text, "SØR") == 0 ||
         strcmp(text, "sørover") == 0 || strcmp(text, "Sørover") == 0 ||
         strcmp(text, "süd") == 0 || strcmp(text, "Süd") == 0 || strcmp(text, "SÜD") == 0 ||

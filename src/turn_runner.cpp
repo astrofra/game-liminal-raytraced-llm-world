@@ -809,6 +809,83 @@ static std::string ToLowerAsciiCopy(const std::string& text)
     return lower;
 }
 
+static std::string NormalizeNavigationText(const std::string& text)
+{
+    std::string normalized;
+    normalized.reserve(text.size());
+    for (size_t index = 0; index < text.size(); ++index) {
+        const unsigned char value = static_cast<unsigned char>(text[index]);
+        if (value < 0x80u) {
+            if (value >= static_cast<unsigned char>('A') && value <= static_cast<unsigned char>('Z')) {
+                normalized.push_back(static_cast<char>(value - static_cast<unsigned char>('A') + static_cast<unsigned char>('a')));
+            } else {
+                normalized.push_back(static_cast<char>(value));
+            }
+            continue;
+        }
+
+        if (value != 0xc3u || index + 1u >= text.size()) {
+            normalized.push_back(text[index]);
+            continue;
+        }
+
+        const unsigned char continuation = static_cast<unsigned char>(text[index + 1u]);
+        switch (continuation) {
+        case 0x85u: // A-ring uppercase
+        case 0xa5u: // a-ring lowercase
+        case 0x80u: // A-grave uppercase
+        case 0xa0u: // a-grave lowercase
+            normalized.push_back('a');
+            break;
+        case 0x86u: // AE uppercase
+        case 0xa6u: // ae lowercase
+            normalized.append("ae");
+            break;
+        case 0x87u: // C-cedilla uppercase
+        case 0xa7u: // c-cedilla lowercase
+            normalized.push_back('c');
+            break;
+        case 0x88u: // E-grave uppercase
+        case 0x89u: // E-acute uppercase
+        case 0x8au: // E-circumflex uppercase
+        case 0xa8u: // e-grave lowercase
+        case 0xa9u: // e-acute lowercase
+        case 0xaau: // e-circumflex lowercase
+            normalized.push_back('e');
+            break;
+        case 0x8eu: // I-circumflex uppercase
+        case 0x8fu: // I-diaeresis uppercase
+        case 0xaeu: // i-circumflex lowercase
+        case 0xafu: // i-diaeresis lowercase
+            normalized.push_back('i');
+            break;
+        case 0x94u: // O-circumflex uppercase
+        case 0x96u: // O-diaeresis uppercase
+        case 0x98u: // O-stroke uppercase
+        case 0xb4u: // o-circumflex lowercase
+        case 0xb6u: // o-diaeresis lowercase
+        case 0xb8u: // o-stroke lowercase
+            normalized.push_back('o');
+            break;
+        case 0x99u: // U-grave uppercase
+        case 0x9cu: // U-diaeresis uppercase
+        case 0xb9u: // u-grave lowercase
+        case 0xbcu: // u-diaeresis lowercase
+            normalized.push_back('u');
+            break;
+        case 0x9fu: // sharp s
+            normalized.append("ss");
+            break;
+        default:
+            normalized.push_back(text[index]);
+            normalized.push_back(text[index + 1u]);
+            break;
+        }
+        ++index;
+    }
+    return ToLowerAsciiCopy(CollapseWhitespaceCopy(normalized));
+}
+
 static bool LooksPredominantlyEnglish(const std::string& text)
 {
     const std::string lower = " " + ToLowerAsciiCopy(CollapseWhitespaceCopy(text)) + " ";
@@ -1229,14 +1306,36 @@ static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
     EnforceSpatialObjectEnvironmentRules(spatial_state, exterior || perimeter, desert, threshold_like);
 }
 
-static bool TryParseTraversalCommand(const char* player_command, CardinalDirection* direction)
+static bool ParseLocalizedDirectionToken(
+    GameLanguage language,
+    const std::string& normalized,
+    CardinalDirection* direction)
+{
+    if (!direction) {
+        return false;
+    }
+    if (normalized == "o") {
+        *direction = language == kGameLanguageNorwegian ||
+                language == kGameLanguageDanish ||
+                language == kGameLanguageGerman
+            ? kDirectionEast
+            : kDirectionWest;
+        return true;
+    }
+    return ParseCardinalDirection(normalized.c_str(), direction);
+}
+
+static bool TryParseTraversalCommand(
+    GameLanguage language,
+    const char* player_command,
+    CardinalDirection* direction)
 {
     if (!direction) {
         return false;
     }
 
-    const std::string normalized = ToLowerAsciiCopy(CollapseWhitespaceCopy(player_command ? player_command : ""));
-    if (ParseCardinalDirection(normalized.c_str(), direction)) {
+    const std::string normalized = NormalizeNavigationText(player_command ? player_command : "");
+    if (ParseLocalizedDirectionToken(language, normalized, direction)) {
         return true;
     }
 
@@ -1251,8 +1350,32 @@ static bool TryParseTraversalCommand(const char* player_command, CardinalDirecti
     for (size_t index = 0; index < sizeof(prefixes) / sizeof(prefixes[0]); ++index) {
         const std::string prefix = prefixes[index];
         if (normalized.compare(0, prefix.size(), prefix) == 0) {
-            return ParseCardinalDirection(normalized.substr(prefix.size()).c_str(), direction);
+            return ParseLocalizedDirectionToken(language, normalized.substr(prefix.size()), direction);
         }
+    }
+
+    *direction = kDirectionUnknown;
+    return false;
+}
+
+static bool TryParseTraversalIntent(const std::string& intent, CardinalDirection* direction)
+{
+    if (!direction) {
+        return false;
+    }
+
+    const std::string normalized = ToLowerAsciiCopy(intent);
+    const char* prefixes[] = {"move_", "go_", "walk_", "travel_"};
+    for (size_t prefix_index = 0; prefix_index < sizeof(prefixes) / sizeof(prefixes[0]); ++prefix_index) {
+        const std::string prefix = prefixes[prefix_index];
+        if (normalized.compare(0, prefix.size(), prefix) != 0) {
+            continue;
+        }
+        const size_t separator = normalized.find('_', prefix.size());
+        const std::string token = normalized.substr(
+            prefix.size(),
+            separator == std::string::npos ? std::string::npos : separator - prefix.size());
+        return ParseCardinalDirection(token.c_str(), direction);
     }
 
     *direction = kDirectionUnknown;
@@ -1540,12 +1663,97 @@ static void ApplyOpenDesertBiasToDraft(GeneratedRoomDraft* draft)
     AppendShortSentenceIfMissing(&draft->arrival_narration, "Wind crosses the open survey line beyond the quarry rim.");
 }
 
+static bool IsActiveEryxLayoutArchetype(const std::string& archetype)
+{
+    return archetype == "quarry_threshold" ||
+        archetype == "extraction_field" ||
+        archetype == "venus_plateau" ||
+        archetype == "industrial_service_zone" ||
+        archetype == "prospecting_shelter" ||
+        archetype == "scanner_station" ||
+        archetype == "labyrinth_threshold" ||
+        archetype == "quarry_cut";
+}
+
+static void NormalizeGeneratedEryxLayoutArchetype(GeneratedRoomDraft* draft)
+{
+    if (!draft) {
+        return;
+    }
+
+    const std::string primary = ToLowerAsciiCopy(
+        draft->title + " " + draft->summary + " " + draft->spatial_state.room_summary);
+    const std::string combined = ToLowerAsciiCopy(
+        draft->title + " " + draft->summary + " " + BuildSpatialSemanticText(draft->spatial_state));
+    const auto infer_from_text = [](const std::string& text) -> const char* {
+        if (text.find("labyrinth") != std::string::npos ||
+            text.find("invisible contact") != std::string::npos) {
+            return "labyrinth_threshold";
+        }
+        if (text.find("cut") != std::string::npos ||
+            text.find("trench") != std::string::npos ||
+            text.find("seam") != std::string::npos ||
+            text.find("crystal vein") != std::string::npos) {
+            return "quarry_cut";
+        }
+        if (text.find("shelter") != std::string::npos ||
+            text.find("habitat") != std::string::npos ||
+            text.find("refuge") != std::string::npos) {
+            return "prospecting_shelter";
+        }
+        if (text.find("service cell") != std::string::npos ||
+            text.find("service zone") != std::string::npos ||
+            text.find("pressure cell") != std::string::npos) {
+            return "industrial_service_zone";
+        }
+        if (text.find("scanner") != std::string::npos ||
+            text.find("calibration") != std::string::npos ||
+            text.find("instrument platform") != std::string::npos) {
+            return "scanner_station";
+        }
+        if (text.find("plateau") != std::string::npos ||
+            text.find("open field") != std::string::npos ||
+            text.find("marker field") != std::string::npos ||
+            text.find("open shelf") != std::string::npos) {
+            return "venus_plateau";
+        }
+        if (text.find("gate") != std::string::npos ||
+            text.find("threshold") != std::string::npos) {
+            return "quarry_threshold";
+        }
+        if (text.find("extraction") != std::string::npos ||
+            text.find("quarry") != std::string::npos ||
+            text.find("drill") != std::string::npos ||
+            text.find("industrial court") != std::string::npos) {
+            return "extraction_field";
+        }
+        return "";
+    };
+
+    const char* inferred_archetype = infer_from_text(primary);
+    if (!inferred_archetype[0] && !IsActiveEryxLayoutArchetype(draft->spatial_state.location_archetype)) {
+        inferred_archetype = infer_from_text(combined);
+    }
+    if (inferred_archetype[0]) {
+        draft->spatial_state.location_archetype = inferred_archetype;
+    } else if (IsActiveEryxLayoutArchetype(draft->spatial_state.location_archetype)) {
+        return;
+    } else if (SpatialFeelsOpenDesert(draft->spatial_state)) {
+        draft->spatial_state.location_archetype = "venus_plateau";
+    } else if (SpatialFeelsExterior(draft->spatial_state)) {
+        draft->spatial_state.location_archetype = "extraction_field";
+    } else {
+        draft->spatial_state.location_archetype = "industrial_service_zone";
+    }
+}
+
 static void ApplyGeneratedRoomWorldBiases(GeneratedRoomDraft* draft, CardinalDirection direction)
 {
     if (!draft) {
         return;
     }
 
+    NormalizeGeneratedEryxLayoutArchetype(draft);
     if (SpatialSuggestsAiServer(draft->spatial_state)) {
         ApplyAiServerBiasToDraft(draft);
     }
@@ -2334,6 +2542,59 @@ static bool IsEryxLocation(LocationId location_id)
     return location_id >= kLocationQuarryThreshold && location_id <= kLocationProspectShelter;
 }
 
+static void RestoreAuthoritativeCanonicalTopologyInternal(SessionState* session_state)
+{
+    if (!session_state) {
+        return;
+    }
+
+    LocationId location_id = kLocationUnknown;
+    if (!ParseCanonicalPlaceId(session_state->current_place_id, &location_id) || !IsEryxLocation(location_id)) {
+        return;
+    }
+
+    SpatialState canonical_state;
+    if (!BuildCanonicalSpatialState(location_id, &canonical_state)) {
+        return;
+    }
+
+    session_state->hard_state.current_location_id = location_id;
+    session_state->spatial_state.location_id = location_id;
+    session_state->spatial_state.room_title = canonical_state.room_title;
+    session_state->spatial_state.room_summary = canonical_state.room_summary;
+    session_state->spatial_state.location_archetype = canonical_state.location_archetype;
+    session_state->spatial_state.canonical_fixture = canonical_state.canonical_fixture;
+    float world_x = 0.0f;
+    float world_z = 0.0f;
+    if (GetCanonicalWorldPose(location_id, &world_x, &world_z)) {
+        session_state->spatial_state.world_pose_known = true;
+        session_state->spatial_state.world_x = world_x;
+        session_state->spatial_state.world_z = world_z;
+    }
+    session_state->spatial_state.blocked_exits = canonical_state.blocked_exits;
+}
+
+static void ProtectCanonicalTopologyFromNarrativeDelta(
+    const SessionState& initial_session_state,
+    TurnResult* turn_result)
+{
+    if (!turn_result) {
+        return;
+    }
+
+    LocationId location_id = kLocationUnknown;
+    if (!ParseCanonicalPlaceId(initial_session_state.current_place_id, &location_id) || !IsEryxLocation(location_id)) {
+        return;
+    }
+
+    turn_result->hard_state_delta.location_changed = false;
+    turn_result->hard_state_delta.next_location_id = kLocationUnknown;
+    turn_result->spatial_delta.location_changed = false;
+    turn_result->spatial_delta.next_location_id = kLocationUnknown;
+    turn_result->spatial_delta.blocked_exits_changed = false;
+    turn_result->spatial_delta.blocked_exits.clear();
+}
+
 static void ApplyEryxSpatialEntropy(LocationId location_id, HardState* hard_state)
 {
     if (!hard_state) {
@@ -2407,6 +2668,11 @@ static void AddAuthoredEryxTopology(SessionState* session_state)
 }
 
 }  // namespace
+
+void RestoreAuthoritativeCanonicalTopology(SessionState* session_state)
+{
+    RestoreAuthoritativeCanonicalTopologyInternal(session_state);
+}
 
 bool ParseTurnResultJson(
     const char* json_text,
@@ -2569,6 +2835,8 @@ void UpdateSessionStateFromTurn(
             turn_result.invisible_barriers_to_update[index]);
     }
 
+    RestoreAuthoritativeCanonicalTopology(session_state);
+
     SessionTurnRecord record;
     record.turn_number = turn_result.initial_hard_state.turn_number;
     record.location_id = turn_result.updated_spatial_state.location_id;
@@ -2584,7 +2852,7 @@ void UpdateSessionStateFromTurn(
 }
 
 bool RunHeadlessTurnFromState(
-    const SessionState& initial_session_state,
+    const SessionState& provided_session_state,
     const char* player_command,
     const HeadlessTurnConfig& config,
     HeadlessTurnResult* result,
@@ -2595,6 +2863,10 @@ bool RunHeadlessTurnFromState(
         SetError(error_buffer, error_buffer_size, "Invalid headless turn result: %s", "(null)");
         return false;
     }
+
+    SessionState repaired_session_state = provided_session_state;
+    RestoreAuthoritativeCanonicalTopology(&repaired_session_state);
+    const SessionState& initial_session_state = repaired_session_state;
 
     *result = HeadlessTurnResult();
     result->initial_place_id = initial_session_state.current_place_id.empty()
@@ -2614,7 +2886,7 @@ bool RunHeadlessTurnFromState(
     result->effective_llm_temperature = body_driven_config.generation_config.temperature;
 
     CardinalDirection traversal_direction = kDirectionUnknown;
-    if (TryParseTraversalCommand(player_command, &traversal_direction)) {
+    if (TryParseTraversalCommand(initial_session_state.language, player_command, &traversal_direction)) {
         result->traversal_requested = true;
         result->traversal_direction = traversal_direction;
 
@@ -3085,6 +3357,30 @@ bool RunHeadlessTurnFromState(
         }
     }
 
+    CardinalDirection inferred_traversal_direction = kDirectionUnknown;
+    if (TryParseTraversalIntent(result->turn_result.intent, &inferred_traversal_direction)) {
+        const int interpretation_prompt_tokens = result->prompt_tokens;
+        const int interpretation_generated_tokens = result->generated_tokens;
+        const double interpretation_inference_time_ms = result->inference_time_ms;
+        HeadlessTurnResult authoritative_result;
+        if (!RunHeadlessTurnFromState(
+                initial_session_state,
+                CardinalDirectionToString(inferred_traversal_direction),
+                config,
+                &authoritative_result,
+                error_buffer,
+                error_buffer_size)) {
+            return false;
+        }
+        authoritative_result.traversal_inferred_from_llm = true;
+        authoritative_result.prompt_tokens += interpretation_prompt_tokens;
+        authoritative_result.generated_tokens += interpretation_generated_tokens;
+        authoritative_result.inference_time_ms += interpretation_inference_time_ms;
+        *result = authoritative_result;
+        return true;
+    }
+
+    ProtectCanonicalTopologyFromNarrativeDelta(initial_session_state, &result->turn_result);
     ApplyTurnResult(result->turn_result, &result->updated_hard_state, &result->updated_soft_state, &result->updated_spatial_state);
     result->updated_place_id = DetermineUpdatedPlaceIdAfterStandardTurn(initial_session_state, result->updated_spatial_state);
 
@@ -3178,6 +3474,191 @@ bool RunHeadlessTurn(
     return RunHeadlessTurnFromState(session_state, player_command, config, result, error_buffer, error_buffer_size);
 }
 
+bool RunNavigationSelfTest(FILE* output)
+{
+    struct DirectionCase {
+        GameLanguage language;
+        const char* command;
+        CardinalDirection expected;
+    };
+    const DirectionCase direction_cases[] = {
+        {kGameLanguageEnglish, "GO NORTH", kDirectionNorth},
+        {kGameLanguageEnglish, "W", kDirectionWest},
+        {kGameLanguageFrench, "ALLER EST", kDirectionEast},
+        {kGameLanguageFrench, "O", kDirectionWest},
+        {kGameLanguageNorwegian, "ØST", kDirectionEast},
+        {kGameLanguageNorwegian, "oest", kDirectionEast},
+        {kGameLanguageNorwegian, "SØR", kDirectionSouth},
+        {kGameLanguageNorwegian, "soer", kDirectionSouth},
+        {kGameLanguageNorwegian, "GÅ MOT ØST", kDirectionEast},
+        {kGameLanguageNorwegian, "V", kDirectionWest},
+        {kGameLanguageDanish, "Ø", kDirectionEast},
+        {kGameLanguageDanish, "SYD", kDirectionSouth},
+        {kGameLanguageGerman, "O", kDirectionEast},
+        {kGameLanguageGerman, "GEHE NACH SÜDEN", kDirectionSouth},
+        {kGameLanguageItalian, "VAI VERSO OVEST", kDirectionWest},
+        {kGameLanguageItalian, "O", kDirectionWest},
+    };
+    for (size_t index = 0; index < sizeof(direction_cases) / sizeof(direction_cases[0]); ++index) {
+        CardinalDirection parsed = kDirectionUnknown;
+        if (!TryParseTraversalCommand(
+                direction_cases[index].language,
+                direction_cases[index].command,
+                &parsed) || parsed != direction_cases[index].expected) {
+            if (output) {
+                fprintf(output, "Navigation direction parsing failed for case %zu: %s\n", index, direction_cases[index].command);
+            }
+            return false;
+        }
+    }
+
+    char error_buffer[256];
+    error_buffer[0] = '\0';
+    SessionState route_state;
+    if (!InitializeSessionState(kLocationQuarryThreshold, &route_state, error_buffer, sizeof(error_buffer))) {
+        if (output) {
+            fprintf(output, "Navigation route initialization failed: %s\n", error_buffer);
+        }
+        return false;
+    }
+
+    const LocationId route_locations[] = {
+        kLocationQuarryThreshold,
+        kLocationExtractionField,
+        kLocationCrystalCut,
+        kLocationScannerStation,
+        kLocationSurveyPlateau,
+        kLocationLabyrinthThreshold,
+        kLocationProspectShelter,
+    };
+    const CardinalDirection route_directions[] = {
+        kDirectionNorth,
+        kDirectionNorth,
+        kDirectionEast,
+        kDirectionNorth,
+        kDirectionEast,
+        kDirectionEast,
+    };
+    std::string current_place_id = BuildCanonicalPlaceId(route_locations[0]);
+    for (size_t index = 0; index < sizeof(route_directions) / sizeof(route_directions[0]); ++index) {
+        SpatialState canonical_state;
+        std::string linked_place_id;
+        if (!BuildCanonicalSpatialState(route_locations[index], &canonical_state) ||
+            SpatialStateBlocksDirection(canonical_state, route_directions[index]) ||
+            !FindRoomLinkTarget(route_state, current_place_id, route_directions[index], &linked_place_id) ||
+            linked_place_id != BuildCanonicalPlaceId(route_locations[index + 1u])) {
+            if (output) {
+                fprintf(output, "Canonical seven-room route failed at edge %zu.\n", index);
+            }
+            return false;
+        }
+        current_place_id = linked_place_id;
+    }
+
+    struct GeneratedBranchCase {
+        LocationId location;
+        CardinalDirection direction;
+    };
+    const GeneratedBranchCase generated_branch_cases[] = {
+        {kLocationExtractionField, kDirectionEast},
+        {kLocationScannerStation, kDirectionEast},
+        {kLocationSurveyPlateau, kDirectionNorth},
+        {kLocationLabyrinthThreshold, kDirectionSouth},
+        {kLocationProspectShelter, kDirectionEast},
+    };
+    for (size_t index = 0; index < sizeof(generated_branch_cases) / sizeof(generated_branch_cases[0]); ++index) {
+        const GeneratedBranchCase& branch = generated_branch_cases[index];
+        SpatialState canonical_state;
+        const std::string place_id = BuildCanonicalPlaceId(branch.location);
+        std::string linked_place_id;
+        if (!BuildCanonicalSpatialState(branch.location, &canonical_state) ||
+            SpatialStateBlocksDirection(canonical_state, branch.direction) ||
+            FindRoomLinkTarget(route_state, place_id, branch.direction, &linked_place_id) ||
+            FindInvisibleBarrier(route_state, place_id, branch.direction)) {
+            if (output) {
+                fprintf(
+                    output,
+                    "Generated exploration branch failed for %s %s.\n",
+                    LocationIdToString(branch.location),
+                    CardinalDirectionToString(branch.direction));
+            }
+            return false;
+        }
+    }
+
+    GeneratedRoomDraft archetype_draft;
+    archetype_draft.title = "East Flank Cut";
+    archetype_draft.summary = "A tilted extraction court crosses a broken crystal seam.";
+    archetype_draft.spatial_state.location_archetype = "quarry_threshold";
+    NormalizeGeneratedEryxLayoutArchetype(&archetype_draft);
+    if (archetype_draft.spatial_state.location_archetype != "quarry_cut") {
+        if (output) {
+            fprintf(output, "Generated room archetype normalization test failed.\n");
+        }
+        return false;
+    }
+
+    SessionState corrupted_state;
+    if (!InitializeSessionState(kLocationScannerStation, &corrupted_state, error_buffer, sizeof(error_buffer))) {
+        return false;
+    }
+    corrupted_state.hard_state.current_location_id = kLocationCrystalCut;
+    corrupted_state.spatial_state.room_title = "Corrupted room";
+    corrupted_state.spatial_state.canonical_fixture.clear();
+    corrupted_state.spatial_state.blocked_exits.clear();
+    corrupted_state.spatial_state.blocked_exits.push_back("north");
+    corrupted_state.spatial_state.blocked_exits.push_back("east");
+    corrupted_state.spatial_state.blocked_exits.push_back("west");
+    RestoreAuthoritativeCanonicalTopology(&corrupted_state);
+
+    SpatialState scanner_reference;
+    if (!BuildCanonicalSpatialState(kLocationScannerStation, &scanner_reference) ||
+        corrupted_state.hard_state.current_location_id != kLocationScannerStation ||
+        corrupted_state.spatial_state.location_id != kLocationScannerStation ||
+        corrupted_state.spatial_state.room_title != scanner_reference.room_title ||
+        corrupted_state.spatial_state.canonical_fixture != scanner_reference.canonical_fixture ||
+        corrupted_state.spatial_state.blocked_exits != scanner_reference.blocked_exits) {
+        if (output) {
+            fprintf(output, "Canonical topology repair test failed.\n");
+        }
+        return false;
+    }
+
+    TurnResult narrative_turn;
+    narrative_turn.hard_state_delta.location_changed = true;
+    narrative_turn.hard_state_delta.next_location_id = kLocationCrystalCut;
+    narrative_turn.spatial_delta.location_changed = true;
+    narrative_turn.spatial_delta.next_location_id = kLocationCrystalCut;
+    narrative_turn.spatial_delta.blocked_exits_changed = true;
+    narrative_turn.spatial_delta.blocked_exits.push_back("north");
+    ProtectCanonicalTopologyFromNarrativeDelta(corrupted_state, &narrative_turn);
+    if (narrative_turn.hard_state_delta.location_changed ||
+        narrative_turn.spatial_delta.location_changed ||
+        narrative_turn.spatial_delta.blocked_exits_changed ||
+        !narrative_turn.spatial_delta.blocked_exits.empty()) {
+        if (output) {
+            fprintf(output, "Narrative topology authority test failed.\n");
+        }
+        return false;
+    }
+
+    CardinalDirection inferred_direction = kDirectionUnknown;
+    if (!TryParseTraversalIntent("move_east_known_room", &inferred_direction) ||
+        inferred_direction != kDirectionEast) {
+        if (output) {
+            fprintf(output, "LLM traversal intent routing test failed.\n");
+        }
+        return false;
+    }
+
+    if (output) {
+        fprintf(
+            output,
+            "Navigation self-test passed: localized aliases, single-letter compass keys, seven canonical rooms, five generated exploration branches, generated archetype normalization, topology repair, narrative authority and LLM intent routing.\n");
+    }
+    return true;
+}
+
 void PrintHeadlessTurnDebugTrace(const HeadlessTurnResult& result, FILE* stream)
 {
     FILE* out = stream ? stream : stdout;
@@ -3186,6 +3667,7 @@ void PrintHeadlessTurnDebugTrace(const HeadlessTurnResult& result, FILE* stream)
     fprintf(out, "Updated place: %s\n", result.updated_place_id.empty() ? "(empty)" : result.updated_place_id.c_str());
     fprintf(out, "Intent: %s\n", result.turn_result.intent.empty() ? "(empty)" : result.turn_result.intent.c_str());
     fprintf(out, "Traversal requested: %s\n", result.traversal_requested ? "yes" : "no");
+    fprintf(out, "Traversal inferred from LLM: %s\n", result.traversal_inferred_from_llm ? "yes" : "no");
     if (result.traversal_requested) {
         fprintf(out, "Traversal direction: %s\n", CardinalDirectionToString(result.traversal_direction));
     }

@@ -532,6 +532,8 @@ std::string BuildGeneratedRoomPrompt(
     text += "The new place must stay inside the Erycinian Venus crystal-quarry expedition: human brutalist extraction works, hostile sparse terrain, and an alien topology that remains optically absent.\n";
     text += "It must be spatially readable, sparse, and suitable for grayscale raytracing.\n";
     text += "Do not describe a whole region. Describe one immediate neighboring room only.\n";
+    text += "Create a strong visual contrast with the current room: change the dominant silhouette, scale, camera-readable axis, and hero object. Do not merely rearrange the same slab, crate, pylon, and beacon recipe.\n";
+    text += "Prefer one unmistakable spatial identity such as a deep cut, tilted extraction court, compressed service cell, vast marker field, suspended instrument platform, or asymmetric shelter apron.\n";
     text += "The reverse direction back to the source room should usually remain possible.\n";
     text += "Keep the title short.\n";
     text += "Keep the summary compact and concrete.\n";
@@ -539,6 +541,7 @@ std::string BuildGeneratedRoomPrompt(
     text += "Write title, summary, and arrival_narration in idiomatic ";
     text += GameLanguageEnglishName(language);
     text += ". Keep JSON keys, IDs, location_archetype, anchors, object tokens, constraints, and all internal mechanics in English.\n";
+    text += "location_archetype must be exactly one of: quarry_threshold, extraction_field, venus_plateau, industrial_service_zone, prospecting_shelter, scanner_station, labyrinth_threshold, quarry_cut. Put poetic variation in the title and summary, never in this internal token.\n";
     text += "Set move_cost to 1 for a normal successful traversal, and use 0 only if the traversal has no meaningful effect.\n";
     text += "Set score_delta conservatively. Use 0 unless entering this room meaningfully advances progress or reveals something important.\n";
     text += "visible_objects must contain 3 to 5 concrete actionable objects or instruments, not vague scenery only.\n";

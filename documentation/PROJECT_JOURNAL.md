@@ -1484,3 +1484,78 @@ Validation :
 - smoke SDL `800x400`, `1 spp` : huit images publiées et arrêt propre
 - première image du smoke : `239 812` pixels modifiés par la passe optique, `315 178` par le grain et `318 486` par la chaîne complète sur `320 000`
 - coût observé du post-process complet : environ `94 ms` par image à `800x400`
+
+## 2026-08-18 - Iteration 0037 - Réparation de la boucle des trois premiers lieux
+
+Objectif :
+
+Rendre les sept lieux canoniques effectivement accessibles lorsque le joueur utilise les directions affichées dans une langue localisée, sans permettre à un tour narratif de réécrire silencieusement le graphe.
+
+Diagnostic :
+
+- `NORD` suivait le chemin déterministe, avec `Traversal requested: yes`
+- `oest` n'était pas reconnu comme translittération de `øst`
+- la mise en minuscules ASCII de `SØR` produisait une combinaison Unicode que le parseur ne reconnaissait pas
+- ces deux commandes passaient donc dans le tour LLM général, avec `Traversal requested: no`
+- le modèle déplaçait le joueur mais remplaçait aussi les sorties du scanner : nord fermé, sud ouvert
+- la boussole renvoyait alors le joueur vers l'entaille cristalline au lieu de poursuivre vers le plateau
+
+Implémentation :
+
+- normalisation UTF-8 ciblée des caractères latins utilisés par les six langues avant lecture des directions
+- support des variantes `øst/oest/ost`, `sør/soer/sor`, `Süd/sud`, de leurs majuscules et des préfixes de mouvement localisés
+- résolution contextuelle de la touche `O` : est en norvégien, danois et allemand ; ouest en français et italien
+- détection des intents LLM `move_*`, `go_*`, `walk_*` et `travel_*`, puis rejeu par le chemin de traversal autoritatif
+- suppression des deltas narratifs de lieu et de `blocked_exits` pour les salles canoniques
+- réparation de l'identité, de la pose, de la fixture et des sorties canoniques au chargement SDL, avant chaque tour et après commit
+- ajout du diagnostic `Traversal inferred from LLM`
+- ajout de `--navigation-self-test`
+
+Validation :
+
+- build CMake `Release` réussi
+- self-test navigation réussi pour les six langues, les touches de boussole et les translittérations ASCII
+- parcours déterministe vérifié sur les six arêtes reliant les sept lieux canoniques
+- corruption simulée du scanner réparée vers ses sorties canoniques nord/ouest
+- deltas narratifs simulés de lieu et de sorties correctement rejetés
+- intent `move_east_known_room` correctement reconnu comme proposition de traversal à rerouter
+
+## 2026-08-19 - Iteration 0038 - Ouvrir la route canonique sur le monde généré
+
+Objectif :
+
+Éviter que les sept lieux canoniques, bien que désormais tous accessibles, donnent encore l'impression d'un petit circuit fermé et répétitif.
+
+Diagnostic :
+
+- le nouveau log traverse bien `quarry_threshold`, `extraction_field`, `crystal_cut`, `scanner_station`, `survey_plateau`, `labyrinth_threshold` et `prospect_shelter`
+- les treize tours observés indiquent tous `Generated room created: no`
+- chaque direction de chaque salle canonique est liée, bloquée ou réservée à la barrière invisible
+- l'unique sortie de l'abri renvoie au scanner, puis la boussole reproduit le cycle plateau, seuil, abri
+- l'audit visuel des sept fixtures montre aussi une hauteur de caméra, un horizon et une recette `sol + masses latérales + objet central` trop homogènes
+
+Implémentation :
+
+- ouverture de cinq embranchements génératifs : extraction est, scanner est, plateau nord, seuil du labyrinthe sud et abri est
+- ajout de repères visibles et sémantiques pour signaler chaque branche sans précréer sa destination
+- persistance inchangée des nouvelles salles et de leur lien retour après le premier franchissement
+- prompt de salle renforcé pour imposer un contraste de silhouette, d'échelle, d'axe et d'objet héros avec la salle source
+- vocabulaire interne `location_archetype` borné aux huit coques Eryx ; une proposition incohérente est réinterprétée depuis le titre et le résumé avant composition
+- nouvelles compositions canoniques : extraction oblique et industrielle, entaille haute et comprimée, scanner en trois-quarts, plateau grand-angle, paire de datums monumentale et abri asymétrique
+- auto-test étendu pour garantir que les cinq branches sont ouvertes, non liées et sans barrière
+
+Validation :
+
+- build CMake `Release` réussi
+- `--navigation-self-test` réussi pour la route, les cinq branches et la normalisation d'archétype
+- compilation et rendu des sept fixtures à `320x180`, `2 spp`
+- génération réelle depuis `scanner_station --east--> generated:room_0001` avec `Generated room created: yes`
+- proposition `East Flank Cut` normalisée vers `quarry_cut`, puis compilée avec la coque correspondante plutôt que `roof_exterior`
+- sauvegarde/rechargement vérifié : `generated:room_0001 --west--> canonical:scanner_station` réutilise le lien persistant sans créer une seconde salle
+
+## 2026-10-24 - Étude du remplacement de Ministral par Gemma 4 E4B
+
+- Ajout de [`ETUDE_MIGRATION_MINISTRAL_GEMMA_E4B.md`](./ETUDE_MIGRATION_MINISTRAL_GEMMA_E4B.md), en français, et référencement dans l'index documentaire.
+- Analyse du runtime natif, des appels auxiliaires, du parsing JSON, du couplage thermique de l'échantillonnage et du packaging Windows.
+- Vérification des sources Google/Mistral et des métadonnées d'un GGUF Gemma Q4_K_M à révision fixe ; aucun poids téléchargé ni benchmark d'inférence exécuté.
+- Recommandation d'un prototype comparatif avec réflexion sélective ; la mise à jour de `llama.cpp` est autorisée si nécessaire, mais aucune migration n'est effectuée dans cette itération documentaire.

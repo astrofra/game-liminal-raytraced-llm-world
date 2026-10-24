@@ -197,6 +197,7 @@ Inference latency may be presented as visible machine activity rather than hidde
 
 - Support free-text keyboard input and a one-command/one-response cadence.
 - Interpret intent rather than only surface verbs.
+- Normalize localized cardinal commands independently from keyboard case and common ASCII transliterations, including `øst/oest/ost`, `sør/soer/sor`, and `Süd/sud`.
 - Support movement, inspection, manipulation, inventory, marking, mapping, surveying, and optional dialogue.
 - Ask for clarification when ambiguity would otherwise threaten hard state.
 - Provide actionable feedback when movement meets an invisible barrier.
@@ -223,6 +224,10 @@ The LLM may propose, but not directly commit:
 - local substructures within open areas
 
 The engine must validate proposals. At minimum it must protect hard state, avoid trapping the player without intended recovery, preserve local renderability, log the decision, and keep the result inspectable.
+
+The seven-place canonical route is engine-owned. Ordinary narrative deltas **MUST NOT** directly replace its current location or `blocked_exits`. A movement intent inferred by the LLM **MUST** be rerouted through the same authoritative graph, invisible-barrier checks, and generated-neighbor rules as an explicitly parsed cardinal command. Loading an older save **MUST** repair the canonical room identity and exits from this graph before presenting the compass or processing another command.
+
+The canonical route **MUST NOT** consume every traversable cardinal direction. At least one persistent exploration aperture must remain available after the authored impossible return, and multiple canonical places should expose open, unlinked exits. Crossing one of these exits invokes the generated-neighbor pipeline, stores the resulting room and reciprocal return link, and reuses that room on later visits. Generated-room prompts must ask for a different dominant silhouette, scale, axis, and hero object from the source room rather than a rearrangement of the same slab-and-beacon recipe. `location_archetype` must resolve to the active Eryx vocabulary before scene compilation; poetic or inconsistent model tokens must be normalized from the room's player-facing semantics.
 
 ### 7.4 Scene generation
 

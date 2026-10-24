@@ -1,0 +1,265 @@
+{
+  "current_place_id": "canonical:prospect_shelter",
+  "generated_rooms": [],
+  "hard_state": {
+    "alert_level": 4,
+    "body_temperature_c": 38.599998474121094,
+    "current_location_id": "prospect_shelter",
+    "external_temperature_c": 469,
+    "instrument_power_state": "stable",
+    "inventory_items": [
+      "survey map slate",
+      "boundary chalk",
+      "sample tongs"
+    ],
+    "move_count": 10,
+    "named_entities": [
+      "prospector",
+      "missing prospector Vey"
+    ],
+    "oxygen_state": "stable",
+    "score": 0,
+    "spatial_entropy": 55,
+    "suit_state": "stable",
+    "turn_number": 13,
+    "unresolved_threats": [
+      "locate prospector Vey",
+      "verify the invisible obstruction",
+      "recover a crystal sample"
+    ]
+  },
+  "history": [
+    {
+      "clarification": "",
+      "intent": "move_north_known_room",
+      "location_id": "extraction_field",
+      "location_label": "Champ d'extraction",
+      "narration": "Vous allez vers le nord et atteignez Champ d'extraction.",
+      "player_command": "NORD",
+      "turn_number": 1
+    },
+    {
+      "clarification": "",
+      "intent": "move_north_known_room",
+      "location_id": "crystal_cut",
+      "location_label": "Entaille cristalline",
+      "narration": "Vous allez vers le nord et atteignez Entaille cristalline.",
+      "player_command": "NORD",
+      "turn_number": 2
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "scanner_station",
+      "location_label": "Scanner d'affinité",
+      "narration": "Vous allez vers l'est et atteignez Scanner d'affinité.",
+      "player_command": "EST",
+      "turn_number": 3
+    },
+    {
+      "clarification": "",
+      "intent": "move_north_known_room",
+      "location_id": "survey_plateau",
+      "location_label": "Plateau de la balise",
+      "narration": "Vous allez vers le nord et atteignez Plateau de la balise.",
+      "player_command": "NORD",
+      "turn_number": 4
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "labyrinth_threshold",
+      "location_label": "Repère ouvert",
+      "narration": "Vous allez vers l'est et atteignez Repère ouvert.",
+      "player_command": "EST",
+      "turn_number": 5
+    },
+    {
+      "clarification": "Le déplacement a été reconnu : une barrière invisible, et non un échec de compréhension ou un obstacle visible, a refusé le passage.",
+      "intent": "move_north_invisible_barrier",
+      "location_id": "labyrinth_threshold",
+      "location_label": "Repère ouvert",
+      "narration": "Vous avancez vers le nord sur un terrain apparemment libre. Votre sonde et votre scaphandre heurtent un plan lisse là où la visière ne montre que le ciel.",
+      "player_command": "NORD",
+      "turn_number": 6
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "prospect_shelter",
+      "location_label": "Abri de Vey",
+      "narration": "Vous allez vers l'est et atteignez Abri de Vey.",
+      "player_command": "EST",
+      "turn_number": 7
+    },
+    {
+      "clarification": "",
+      "intent": "move_west_known_room",
+      "location_id": "scanner_station",
+      "location_label": "Scanner d'affinité",
+      "narration": "Vous allez vers l'ouest et atteignez Scanner d'affinité.",
+      "player_command": "OUEST",
+      "turn_number": 8
+    },
+    {
+      "clarification": "",
+      "intent": "move_north_known_room",
+      "location_id": "survey_plateau",
+      "location_label": "Plateau de la balise",
+      "narration": "Vous allez vers le nord et atteignez Plateau de la balise.",
+      "player_command": "NORD",
+      "turn_number": 9
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "labyrinth_threshold",
+      "location_label": "Repère ouvert",
+      "narration": "Vous allez vers l'est et atteignez Repère ouvert.",
+      "player_command": "EST",
+      "turn_number": 10
+    },
+    {
+      "clarification": "Le déplacement a été reconnu : une barrière invisible, et non un échec de compréhension ou un obstacle visible, a refusé le passage.",
+      "intent": "move_north_invisible_barrier",
+      "location_id": "labyrinth_threshold",
+      "location_label": "Repère ouvert",
+      "narration": "Vous avancez vers le nord sur un terrain apparemment libre. Votre sonde et votre scaphandre heurtent un plan lisse là où la visière ne montre que le ciel.",
+      "player_command": "NORD",
+      "turn_number": 11
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_known_room",
+      "location_id": "prospect_shelter",
+      "location_label": "Abri de Vey",
+      "narration": "Vous allez vers l'est et atteignez Abri de Vey.",
+      "player_command": "EST",
+      "turn_number": 12
+    }
+  ],
+  "invisible_barriers": [
+    {
+      "direction": "north",
+      "discovered": true,
+      "evidence": "The contact line runs east-west; the plateau remains reachable to the west and Vey's shelter beacon remains visible to the east.",
+      "place_id": "canonical:labyrinth_threshold"
+    }
+  ],
+  "language": "fr",
+  "next_generated_room_index": 1,
+  "origin_place_id": "canonical:quarry_threshold",
+  "room_links": [
+    {
+      "direction": "north",
+      "from_place_id": "canonical:quarry_threshold",
+      "to_place_id": "canonical:extraction_field"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "canonical:extraction_field",
+      "to_place_id": "canonical:quarry_threshold"
+    },
+    {
+      "direction": "north",
+      "from_place_id": "canonical:extraction_field",
+      "to_place_id": "canonical:crystal_cut"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "canonical:crystal_cut",
+      "to_place_id": "canonical:extraction_field"
+    },
+    {
+      "direction": "east",
+      "from_place_id": "canonical:crystal_cut",
+      "to_place_id": "canonical:scanner_station"
+    },
+    {
+      "direction": "west",
+      "from_place_id": "canonical:scanner_station",
+      "to_place_id": "canonical:crystal_cut"
+    },
+    {
+      "direction": "north",
+      "from_place_id": "canonical:scanner_station",
+      "to_place_id": "canonical:survey_plateau"
+    },
+    {
+      "direction": "south",
+      "from_place_id": "canonical:survey_plateau",
+      "to_place_id": "canonical:scanner_station"
+    },
+    {
+      "direction": "east",
+      "from_place_id": "canonical:survey_plateau",
+      "to_place_id": "canonical:labyrinth_threshold"
+    },
+    {
+      "direction": "west",
+      "from_place_id": "canonical:labyrinth_threshold",
+      "to_place_id": "canonical:survey_plateau"
+    },
+    {
+      "direction": "east",
+      "from_place_id": "canonical:labyrinth_threshold",
+      "to_place_id": "canonical:prospect_shelter"
+    },
+    {
+      "direction": "west",
+      "from_place_id": "canonical:prospect_shelter",
+      "to_place_id": "canonical:scanner_station"
+    }
+  ],
+  "soft_state": {
+    "active_hypotheses": [
+      "the open field is divided by surfaces the viewport cannot resolve",
+      "Vey reached the shelter by a route that cannot be retraced consistently"
+    ],
+    "atmosphere": "instrumental, mineral, sparse, spatially uncertain",
+    "rolling_summary": "Vous allez vers l'est et atteignez Abri de Vey.",
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "alert_level": 4,
+    "anchors": [
+      "split_roof_shelter",
+      "oxygen_stacks",
+      "vey_route_map"
+    ],
+    "blocked_exits": [
+      "north",
+      "east",
+      "south"
+    ],
+    "canonical_fixture": "assets/scenes/eryx_prospect_shelter.scene",
+    "interior_density": "dense",
+    "location_archetype": "prospecting_shelter",
+    "location_id": "prospect_shelter",
+    "room_summary": "A low pressure shelter preserves Vey's equipment and route marks; its west hatch is logged as returning directly to the scanner.",
+    "room_title": "Vey Shelter",
+    "scene_constraints": [
+      "hero prospect shelter",
+      "split brutalist roof",
+      "atmospheric processor rear",
+      "west hatch clear",
+      "hero crystal cluster",
+      "atmospheric processor flank"
+    ],
+    "spatial_anomalies": [
+      "the west return relation bypasses the open datum"
+    ],
+    "surface_weather": "still",
+    "time_of_day": "night",
+    "visibility_level": "low",
+    "visible_objects": [
+      "Vey route recorder",
+      "scratched survey map",
+      "oxygen service manifold",
+      "sealed crystal sample case"
+    ],
+    "world_pose_known": true,
+    "world_x": 13.5,
+    "world_z": 13.5
+  }
+}

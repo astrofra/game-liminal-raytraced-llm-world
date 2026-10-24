@@ -2066,6 +2066,7 @@ bool RunSdlFrontend(
     size_t error_buffer_size)
 {
     SessionState current_session_state = initial_session_state;
+    RestoreAuthoritativeCanonicalTopology(&current_session_state);
     std::vector<std::string> command_history;
     for (size_t index = 0; index < current_session_state.history.size(); ++index) {
         if (!current_session_state.history[index].player_command.empty()) {

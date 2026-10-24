@@ -8,7 +8,7 @@
 
 The active artistic direction follows a four-stage lineage from Lovecraft and Kenneth J. Sterling's *In the Walls of Eryx*, through ASD's *Beyond the Walls of Eryx* and Mandarine's *Within the Mesh*, to an interactive generative labyrinth. The intended player explores Venusian extraction infrastructure while an invisible topology can change through LLM proposals validated by an authoritative engine.
 
-The first playable Eryx slice is now present: seven canonical quarry locations, active Eryx prompts and state labels, a typed invisible barrier, and an authored impossible return. Live LLM topology proposals and their validator remain planned. The historical datacenter fixtures remain preserved as technical baselines. See [`documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md`](documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md) for the route and [`documentation/TECHNICAL_STATE.md`](documentation/TECHNICAL_STATE.md) for the exact implementation boundary.
+The first playable Eryx slice is now present: seven canonical quarry locations, five exits into persistent LLM-generated neighboring rooms, active Eryx prompts and state labels, a typed invisible barrier, and an authored impossible return. Live LLM topology proposals and their validator remain planned. The historical datacenter fixtures remain preserved as technical baselines. See [`documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md`](documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md) for the route and [`documentation/TECHNICAL_STATE.md`](documentation/TECHNICAL_STATE.md) for the exact implementation boundary.
 
 Current state:
 
@@ -32,8 +32,10 @@ Current state:
 - first generated-room graph for improvised cardinal navigation
 - authoritative hard/soft/spatial state with deterministic and hybrid scene compilation
 - seven-place Eryx survey route with deterministic invisible contact and non-reciprocal traversal
+- five authored exploration apertures from the canonical route into persistent generated-room branches
 - model-directed Venus heat loop linking external temperature, suit-buffered body temperature, and LLM sampling temperature
 - six-language player interface selected at launch: English (`E`), Français (`F`), Norsk (`N`, Bokmål), Dansk (`D`), Deutsch (`G`), or Italiano (`I`)
+- Unicode-tolerant localized navigation whose canonical exits remain engine-owned and are repaired when older saves are loaded
 - symmetric procedural suit-visor mask around the 3D viewport
 - green-to-pale-yellow Venus sky with doubled radiance on environment misses
 - legacy datacenter/desert scenes retained as historical baselines
@@ -126,6 +128,7 @@ Animated-view diagnostics:
 
 ```powershell
 .\build\Release\liminal_cornell_renderer.exe --animated-view-self-test
+.\build\Release\liminal_cornell_renderer.exe --navigation-self-test
 .\build\Release\liminal_cornell_renderer.exe --sdl --animated-view-debug --view-animation-fps 6
 .\build\Release\liminal_cornell_renderer.exe --view-post-process-self-test
 .\build\Release\liminal_cornell_renderer.exe --sdl --view-post-process-debug --view-blur-radius 3 --view-dispersion 6 --view-grain 7

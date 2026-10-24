@@ -386,7 +386,7 @@ static void SetCommonQuarryThresholdSpatialState(SpatialState* state)
 static void SetCommonExtractionFieldSpatialState(SpatialState* state)
 {
     state->room_title = "Extraction Field";
-    state->room_summary = "A diamond drill stands among retaining fins and atmospheric machinery; the marked quarry cut continues north.";
+    state->room_summary = "A diamond drill stands among retaining fins and atmospheric machinery; the marked quarry cut continues north while an unmapped service track leaves east.";
     state->location_archetype = "extraction_field";
     state->canonical_fixture = CanonicalFixturePath(kLocationExtractionField);
     state->time_of_day = kTimeDusk;
@@ -397,16 +397,18 @@ static void SetCommonExtractionFieldSpatialState(SpatialState* state)
     state->anchors.push_back("diamond_drill");
     state->anchors.push_back("retaining_fins");
     state->anchors.push_back("atmospheric_processor");
+    state->anchors.push_back("east_service_track");
     state->visible_objects.push_back("drill service lever");
     state->visible_objects.push_back("oxygen manifold");
     state->visible_objects.push_back("quarry datum pylon");
     state->visible_objects.push_back("sealed equipment crate");
-    state->blocked_exits.push_back("east");
+    state->visible_objects.push_back("unmapped east service track");
     state->blocked_exits.push_back("west");
     state->scene_constraints.push_back("hero extraction rig");
     state->scene_constraints.push_back("brutalist retaining fins");
     state->scene_constraints.push_back("atmospheric processor flank");
     state->scene_constraints.push_back("keep quarry ramp clear");
+    state->scene_constraints.push_back("east service track open");
 }
 
 static void SetCommonCrystalCutSpatialState(SpatialState* state)
@@ -438,7 +440,7 @@ static void SetCommonCrystalCutSpatialState(SpatialState* state)
 static void SetCommonScannerStationSpatialState(SpatialState* state)
 {
     state->room_title = "Affinity Scanner";
-    state->room_summary = "A scanner hangs beneath a heavy cantilever with a reference crystal beneath it; the beacon route climbs north.";
+    state->room_summary = "A scanner hangs beneath a heavy cantilever; the beacon route climbs north while an unlogged calibration lane continues east.";
     state->location_archetype = "scanner_station";
     state->canonical_fixture = CanonicalFixturePath(kLocationScannerStation);
     state->time_of_day = kTimeNight;
@@ -453,18 +455,19 @@ static void SetCommonScannerStationSpatialState(SpatialState* state)
     state->visible_objects.push_back("reference crystal");
     state->visible_objects.push_back("route comparison display");
     state->visible_objects.push_back("survey beacon access plate");
-    state->blocked_exits.push_back("east");
+    state->visible_objects.push_back("unmapped east calibration lane");
     state->blocked_exits.push_back("south");
     state->scene_constraints.push_back("hero crystal scanner");
     state->scene_constraints.push_back("heavy cantilever frame");
     state->scene_constraints.push_back("reference crystal center");
     state->scene_constraints.push_back("north survey beacon");
+    state->scene_constraints.push_back("east calibration lane open");
 }
 
 static void SetCommonSurveyPlateauSpatialState(SpatialState* state)
 {
     state->room_title = "Beacon Plateau";
-    state->room_summary = "A sparse line of survey beacons crosses the plateau toward an eastern pair of pylons; every lamp agrees on distance but not direction.";
+    state->room_summary = "A sparse line of survey beacons crosses the plateau toward eastern pylons; a lone northern beacon has no matching map entry.";
     state->location_archetype = "venus_plateau";
     state->canonical_fixture = CanonicalFixturePath(kLocationSurveyPlateau);
     state->time_of_day = kTimeNight;
@@ -478,18 +481,19 @@ static void SetCommonSurveyPlateauSpatialState(SpatialState* state)
     state->visible_objects.push_back("route beacon plate");
     state->visible_objects.push_back("survey mark post");
     state->visible_objects.push_back("wind-scoured sample crate");
-    state->blocked_exits.push_back("north");
+    state->visible_objects.push_back("unmapped north beacon");
     state->blocked_exits.push_back("west");
     state->scene_constraints.push_back("hero survey beacon line");
     state->scene_constraints.push_back("east datum pylons");
     state->scene_constraints.push_back("minimal venus plateau");
     state->scene_constraints.push_back("open horizon");
+    state->scene_constraints.push_back("isolated north beacon");
 }
 
 static void SetCommonLabyrinthThresholdSpatialState(SpatialState* state)
 {
     state->room_title = "Open Datum";
-    state->room_summary = "Two quarry pylons frame an apparently open northern field; a suspended fragment and an interrupted scan trace imply contact with empty space.";
+    state->room_summary = "Two quarry pylons frame an apparently open northern field; interrupted scans imply contact ahead while chalk marks diverge south.";
     state->location_archetype = "labyrinth_threshold";
     state->canonical_fixture = CanonicalFixturePath(kLocationLabyrinthThreshold);
     state->time_of_day = kTimeNight;
@@ -504,18 +508,19 @@ static void SetCommonLabyrinthThresholdSpatialState(SpatialState* state)
     state->visible_objects.push_back("chalk datum marker");
     state->visible_objects.push_back("suspended crystal fragment");
     state->visible_objects.push_back("shelter route beacon");
-    state->blocked_exits.push_back("south");
+    state->visible_objects.push_back("southern divergence marks");
     state->spatial_anomalies.push_back("the northern scan line terminates without visible geometry");
     state->scene_constraints.push_back("hero labyrinth threshold");
     state->scene_constraints.push_back("paired quarry pylons");
     state->scene_constraints.push_back("suspended contact evidence");
     state->scene_constraints.push_back("no visible wall");
+    state->scene_constraints.push_back("south divergence marks");
 }
 
 static void SetCommonProspectShelterSpatialState(SpatialState* state)
 {
     state->room_title = "Vey Shelter";
-    state->room_summary = "A low pressure shelter preserves Vey's equipment and route marks; its west hatch is logged as returning directly to the scanner.";
+    state->room_summary = "A low pressure shelter preserves Vey's equipment; its west hatch returns to the scanner while an east maintenance breach has no mapped destination.";
     state->location_archetype = "prospecting_shelter";
     state->canonical_fixture = CanonicalFixturePath(kLocationProspectShelter);
     state->time_of_day = kTimeNight;
@@ -530,14 +535,15 @@ static void SetCommonProspectShelterSpatialState(SpatialState* state)
     state->visible_objects.push_back("scratched survey map");
     state->visible_objects.push_back("oxygen service manifold");
     state->visible_objects.push_back("sealed crystal sample case");
+    state->visible_objects.push_back("east maintenance breach");
     state->blocked_exits.push_back("north");
-    state->blocked_exits.push_back("east");
     state->blocked_exits.push_back("south");
     state->spatial_anomalies.push_back("the west return relation bypasses the open datum");
     state->scene_constraints.push_back("hero prospect shelter");
     state->scene_constraints.push_back("split brutalist roof");
     state->scene_constraints.push_back("atmospheric processor rear");
     state->scene_constraints.push_back("west hatch clear");
+    state->scene_constraints.push_back("east maintenance breach open");
 }
 
 static void SetCommonGateSpatialState(SpatialState* state)

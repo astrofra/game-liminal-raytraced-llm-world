@@ -553,3 +553,38 @@ Raison :
 Consequence :
 
 La visière, le transcript et la saisie sont composés après la texture post-traitée et restent nets. Les températures et la boussole sont compositées en additif avec un phosphore vert-jaune `(184,254,80)` ; les directions bloquées utilisent exactement la demi-intensité `(92,127,40)`. Les exports PNG/PGM de référence du raytraceur restent bruts ; le post-process appartient au viewport interactif. Les valeurs par défaut sont un rayon de flou de `3 px`, une dispersion maximale de `6 px`, un grain d'amplitude `7`, un début d'effet à un rayon elliptique normalisé de `0.48` et un plein effet à `1.05`.
+
+## 2026-08-18 - Rendre la navigation canonique autoritative jusque dans les langues localisées
+
+Decision :
+
+Les commandes cardinales joueur sont normalisées avant interprétation : casse ASCII, diacritiques latins utiles et translittérations usuelles convergent vers un token cardinal interne. La touche ambiguë `O` est résolue selon la langue affichée. Si le LLM comprend une formulation libre comme un mouvement, son intent est rejoué par le chemin déterministe au lieu d'appliquer directement ses deltas de lieu. Dans les sept lieux canoniques, les deltas narratifs de lieu et de `blocked_exits` sont refusés ; l'identité et les sorties sont réparées depuis la topologie auteurisée lors du chargement ou du prochain tour.
+
+Raison :
+
+- `oest` et `SØR` échappaient au parseur direct malgré leur proximité avec les libellés norvégiens affichés
+- le tour LLM général pouvait alors déplacer le joueur tout en remplaçant les sorties du scanner, fermant le nord et ouvrant le sud
+- cette fuite d'autorité créait une boucle apparente entre les trois premiers lieux et rendait les quatre suivants pratiquement invisibles
+- une contradiction fictionnelle doit provenir d'une barrière ou d'une mutation validée, jamais d'une différence de casse, de clavier ou de translittération
+
+Consequence :
+
+Le parcours de référence `threshold -> extraction -> crystal -> scanner -> plateau -> labyrinth -> shelter` reste accessible avec les contrôles des six langues. Les anciennes sauvegardes dont le brief canonique contient des sorties contaminées sont réparées sans supprimer l'historique, l'inventaire ni les salles générées. Le diagnostic expose `Traversal inferred from LLM`, et `--navigation-self-test` vérifie les alias, les touches de boussole, les six arêtes du parcours et les gardes d'autorité.
+
+## 2026-08-19 - Traiter les sept lieux comme une ossature, pas comme la totalité du monde
+
+Decision :
+
+La route canonique conserve ses liens, sa barrière invisible et son retour impossible, mais cinq directions supplémentaires restent ouvertes sans destination préinstallée. Leur premier franchissement utilise le pipeline de salle générée existant ; le résultat et son lien retour deviennent persistants. Le prompt de génération exige aussi un contraste de silhouette, d'échelle, d'axe et d'objet héros avec le lieu source. L'archétype interne est borné aux huit coques Eryx et corrigé depuis le titre et le résumé lorsque la proposition du modèle est poétique ou incohérente.
+
+Raison :
+
+- le journal d'une partie complète montrait sept fixtures différentes mais `Generated room created: no` sur chaque tour
+- toutes les directions cardinales étaient soit liées, bloquées ou occupées par la barrière invisible
+- après l'abri, l'unique sortie ouest imposait le cycle `scanner -> plateau -> labyrinth -> shelter -> scanner`
+- la génération dynamique existait techniquement mais restait inaccessible dans la tranche Eryx normale
+- les fixtures partageaient en plus une caméra frontale basse et une recette de masses latérales qui réduisaient leur contraste perceptif
+
+Consequence :
+
+Le joueur peut quitter l'ossature depuis l'extraction est, le scanner est, le plateau nord, le seuil du labyrinthe sud ou l'abri est. Le retour impossible reste démontrable, mais il ne devient plus une prison. Les fixtures canoniques ont reçu des cadrages et silhouettes différenciés, et l'auto-test de navigation vérifie maintenant que ces cinq directions restent ouvertes, sans lien et sans barrière avant leur première exploration.

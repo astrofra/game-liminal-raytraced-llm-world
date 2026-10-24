@@ -31,18 +31,31 @@ The line meshes and changing projections become interrupted scans, incompatible 
 ```text
 quarry_threshold
         N
-extraction_field
+extraction_field ~~E~~> generated quarry/service branch
         N
 crystal_cut --E--> scanner_station
-                         N
+                         N        ~~E~~> generated calibration branch
                   survey_plateau --E--> labyrinth_threshold --E--> prospect_shelter
-                                              N: invisible barrier       |
-                                                                         W
-                                                                         v
-                                                               scanner_station
+                        ~~N~~> generated     N: invisible barrier          |
+                              plateau branch ~~S~~> generated branch      | W: impossible return
+                                                        shelter ~~E~~> generated branch
+                                                                           v
+                                                                 scanner_station
 ```
 
 The shelter's west link is intentionally non-reciprocal. It returns directly to `scanner_station`, bypassing both `labyrinth_threshold` and `survey_plateau`. This is authored evidence of impossible topology, not an accidental graph error.
+
+`~~direction~~>` denotes an authored exploration aperture, not a prebuilt room. The direction is deliberately open and has no initial `RoomLink` or `InvisibleBarrier`. Its first traversal asks the LLM for one neighboring room, compiles and stores that room, and installs a reciprocal return link. A revisit therefore preserves the generated place instead of rerolling it.
+
+## Generated exploration apertures
+
+| Canonical source | Direction | Visible cue | Function |
+| --- | --- | --- | --- |
+| `extraction_field` | east | unlogged service track | permit an early industrial/quarry deviation |
+| `scanner_station` | east | calibration lane beyond the instrument | break the post-shelter loop immediately |
+| `survey_plateau` | north | isolated beacon absent from the map | extend exploration into sparse open terrain |
+| `labyrinth_threshold` | south | diverging chalk marks | contrast the blocked invisible north with a real passage |
+| `prospect_shelter` | east | maintenance breach | offer generation instead of forcing the west return |
 
 ## Eight-action dramatic path
 
@@ -87,6 +100,8 @@ Entropy and both temperatures now use distinct C++ members. The loader still acc
 - The route installs twelve directed links and one typed invisible barrier.
 - Northern contact at `labyrinth_threshold` leaves position and move count unchanged, marks the barrier discovered, and emits explicit diagnostic narration.
 - The shelter's west traversal returns to the scanner and persists through JSON save/load.
+- Five canonical exits are intentionally open and unlinked, making the generated-room pipeline reachable during ordinary play.
+- Canonical fixtures use contrasting camera axes, scales, enclosure and hero silhouettes rather than one repeated frontal composition.
 - Active prompts use Eryx vocabulary and preserve `spatial_entropy` as an internal topological measure. The player HUD instead exposes Venusian external and body temperatures.
 - Historical datacenter fixtures and legacy prefab directives remain available as technical baselines.
 

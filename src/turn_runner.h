@@ -63,6 +63,7 @@ struct HeadlessTurnResult {
     SpatialState prospective_spatial_state;
     CardinalDirection traversal_direction;
     bool traversal_requested;
+    bool traversal_inferred_from_llm;
     bool prospective_spatial_state_known;
     bool candidate_scene_valid;
     bool used_candidate_scene_for_render;
@@ -88,6 +89,7 @@ struct HeadlessTurnResult {
     HeadlessTurnResult()
         : traversal_direction(kDirectionUnknown)
         , traversal_requested(false)
+        , traversal_inferred_from_llm(false)
         , prospective_spatial_state_known(false)
         , candidate_scene_valid(false)
         , used_candidate_scene_for_render(false)
@@ -118,6 +120,7 @@ bool InitializeSessionState(
     SessionState* session_state,
     char* error_buffer,
     size_t error_buffer_size);
+void RestoreAuthoritativeCanonicalTopology(SessionState* session_state);
 void ApplyTurnResult(
     const TurnResult& turn_result,
     HardState* hard_state,
@@ -142,6 +145,7 @@ bool RunHeadlessTurn(
     HeadlessTurnResult* result,
     char* error_buffer,
     size_t error_buffer_size);
+bool RunNavigationSelfTest(FILE* output);
 
 }  // namespace liminal
 

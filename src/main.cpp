@@ -42,6 +42,7 @@ static void PrintUsage()
     printf("  --animated-view-fail-frame <n> Force animation image 1..7 to fail for diagnostics\n");
     printf("  --animated-view-debug    Log displayed image, direction, generation and worker state\n");
     printf("  --animated-view-self-test Validate camera endpoints and N=1/2/4/8 ping-pong sequences\n");
+    printf("  --navigation-self-test Validate localized directions, the seven-room route and generated branches\n");
     printf("  --view-post-process-self-test Validate optical effects and post-optical RGB grain\n");
     printf("  --no-view-post-process  Disable peripheral optics and RGB grain in SDL\n");
     printf("  --view-blur-radius <n>  Peripheral blur radius in source pixels (default: 3)\n");
@@ -319,6 +320,7 @@ int main(int argc, char** argv)
     bool run_session = false;
     bool run_sdl = false;
     bool run_animated_view_self_test = false;
+    bool run_navigation_self_test = false;
     bool run_view_post_process_self_test = false;
     float view_animation_fps = 6.0f;
     int animated_view_fail_frame = -1;
@@ -453,6 +455,10 @@ int main(int argc, char** argv)
         }
         if (strcmp(argv[index], "--animated-view-self-test") == 0) {
             run_animated_view_self_test = true;
+            continue;
+        }
+        if (strcmp(argv[index], "--navigation-self-test") == 0) {
+            run_navigation_self_test = true;
             continue;
         }
         if (strcmp(argv[index], "--animated-view-debug") == 0) {
@@ -634,6 +640,9 @@ int main(int argc, char** argv)
 
     if (run_animated_view_self_test) {
         return liminal::RunAnimatedViewSelfTest(stdout) ? 0 : 1;
+    }
+    if (run_navigation_self_test) {
+        return liminal::RunNavigationSelfTest(stdout) ? 0 : 1;
     }
     if (run_view_post_process_self_test) {
         return liminal::RunPeripheralViewPostProcessSelfTest(stdout) ? 0 : 1;

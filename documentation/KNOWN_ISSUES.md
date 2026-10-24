@@ -581,6 +581,38 @@ Verifier et normaliser explicitement l'encodage du fichier si cela devient genan
 
 ## Résolus
 
+### 2026-08-19 - La route des sept lieux formait un circuit fermé sans accès aux salles générées
+
+Statut :
+
+Résolu le 2026-08-19.
+
+Résolution :
+
+- diagnostic confirmé par treize tours consécutifs affichant `Generated room created: no`
+- conservation de la route canonique et de son retour impossible
+- ouverture de cinq directions sans lien initial ni barrière depuis l'extraction, le scanner, le plateau, le seuil du labyrinthe et l'abri
+- génération LLM au premier franchissement, puis persistance de la salle et de son lien de retour
+- ajout d'une contrainte de contraste spatial au prompt de génération
+- normalisation du token d'archétype généré vers les huit coques Eryx réellement reconnues par le compositeur
+- différenciation des axes de caméra, échelles, silhouettes et degrés d'enclosure des fixtures canoniques
+- extension de `--navigation-self-test` pour vérifier les cinq embranchements génératifs
+
+### 2026-08-18 - Les directions localisées pouvaient enfermer le joueur dans les trois premiers lieux
+
+Statut :
+
+Résolu le 2026-08-18.
+
+Résolution :
+
+- normalisation de la casse, des diacritiques et des translittérations cardinales, notamment `ØST/oest/ost`, `SØR/soer/sor` et `SÜD/sud`
+- désambiguïsation de la touche `O` selon la langue de l'interface
+- reroutage des intents de mouvement produits par le LLM vers le graphe déterministe
+- refus des deltas narratifs qui tentent de remplacer le lieu ou les sorties d'une salle canonique
+- réparation des sorties canoniques contaminées dans les sauvegardes existantes
+- self-test du parcours complet des sept lieux et des commandes des six langues
+
 ### 2026-08-18 - Le projet et son script de lancement conservaient des titres provisoires
 
 Statut :

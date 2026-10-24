@@ -28,6 +28,7 @@ La première tranche jouable Eryx est maintenant implémentée : sept lieux cano
 - [`SCENE_FORMAT_V1.md`](./SCENE_FORMAT_V1.md) : format de scène réellement implémenté, y compris les prefabs de prospection/extraction. Les murs invisibles restent volontairement dans l'état de traversal, pas dans la géométrie visible.
 - [`ANIMATED_VIEW_SPEC.md`](./ANIMATED_VIEW_SPEC.md) : spécification maintenant implémentée des huit images raytracées progressives, du mouvement de respiration et du playback ping-pong.
 - [`LLAMA_CUDA_SPECS.md`](./LLAMA_CUDA_SPECS.md) : procédure de build et de validation de `Ministral 3 8B` avec `llama.cpp` et CUDA.
+- [`ETUDE_MIGRATION_MINISTRAL_GEMMA_E4B.md`](./ETUDE_MIGRATION_MINISTRAL_GEMMA_E4B.md) : étude en français du remplacement par Gemma 4 E4B, de la réflexion sélective, des adaptations logicielles et du protocole comparatif.
 - [`WINDOWS_DISTRIBUTION.md`](./WINDOWS_DISTRIBUTION.md) : construction, contenu et validation de l'installeur Windows sans poids IA embarqués.
 - [`MULTIPROCESSING_FEASIBILITY.md`](./MULTIPROCESSING_FEASIBILITY.md) : étude et base de validation du rendu CPU parallèle, concrétisée par OpenMP.
 

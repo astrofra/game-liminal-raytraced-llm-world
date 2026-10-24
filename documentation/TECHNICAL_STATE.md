@@ -1,6 +1,6 @@
 # Technical State — Within the Latent Walls / Entre les Murs Latents
 
-Derniere mise a jour : 2026-08-18
+Derniere mise a jour : 2026-08-19
 
 ## Resume
 
@@ -27,9 +27,11 @@ Une premiere tranche Eryx est implementee dans le runtime :
 - masque de visière 2D symétrique et procédural devant le viewport 3D
 - post-process logiciel du viewport : centre optiquement net, flou périphérique progressif, dispersion chromatique radiale de `6 px` et grain RGB ajouté après le flou
 - douze liens diriges constituant une route d'arpentage
+- navigation canonique autoritative : commandes cardinales normalisées en Unicode/ASCII, intentions de mouvement LLM reroutées et anciennes sorties de sauvegarde réparées
 - type persistant `InvisibleBarrier`, separe de `blocked_exits`
 - contact invisible au nord de `labyrinth_threshold`, avec preuve et statut `discovered`
 - retour non reciproque `prospect_shelter --west--> scanner_station`
+- cinq sorties ouvertes sans lien canonique déclenchent la génération persistante de voisins : `extraction east`, `scanner east`, `plateau north`, `labyrinth south` et `shelter east`
 - huit archetypes Eryx dans le compilateur hybride et integration des neuf prefabs actifs
 
 La frontiere encore ouverte est la mutation **live** : le LLM ne produit pas encore de proposition topologique separee, et le moteur n'a pas encore de decision `accepted`, `adjusted`, `rejected` ou `deferred` ni d'historique de mutation. La contradiction actuelle est auteurisee et deterministe.
@@ -48,8 +50,12 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
 
 - Tranche canonique Eryx documentee dans `ERYX_PLAYABLE_SPATIAL_ROADMAP.md` : seuil, extraction, coupe cristalline, scanner, plateau, seuil du labyrinthe et abri de Vey.
 - Topologie de traversal Eryx installee sans appel LLM pour garantir un parcours de reference reproductible.
+- Les deltas narratifs ordinaires ne peuvent plus modifier le lieu courant ni `blocked_exits` dans les sept salles canoniques ; toute intention LLM de mouvement repasse par les liens et barrières du moteur.
 - Une barriere invisible est serialisee avec `place_id`, direction, preuve et statut de decouverte ; elle refuse le mouvement sans incrementer `move_count`.
 - Les liens diriges peuvent etre volontairement non reciproques ; le premier retour impossible contourne deux lieux connus tout en conservant l'identite locale du scanner.
+- La route canonique n'est plus un circuit fermé : cinq directions ouvertes et non liées passent dans le pipeline `GeneratedRoom`, créent un lien de retour et réutilisent ensuite la salle mise en cache.
+- Les sept fixtures conservent leurs repères mais utilisent désormais des silhouettes et cadrages plus contrastés : extraction oblique, entaille comprimée, scanner en trois-quarts, plateau grand-angle, datums monumentaux et abri asymétrique.
+- Les archétypes poétiques ou incohérents proposés pour une salle générée sont ramenés au vocabulaire Eryx actif à partir du titre et du résumé avant composition, afin d'éviter la coque générique `roof_exterior`.
 - Les bandes cachees actives sont `survey camp`, `inner quarry`, `quarry seam`, `outer shelf` et `open venus`.
 - Les archetypes hybrides actifs incluent `quarry_threshold`, `extraction_field`, `quarry_cut`, `scanner_station`, `venus_plateau`, `labyrinth_threshold`, `prospecting_shelter` et `industrial_service_zone`.
 
@@ -216,6 +222,7 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - interface exposée, narrations déterministes et instructions LLM joueur localisées ; contrats internes conservés en anglais
   - validation lexicale des sorties joueur non anglophones, suivie si nécessaire d'une passe de localisation LLM à température nulle vers la langue choisie puis d'un fallback déterministe localisé
   - raccourcis et directions affichés selon la langue (`NORTH`/`NORD`, `WEST`/`OUEST`, etc.)
+  - normalisation des variantes Unicode, de la casse et des translittérations cardinales (`ØST`/`oest`/`ost`, `SØR`/`soer`/`sor`, `SÜD`/`sud`) ; la touche `O` est désambiguïsée selon la langue
   - garde d'affichage non anglophone pour les titres et narrations anglaises déjà présents dans une ancienne sauvegarde, sans mutation des données archivées
   - masque de visière symétrique calculé par scanlines rectangulaires et frontières elliptiques ; extérieur de fenêtre noir et encoche centrale limitée au tiers inférieur
   - deux panneaux thermiques affichant température extérieure entière et température corporelle décimale
@@ -241,6 +248,7 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - assembler `documentation/HYBRID_SCENE_GENERATION_BENCHMARK.md`
 - Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`, desormais en buffer RGB.
 - Self-test `--animated-view-self-test` pour les sequences `1/2/4/8`, les endpoints camera, l'absence de derive et le rejet des generations obsoletes.
+- Self-test `--navigation-self-test` pour les alias des six langues, les touches de boussole, le parcours des sept lieux, les cinq branches génératives, la normalisation des archétypes, la réparation des sauvegardes et l'autorité topologique.
 - Self-test `--view-post-process-self-test` pour le centre optiquement net, la dispersion périphérique, le grain RGB post-optique équilibré, le bypass et la validation des buffers.
 - Diagnostics `--animated-view-debug`, `--animated-view-fail-frame`, `--view-post-process-debug`, `--view-blur-radius`, `--view-dispersion`, `--view-grain`, `--no-view-post-process`, `--sdl-smoke-test-ms` et `--sdl-smoke-command`.
 - Options CLI de boucle fonctionnelle :
@@ -349,6 +357,7 @@ Exemples du noyau fonctionnel :
 .\build\Release\liminal_cornell_renderer.exe --audit-scene-text assets\scenes\eryx_labyrinth_threshold.scene --output output\audited_labyrinth_threshold.png
 .\build\Release\liminal_cornell_renderer.exe --sdl --location quarry_threshold --save-state output\eryx_session_state.json
 .\build\Release\liminal_cornell_renderer.exe --animated-view-self-test
+.\build\Release\liminal_cornell_renderer.exe --navigation-self-test
 .\build\Release\liminal_cornell_renderer.exe --sdl --animated-view-debug --view-animation-fps 6
 .\build\Release\liminal_cornell_renderer.exe --view-post-process-self-test
 .\build\Release\liminal_cornell_renderer.exe --sdl --view-post-process-debug --view-blur-radius 3 --view-dispersion 6 --view-grain 7
@@ -556,7 +565,7 @@ Observation importante :
 - pas encore de couche compacte d'instanciation ou de repetition pour les prefabs
 - les prefabs actuels augmentent fortement le nombre de triangles et de materiaux
 - pas de telemetrie CPU/GPU/memoire
-- pas de suite globale de tests automatises ; la vue animee possede toutefois un self-test deterministe et des smoke tests SDL temporises
+- pas de suite globale de tests automatises ; la navigation, la vue animee et le post-process possedent toutefois des self-tests deterministes, complétés par des smoke tests SDL temporises
 - semantique runtime Eryx encore partielle :
   - pas de proposition LLM de mutation topologique separee des deltas spatiaux ordinaires
   - pas de validateur de frequence, recuperation ou provenance des mutations live
