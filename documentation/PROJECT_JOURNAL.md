@@ -1559,3 +1559,11 @@ Validation :
 - Analyse du runtime natif, des appels auxiliaires, du parsing JSON, du couplage thermique de l'échantillonnage et du packaging Windows.
 - Vérification des sources Google/Mistral et des métadonnées d'un GGUF Gemma Q4_K_M à révision fixe ; aucun poids téléchargé ni benchmark d'inférence exécuté.
 - Recommandation d'un prototype comparatif avec réflexion sélective ; la mise à jour de `llama.cpp` est autorisée si nécessaire, mais aucune migration n'est effectuée dans cette itération documentaire.
+
+## 2026-10-24 - Étude de mise à jour de Ministral et de llama.cpp
+
+- Ajout de [`ETUDE_MISE_A_JOUR_MINISTRAL_LLAMA_CPP.md`](./ETUDE_MISE_A_JOUR_MINISTRAL_LLAMA_CPP.md), distincte de l'étude Gemma et référencée dans l'index.
+- Vérification des références officielles : le GGUF Ministral 3 8B Instruct Q4_K_M sélectionné correspond toujours à l'artefact publié ; comparaison avec Q5_K_M, Reasoning et les variantes compactes 3B.
+- Identification de `llama.cpp v0.7.0` comme candidate à qualifier et examen statique des surfaces d'intégration ; aucune compilation ou mise à jour effectuée.
+- Recherche élargie aux Mistral locaux récents, avec exclusion des scénarios de changement matériel conformément à la demande ; cible RTX 4060 8 Go conservée.
+- Aucun poids téléchargé ni benchmark d'inférence exécuté ; gains et limites à établir par le protocole proposé.
