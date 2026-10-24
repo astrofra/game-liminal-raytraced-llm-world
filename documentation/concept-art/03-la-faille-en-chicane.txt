@@ -1,0 +1,21 @@
+La faille en chicane — concept 3
+Date : 2026-10-24
+Génération : outil intégré image_gen ; concept artistique, pas un rendu du moteur.
+Image : 03-la-faille-en-chicane.png, 1774 × 887, panorama 2:1 sans interface.
+Direction commune : suite de La chambre du ciel, inspirée des références img/ consultées pour le concept 01 ; gris brutaliste, sol ocre, ciel olive vers jaune pâle, illumination globale diffuse.
+
+Transposition envisagée : Murs, décrochements, corniches, parapets et traverses en boîtes ; plan ocre au fond de la faille. Le passage traverse la tranchée à angle droit. Rechercher la profondeur par l'occlusion et les rebonds diffus ; la légère impression de brume du concept ne présuppose pas de volumétrie moteur.
+Limites : grain de matière, joints et détails de sol ajoutés par le générateur à simplifier en matériaux uniformes. Les budgets de primitives du prompt sont des intentions et non des mesures. Aucune scène .scene ni validation du rendu moteur produite. La composition libre demanderait un travail distinct pour être générée automatiquement par le compilateur hybride.
+Validation effectuée : revue visuelle ; décodage PNG et dimensions identiques aux cinq images de la série.
+
+PROMPT EXACT
+
+Use case: stylized-concept.
+Create ONE polished environment concept art image for Within the Latent Walls / Entre les Murs Latents, a liminal Venusian exploration game. Wide landscape panorama EXACT 2:1 aspect ratio, preferably 1774x887, full bleed. One continuous scene, no panels, no text, captions, border, UI, visor, HUD, people, logos or watermark.
+Art direction: architectural concept art with the visual discipline of a simple low-poly path-traced maquette. Monumental gray brutalist forms, flat muted ochre quarry floor, desaturated olive-green sky at zenith grading into pale sulfur yellow at horizon. Spacious, uncanny, silent, lonely, inviting exploration. Strong legible silhouettes and physically coherent perspective.
+Technical constraints: geometry directly reconstructible with a modest number of rectangular box primitives and flat rectangular planes; boxes may be rotated, stacked or scaled. Openings are gaps between blocks, not boolean cuts. No curved surfaces, arches, spheres, cylinders, organic geometry, complex machinery, cables, detailed debris, vegetation, water, floating objects or impossible connections. Use broad solid surfaces and clearly grounded structures. Matte gray uniform materials; color on gray faces comes from lighting. Avoid detailed textures, cracks and weathering; subtle render grain only. No high-detail production painting disguised as simple geometry.
+Lighting: convincing soft diffuse global illumination and multi-bounce color transfer; yellow-green skylight, warm ochre bounce from ground, subtle white camera fill in the foreground. Deep but readable contact occlusion. No sun disc, harsh directional sunlight, volumetric fog, god rays, bloom or neon. The composition and illumination should carry the beauty, not surface ornament.
+
+Title for context only, do not print it: La faille en chicane.
+Scene: an extremely narrow, deep artificial quarry canyon with massive dark rectangular walls, seen at human height from a recessed side ledge. The ledge runs from near foreground along the left wall, reaches a broad small landing, then crosses the rectangular trench at a right angle on a short solid bridge in the middle distance; on the far wall the route turns sharply and disappears behind a tall wall offset. Simple parapet blocks on the exposed edges emphasize the turn. Above, two thick rectangular crossbeams bridge the canyon at different heights, leaving an irregular strip of luminous olive-yellow sky. At the bottom is a faintly lit flat ochre floor far below, NOT water or lava. A tiny rectangular white light marks a deep doorway at the end of the walk. Use 20–35 large boxes and a ground plane; no scaffolding, railings, pipes or stairs. The perspective makes the walls appear strongly convergent but each is a planar vertical box. Oppressive compressed composition, predominantly vertical masses within the wide panoramic frame, dark near right wall covering part of view, soft warm light bouncing upward. This is a claustrophobic traversable architectural incision, not a spacious courtyard.
+

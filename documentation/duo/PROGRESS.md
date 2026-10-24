@@ -18,3 +18,7 @@ Mise à jour : 24 octobre 2026. Coordinateur : Codex. Exécutant : DeepSeek via 
 | Roadmap Ministral | Terminée | [Bilan](../MINISTRAL_QUALIFICATION_REPORT.md) : 70 scènes, 611 tours, protocole, builds, installation et retour arrière ; v0.7 intégré | Q4 retenu ; Q5/Reasoning expérimentaux ; limites métier et diffusion publique documentées |
 
 Les contrats et revues sont conservés pour rendre les échecs et les corrections vérifiables. Les worktrees et les journaux du duo restent hors du dépôt principal. Aucun commit ni push effectué pendant ces lots.
+
+24 octobre 2026 — Exploration artistique 01 : « La chambre du ciel », image et prompt déposés dans `documentation/concept-art/`. Génération raster par Codex avec l'outil intégré image_gen, hors lots de développement Copilot/DeepSeek. PNG vérifié en 1774 × 887 (2:1), revue visuelle effectuée ; transposition en boîtes/plans envisagée, textures à simplifier, aucun rendu moteur validé. Les quatre autres concepts attendent la discussion avec l'utilisateur.
+
+24 octobre 2026 — Exploration artistique 02–05 : après approbation du premier concept, quatre images supplémentaires générées avec image_gen et déposées dans `documentation/concept-art/`, avec prompts exacts et notes de transposition. Série complète de cinq PNG vérifiés en 1774 × 887, revue visuelle effectuée. Volumes prévus en boîtes/plans, rotations disponibles via `box rot(...)` ; détails de matière et de sol à simplifier. Aucune délégation DeepSeek ni scène moteur produite pour ce lot artistique.

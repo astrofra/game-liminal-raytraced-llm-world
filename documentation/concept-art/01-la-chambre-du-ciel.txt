@@ -1,0 +1,24 @@
+La chambre du ciel — concept 01
+Date : 2026-10-24
+Génération : outil intégré image_gen ; concept artistique, pas un rendu du moteur.
+Image : 01-la-chambre-du-ciel.png, 1774 × 887, panorama 2:1 de la vue du jeu (sans interface).
+Références visuelles consultées : img/000.png, img/004.png, img/005.png, img/006.png.
+
+Intention : excavation en gradins, passerelle vers une porte minuscule, dalles monumentales décalées et ciel vénusien. L'étrangeté repose sur l'échelle, les vides et la répétition.
+Traduction envisagée : plans pour le sol ; boîtes pour les gradins, piles, passerelle et toitures ; porte obtenue par espacement des blocs ; deux boîtes pour le pylône fendu ; petite balise blanche. Géométrie alignée sur les axes du monde, caméra oblique.
+Éclairage visé : ciel vert/jaune, rebonds diffus et appoint caméra ; occlusion sous les dalles et remontée ocre depuis le fond.
+Limites : l'image générée ajoute du grain de matière et des joints de béton au-delà des matériaux uniformes actuels. Ces détails sont à simplifier ; aucun nouveau support de textures n'est présupposé. Le nombre de boîtes du prompt est un objectif de conception, pas une mesure. Aucune scène .scene ni validation de rendu moteur produite à ce stade. La génération automatique par le compilateur hybride demanderait un travail de composition distinct.
+Première image approuvée par l'utilisateur ; série complétée ensuite par les concepts 02 à 05 dans ce dossier.
+
+PROMPT EXACT
+
+Use case: stylized-concept.
+Create ONE environment concept art image for Within the Latent Walls, a liminal Venusian exploration game. Title for context only: La chambre du ciel / The sky chamber. Output a wide landscape panoramic image with exact aspect ratio 2:1, ideally 1600x800. No text or border.
+Visual reference direction: sparse primitive-based brutalist quarry scenes, dark gray architecture, ochre ground, a muted green zenith grading into pale sulfur yellow at the horizon, fine path-traced grain. Invent a new spatial composition freely within this vocabulary.
+Scene: an abandoned monumental open-air excavation, an enormous rectangular dry sunken courtyard with three broad stepped terraces. A narrow solid rectangular concrete footbridge crosses the void from the foreground toward a small dark rectangular doorway off-center in the far wall. Over the courtyard stand three enormous offset horizontal rectangular roof slabs, held up by sparse thick square piers, with generous open slots of yellow-green sky between them. A distant freestanding split rectangular pylon provides a strange survey landmark. A tiny white survey light on a simple block at the far end gives scale. Asymmetric composition, dominant negative space, disquieting architectural silence, a plausible place to explore, an unfamiliar civic monument on Venus.
+Geometry must be achievable using ONLY approximately 35–60 axis-aligned rectangular boxes and flat rectangular planes, plus a very simple survey beacon prefab. Every apparent opening is a gap between blocks. Strictly flat faces and crisp straight edges, no bevels, curves, cylinders, arches, organic shapes, complicated machinery, or elaborate meshes. Steps are assembled from broad boxes, not sculpted terrain. No floating unsupported architecture. A few immense forms with clear silhouettes, not a busy city.
+Composition: first-person human eye height from the near rim, oblique three-quarter perspective, 65-degree horizontal field of view, strong foreground/middle/distant depth. Bridge creates the invitation to enter; massive dark slab enters from upper left; luminous sky openings balance the right. Keep the entire important architectural composition within the wide 2:1 canvas. Full-bleed environment image only, no UI, visor, HUD, captions, typography, people, or watermark.
+Lighting: convincing diffuse global illumination, soft multi-bounce light beneath the slabs, subtle warm ochre bounce on lower gray walls, pale yellow-green sky contribution on upper faces, deep but legible occlusion in rectangular recesses. Restrained off-camera white fill as if from explorer light. Expose the masses clearly. No sun disc, sharp sun shadows, god rays, volumetric fog, bloom, or magical illumination.
+Materials and palette: matte uniform warm/cool gray concrete, muted flat ochre quarry floor, desaturated olive-green to pale yellow gradient sky. Colors on gray architecture come mainly from bounced light. No painted multicolored surfaces, textures, surface damage, cracks, scattered gravel, detailed weathering, metallic mirrors, water, or vegetation. Fine render grain is welcome.
+Style: polished architectural concept art with the visual discipline of a simple low-poly path-traced maquette; strong atmosphere through light and composition, readable large masses, physically coherent perspective and shadowing. This should look ambitious but directly translatable to a small CPU raytracer's box-and-plane scene format.
+
