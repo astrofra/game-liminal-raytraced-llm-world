@@ -43,6 +43,13 @@ target_include_directories(liminal_llm_channels_test PRIVATE src)
 enable_testing()
 add_test(NAME ministral_channels COMMAND liminal_llm_channels_test)
 
+add_executable(liminal_distant_light_test tests/distant_light_test.cpp src/scene.cpp src/renderer.cpp)
+target_include_directories(liminal_distant_light_test PRIVATE src vendor/stb)
+if(MSVC)
+    target_compile_options(liminal_distant_light_test PRIVATE /W4 /wd4996 /utf-8)
+endif()
+add_test(NAME distant_light COMMAND liminal_distant_light_test)
+
 if(WIN32)
     target_link_libraries(liminal_cornell_renderer PRIVATE shell32)
 endif()

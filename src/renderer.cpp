@@ -69,6 +69,33 @@ static const float kRayOriginOffset = 0.001f;
 static const int kMaxShadowGlassIntersections = 16;
 static const int kMaxActiveGlassMedia = 8;
 
+struct DistantLightState {
+    bool enabled = false;
+    Vec3 to_light;
+    Vec3 tangent;
+    Vec3 bitangent;
+    Vec3 irradiance;
+    float cone_cos = 1.0f;
+};
+
+static DistantLightState BuildDistantLightState(const DistantLight& light)
+{
+    DistantLightState state;
+    if (!light.enabled || light.intensity <= 0.0f) {
+        return state;
+    }
+    state.enabled = true;
+    state.to_light = Normalize(-light.direction);
+    const Vec3 helper = fabsf(state.to_light.y) < 0.99f ? Vec3(0, 1, 0) : Vec3(1, 0, 0);
+    state.tangent = Normalize(Cross(helper, state.to_light));
+    state.bitangent = Cross(state.to_light, state.tangent);
+    state.cone_cos = cosf(light.angular_radius_degrees * kPi / 180.0f);
+    // A uniform solid-angle cone has mean axial cosine (1 + cos(radius)) / 2.
+    // Normalize it so changing softness preserves irradiance on a facing plane.
+    state.irradiance = light.color * (light.intensity * 2.0f / (1.0f + state.cone_cos));
+    return state;
+}
+
 static float Saturate(float value)
 {
     return Clamp(value, 0.0f, 1.0f);
@@ -765,21 +792,60 @@ static Vec3 EstimateCameraSpotLighting(
     return contribution / static_cast<float>(light_samples);
 }
 
+static Vec3 EstimateDistantLighting(
+    const Scene& scene,
+    const DistantLightState& light,
+    const Hit& hit,
+    const Material& material,
+    int light_samples,
+    Rng* rng)
+{
+    if (!light.enabled || light_samples <= 0 || IsNearBlack(material.albedo)) {
+        return Vec3(0.0f);
+    }
+    Vec3 contribution(0.0f);
+    // A zero-radius source is deterministic: one shadow ray is sufficient.
+    const int count = light.cone_cos == 1.0f ? 1 : light_samples;
+    for (int sample = 0; sample < count; ++sample) {
+        Vec3 direction = light.to_light;
+        if (light.cone_cos < 1.0f) {
+            const float cosine = 1.0f - rng->NextFloat() * (1.0f - light.cone_cos);
+            const float sine = sqrtf(std::max(0.0f, 1.0f - cosine * cosine));
+            const float phi = 2.0f * kPi * rng->NextFloat();
+            direction = Normalize(light.to_light * cosine +
+                light.tangent * (sine * cosf(phi)) + light.bitangent * (sine * sinf(phi)));
+        }
+        const float cosine = Dot(hit.normal, direction);
+        if (cosine <= 0.0f) {
+            continue;
+        }
+        Ray shadow;
+        shadow.origin = hit.position + hit.normal * kRayOriginOffset;
+        shadow.direction = direction;
+        contribution += TraceShadowTransmittance(scene, shadow, kHuge) *
+            (material.albedo / kPi) * light.irradiance * cosine;
+    }
+    return contribution / static_cast<float>(count);
+}
+
 static Vec3 EstimateDirectLighting(
     const Scene& scene,
     const CameraLightState& camera_light,
+    const DistantLightState& distant_light,
     const Hit& hit,
     const Material& material,
     int light_samples,
     Rng* rng)
 {
     return EstimateEmissiveTriangleLighting(scene, hit, material, light_samples, rng) +
-        EstimateCameraSpotLighting(scene, camera_light, hit, material, light_samples, rng);
+        EstimateCameraSpotLighting(scene, camera_light, hit, material, light_samples, rng) +
+        EstimateDistantLighting(scene, distant_light, hit, material, light_samples, rng);
 }
 
 static Vec3 TracePath(
     const Scene& scene,
     const CameraLightState& camera_light,
+    const DistantLightState& distant_light,
     const RenderConfig& config,
     const Ray& camera_ray,
     int dispersion_channel,
@@ -912,7 +978,7 @@ static Vec3 TracePath(
         ++diffuse_events;
 
         radiance += throughput *
-            EstimateDirectLighting(scene, camera_light, hit, material, config.direct_light_samples, rng);
+            EstimateDirectLighting(scene, camera_light, distant_light, hit, material, config.direct_light_samples, rng);
 
         if (IsNearBlack(material.albedo)) {
             break;
@@ -1044,6 +1110,7 @@ static bool RenderSceneInternal(
 
     const CameraBasis basis = BuildCameraBasis(scene.camera);
     const CameraLightState camera_light = BuildCameraLightState(scene, basis);
+    const DistantLightState distant_light = BuildDistantLightState(scene.distant_light);
     pixels->assign(static_cast<size_t>(config.width * config.height * 3), 0u);
     bool parallel_enabled = false;
     int openmp_threads = 1;
@@ -1055,7 +1122,7 @@ static bool RenderSceneInternal(
 
     if (print_progress) {
         printf(
-            "Rendering %dx%d, spp=%d, diffuse=%d, glass=%d, emissive=%d, camera_spot=%s, openmp=%s, threads=%d\n",
+            "Rendering %dx%d, spp=%d, diffuse=%d, glass=%d, emissive=%d, camera_spot=%s, distant_light=%s, openmp=%s, threads=%d\n",
             config.width,
             config.height,
             config.samples_per_pixel,
@@ -1063,6 +1130,7 @@ static bool RenderSceneInternal(
             config.max_glass_bounces,
             static_cast<int>(scene.emissive_triangles.size()),
             camera_light.enabled ? "on" : "off",
+            distant_light.enabled ? "on" : "off",
             parallel_enabled ? "on" : "off",
             openmp_threads);
     }
@@ -1078,7 +1146,7 @@ static bool RenderSceneInternal(
             for (int sample_index = 0; sample_index < config.samples_per_pixel; ++sample_index) {
                 const Ray ray = GenerateCameraRay(scene.camera, basis, x, y, config, &rng);
                 const int dispersion_channel = (sample_index + x + y) % 3;
-                accumulated += TracePath(scene, camera_light, config, ray, dispersion_channel, &rng);
+                accumulated += TracePath(scene, camera_light, distant_light, config, ray, dispersion_channel, &rng);
             }
 
             const Vec3 average = accumulated / static_cast<float>(config.samples_per_pixel);

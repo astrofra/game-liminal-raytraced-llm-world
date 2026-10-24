@@ -2,6 +2,7 @@
 #include "scene.h"
 
 #include <algorithm>
+#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,6 +34,7 @@ static void ResetScene(Scene* scene)
 {
     scene->name.clear();
     scene->camera_spotlight = CameraSpotlight();
+    scene->distant_light = DistantLight();
     scene->sky_background = SkyBackground();
     scene->materials.clear();
     scene->triangles.clear();
@@ -1867,6 +1869,41 @@ static bool ParseSceneV1Directive(
         scene->camera_spotlight.cone_inner_degrees = cone_inner;
         scene->camera_spotlight.cone_outer_degrees = cone_outer;
         scene->camera_spotlight.intensity = intensity_value;
+        return true;
+    }
+
+    if (line == "distant_light" || StartsWith(line, "distant_light ")) {
+        DistantLight light;
+        if (!ExtractVec3Property(line, "direction(", &light.direction) ||
+            !ExtractFloatProperty(line, "intensity(", &light.intensity)) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number,
+                "Distant light requires direction() and intensity()");
+            return false;
+        }
+        if ((line.find("color(") != std::string::npos &&
+                !ExtractVec3Property(line, "color(", &light.color)) ||
+            (line.find("angular_radius(") != std::string::npos &&
+                !ExtractFloatProperty(line, "angular_radius(", &light.angular_radius_degrees))) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number,
+                "Distant light has malformed color() or angular_radius()");
+            return false;
+        }
+        const float length_squared = LengthSquared(light.direction);
+        if (!std::isfinite(length_squared) || length_squared <= kEpsilon * kEpsilon ||
+            !std::isfinite(light.intensity) || light.intensity < 0.0f ||
+            !std::isfinite(light.angular_radius_degrees) ||
+            light.angular_radius_degrees < 0.0f || light.angular_radius_degrees > 10.0f ||
+            !std::isfinite(light.color.x) || !std::isfinite(light.color.y) || !std::isfinite(light.color.z) ||
+            light.color.x < 0.0f || light.color.x > 1.0f ||
+            light.color.y < 0.0f || light.color.y > 1.0f ||
+            light.color.z < 0.0f || light.color.z > 1.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number,
+                "Distant light requires a finite nonzero direction, nonnegative intensity, color in [0,1], and angular_radius in [0,10] degrees");
+            return false;
+        }
+        light.direction = Normalize(light.direction);
+        light.enabled = true;
+        scene->distant_light = light;
         return true;
     }
 

@@ -30,6 +30,8 @@ La première version vise les voisins inconnus accessibles depuis les cinq branc
 
 Les **dix images**, leurs principes transférables et leurs limites sont réunis dans l’[atlas de composition](./concept-art/ATLAS_COMPOSITION.md). Les PNG font 1774 × 887, au ratio 2:1. Ce sont des images produites avec `image_gen`, **pas des rendus certifiés du moteur**. Les textures, certains détails, halos et effets de lumière devront être simplifiés ou calibrés.
 
+**Complément expérimental ultérieur :** les [reconstructions 01, 02, 03 et 09](./concept-art/raytracer-study/README.md) fournissent désormais des scènes manuelles et des rendus de comparaison. Elles confirment la faisabilité des grandes formes, montrent les écarts de cadrage et de matière, et ont conduit à l’ajout de `distant_light` à la demande de l’utilisateur. Ce sont des références de calibration du banc, pas des niveaux prégénérés pour le runtime.
+
 ## 2. Ce qui fonctionne aujourd’hui, et ce qui bloque la cible
 
 | Constat dans le dépôt | Conséquence |

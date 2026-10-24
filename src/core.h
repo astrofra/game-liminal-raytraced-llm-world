@@ -280,6 +280,15 @@ struct CameraSpotlight {
     }
 };
 
+// direction is the world-space direction in which light travels (sun -> scene).
+struct DistantLight {
+    bool enabled = false;
+    Vec3 direction = Vec3(0.0f, -1.0f, 0.0f);
+    Vec3 color = Vec3(1.0f);
+    float intensity = 1.0f; // Irradiance on a surface facing the central direction.
+    float angular_radius_degrees = 0.0f;
+};
+
 struct SkyBackground {
     bool enabled;
     float zenith_luminance;

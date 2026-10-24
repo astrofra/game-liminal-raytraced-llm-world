@@ -1,6 +1,6 @@
 # Scene Format V1
 
-Dernière mise à jour : 2026-08-09
+Dernière mise à jour : 2026-10-24
 
 ## Statut
 
@@ -71,6 +71,25 @@ Exemple :
 ```text
 spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(16.0,38.0) intensity(180.0)
 ```
+
+### `distant_light`
+
+Définit une lumière directionnelle à l’infini, par exemple un soleil. Elle est indépendante de la caméra et n’a ni position, ni atténuation avec la distance. Elle est désactivée si la directive est absente ; une nouvelle déclaration remplace la précédente.
+
+- `direction(x,y,z)` obligatoire : direction des rayons **du soleil vers la scène**, en coordonnées du monde ; le moteur normalise ce vecteur non nul. `(0,-1,0)` éclaire verticalement vers le bas.
+- `intensity(value)` obligatoire : intensité positive ou nulle, exprimant l’éclairement d’une surface face à la direction centrale, avant multiplication par la couleur. `0` coupe la source.
+- `color(r,g,b)` optionnel : multiplicateur RGB linéaire, chaque canal dans `[0,1]` ; blanc `(1,1,1)` par défaut. Il colore la lumière, pas l’albédo des objets.
+- `angular_radius(value)` optionnel : **rayon**, en degrés, dans `[0,10]` ; `0` par défaut pour des rayons strictement parallèles et des ombres nettes. Une valeur positive produit une pénombre par échantillonnage d’un cône autour de la direction centrale. L’énergie sur une surface face à la lumière est conservée lorsque ce rayon change.
+
+Les valeurs non finies, directions nulles et paramètres hors domaine sont rejetés. Le nombre de tirages dépend de `--direct-samples` ; pour un rayon nul, un seul rayon d’ombre suffit. Les obstacles et la transmission du verre sont évalués par le chemin d’ombre existant ; l’éclairage contribue aussi aux rebonds diffus.
+
+```text
+distant_light direction(-0.6,-1,0.35) intensity(3.5) color(1,0.92,0.72) angular_radius(0.65)
+```
+
+Cette source n’ajoute aucun triangle, disque visible dans le ciel ou reflet direct du disque solaire. Le fond `sky` reste indépendant ; il n’est pas recoloré automatiquement. Le verre conserve son modèle de transport existant, sans technique dédiée aux caustiques. Les scènes historiques sans cette directive restent inchangées.
+
+Voir les [comparaisons avec les concepts 01, 02, 03 et 09](concept-art/raytracer-study/README.md).
 
 ### `sky`
 

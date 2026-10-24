@@ -22,6 +22,8 @@ La distribution interne 2.2.0 est construite et testée : téléchargement réel
 
 Le [plan de génération dynamique des décors](./GENERATION_DYNAMIQUE_DECORS_PLAN.md) propose une future voie `plan spatial LLM -> .scene LLM -> validation -> rendu`, illustrée par l'[atlas des concepts](./concept-art/ATLAS_COMPOSITION.md). Cette voie n'est pas implémentée : les nouveaux lieux utilisent toujours le compilateur hybride décrit ci-dessous. Les budgets et critères du plan sont des hypothèses à qualifier.
 
+Les [essais de reproduction des concepts 01, 02, 03 et 09](./concept-art/raytracer-study/README.md) ajoutent quatre fixtures manuelles de calibration et leurs rendus natifs, puis trois variantes avec soleil. La directive `distant_light` est implémentée : direction mondiale, intensité, couleur, rayon angulaire, occultation et contribution aux rebonds diffus. Elle est optionnelle ; les scènes canoniques et la génération hybride ne l’activent pas automatiquement. Cette étude ne constitue pas une génération de décor par Ministral.
+
 Une premiere tranche Eryx est implementee dans le runtime :
 
 - sept lieux canoniques actifs, de `quarry_threshold` a `prospect_shelter`

@@ -19,6 +19,7 @@ Current state:
 - source-generated Eryx quarry prefab vocabulary and visual catalog
 - first handcrafted liminal scene
 - camera-attached parametric spotlight for proprietary scenes
+- optional world-space distant light with color and angular radius, including shadows and diffuse bounce lighting
 - grayscale material reduction from the Cornell MTL
 - simple BVH acceleration
 - diffuse path tracing with direct light sampling and low-bounce radiosity

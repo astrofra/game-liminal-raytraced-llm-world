@@ -24,6 +24,7 @@ La première tranche jouable Eryx est maintenant implémentée : sept lieux cano
 
 - [`GENERATION_DYNAMIQUE_DECORS_PLAN.md`](./GENERATION_DYNAMIQUE_DECORS_PLAN.md) : conception illustrée et plan d'attaque en français pour des lieux imaginés et écrits en `.scene` par Ministral pendant la partie ; pipeline, validations, persistance et neuf lots proposés, non implémentés.
 - [`concept-art/ATLAS_COMPOSITION.md`](./concept-art/ATLAS_COMPOSITION.md) : les dix références visuelles, leurs principes transférables et les limites de transposition vers le raytracer.
+- [`concept-art/raytracer-study/README.md`](./concept-art/raytracer-study/README.md) : reconstructions natives des concepts 01, 02, 03 et 09, comparateur illustré, mesures et ajout de `distant_light` pour les variantes diurnes.
 - [`FUNCTIONAL_PIPELINE_V1.md`](./FUNCTIONAL_PIPELINE_V1.md) : chaîne autoritative `commande -> résultat structuré -> état spatial -> compilation -> rendu` et cible de mutation topologique.
 - [`SPATIAL_VALIDATION_PLAN.md`](./SPATIAL_VALIDATION_PLAN.md) : protocole Eryx pour barrières invisibles, revisites, chemins impossibles, fréquence des mutations et cartographie.
 - [`HYBRID_SCENE_LAYOUT_PLAN.md`](./HYBRID_SCENE_LAYOUT_PLAN.md) : migration du compositeur hybride vers carrière, plateau, abri, scanner et seuil invisible.
