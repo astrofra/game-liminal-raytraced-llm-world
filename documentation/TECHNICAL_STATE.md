@@ -20,6 +20,8 @@ La distribution interne 2.2.0 est construite et testée : téléchargement réel
 
 ## Frontiere entre reorientation et implementation
 
+Le [plan de génération dynamique des décors](./GENERATION_DYNAMIQUE_DECORS_PLAN.md) propose une future voie `plan spatial LLM -> .scene LLM -> validation -> rendu`, illustrée par l'[atlas des concepts](./concept-art/ATLAS_COMPOSITION.md). Cette voie n'est pas implémentée : les nouveaux lieux utilisent toujours le compilateur hybride décrit ci-dessous. Les budgets et critères du plan sont des hypothèses à qualifier.
+
 Une premiere tranche Eryx est implementee dans le runtime :
 
 - sept lieux canoniques actifs, de `quarry_threshold` a `prospect_shelter`
