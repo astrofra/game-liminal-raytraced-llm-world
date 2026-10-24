@@ -1,0 +1,56 @@
+{
+  "hard_state": {
+    "turn_number": 1,
+    "move_count": 0,
+    "score": 0,
+    "current_location_id": "unknown",
+    "alert_level": 3,
+    "cooling_state": "stable",
+    "water_state": "stable",
+    "power_state": "stable",
+    "inventory_items": [],
+    "named_entities": [],
+    "unresolved_threats": []
+  },
+  "soft_state": {
+    "rolling_summary": "A chilled storage vault holds sealed pods and backup racks. A biometric pad, a wheeled crate, and a suspended service panel suggest expensive access.",
+    "atmosphere": "backup vault",
+    "active_hypotheses": [],
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "location_id": "unknown",
+    "room_title": "Backup Vault",
+    "room_summary": "A chilled storage vault holds sealed pods and backup racks. A biometric pad, a wheeled crate, and a suspended service panel suggest expensive access.",
+    "location_archetype": "backup vault",
+    "canonical_fixture": "",
+    "time_of_day": "night",
+    "visibility_level": "low",
+    "desert_state": "still",
+    "interior_density": "dense",
+    "alert_level": 3,
+    "anchors": [
+      "sealed data pods",
+      "vault door",
+      "service panel"
+    ],
+    "visible_objects": [
+      "biometric pad",
+      "wheeled crate",
+      "service panel",
+      "emergency switch"
+    ],
+    "blocked_exits": [
+      "north",
+      "west"
+    ],
+    "spatial_anomalies": [
+      "cold vapor drifts near the floor"
+    ]
+  },
+  "history": [],
+  "current_place_id": "benchmark_backup_vault",
+  "next_generated_room_index": 1,
+  "generated_rooms": [],
+  "room_links": []
+}

@@ -1,4 +1,11 @@
+#include "file_io.h"
 #include "llm_runtime.h"
+#include "llm_channels.h"
+#include "model_profiles.generated.h"
+#include "nlohmann/json.hpp"
+#include <algorithm>
+#include <cmath>
+#include <stdexcept>
 
 #include <chrono>
 #include <memory>
@@ -9,6 +16,8 @@
 
 #if defined(LIMINAL_HAVE_LLAMA_CPP)
 #include "llama.h"
+#include "chat.h"
+#include "common.h"
 #endif
 
 namespace liminal {
@@ -20,6 +29,56 @@ namespace {
 #endif
 
 static bool g_llama_backend_initialized = false;
+static thread_local LlmGenerationResult* g_active_generation = nullptr;
+static thread_local LlmRuntimeTotals g_generation_totals;
+using Clock = std::chrono::steady_clock;
+static double ElapsedMs(Clock::time_point start) { return std::chrono::duration<double, std::milli>(Clock::now() - start).count(); }
+struct GenerationTrace {
+    LlmGenerationResult* result;
+    const LlmGenerationConfig& config;
+    Clock::time_point started = Clock::now();
+    Clock::time_point inference_started;
+    bool inferring = false;
+    bool cancelled = false;
+    LlmStreamCallback callback = nullptr;
+    void* callback_data = nullptr;
+    bool expired() const { return ElapsedMs(started) >= config.timeout_ms; }
+    bool loading_alive() {
+        if (expired() || cancelled) return false;
+        if (callback && !callback("", "", callback_data)) cancelled = true;
+        return !cancelled;
+    }
+    ~GenerationTrace() {
+        result->wall_time_ms = ElapsedMs(started);
+        if (inferring) result->inference_time_ms = ElapsedMs(inference_started);
+        if (result->stop_reason.empty()) result->stop_reason = "error";
+        ++g_generation_totals.calls;
+        g_generation_totals.prompt_tokens += result->prompt_tokens;
+        g_generation_totals.generated_tokens += result->generated_tokens;
+        g_generation_totals.reasoning_tokens += result->reasoning_tokens;
+        g_generation_totals.final_tokens += result->final_tokens;
+        g_generation_totals.inference_time_ms += result->inference_time_ms;
+        g_generation_totals.wall_time_ms += result->wall_time_ms;
+        g_active_generation = nullptr;
+        try {
+            nlohmann::json data = {
+                {"profile", config.profile_name}, {"model_path", config.model_path}, {"purpose", config.purpose},
+                {"temperature", config.temperature}, {"seed", config.seed}, {"n_ctx", config.n_ctx},
+                {"n_batch", config.n_batch}, {"n_ubatch", config.n_ubatch}, {"jinja", config.use_jinja},
+                {"reasoning", config.reasoning}, {"reasoning_budget", config.reasoning_budget}, {"final_budget", config.n_predict},
+                {"grammar", config.use_json_grammar ? (config.reasoning ? "final_validation" : "sampling") : "off"},
+                {"prompt_tokens", result->prompt_tokens}, {"generated_tokens", result->generated_tokens},
+                {"reasoning_tokens", result->reasoning_tokens}, {"final_tokens", result->final_tokens},
+                {"load_time_ms", result->load_time_ms}, {"wall_time_ms", result->wall_time_ms},
+                {"inference_time_ms", result->inference_time_ms}, {"stop_reason", result->stop_reason},
+                {"success", result->success}, {"offloaded_layers", result->offloaded_layers},
+                {"total_layers", result->total_layers}, {"error", result->error_message},
+                {"runtime_commit", LIMINAL_LLAMA_VENDORED_COMMIT}
+            };
+            fprintf(stderr, "LIMINAL_LLM_METRIC %s\n", data.dump().c_str());
+        } catch (...) { fprintf(stderr, "LLM metric serialization failed\n"); }
+    }
+};
 
 static bool ReadTextFile(const char* path, std::string* text)
 {
@@ -27,7 +86,7 @@ static bool ReadTextFile(const char* path, std::string* text)
         return false;
     }
 
-    FILE* file = fopen(path, "rb");
+    FILE* file = liminal::OpenUtf8File(path, "rb");
     if (!file) {
         return false;
     }
@@ -193,11 +252,45 @@ static int ResolveThreadCount(int configured_threads)
 
 }  // namespace
 
+LlmRuntimeTotals QueryLlmRuntimeTotals() { return g_generation_totals; }
+
+LlmGenerationConfig::LlmGenerationConfig()
+    : grammar_path("vendor/llama.cpp/grammars/json.gbnf"), n_ctx(8192), n_batch(512), n_ubatch(128),
+      reasoning_budget(512), timeout_ms(180000), top_k(40), top_p(0.95f), reasoning(false), use_jinja(true),
+      short_call(false), purpose("turn"), n_threads(0), n_threads_batch(0), n_predict(768), n_gpu_layers(-1),
+      seed(42u), temperature(0.0f), flash_attention(true), use_json_grammar(false)
+{
+    ConfigureLlmProfile(kLiminalDefaultProfile, this, nullptr);
+}
+
+bool ConfigureLlmProfile(const std::string& name, LlmGenerationConfig* config, std::string* error)
+{
+    for (const auto& profile : kLiminalModelProfiles) {
+        if (name == profile.name && config) {
+            config->profile_name = name;
+            config->model_path = profile.path;
+            config->reasoning = profile.reasoning;
+            config->temperature = profile.temperature;
+            config->top_k = profile.top_k;
+            config->top_p = profile.top_p;
+            return true;
+        }
+    }
+    if (error) *error = "Unknown Ministral profile: " + name;
+    return false;
+}
+
 bool InitializeLlmRuntime()
 {
 #if defined(LIMINAL_HAVE_LLAMA_CPP)
     if (!g_llama_backend_initialized) {
-        llama_log_set([](ggml_log_level, const char*, void*) {}, 0);
+        llama_log_set([](ggml_log_level level, const char* text, void*) {
+            if (level == GGML_LOG_LEVEL_ERROR && text) fputs(text, stderr);
+            const char* offload = text ? strstr(text, "offloaded ") : nullptr;
+            if (g_active_generation && offload) {
+                sscanf(offload, "offloaded %d/%d layers", &g_active_generation->offloaded_layers, &g_active_generation->total_layers);
+            }
+        }, 0);
         llama_backend_init();
         g_llama_backend_initialized = true;
     }
@@ -249,158 +342,202 @@ bool QueryLlmRuntimeInfo(LlmRuntimeInfo* info)
 }
 
 bool GenerateChatCompletion(
-    const LlmGenerationConfig& config,
+    const LlmGenerationConfig& requested,
     const std::vector<LlmPromptMessage>& messages,
     LlmStreamCallback stream_callback,
     void* stream_user_data,
     LlmGenerationResult* result)
 {
-    if (!result) {
-        return false;
-    }
-
+    if (!result) return false;
     *result = LlmGenerationResult();
-
+    LlmGenerationConfig config = requested;
+    // Auxiliary calls use the Instruct checkpoint, never a fictitious reasoning-off mode.
+    if (config.reasoning && config.short_call) {
+        const float modulation = config.temperature - 0.7f;
+        ConfigureLlmProfile("ministral-8b-q4", &config, nullptr);
+        config.temperature = std::max(0.0f, 0.1f + modulation);
+    }
+    GenerationTrace trace{result, config};
+    trace.callback = stream_callback;
+    trace.callback_data = stream_user_data;
+    const auto fail = [&](const char* reason, const std::string& message) {
+        result->stop_reason = reason;
+        result->error_message = message;
+        result->response_text.clear();
+        return false;
+    };
 #if defined(LIMINAL_HAVE_LLAMA_CPP)
-    if (messages.empty()) {
-        result->error_message = "No messages were provided for generation.";
-        return false;
-    }
-    if (!InitializeLlmRuntime()) {
-        result->error_message = "Failed to initialize llama.cpp runtime.";
-        return false;
-    }
-
-    std::string prompt_text;
-    std::string error_message;
-
-    llama_model_params model_params = llama_model_default_params();
-    model_params.n_gpu_layers = config.n_gpu_layers;
-
-    std::unique_ptr<llama_model, void (*)(llama_model*)> model(
-        llama_model_load_from_file(config.model_path.c_str(), model_params),
-        llama_model_free);
-    if (!model) {
-        result->error_message = "Failed to load model from file: " + config.model_path;
-        return false;
-    }
-
-    if (!ApplyChatTemplate(model.get(), messages, &prompt_text, &error_message)) {
-        result->error_message = error_message;
-        return false;
-    }
-    result->prompt_text = prompt_text;
-
-    const llama_vocab* vocab = llama_model_get_vocab(model.get());
-    std::vector<llama_token> prompt_tokens;
-    if (!TokenizePrompt(vocab, prompt_text, &prompt_tokens, &error_message)) {
-        result->error_message = error_message;
-        return false;
-    }
-    result->prompt_tokens = static_cast<int>(prompt_tokens.size());
-
-    llama_context_params context_params = llama_context_default_params();
-    context_params.n_ctx = static_cast<uint32_t>(std::max(config.n_ctx, result->prompt_tokens + config.n_predict + 32));
-    context_params.n_batch = static_cast<uint32_t>(std::max(config.n_batch, result->prompt_tokens));
-    context_params.n_ubatch = context_params.n_batch;
-    context_params.n_seq_max = 1;
-    context_params.n_threads = ResolveThreadCount(config.n_threads);
-    context_params.n_threads_batch = ResolveThreadCount(config.n_threads_batch);
-    context_params.flash_attn_type = config.flash_attention ? LLAMA_FLASH_ATTN_TYPE_ENABLED : LLAMA_FLASH_ATTN_TYPE_DISABLED;
-    context_params.offload_kqv = true;
-
-    std::unique_ptr<llama_context, void (*)(llama_context*)> context(
-        llama_init_from_model(model.get(), context_params),
-        llama_free);
-    if (!context) {
-        result->error_message = "Failed to create llama.cpp context.";
-        return false;
-    }
-
-    llama_set_n_threads(context.get(), context_params.n_threads, context_params.n_threads_batch);
-
-    std::unique_ptr<llama_sampler, void (*)(llama_sampler*)> sampler(
-        llama_sampler_chain_init(llama_sampler_chain_default_params()),
-        llama_sampler_free);
-    if (!sampler) {
-        result->error_message = "Failed to create sampler chain.";
-        return false;
-    }
-
-    std::string grammar_text;
-    if (config.use_json_grammar && ReadTextFile(config.grammar_path.c_str(), &grammar_text) && !grammar_text.empty()) {
-        llama_sampler_chain_add(sampler.get(), llama_sampler_init_grammar(vocab, grammar_text.c_str(), "root"));
-    }
-
-    if (config.temperature <= 0.0f) {
-        llama_sampler_chain_add(sampler.get(), llama_sampler_init_greedy());
-    } else {
-        llama_sampler_chain_add(sampler.get(), llama_sampler_init_top_k(40));
-        llama_sampler_chain_add(sampler.get(), llama_sampler_init_top_p(0.95f, 1));
-        llama_sampler_chain_add(sampler.get(), llama_sampler_init_temp(config.temperature));
-        llama_sampler_chain_add(sampler.get(), llama_sampler_init_dist(config.seed));
-    }
-
-    const std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
-
-    if (llama_model_has_decoder(model.get())) {
-        const int32_t decode_result = llama_decode(
-            context.get(),
-            llama_batch_get_one(prompt_tokens.data(), static_cast<int32_t>(prompt_tokens.size())));
-        if (decode_result != 0) {
-            result->error_message = "Prompt decode failed.";
-            return false;
+    try {
+        if (messages.empty()) return fail("error", "No messages provided");
+        if (config.n_ctx < 128 || config.n_ctx > 32768 || config.n_batch < 1 || config.n_ubatch < 1 ||
+            config.n_predict < 1 || config.n_predict > 16384 || config.timeout_ms < 1 ||
+            !std::isfinite(config.temperature) || config.temperature < 0 ||
+            (config.reasoning && (config.reasoning_budget < 1 || config.reasoning_budget > 16384 || !config.use_jinja))) {
+            return fail("error", "Invalid generation bounds or reasoning without Jinja");
         }
-    } else {
-        result->error_message = "The selected model has no decoder.";
-        return false;
+        if (!trace.loading_alive()) return fail(trace.cancelled ? "cancelled" : "timeout", "Stopped before loading model");
+        if (!InitializeLlmRuntime()) return fail("error", "Failed to initialize llama.cpp");
+        g_active_generation = result;
+        llama_model_params model_params = llama_model_default_params();
+        model_params.n_gpu_layers = config.n_gpu_layers;
+        model_params.progress_callback = [](float, void* opaque) { return static_cast<GenerationTrace*>(opaque)->loading_alive(); };
+        model_params.progress_callback_user_data = &trace;
+        std::unique_ptr<llama_model, decltype(&llama_model_free)> model(
+            llama_model_load_from_file(config.model_path.c_str(), model_params), llama_model_free);
+        result->load_time_ms = ElapsedMs(trace.started);
+        if (trace.cancelled) return fail("cancelled", "Cancelled while loading model");
+        if (trace.expired()) return fail("timeout", "Deadline exceeded while loading model");
+        if (!model) return fail("error", "Failed to load " + config.model_path);
+        const llama_vocab* vocab = llama_model_get_vocab(model.get());
+        common_chat_templates_ptr templates;
+        std::unique_ptr<common_chat_session> chat;
+        std::string generation_prefix;
+        std::vector<llama_token> prompt_tokens;
+        if (config.use_jinja) {
+            templates = common_chat_templates_init(model.get(), "");
+            common_chat_templates_inputs inputs;
+            inputs.use_jinja = true;
+            inputs.enable_thinking = config.reasoning;
+            inputs.reasoning_format = COMMON_REASONING_FORMAT_DEEPSEEK;
+            for (const auto& source : messages) {
+                common_chat_msg message;
+                message.role = source.role;
+                message.content = source.content;
+                if (config.reasoning && source.role == "system") message.content += "\nReason privately inside [THINK] and [/THINK]. All output-format requirements above apply only to the final answer after [/THINK].";
+                inputs.messages.push_back(message);
+            }
+            chat.reset(new common_chat_session(templates.get(), vocab, inputs));
+            result->prompt_text = chat->prompt().str();
+            generation_prefix = chat->generation_prompt();
+            bool first = true;
+            for (const auto& part : chat->prompt().parts) {
+                if (part.text.empty()) continue;
+                auto tokens = common_tokenize(vocab, part.text, first, !part.is_input);
+                prompt_tokens.insert(prompt_tokens.end(), tokens.begin(), tokens.end());
+                first = false;
+            }
+        } else {
+            if (!ApplyChatTemplate(model.get(), messages, &result->prompt_text, &result->error_message) ||
+                !TokenizePrompt(vocab, result->prompt_text, &prompt_tokens, &result->error_message)) return false;
+        }
+        result->prompt_tokens = static_cast<int>(prompt_tokens.size());
+        const int reserve = config.n_predict + (config.reasoning ? config.reasoning_budget : 0);
+        if (result->prompt_tokens + reserve + 1 > config.n_ctx) return fail("context_limit", "Prompt and reserved output exceed fixed context budget");
+        llama_context_params context_params = llama_context_default_params();
+        context_params.n_ctx = config.n_ctx;
+        context_params.n_batch = config.n_batch;
+        context_params.n_ubatch = std::min(config.n_ubatch, config.n_batch);
+        context_params.n_seq_max = 1;
+        context_params.n_threads = ResolveThreadCount(config.n_threads);
+        context_params.n_threads_batch = ResolveThreadCount(config.n_threads_batch);
+        context_params.flash_attn_type = config.flash_attention ? LLAMA_FLASH_ATTN_TYPE_ENABLED : LLAMA_FLASH_ATTN_TYPE_DISABLED;
+        context_params.offload_kqv = true;
+        context_params.abort_callback = [](void* opaque) { return static_cast<GenerationTrace*>(opaque)->expired(); };
+        context_params.abort_callback_data = &trace;
+        std::unique_ptr<llama_context, decltype(&llama_free)> context(llama_init_from_model(model.get(), context_params), llama_free);
+        if (!context) return fail("error", "Failed to create llama.cpp context");
+        std::unique_ptr<llama_sampler, decltype(&llama_sampler_free)> sampler(
+            llama_sampler_chain_init(llama_sampler_chain_default_params()), llama_sampler_free);
+        if (!sampler) return fail("error", "Failed to create sampler");
+        if (config.use_json_grammar && !config.reasoning) {
+            std::string grammar;
+            if (!ReadTextFile(config.grammar_path.c_str(), &grammar) || grammar.empty()) return fail("error", "JSON grammar unavailable");
+            auto grammar_sampler = llama_sampler_init_grammar(vocab, grammar.c_str(), "root");
+            if (!grammar_sampler) return fail("error", "JSON grammar initialization failed");
+            llama_sampler_chain_add(sampler.get(), grammar_sampler);
+        }
+        if (config.temperature <= 0) llama_sampler_chain_add(sampler.get(), llama_sampler_init_greedy());
+        else {
+            llama_sampler_chain_add(sampler.get(), llama_sampler_init_top_k(config.top_k));
+            llama_sampler_chain_add(sampler.get(), llama_sampler_init_top_p(config.top_p, 1));
+            llama_sampler_chain_add(sampler.get(), llama_sampler_init_temp(config.temperature));
+            llama_sampler_chain_add(sampler.get(), llama_sampler_init_dist(config.seed));
+        }
+        trace.inference_started = Clock::now();
+        trace.inferring = true;
+        struct InferenceEnd {
+            GenerationTrace& trace;
+            ~InferenceEnd() {
+                trace.result->inference_time_ms = ElapsedMs(trace.inference_started);
+                trace.inferring = false;
+            }
+        } inference_end{trace};
+        for (size_t offset = 0; offset < prompt_tokens.size(); offset += config.n_batch) {
+            if (trace.expired()) return fail("timeout", "Prompt deadline exceeded");
+            if (stream_callback && !stream_callback("", "", stream_user_data)) return fail("cancelled", "Cancelled before generation");
+            const int count = static_cast<int>(std::min<size_t>(config.n_batch, prompt_tokens.size() - offset));
+            if (llama_decode(context.get(), llama_batch_get_one(prompt_tokens.data() + offset, count)) != 0)
+                return fail(trace.expired() ? "timeout" : "error", "Prompt decode failed");
+        }
+        std::string streamed_final;
+        for (int generated = 0; generated <= reserve; ++generated) {
+            if (trace.expired()) return fail("timeout", "Generation deadline exceeded");
+            if (stream_callback && !stream_callback(streamed_final.c_str(), "", stream_user_data)) return fail("cancelled", "Generation cancelled");
+            llama_token token = llama_sampler_sample(sampler.get(), context.get(), -1);
+            if (llama_vocab_is_eog(vocab, token)) { result->reached_eog = true; break; }
+            if (generated == reserve) return fail("token_limit", "Total generation budget exhausted");
+            std::string piece;
+            if (!AppendTokenPiece(vocab, token, &piece, &result->error_message)) return false;
+            result->raw_text += piece;
+            ++result->generated_tokens;
+            auto channels = InspectMinistralChannels(result->raw_text, generation_prefix, config.reasoning, false);
+            if (!channels.error.empty()) return fail("protocol_error", channels.error);
+            result->reasoning_text = channels.thought;
+            if (channels.thinking || (channels.has_reasoning && channels.final_text.empty())) ++result->reasoning_tokens;
+            else ++result->final_tokens;
+            if (result->reasoning_tokens > config.reasoning_budget && config.reasoning) return fail("reasoning_limit", "Thought budget exhausted before final answer");
+            if (result->final_tokens > config.n_predict) return fail("final_limit", "Final answer budget exhausted");
+            if (chat) {
+                common_chat_input chunk;
+                chunk.append(piece, token);
+                chat->feed(chunk);
+            }
+            if (channels.final_text.compare(0, streamed_final.size(), streamed_final) != 0)
+                return fail("protocol_error", "Final stream changed its prefix");
+            const std::string delta = channels.final_text.substr(streamed_final.size());
+            streamed_final = channels.final_text;
+            if (stream_callback && !delta.empty() && !stream_callback(streamed_final.c_str(), delta.c_str(), stream_user_data))
+                return fail("cancelled", "Generation cancelled");
+            if (llama_decode(context.get(), llama_batch_get_one(&token, 1)) != 0)
+                return fail(trace.expired() ? "timeout" : "error", "Token decode failed");
+        }
+        const auto channels = InspectMinistralChannels(result->raw_text, generation_prefix, config.reasoning, true);
+        if (!result->reached_eog) return fail("token_limit", "Missing end of generation");
+        if (!channels.error.empty()) return fail("protocol_error", channels.error);
+        std::string final_text = channels.final_text;
+        if (chat) {
+            const auto& parsed = chat->finish();
+            // The vendor parser is authoritative; the independent guard above prevents
+            // its partial-output recovery from admitting an unfinished thought.
+            final_text = parsed.content;
+            if (final_text.find_first_not_of(" \r\n\t") == std::string::npos) return fail("protocol_error", "Template parser returned no final content");
+            const auto final_guard = InspectMinistralChannels(final_text, "", false, true);
+            if (!final_guard.error.empty()) return fail("protocol_error", final_guard.error);
+        }
+        if (config.use_json_grammar) {
+            const size_t begin = final_text.find_first_not_of(" \r\n\t");
+            if (begin != std::string::npos && final_text.compare(begin, 3, "```") == 0) {
+                const size_t line = final_text.find('\n', begin);
+                const size_t end = final_text.rfind("```");
+                if (line != std::string::npos && end > line) final_text = final_text.substr(line + 1, end - line - 1);
+            }
+            const auto parsed = nlohmann::json::parse(final_text, nullptr, false);
+            if (parsed.is_discarded() || !parsed.is_object()) return fail("invalid_final_json", "Final channel is not a JSON object");
+        }
+        if (trace.expired()) return fail("timeout", "Deadline exceeded during final validation");
+        if (stream_callback && !stream_callback(streamed_final.c_str(), "", stream_user_data))
+            return fail("cancelled", "Cancelled before publishing final answer");
+        result->response_text = final_text;
+        result->reasoning_text = channels.thought;
+        result->stop_reason = "eos";
+        result->success = true;
+        return true;
+    } catch (const std::exception& error) {
+        return fail("error", error.what());
     }
-
-    std::string response_text;
-    for (int generated = 0; generated < config.n_predict; ++generated) {
-        const llama_token token = llama_sampler_sample(sampler.get(), context.get(), -1);
-        llama_sampler_accept(sampler.get(), token);
-
-        if (llama_vocab_is_eog(vocab, token)) {
-            result->reached_eog = true;
-            break;
-        }
-
-        const size_t previous_size = response_text.size();
-        if (!AppendTokenPiece(vocab, token, &response_text, &error_message)) {
-            result->error_message = error_message;
-            return false;
-        }
-
-        const std::string delta_text = response_text.substr(previous_size);
-        if (stream_callback && !stream_callback(response_text.c_str(), delta_text.c_str(), stream_user_data)) {
-            result->error_message = "Generation aborted by stream callback.";
-            result->response_text = response_text;
-            return false;
-        }
-
-        llama_token next_token = token;
-        const int32_t decode_result = llama_decode(context.get(), llama_batch_get_one(&next_token, 1));
-        if (decode_result != 0) {
-            result->error_message = "Token decode failed during generation.";
-            return false;
-        }
-
-        ++result->generated_tokens;
-    }
-
-    const std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
-    result->inference_time_ms = std::chrono::duration<double, std::milli>(end_time - start_time).count();
-    result->response_text = response_text;
-    result->success = true;
-    return true;
 #else
-    (void) config;
-    (void) messages;
-    (void) stream_callback;
-    (void) stream_user_data;
-    result->error_message = "llama.cpp support is not compiled into this binary.";
-    return false;
+    (void) messages; (void) stream_callback; (void) stream_user_data;
+    return fail("unavailable", "llama.cpp support is not compiled into this binary");
 #endif
 }
 

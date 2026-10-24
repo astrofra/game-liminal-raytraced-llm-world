@@ -1,0 +1,56 @@
+
+
+Loading model... 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b0-unknown
+model      : C:\works\projects\game-liminal-raytraced-llm-world\models\ministral-3-8b\Ministral-3-8B-Instruct-2512-Q5_K_M.gguf
+ftype      : Q5_K - Medium
+modalities : text
+using custom system prompt
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> You are in scene-audit mode.
+Return only a .scene program, no markdown, no explanations.
+Scene v1 authoring rules for audit mode:
+- output ASCII only
+- one directive per line
+- do not use indented property blocks; every directive must be complete on one line
+- names must be quoted like "roof" or "service_crate"
+- active Eryx directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_crate, prefab_survey_beacon, prefab_crystal_scanner, prefab_crystal_cluster, prefab_extraction_rig, ... (truncated)
+room "Sector Control Hub"
+camera eye(0.0,1.75,-3.0) target(0.0,1.2,0.0) up(0.0,1.0,0.0) fov(45.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(10.0,30.0) intensity(60.0)
+sky zenith(0.005) horizon(0.18) nadir(0.00) band(0.30) curve(1.80) noise(0.08) stars(0.0025,1.40,0.080) seed(42)
+
+plane "control_floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.0,12.0) gray(0.12)
+box "wall_north" pos(0.0,0.0,6.0) size(12.0,3.0,0.2) gray(0.20)
+box "wall_south" pos(0.0,0.0,-6.0) size(12.0,3.0,0.2) gray(0.20)
+box "wall_west" pos(-6.0,0.0,0.0) size(0.2,3.0,12.0) gray(0.20)
+box "wall_east" pos(6.0,0.0,0.0) size(0.2,3.0,12.0) gray(0.20)
+
+prefab_prospect_shelter "main_console" pos(0.0,1.5,0.0) size(3.0,2.5,2.0) gray(0.25) detail(0.40) glow(0.15)
+prefab_crate "locked_cabinet" pos(-4.5,1.2,-3.0) size(1.5,1.8,1.2) gray(0.22) detail(0.35)
+prefab_gate "floor_hatch" pos(4.0,0.0,-4.0) size(1.0,0.5,1.0) gray(0.28) detail(0.30)
+prefab_base_route_placard "status_placard" pos(-2.0,2.0,5.5) size(0.8,1.2,0.1) gray(0.18) detail(0.38)
+
+prefab_rock_low "support_pylon" pos(-3.0,0.0,-5.0) size(0.8,1.0,0.8) gray(0.23)
+prefab_rock_tall "vent_duct" pos(2.5,1.5,4.0) size(0.5,2.0,0.5) gray(0.21)
+
+
+Exiting...

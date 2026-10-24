@@ -1,0 +1,13 @@
+room "Erycinian crystal quarry survey shelf"
+camera eye(0.0,1.75,-7.9) target(0.0,1.18,8.8) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(70.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+
+plane "control_hub_floor" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(12.0,16.0) gray(0.14)
+box "concrete_ceiling" pos(0.0,6.0,-2.0) size(12.0,1.0,16.0) gray(0.26)
+prefab_quarry_pylon "east_pylon" pos(6.0,5.0,-8.0) size(1.0,5.5,1.0) gray(0.26) detail(0.40)
+prefab_rock_low "west_sample_case" pos(-6.0,1.0,-3.0) size(1.7,1.1,1.4) gray(0.20) detail(0.34)
+prefab_crystal_scanner "central_scanner" pos(0.0,2.5,0.0) size(2.2,2.4,1.5) gray(0.25) detail(0.44) glow(0.28)
+prefab_atmospheric_processor "main_console" pos(0.0,1.75,0.0) size(3.5,2.0,1.8) gray(0.22) detail(0.50)
+prefab_rock_wide "wall_cabinet" pos(-4.0,1.5,-3.0) size(1.5,1.8,0.8) gray(0.26) detail(0.42)
+prefab_survey_beacon "floor_hatch" pos(4.0,0.0,-3.0) size(1.2,1.0,0.5) gray(0.24) detail(0.43)

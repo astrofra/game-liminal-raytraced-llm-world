@@ -1,3 +1,4 @@
+#include "file_io.h"
 #include "scene_compiler.h"
 
 #include <math.h>
@@ -313,7 +314,7 @@ static bool ReadTextFile(const char* path, std::string* text, char* error_buffer
         return false;
     }
 
-    FILE* file = fopen(path, "rb");
+    FILE* file = liminal::OpenUtf8File(path, "rb");
     if (!file) {
         SetError(error_buffer, error_buffer_size, "Cannot open text file: %s", path);
         return false;

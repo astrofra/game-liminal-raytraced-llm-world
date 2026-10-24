@@ -1,5 +1,7 @@
 # Technical Specification: Ministral 3 8B with `llama.cpp` and CUDA
 
+> Historical setup specification (July 2026). For the current application build, model profiles and native qualification, use [MINISTRAL_RUNTIME_GUIDE.md](MINISTRAL_RUNTIME_GUIDE.md) and [MINISTRAL_QUALIFICATION_REPORT.md](MINISTRAL_QUALIFICATION_REPORT.md). The old `vendor/llama.cpp/build-cuda` CLI is retained as a comparison artifact; current launchers use `build/bin/Release`.
+
 **Document version:** 1.0  
 **Date:** 2026-07-30  
 **Primary target:** Windows 10/11 x64  

@@ -2,6 +2,8 @@
 
 Date : **2026-10-24**. Projet : *Within the Latent Walls / Entre les Murs Latents*.
 
+Cette étude conserve les hypothèses de départ. Son exécution et les résultats observés sont consignés dans le [bilan de qualification](MINISTRAL_QUALIFICATION_REPORT.md) et le [suivi de roadmap](MINISTRAL_ROADMAP_PROGRESS.md).
+
 **Périmètre : matériel cible inchangé, RTX 4060 8 Go.** Aucun scénario d'achat ou de changement de machine n'est étudié, conformément à la demande. Cette étude complète celle sur [Gemma 4 E4B](./ETUDE_MIGRATION_MINISTRAL_GEMMA_E4B.md).
 
 Statut : analyse documentaire et inspection du code, **sans mise à jour, téléchargement de poids ni benchmark d'inférence**. Référence du dépôt : `b896babfe2546df2bcc49519bf1e4f6ba0907125`, avec prise en compte des modifications présentes dans le répertoire de travail. Les propositions ci-dessous ne constituent pas des fonctionnalités déjà implémentées.

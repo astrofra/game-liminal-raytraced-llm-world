@@ -1,0 +1,100 @@
+[
+  {
+    "label": "A-reference",
+    "directory": "C:\\works\\duo-runtime\\liminal-ministral-20261024\\eryx-A-utf8",
+    "provenance": {
+      "exe": "C:\\works\\duo-runtime\\liminal-ministral-20261024\\baseline\\liminal_cornell_renderer.exe",
+      "exe_sha256": "ad102d6d65c3dfff1956e8af620527c1fbca15e8d450fba0887de8a4dfe46d50",
+      "build": {
+        "runtime": "6b36c2305644fd30db7cce3f4840c74574f31ce9",
+        "compiler": "MSVC19.44.35229 CUDA13.0.88 Ninja",
+        "source_hashes": {
+          "src/animated_view.cpp": "e712fca90a93d61633e1acb11e3a002aff6c5dd58db47abdf927ff184f7719ea",
+          "src/game_state.cpp": "d33636c1c6e064f330cfdb3f17a4ee57794cbd38a339e1527b02bd1babb63d48",
+          "src/llm_runtime.cpp": "ff8a80a52a68188185865c7d9b3ebda334f5c65a47118196b7c5f020a093183f",
+          "src/main.cpp": "71cc69e7fcdd1b86c1dcec05870c2939b000625c75c20ee653c2d52bb2bf2c4d",
+          "src/renderer.cpp": "7ce8936a9ac648e9399d022d3fd0394f5bf2d32d7867cf05f44b0efed2d0e65a",
+          "src/scene.cpp": "1074c122351ec99a6b9cba2df94271339b317c41d0033dbf40712952056c16e8",
+          "src/scene_compiler.cpp": "ffd4a526bfbad5484731e8cd63d8b1ddbbadda0d78e22d3ae01854847bf6e881",
+          "src/sdl_frontend.cpp": "3c2360d61dacc519dec226355eb87aa5d1bb747a7a21bf923e42d070baa1467d",
+          "src/turn_contract.cpp": "ea3a1e0e35b3cd6ffac095fd345893d9cb5d73ffb955e410cdf6e26ae1fe8291",
+          "src/turn_runner.cpp": "56d9424bdd3686c64ffe20a152ad61efb031ae5e1f8abb422e802b5ec4f0ffa3",
+          "src/view_post_process.cpp": "5aaba7bfb8789d3490674fdde68fea60d4c9e0bf6a73f88c6c467beaae3fd18e"
+        },
+        "same_application_sources_as_B": true,
+        "exe_sha256": "ad102d6d65c3dfff1956e8af620527c1fbca15e8d450fba0887de8a4dfe46d50"
+      },
+      "profile": {
+        "repo_id": "mistralai/Ministral-3-8B-Instruct-2512-GGUF",
+        "revision": "0102285ad796bd99af90f58de616092e5630e970",
+        "filename": "Ministral-3-8B-Instruct-2512-Q4_K_M.gguf",
+        "size_bytes": 5198911904,
+        "sha256": "33e7a72cf5e6e2cfc2f2847075acc013d68bba023e35310cef86b5cf8fdca761",
+        "relative_path": "models/ministral-3-8b/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf",
+        "reasoning": false,
+        "temperature": 0.0,
+        "top_k": 40,
+        "top_p": 0.95
+      },
+      "model_sha256_verified": "33e7a72cf5e6e2cfc2f2847075acc013d68bba023e35310cef86b5cf8fdca761",
+      "fixtures": {
+        "crystal_cut.json": "8769daa90e456dab0227f1bbb0ebf067f99db98cecd53bfcf1be591979d7f92f",
+        "extraction_field.json": "78fccadfaecb161af9ff9479730c111ea94c64a6117d0c1986f2d9215f3679de",
+        "labyrinth_threshold.json": "0d1c19dcc8913838bc7ba6842713272a176e7c2865c9e156161037fdffdae16f",
+        "prospect_shelter.json": "e15c4800de50e6b6b84631583cd1ef8a06147cd43ea03a6b357e643136e8f280",
+        "quarry_threshold.json": "9ebbe84041c5c4e3bd50dfa91a5650e67ffec43aae2c8a94783edae8cdaa5f8a",
+        "scanner_station.json": "2c88b3369f70f74bad2b75ed3e74ad218b7eb31f04627776a4d5864bf475b30b",
+        "survey_plateau.json": "1b6e54ae527503e21335a7b66e15810aa3383be0e4fba6c3704a6c2b401ecbd5"
+      },
+      "corpus_sha256": "70afa78e6e82331444faf01e97268674cd7894361de5af9b6aeb847a0a456473",
+      "seed": 42,
+      "adapted": false,
+      "legacy_template": false,
+      "reasoning_budget": 512,
+      "final_budget": 768,
+      "selected_case_ids": [],
+      "resource_measurement": "sampled every approximately 0.5s; device VRAM includes other applications",
+      "native_metrics": "legacy native counters omit some auxiliary calls; use full wall time"
+    },
+    "cases": 40,
+    "cases_passed": 38,
+    "session_turns": 73,
+    "session_turns_passed": 73,
+    "native_failures": 0,
+    "without_observed_repair_or_fallback": 85,
+    "auxiliary_metrics_available": false,
+    "turns_with_all_observed_calls_successful": null,
+    "p50_success_wall_s": 4.832382999999027,
+    "p95_success_wall_s": 41.269410900000366,
+    "generation_cases": 5,
+    "generation_cases_passed": 5,
+    "generation_p50_success_wall_s": 16.12037860000055,
+    "generation_p95_success_wall_s": 21.435897400000613,
+    "sampled_peak_device_vram_mib": 7086,
+    "sampled_peak_rss_mib": 5159.1640625,
+    "call_stops": {},
+    "calls_by_purpose": {},
+    "call_wall_s_by_purpose": {},
+    "effective_temperature_range": null,
+    "reasoning_tokens": null,
+    "final_tokens": null,
+    "offload": [],
+    "failures": [
+      {
+        "id": "barrier-003",
+        "errors": [
+          "Barrier contact incremented move_count"
+        ],
+        "returncode": 0
+      },
+      {
+        "id": "nonreciprocal-002",
+        "errors": [
+          "location: expected scanner_station, got prospect_shelter"
+        ],
+        "returncode": 0
+      }
+    ],
+    "narrative_review": "pending"
+  }
+]

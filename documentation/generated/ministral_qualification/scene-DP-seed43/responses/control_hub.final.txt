@@ -1,0 +1,9 @@
+room "Sector Control Hub"
+camera eye(0.0,2.0,-5.0) target(0.0,1.5,5.0) up(0.0,1.0,0.0) fov(46.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+spotlight "main_hull_light" panel(1.0,1.0) offset(0.0,2.5,0.0) range(25.0) cone(15.0,35.0) intensity(85.0)
+plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(20.0,30.0) gray(0.14)
+box "console_daisy" pos(0.0,1.0,2.0) size(4.0,2.5,1.5) gray(0.20) detail(0.34)
+prefab_crate "locked_cabinet" pos(-3.5,1.5,3.0) size(1.8,2.8,1.2) gray(0.25) detail(0.44) glow(0.15)
+prefab_prospect_shelter "access_hatch" pos(3.5,1.5,3.0) size(1.8,2.8,1.2) gray(0.25) detail(0.44) glow(0.15)
+prefab_atmospheric_processor "status_placard" pos(-1.0,1.2,1.5) size(1.0,1.2,0.5) gray(0.20) detail(0.34)

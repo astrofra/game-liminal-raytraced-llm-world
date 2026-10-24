@@ -1,0 +1,1 @@
+C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\ministral_qualification\scene-D-v070-reasoning\scenes\roof_watch_dusk.scene:10: Unknown scene directive

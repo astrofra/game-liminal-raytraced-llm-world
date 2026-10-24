@@ -5,17 +5,27 @@
   #error DistDir must be provided by the installer build script
 #endif
 #ifndef AppVersion
-  #define AppVersion "0.1.0"
+  #define AppVersion "2.2.0"
 #endif
 
 #define AppName "Within the Latent Walls"
 #define AppNameFrench "Entre les Murs Latents"
 #define AppExeName "WithinTheLatentWalls.exe"
-#define ModelDir "models\ministral-3-8b"
-#define ModelName "Ministral-3-8B-Instruct-2512-Q4_K_M.gguf"
-#define ModelUrl "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512-GGUF/resolve/0102285ad796bd99af90f58de616092e5630e970/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf?download=true"
-#define ModelHash "33e7a72cf5e6e2cfc2f2847075acc013d68bba023e35310cef86b5cf8fdca761"
-#define ModelSize 5198911904
+#ifndef ModelDir
+  #error ModelDir must come from the model manifest via build_installer.py
+#endif
+#ifndef ModelName
+  #error ModelName must come from the model manifest via build_installer.py
+#endif
+#ifndef ModelUrl
+  #error ModelUrl must come from the model manifest via build_installer.py
+#endif
+#ifndef ModelHash
+  #error ModelHash must come from the model manifest via build_installer.py
+#endif
+#ifndef ModelSize
+  #error ModelSize must come from the model manifest via build_installer.py
+#endif
 
 [Setup]
 AppId={{97D24A49-F2CF-40C6-84CC-8F240078BAC8}

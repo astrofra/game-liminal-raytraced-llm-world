@@ -1,0 +1,24 @@
+{
+  "version": "2.2.0",
+  "artifacts": [
+    {
+      "path": "output\\installer\\dist\\Within-the-Latent-Walls-Setup-2.2.0.exe",
+      "bytes": 428064457,
+      "sha256": "ec1ba00b2fb1f814e0f2305e54078da61081bb11fbcb27693dae4ea07383a132"
+    },
+    {
+      "path": "output\\installer\\dist\\Within-the-Latent-Walls-Source-2.2.0.zip",
+      "bytes": 82950232,
+      "sha256": "925505aed355b88266e6f56a0851707a5b7baa646c804b9c3e57345e227b4d43"
+    }
+  ],
+  "source_archive_files": 10813,
+  "source_archive_crc_valid": true,
+  "source_archive_contains_weights": false,
+  "validation_scope": "Fresh per-user install on existing Windows 11 host, clean child PATH; not a fresh OS VM",
+  "remaining_public_release_checks": [
+    "Authenticode signing",
+    "Fresh Windows 10/11 machines",
+    "Interrupted model download and retry"
+  ]
+}

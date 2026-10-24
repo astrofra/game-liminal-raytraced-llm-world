@@ -1,5 +1,8 @@
 build/
 build_verify/
+build_ministral_v070/
+build_ministral_baseline/
+build_settings.local.json
 output/*.pgm
 output/*.ppm
 output/*.bmp

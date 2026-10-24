@@ -1,0 +1,55 @@
+{
+  "hard_state": {
+    "turn_number": 1,
+    "move_count": 0,
+    "score": 0,
+    "current_location_id": "server_aisles",
+    "alert_level": 2,
+    "cooling_state": "stable",
+    "water_state": "stable",
+    "power_state": "stable",
+    "inventory_items": [],
+    "named_entities": [],
+    "unresolved_threats": []
+  },
+  "soft_state": {
+    "rolling_summary": "Dense aisles of racks run into darkness. A service cart, a floor hatch, and a side console break the repetition under red LEDs.",
+    "atmosphere": "server aisles",
+    "active_hypotheses": [],
+    "tolerated_incoherences": []
+  },
+  "spatial_state": {
+    "location_id": "server_aisles",
+    "room_title": "Primary Server Aisles",
+    "room_summary": "Dense aisles of racks run into darkness. A service cart, a floor hatch, and a side console break the repetition under red LEDs.",
+    "location_archetype": "server aisles",
+    "canonical_fixture": "server_aisles",
+    "time_of_day": "night",
+    "visibility_level": "low",
+    "desert_state": "still",
+    "interior_density": "dense",
+    "alert_level": 2,
+    "anchors": [
+      "rack corridor",
+      "service lane",
+      "ceiling cable tray"
+    ],
+    "visible_objects": [
+      "service cart",
+      "floor hatch",
+      "side console",
+      "sealed lockbox"
+    ],
+    "blocked_exits": [
+      "south"
+    ],
+    "spatial_anomalies": [
+      "cooling hum pulses unevenly"
+    ]
+  },
+  "history": [],
+  "current_place_id": "benchmark_server_aisles_dense",
+  "next_generated_room_index": 1,
+  "generated_rooms": [],
+  "room_links": []
+}

@@ -1,0 +1,1 @@
+C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\ministral_qualification\scene-DP-v070-reasoning\scenes\loading_dock_dust.scene:10: Unknown scene directive

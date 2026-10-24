@@ -1,0 +1,1 @@
+C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\ministral_qualification\scene-C-v070-q5\scenes\badge_vestibule.scene:19: Unknown scene directive

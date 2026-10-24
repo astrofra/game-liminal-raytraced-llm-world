@@ -1,0 +1,67 @@
+{
+  "scope": "All isolated narratives of A/B/BJ/C/D and all 48 seeded repeat narratives reviewed by Codex; selected mixed-session narratives and resource/thermal saves inspected. No automatic artistic score or expert multilingual certification.",
+  "A": {
+    "languages": "Six langues globalement respectées ; emprunts anglais et maladresses.",
+    "contradictions": [
+      "ambiguity-004 : retour annoncé, position inchangée",
+      "ambiguity-011 : téléportation inventée",
+      "ambiguity-007 : première direction exécutée malgré la consigne contradictoire de rester"
+    ],
+    "french": "thermal-004 : Ton combinaison, mélange tu/vous ; quatre branches réemploient l'effondrement du sol.",
+    "resources": "resources-004 : énergie critical vers strained sans source vérifiable ; ressources-008/009 inchangées.",
+    "thermal": "Questions extérieur/corps correctement distinguées ; thermal-005 : extérieur 464 vers 460 et corps 35 vers 34.8."
+  },
+  "B": {
+    "languages": "Six langues respectées ; emprunts et calques subsistent.",
+    "contradictions": [
+      "ambiguity-004 et ambiguity-011 persistent",
+      "session-003 tour12 décrit le suivi des lumières sans déplacement"
+    ],
+    "resources": "resources-004 conserve critical ; resources-008/009 inchangées ; prélèvement crée crystal_fragment au lieu de loose crystal sample dans A.",
+    "thermal": "thermal-005 annonce une recharge d'oxygène ; la sauvegarde ne recharge pas l'oxygène mais abaisse extérieur 464 vers 460 comme A.",
+    "generation": "Cinq métadonnées modèle ; compositions narratives toujours très proches (failles, plateformes inclinées, balises)."
+  },
+  "BJ": {
+    "languages": "Six langues respectées ; objets anglais non localisés, calques cas/casse pour case ; thermal-004 : ton combinaison.",
+    "contradictions": [
+      "ambiguity-004 retour fictif",
+      "ambiguity-011 raccourci/téléportation fictif",
+      "ambiguity-007 choisit nord malgré reste ici"
+    ],
+    "resources": "resources-004 : critical vers stable, alors que la narration dit charge critique. resources-008/009 conservent les états critiques. Le prélèvement ajoute loose_crystal_fragment.",
+    "generation": "Trois métadonnées modèle, deux replis (002 et 004). 004 ferme son EOS avec un tableau scene_constraints sans crochet fermant ; défaut JSON réel, pas épuisement de budget. 001 reprend le sol qui se dérobe ; autres branches toujours failles, repères et poussière.",
+    "thermal": "thermal-005 conserve l'extérieur à 464 et abaisse le corps de 35 à 34.6 après réparation.",
+    "sessions": "Commandes libres de session-003 lues : langue fr respectée ; suivi des lumières décrit sans déplacement ; cas 25 téléportation en repli avec état conservé. Latence de queue accrue par les appels de réparation (six tours >53s)."
+  },
+  "C": {
+    "scope": "All 40 isolated cases and all available free-form turns of session-003 reviewed; resource/thermal saves compared.",
+    "languages": "Six langues globalement respectées, emprunts et calques restent présents (cas d'échantillonnage, shelter).",
+    "contradictions": [
+      "nonreciprocal-002 et ambiguity-004 décrivent des déplacements non appliqués",
+      "ambiguity-011 invente une faille et un effondrement",
+      "resources-001 décrit une gorgée d'eau avec inventaire vide ; le corps baisse de 37 à 36.8"
+    ],
+    "resources": "resources-004 conserve critical ; resources-008/009 conservent les ressources ; le prélèvement ajoute loose crystal sample.",
+    "thermal": "Questions extérieur/corps distinguées ; thermal-005 conserve l'extérieur mais refroidit le corps 35 vers 34.6.",
+    "generation": "Cinq métadonnées modèle sur cinq, médiane 18.10 s. Toujours plateformes, failles, balises et horizons déformés ; aucune supériorité artistique générale établie.",
+    "failure": "ambiguity-008 : 768 tokens atteints, arrêt contrôlé code 1 avant sauvegarde, 35/35 couches GPU, pic 7131 MiB. Ce n'est pas un crash ni un échec de chargement mémoire.",
+    "sessions": "15/15 and 30/30 pass; mixed session aborts on turn17 (traverse l ouverture au nord), primary 768-token limit at temperature 0.324. 61/62 executed session turns pass, 11 planned turns unexecuted. Light-following narration still claims movement while position stays. Session temperature response mentions glacial Venus wind despite extreme heat."
+  },
+  "measurement_limit": "Les scores 38/40 portent sur navigation/persistance/balises privées. Les assertions de ressources et de récit demandent une revue distincte. thermal-004 commence déjà à 40°C : il teste l'état de surchauffe, sans prouver à lui seul le refus de fixer une autre cible.",
+  "D": {
+    "scope": "All 40 isolated narratives and all free-form commands of session-003 reviewed; resource/thermal saves compared.",
+    "navigation": "barrier-003 and nonreciprocal-002 correctly resolve known movement with engine narration, no reasoning tokens. Ambiguity-001 instead narrates northward movement but stays at quarry; ambiguity-008 narrates westward departure but stays in shelter; ambiguity-009 invents a south barrier; 010/011 invent teleportation/shortcut.",
+    "resources": "001 invents drinking water with empty inventory and cools body 0.1C. 004 raises critical power to stable. 008 raises BOTH critical oxygen and power to stable without verified supply. 009 narrates supply activation but actual resources stay critical.",
+    "thermal": "001/002 identify values; 004 incorrectly calls 40C the environment while outside is 464C. 005 cools body 35 to 34.6 and lowers power stable to strained.",
+    "languages": "Shorter answers. Italian mixes French in Giri autour; Danish and Norwegian contain English and incoherent word choices. No expert language score.",
+    "generation": "Four metadata fallbacks (001/002/003/005) from reasoning_limit at 513 observed tokens for budget512, no final tokens. 004 succeeds with 386 final tokens and NO reasoning, 13.46s. Budget2048 calibration of all five branches queued after seed repeats.",
+    "sessions": "73/73 executed session turns pass navigation/persistence. Mixed session still narrates impossible external cooling and magical teleportation, English object names and French agreement errors. 88 reasoning-enabled calls, 20 with thought tokens, only 1 of those completes successfully; remaining 19 exceed thought budget."
+  },
+  "repeats": {
+    "Q4": "16/16 assertions pass, metadata 4/5 at43 and5/5 at44; with seed42 total12/15. Unlimited supply refused; thermal narration still speculative.",
+    "Q5": "16/16 assertions pass, metadata4/5 at43 and5/5 at44, total14/15. Same recurring inclined-platform/chasm motifs. Does not repeat the two failed main commands.",
+    "Reasoning": "16/16 assertions pass, metadata3/5 at43 and4/5 at44, total8/15. Seed44 resources009 raises oxygen critical to stable; thermal004 raises body40 to40.1; generation002 contains English Beyond the. Seed43 resource009/thermal004 leave relevant values unchanged."
+  },
+  "navigation_repeats": "Four extra cases read: seed43 both pass; seed44 barrier passes and west return fails with generic move intent. Including seed42: barrier3/3, return2/3. No thought tokens in these responses.",
+  "budget2048": "All five branches read: four model metadata, one fallback. Case001 ends after1167 thought tokens with Empty final channel. Cases002/003/005 finish after516/1195/543 thought tokens; case004 stays a direct response identical to512-budget run. Median32.45s, maximum43.32s. No broad requalification at this budget."
+}

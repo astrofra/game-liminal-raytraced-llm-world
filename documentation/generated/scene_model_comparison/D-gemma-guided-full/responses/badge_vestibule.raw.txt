@@ -1,0 +1,51 @@
+
+
+Loading model... 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b28-cd60aba
+model      : C:\works\projects\game-liminal-raytraced-llm-world\models\gemma-4-e4b\gemma-4-E4B-it-Q4_K_M.gguf
+ftype      : Q4_K - Medium
+modalities : text
+using custom system prompt
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> You are in scene-audit mode.
+Return only a .scene program, no markdown, no explanations.
+Scene v1 authoring rules for audit mode:
+- output ASCII only
+- one directive per line
+- do not use indented property blocks; every directive must be complete on one line
+- names must be quoted like "roof" or "service_crate"
+- active Eryx directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_crate, prefab_survey_beacon, prefab_crystal_scanner, prefab_crystal_cluster, prefab_extraction_rig, ... (truncated)
+room "Badge Vestibule"
+camera eye(0.0,1.75,0.0) target(0.0,1.75,5.0) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(70.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+plane "vestibule_floor" pos(0.0,0.0,-1.0) normal(0.0,1.0,0.0) size(10.0,10.0) gray(0.14)
+box "inner_door_frame" pos(0.0,0.55,3.0) size(1.0,1.1,1.0) gray(0.26)
+box "outer_door_frame" pos(0.0,0.55,-3.0) size(1.0,1.1,1.0) gray(0.26)
+prefab_crystal_scanner "badge_reader" pos(2.5,1.2,0.0) size(1.5,2.4,1.0) gray(0.25) detail(0.44) glow(0.28)
+prefab_survey_beacon "placard_mount" pos(-2.5,1.7,0.0) size(1.0,3.4,1.0) gray(0.24) detail(0.43)
+prefab_crate "maintenance_hatch" pos(0.0,0.55,2.5) size(1.5,1.1,0.5) gray(0.20)
+prefab_rock_low "vestibule_wall_left" pos(-5.0,0.5,0.0) size(1.0,1.0,6.0) gray(0.23)
+prefab_rock_low "vestibule_wall_right" pos(5.0,0.5,0.0) size(1.0,1.0,6.0) gray(0.23)
+prefab_atmospheric_processor "airlock_processor" pos(0.0,1.0,0.0) size(3.0,2.0,1.0) gray(0.30)
+
+
+Exiting...

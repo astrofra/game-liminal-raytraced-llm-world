@@ -517,6 +517,8 @@ static bool RepairTurnResultJson(
         raw_response_text;
 
     LlmGenerationConfig repair_config = config.generation_config;
+    repair_config.short_call = true;
+    repair_config.purpose = "repair";
     repair_config.use_json_grammar = false;
 
     LlmGenerationResult repair_generation_result;
@@ -934,6 +936,8 @@ static bool LocalizePlayerFacingText(
         ". Empty values must remain empty:\n" + source.dump();
 
     LlmGenerationConfig localization_config = config.generation_config;
+    localization_config.short_call = true;
+    localization_config.purpose = "localization";
     localization_config.temperature = 0.0f;
     localization_config.use_json_grammar = false;
     if (localization_config.n_predict <= 0 || localization_config.n_predict > 384) {
@@ -2253,6 +2257,8 @@ static void AskLlmForThermalUpdate(
     messages.back().content = prompt;
 
     LlmGenerationConfig thermal_config = config.generation_config;
+    thermal_config.short_call = true;
+    thermal_config.purpose = "thermal";
     thermal_config.use_json_grammar = false;
     if (thermal_config.n_predict <= 0 || thermal_config.n_predict > 160) {
         thermal_config.n_predict = 160;
@@ -2851,7 +2857,7 @@ void UpdateSessionStateFromTurn(
     NormalizeSessionState(session_state);
 }
 
-bool RunHeadlessTurnFromState(
+static bool RunHeadlessTurnFromStateImpl(
     const SessionState& provided_session_state,
     const char* player_command,
     const HeadlessTurnConfig& config,
@@ -3036,13 +3042,15 @@ bool RunHeadlessTurnFromState(
         bool used_room_metadata_fallback = false;
         bool used_room_scene_fallback = false;
 
+        LlmGenerationConfig room_config = body_driven_config.generation_config;
+        room_config.purpose = "room_metadata";
         LlmGenerationResult room_generation_result;
         StreamForwarder room_stream_forwarder;
         room_stream_forwarder.callback = config.stream_callback;
         room_stream_forwarder.phase = kHeadlessTurnStreamPrimaryResponse;
         room_stream_forwarder.user_data = config.stream_user_data;
         if (GenerateChatCompletion(
-                body_driven_config.generation_config,
+                room_config,
                 room_messages,
                 config.stream_callback ? ForwardStreamChunk : 0,
                 config.stream_callback ? &room_stream_forwarder : 0,
@@ -3396,6 +3404,7 @@ bool RunHeadlessTurnFromState(
         scene_messages.back().content = BuildSceneAuditPrompt(result->updated_spatial_state);
 
         LlmGenerationConfig scene_config = body_driven_config.generation_config;
+        scene_config.purpose = "scene";
         scene_config.use_json_grammar = false;
 
         LlmGenerationResult scene_generation_result;
@@ -3457,6 +3466,61 @@ bool RunHeadlessTurnFromState(
         &result->rendered_scene_debug_text);
 
     return true;
+}
+
+bool RunHeadlessTurnFromState(
+    const SessionState& initial_session_state,
+    const char* player_command,
+    const HeadlessTurnConfig& config,
+    HeadlessTurnResult* result,
+    char* error_buffer,
+    size_t error_buffer_size)
+{
+    struct CancellationGate {
+        HeadlessTurnStreamCallback callback;
+        void* user_data;
+        bool cancelled = false;
+        HeadlessTurnStreamPhase phase = kHeadlessTurnStreamPrimaryResponse;
+        std::string last_text;
+    } gate{config.stream_callback, config.stream_user_data};
+    HeadlessTurnConfig guarded = config;
+    if (config.stream_callback) {
+        guarded.stream_user_data = &gate;
+        guarded.stream_callback = [](HeadlessTurnStreamPhase phase, const char* text, const char* delta, void* data) {
+            auto* guard = static_cast<CancellationGate*>(data);
+            guard->phase = phase;
+            guard->last_text = text ? text : "";
+            if (guard->cancelled || !guard->callback(phase, text, delta, guard->user_data)) {
+                guard->cancelled = true;
+                return false;
+            }
+            return true;
+        };
+        if (!guarded.stream_callback(gate.phase, "", "", &gate)) {
+            SetError(error_buffer, error_buffer_size, "Turn cancelled: %s", "before execution");
+            return false;
+        }
+    }
+    const LlmRuntimeTotals before = QueryLlmRuntimeTotals();
+    const bool success = RunHeadlessTurnFromStateImpl(initial_session_state, player_command, guarded,
+                                                     result, error_buffer, error_buffer_size);
+    const LlmRuntimeTotals after = QueryLlmRuntimeTotals();
+    if (result) {
+        result->llm_call_count = after.calls - before.calls;
+        result->prompt_tokens = after.prompt_tokens - before.prompt_tokens;
+        result->generated_tokens = after.generated_tokens - before.generated_tokens;
+        result->reasoning_tokens = after.reasoning_tokens - before.reasoning_tokens;
+        result->final_tokens = after.final_tokens - before.final_tokens;
+        result->inference_time_ms = after.inference_time_ms - before.inference_time_ms;
+        result->llm_wall_time_ms = after.wall_time_ms - before.wall_time_ms;
+    }
+    if (config.stream_callback &&
+        (gate.cancelled || !config.stream_callback(gate.phase, gate.last_text.c_str(), "", config.stream_user_data))) {
+        if (result) *result = HeadlessTurnResult();
+        SetError(error_buffer, error_buffer_size, "Turn cancelled: %s", "state was not committed");
+        return false;
+    }
+    return success;
 }
 
 bool RunHeadlessTurn(
@@ -3521,6 +3585,17 @@ bool RunNavigationSelfTest(FILE* output)
         }
         return false;
     }
+
+    HeadlessTurnConfig cancelled_config;
+    cancelled_config.stream_callback = [](HeadlessTurnStreamPhase, const char*, const char*, void*) { return false; };
+    HeadlessTurnResult cancelled_result;
+    if (RunHeadlessTurnFromState(route_state, "north", cancelled_config, &cancelled_result,
+                                error_buffer, sizeof(error_buffer)) ||
+        !cancelled_result.updated_place_id.empty()) {
+        if (output) fprintf(output, "Cancelled turn must not produce a committed result.\n");
+        return false;
+    }
+    error_buffer[0] = '\0';
 
     const LocationId route_locations[] = {
         kLocationQuarryThreshold,
@@ -3693,7 +3768,10 @@ void PrintHeadlessTurnDebugTrace(const HeadlessTurnResult& result, FILE* stream)
 
     PrintDebugBlock(out, "Engine Request", result.request_text);
     PrintDebugBlock(out, "Runtime Prompt", result.prompt_text);
-    PrintDebugBlock(out, "Raw LLM Response", result.raw_response_text);
+    fprintf(out, "LLM calls (including auxiliaries): %d\n", result.llm_call_count);
+    fprintf(out, "Reasoning tokens: %d\nFinal-channel tokens: %d\n", result.reasoning_tokens, result.final_tokens);
+    fprintf(out, "LLM wall time (including loads): %.2f ms\n", result.llm_wall_time_ms);
+    PrintDebugBlock(out, "Final LLM Response", result.raw_response_text);
     if (!result.repair_response_text.empty()) {
         PrintDebugBlock(out, "Repair LLM Response", result.repair_response_text);
     }

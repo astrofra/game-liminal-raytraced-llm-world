@@ -1,16 +1,22 @@
 # Technical State — Within the Latent Walls / Entre les Murs Latents
 
-Derniere mise a jour : 2026-08-19
+Derniere mise a jour : 2026-10-24
 
 ## Resume
 
-Le depot contient actuellement un runtime natif C++11 avec renderer a scenes proprietaires, boucle locale `llama.cpp`, et frontend SDL3. La Cornell Box en niveaux de gris reste une scene de reference du sous-systeme de rendu, mais elle n'est plus le centre fonctionnel du depot.
+Le depot contient actuellement un runtime natif C++17 avec renderer a scenes proprietaires, boucle locale `llama.cpp`, et frontend SDL3. La Cornell Box en niveaux de gris reste une scene de reference du sous-systeme de rendu, mais elle n'est plus le centre fonctionnel du depot.
 
 Le renderer et l'interface constituent encore une base de prototype plutot qu'un produit final, mais la chaine executable est maintenant suffisamment complete pour des sessions headless et interactives.
 
 Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cpp` avec acceleration CUDA autour de `Ministral 3 8B`.
 
 Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat -> scene -> rendu`, disponible en mode headless et dans une premiere HMI `SDL3`.
+
+La qualification Ministral du 24 octobre ajoute les profils Q4/Q5/Reasoning issus d'un manifeste commun, les templates Jinja, les canaux privés/finals, les limites et les mesures de tous les appels. Le modèle par défaut reste le Q4 Instruct. La [progression](MINISTRAL_ROADMAP_PROGRESS.md), le [bilan de qualification](MINISTRAL_QUALIFICATION_REPORT.md) et le [guide de construction](MINISTRAL_RUNTIME_GUIDE.md) donnent la décision et les preuves actuelles ; les études antérieures décrivent les hypothèses de départ.
+
+Le vendor est désormais fixé à `v0.7.0`, commit `620d2225cc436ab0b001e3200e590e3b286ef9ab`. La qualification comprend 611 tours natifs exécutés et 70 scènes directes, avec références isolées, répétitions et essai de budget Reasoning. Le Q4 conserve les deux écarts de formulation libre de la référence ; les changements de ressources et la qualité narrative ne sont pas garantis par les seuls scores de navigation. Q5 et Reasoning restent des profils d'expérimentation, avec les limites mesurées dans le bilan.
+
+La distribution interne 2.2.0 est construite et testée : téléchargement réel du modèle, lancement SDL, tour LLM, sauvegarde, compatibilité ancien runtime et désinstallation. Les exécutables des lanceurs sont publiés ; l'installeur et les sources sont dans `output/installer/dist/`. Signature et validation sur Windows vierge restent des étapes de diffusion publique.
 
 ## Frontiere entre reorientation et implementation
 
@@ -319,16 +325,14 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
 ## Commandes de build et d'execution
 
 ```powershell
-cmake -S . -B build -G "Visual Studio 17 2022"
-cmake --build build --config Release
+python scripts/build_native.py --with-cli --publish
 .\build\Release\liminal_cornell_renderer.exe
 ```
 
 Avec `llama.cpp` et CUDA :
 
 ```powershell
-cmake -S . -B build -G "Visual Studio 17 2022" -DLIMINAL_ENABLE_LLAMA_CPP=ON -DLIMINAL_ENABLE_LLAMA_CUDA=ON
-cmake --build build --config Release
+python scripts/build_native.py --with-cli --publish
 .\build\Release\liminal_cornell_renderer.exe --llama-info
 ```
 
@@ -337,8 +341,9 @@ Le vendredi 31 juillet 2026, une recompilation locale avec ces options a confirm
 Avec OpenMP desactive explicitement :
 
 ```powershell
-cmake -S . -B build -G "Visual Studio 17 2022" -DLIMINAL_ENABLE_OPENMP=OFF
-cmake --build build --config Release
+# Depuis un shell developpeur configure avec le meme toolset et SDK :
+cmake -S . -B build_ministral_v070 -DLIMINAL_ENABLE_OPENMP=OFF
+cmake --build build_ministral_v070 --config Release
 ```
 
 Exemple avec scene explicite :
@@ -550,7 +555,7 @@ Observation importante :
   - transcript et saisie via `SDL3_ttf` et les fontes Zilla Slab
   - titre et statut debug via `SDL_RenderDebugText`
   - pas encore de layout plus riche ou de widgets dedies
-- le streaming actuel expose le flux brut du modele pendant la fabrication du JSON, pas encore une narration incrementalement parsee
+- le streaming technique expose le canal final structuré pendant la fabrication du JSON, sans réflexion privée ; ce n'est pas encore une narration incrementalement parsée
 - la generation de metadata de salle improvisee reste fragile :
   - fallback metadata utilise si le JSON de room generation est mal forme
   - fallback scene utilise si le compilateur hybride echoue a produire une scene admissible
@@ -561,11 +566,11 @@ Observation importante :
   - classification texte -> objet encore sommaire
   - certains objets textuels sont encore ramenes a des `box` ou `prefab_*` approximatifs
   - pas encore de solveur de placement plus fin qu'une repartition 2.5D avec anti-chevauchement simple
-- la grammaire JSON `llama.cpp` n'est pas activee par defaut car l'appel bas niveau s'est montre instable sur ce build Windows/CUDA
+- la grammaire JSON reste optionnelle ; la double acceptation des tokens à l'origine d'un crash a été corrigée et les probes Q4/Q5 réussissent. Reasoning valide le JSON du canal final après une réflexion libre
 - pas encore de couche compacte d'instanciation ou de repetition pour les prefabs
 - les prefabs actuels augmentent fortement le nombre de triangles et de materiaux
-- pas de telemetrie CPU/GPU/memoire
-- pas de suite globale de tests automatises ; la navigation, la vue animee et le post-process possedent toutefois des self-tests deterministes, complétés par des smoke tests SDL temporises
+- métriques par appel LLM et mesures RAM/VRAM échantillonnées dans le runner ; pas de télémétrie matérielle permanente dans l'interface
+- tests Python, canaux C++, probes natifs et campagne headless automatisés ; la navigation, la vue animée et le post-process gardent leurs auto-tests, sans couverture complète de toutes les interactions SDL
 - semantique runtime Eryx encore partielle :
   - pas de proposition LLM de mutation topologique separee des deltas spatiaux ordinaires
   - pas de validateur de frequence, recuperation ou provenance des mutations live

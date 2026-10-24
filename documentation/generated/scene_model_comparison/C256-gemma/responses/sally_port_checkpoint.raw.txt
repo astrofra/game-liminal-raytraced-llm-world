@@ -1,0 +1,74 @@
+
+
+Loading model... 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b28-cd60aba
+model      : C:\works\projects\game-liminal-raytraced-llm-world\models\gemma-4-e4b\gemma-4-E4B-it-Q4_K_M.gguf
+ftype      : Q4_K - Medium
+modalities : text
+using custom system prompt
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> You are in scene-audit mode.
+Return only a .scene program, no markdown, no explanations.
+Scene v1 authoring rules for audit mode:
+- output ASCII only
+- one directive per line
+- do not use indented property blocks; every directive must be complete on one line
+- names must be quoted like "roof" or "service_crate"
+- active Eryx directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_crate, prefab_survey_beacon, prefab_crystal_scanner, prefab_crystal_cluster, prefab_extraction_rig, ... (truncated)
+
+[Start thinking]
+
+Plan:
+1.  **Analyze the Request:** The goal is to generate a deterministic scene compiler output (.scene program) for a "Sally Port Checkpoint" in a Venusian crystal quarry setting.
+2.  **Constraints Check:**
+    *   Output must be only a valid .scene program, no markdown, no explanations.
+    *   ASCII only, one directive per line, no indented property blocks.
+    *   Names must be quoted.
+    *   Must use `room` and `camera`.
+    *   Style: Brutalist, sparse, quarry/prospecting focus.
+    *   Color: Use `gray()`.
+    *   Density: Sparse and legible.
+3.  **Spatial Brief Interpretation (Quarry_threshold / Sally Port Checkpoint):**
+    *   Location: Narrow checkpoint between two heavy gates.
+    *   Objects: Code keypad, steel cabinet, dead camera head, inspection hatch.
+    *   Atmosphere: Procedural, exposed, low visibility, windy.
+    *   Narrative Focus: Compression, heavy brutalist masses, survey camp feel.
+    *   Layout: Dominant asymmetry, side-qualified constraints.
+4.  **
+[End thinking]
+
+room "Sally Port Checkpoint"
+camera eye(0.0,1.75,0.0) target(0.0,1.18,0.0) up(0.0,1.0,0.0) fov(46.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+plane "quarry_floor" pos(0.0,0.0,-1.0) normal(0.0,1.0,0.0) size(20.0,20.0) gray(0.14)
+box "inner_gate_structure" pos(-8.0,0.5,0.0) size(1.0,3.0,16.0) gray(0.2)
+box "outer_gate_structure" pos(8.0,0.5,0.0) size(1.0,3.0,16.0) gray(0.2)
+box "checkpoint_alcove_wall" pos(0.0,1.0,0.0) size(20.0,2.0,0.5) gray(0.25)
+prefab_crystal_scanner "dead_camera_head" pos(0.0,1.5,2.0) size(1.5,2.5,1.5) gray(0.3) detail(0.5)
+prefab_crate "steel_cabinet" pos(-5.0,0.5,0.0) size(2.0,1.1,1.5) gray(0.25)
+prefab_crate "inspection_hatch" pos(5.0,0.5,0.0) size(1.5,1.1,1.5) gray(0.25)
+prefab_survey_beacon "checkpoint_beacon" pos(0.0,2.0,10.0) size(1.0,4.0,1.0) gray(0.24) detail(0.43)
+prefab_rock_wide "quarry_pylon_east" pos(-10.0,0.7,5.0) size(3.0,1.4,2.0) gray(0.23)
+prefab_rock_wide "quarry_pylon_west" pos(10.0,0.7,5.0) size(3.0,1.4,2.0) gray(0.23)
+prefab_crystal_cluster "sample_storage" pos(-3.0,1.15,3.0) size(2.0,2.3,1.6) gray(0.66) glow(0.34)
+
+
+Exiting...

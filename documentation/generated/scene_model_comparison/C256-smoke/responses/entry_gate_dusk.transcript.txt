@@ -1,0 +1,99 @@
+User:
+You are in scene-audit mode.
+Return only a .scene program, no markdown, no explanations.
+Scene v1 authoring rules for audit mode:
+- output ASCII only
+- one directive per line
+- do not use indented property blocks; every directive must be complete on one line
+- names must be quoted like "roof" or "service_crate"
+- active Eryx directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_crate, prefab_survey_beacon, prefab_crystal_scanner, prefab_crystal_cluster, prefab_extraction_rig, prefab_prospect_shelter, prefab_quarry_pylon, prefab_atmospheric_processor, prefab_rock_low, prefab_rock_wide, prefab_rock_tall, prefab_rock_spire
+- every scene must declare one room and one camera
+- keep geometry sparse and legible
+- prefer stable repeated objects through prefab_* directives
+- avoid long decorative lists of tiny objects
+- keep the place readable at 800x400 palette-limited noisy rendering
+- stay inside the Venusian crystal-quarry fiction: brutalist extraction infrastructure, sparse hostile terrain, prospecting instruments, and invisible topology
+- use gray(), not color() or opacity()
+- gray() controls luminance only; the engine applies locked semantic colors to sky, terrain, crystals, and instrument lights
+- prefer names like ground, quarry_*, clay_*, ridge_* or outcrop_* for exterior terrain masses
+- valid examples:
+  room "Erycinian crystal quarry survey shelf"
+  camera eye(0.0,1.75,-7.9) target(0.0,1.18,8.8) up(0.0,1.0,0.0) fov(46.0)
+  spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,28.0) intensity(70.0)
+  sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+  plane "quarry_floor" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(16.0,24.0) gray(0.14)
+  box "retaining_slab" pos(0.0,0.55,7.0) size(14.0,1.1,0.7) gray(0.26)
+  prefab_crate "sample_case" pos(2.4,0.55,-1.8) size(1.7,1.1,1.4) gray(0.20) detail(0.34)
+  prefab_crystal_scanner "affinity_scanner" pos(-3.2,1.2,1.0) size(2.2,2.4,1.5) gray(0.25) detail(0.44) glow(0.28)
+  prefab_crystal_cluster "exposed_vein" pos(3.8,1.15,3.8) size(1.8,2.3,1.6) gray(0.66) glow(0.34)
+  prefab_survey_beacon "route_datum" pos(-5.0,1.7,6.8) size(1.1,3.4,1.0) gray(0.24) detail(0.43)
+  prefab_rock_wide "rock_shelf" pos(4.6,0.7,6.8) size(2.0,1.4,1.6) gray(0.23)
+
+Spatial brief
+location_id: gate
+room_title: Entry Gate
+room_summary: A concrete gate court faces the datacenter threshold. Dust clings to the bars and the badge reader blinks beside a service intercom.
+location_archetype: threshold courtyard
+canonical_fixture: entry_gate
+time_of_day: dusk
+visibility_level: clear
+surface_weather: still
+interior_density: sparse
+world_band: inner quarry
+survey_base_relation: baseward approach
+sky_exposure: shelter or cut walls may constrain the sky
+alert_level: 1
+anchors: gate frame, perimeter wall, badge reader, intercom plate
+visible_objects: badge reader, service intercom, warning placard, padlocked crate
+blocked_exits: west, south
+spatial_anomalies: (none)
+scene_constraints: (none)
+
+Erycinian survey-field guide
+Hidden Erycinian survey-field guide
+world_band: inner quarry
+survey_base_relation: baseward approach
+sky_exposure: shelter or cut walls may constrain the sky
+radial_narrative: Treat it as worked quarry ground: retaining slabs, extraction equipment, sample handling, and legible return routes.
+bearing_narrative: It sits on the baseward approach, so frontal threshold silhouettes, split gate masses, and route datums make sense.
+favor_terms: extraction rig, retaining fin, sample crate, quarry pylon, cut floor, split threshold gate, base route placard, survey cargo, front route placard
+avoid_terms: open horizon, server rack
+metadata_pressure: let title, location_archetype, anchors, visible_objects and scene_constraints echo at least two favor_terms.
+layout_pressure: prefer one dominant asymmetry and side-qualified constraints such as east pylon, deep-field beacon, west sample case or central scanner.
+anti_repetition: do not collapse unrelated rooms into the same generic room family if the drift guide points elsewhere.
+
+Assistant:
+[Start thinking]
+
+Plan:
+1.  **Analyze the Request:** The goal is to generate a deterministic scene compiler output (.scene program) for a specific location ("Entry Gate").
+2.  **Analyze Constraints/Rules:**
+    *   Output must be *only* a valid .scene program.
+    *   No markdown fences, no explanations.
+    *   ASCII only, one directive per line, no indented blocks.
+    *   Names must be quoted.
+    *   Must declare one `room` and one `camera`.
+    *   Keep geometry sparse, legible, and within the Venusian crystal-quarry fiction (brutalist infrastructure, gray() usage).
+    *   Use prefab directives where possible.
+    *   The location is a "threshold courtyard" (gate court) facing a datacenter/inner quarry area.
+3.  **Analyze Spatial Brief/Narrative:**
+    *   Title: Entry Gate.
+    *   Archetype: Threshold courtyard.
+    *   Key fixtures: Gate frame, perimeter wall, badge reader, service intercom.
+    *   Visible objects: Badge reader, intercom, warning placard, padlocked crate.
+    *   Favor terms: retaining fin, sample[End thinking]
+
+room "Entry Gate Threshold Courtyard"
+camera eye(0.0,1.75,0.0) target(0.0,1.18,0.0) up(0.0,1.0,0.0) fov(46.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+plane "quarry_floor" pos(0.0,0.0,-1.0) normal(0.0,1.0,0.0) size(20.0,10.0) gray(0.14)
+box "perimeter_wall_east" pos(5.0,0.5,0.0) size(0.5,1.1,10.0) gray(0.26)
+box "perimeter_wall_west" pos(-5.0,0.5,0.0) size(0.5,1.1,10.0) gray(0.26)
+box "gate_frame" pos(0.0,0.5,0.0) size(1.0,1.1,10.0) gray(0.20)
+prefab_crate "padlocked_sample_case" pos(3.0,0.55,0.0) size(1.7,1.1,1.4) gray(0.20) detail(0.34)
+prefab_crystal_scanner "badge_reader_scanner" pos(0.0,1.2,3.0) size(1.5,2.4,1.0) gray(0.25) detail(0.44) glow(0.28)
+prefab_survey_beacon "route_datum_intercom" pos(0.0,1.7,3.0) size(1.1,3.4,1.0) gray(0.24) detail(0.43)
+box "retaining_slab_north" pos(0.0,0.55,5.0) size(10.0,1.1,0.7) gray(0.26)
+box "retaining_slab_south" pos(0.0,0.55,-5.0) size(10.0,1.1,0.7) gray(0.26)
+prefab_rock_wide "quarry_outcrop_base" pos(0.0,0.0,10.0) size(20.0,1.4,1.0) gray(0.18)
+

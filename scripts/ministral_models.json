@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "default_profile": "ministral-8b-q4",
+  "profiles": {
+    "ministral-8b-q4": {
+      "repo_id": "mistralai/Ministral-3-8B-Instruct-2512-GGUF",
+      "revision": "0102285ad796bd99af90f58de616092e5630e970",
+      "filename": "Ministral-3-8B-Instruct-2512-Q4_K_M.gguf",
+      "size_bytes": 5198911904,
+      "sha256": "33e7a72cf5e6e2cfc2f2847075acc013d68bba023e35310cef86b5cf8fdca761",
+      "relative_path": "models/ministral-3-8b/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf",
+      "reasoning": false,
+      "temperature": 0.0,
+      "top_k": 40,
+      "top_p": 0.95
+    },
+    "ministral-8b-q5": {
+      "repo_id": "mistralai/Ministral-3-8B-Instruct-2512-GGUF",
+      "revision": "0102285ad796bd99af90f58de616092e5630e970",
+      "filename": "Ministral-3-8B-Instruct-2512-Q5_K_M.gguf",
+      "size_bytes": 6059268512,
+      "sha256": "7a5454127ec772e2389f0e71a77fedb88b83d4366d8a69facd0cfd0898f04d35",
+      "relative_path": "models/ministral-3-8b/Ministral-3-8B-Instruct-2512-Q5_K_M.gguf",
+      "reasoning": false,
+      "temperature": 0.0,
+      "top_k": 40,
+      "top_p": 0.95
+    },
+    "ministral-8b-reasoning-q4": {
+      "repo_id": "mistralai/Ministral-3-8B-Reasoning-2512-GGUF",
+      "revision": "4413bc9b7b091ddad28101650d1395f5e045a328",
+      "filename": "Ministral-3-8B-Reasoning-2512-Q4_K_M.gguf",
+      "size_bytes": 5198910368,
+      "sha256": "894aa3645ef8708a81dbe201c26105ce37c4c741252c89c5a78f81b49ac438c6",
+      "relative_path": "models/ministral-3-8b-reasoning/Ministral-3-8B-Reasoning-2512-Q4_K_M.gguf",
+      "reasoning": true,
+      "temperature": 0.7,
+      "top_k": 40,
+      "top_p": 0.95
+    }
+  }
+}

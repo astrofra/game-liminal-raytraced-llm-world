@@ -1,0 +1,23 @@
+{
+  "model_sha256": "894aa3645ef8708a81dbe201c26105ce37c4c741252c89c5a78f81b49ac438c6",
+  "model_size": 5198910368,
+  "llama_cli_sha256": "6904bf9021a043fb53a1c6cd6f5b4484cb6e170fa638ae2907c0217849dc6ac9",
+  "renderer_sha256": "cd38c0bca697f06a676aabbd00e0077203ac36985bfb7dc1aacdb48a47e3b371",
+  "llama_cli_version": "version: 0.7.0-dev (build 0, commit unknown)\nbuilt with MSVC 19.44.35229.0 for Windows AMD64",
+  "vendor_source_commit": "6b36c2305644fd30db7cce3f4840c74574f31ce9",
+  "cases_sha256": "c17ea644b9e8235a15ed62ba25209d05589793ef9524adbca3955d61a2877031",
+  "benchmark_script_sha256": "1b74b4827f498a6f63a88b81b14530c26017e0c3875f7c0295992e6fd6388a8f",
+  "protocol_script_sha256": "51e5651f5050263294eeb16021adb8c9249235a31d2db495bea581a9ec363d7b",
+  "quality_script_sha256": "d437fef4af9228a0b144940cbd14be221b632ffdec59411330589464e821a770",
+  "driver_gpu": "name, memory.total [MiB], memory.used [MiB], driver_version\nNVIDIA GeForce RTX 4060, 8188 MiB, 435 MiB, 610.88",
+  "note": "Binary version/hash and vendored source revision recorded separately; no equivalence assumed.",
+  "runtime_build": {
+    "llama_cpp_commit": "620d2225cc436ab0b001e3200e590e3b286ef9ab",
+    "compiler": "C:\\works\\duo-runtime\\liminal-ministral-20261024\\msvc143\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+    "cuda_arch": "89",
+    "artifacts": {
+      "liminal_cornell_renderer.exe": "214d8ddf6527cee99bb859f7c28d1ef4c84265a658c4b35823ceb4755b8ceebd",
+      "llama-cli.exe": "6904bf9021a043fb53a1c6cd6f5b4484cb6e170fa638ae2907c0217849dc6ac9"
+    }
+  }
+}

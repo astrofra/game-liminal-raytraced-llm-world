@@ -1,6 +1,6 @@
 # Windows Distribution
 
-Last updated: 2026-08-18
+Last updated: 2026-10-24
 
 ## Outcome
 
@@ -22,29 +22,31 @@ The multimodal projector is not downloaded because the game uses text inference 
 The build machine needs:
 
 - 64-bit Windows
-- Visual Studio 2022 with the C++ desktop workload
-- CMake available in `PATH`
-- Python 3.10 or newer available in `PATH`
+- a CUDA-compatible MSVC toolset (19.44 on the qualification machine), with Windows SDK headers and libraries
+- CMake and Ninja available in `PATH`
+- Python 3.11 or newer available in `PATH`
 - a supported NVIDIA CUDA Toolkit for the CUDA-enabled build
 - Internet access if the pinned Inno Setup compiler is not already cached
 
 The player does not need Python, Visual Studio, the CUDA Toolkit, or Ollama. The installer places the application-local CUDA and Microsoft runtime libraries beside the executable. A current NVIDIA display driver remains a system prerequisite for this CUDA build.
+
+The C++17 build uses `scripts/build_native.py --publish`; toolset selection is documented in [MINISTRAL_RUNTIME_GUIDE.md](MINISTRAL_RUNTIME_GUIDE.md). Model metadata comes from `scripts/ministral_models.json`, including the Inno Setup download URL, size and hash. The stage includes the JSON grammar, and its runtime commit must match the packaged vendor source. Source archives include the native protocol tests and exclude local build artifacts.
 
 ## Build command
 
 From the repository root:
 
 ```bat
-build_installer.bat --version 0.1.0
+build_installer.bat --version 2.2.0
 ```
 
 Useful options:
 
 ```bat
-build_installer.bat --version 0.1.0 --skip-build
-build_installer.bat --version 0.1.0 --skip-source-archive
-build_installer.bat --version 0.1.0 --iscc "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-build_installer.bat --version 0.1.0 --no-bootstrap-inno
+build_installer.bat --version 2.2.0 --skip-build
+build_installer.bat --version 2.2.0 --skip-source-archive
+build_installer.bat --version 2.2.0 --iscc "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+build_installer.bat --version 2.2.0 --no-bootstrap-inno
 ```
 
 The script performs these checks before reporting success:
@@ -89,4 +91,6 @@ The installer needs an Internet connection and approximately 5.20 GB of model do
 - Confirm the machine has enough VRAM or system RAM for the 8B Q4_K_M model.
 - Distribute the corresponding-source ZIP beside the GPL binary package.
 
-The current build script validates the application payload and installer compilation without downloading the 5.20 GB model. A clean-machine end-to-end installation remains a release gate.
+Version 2.2.0 passed a fresh per-user installation on the existing Windows 11 qualification host, including a real 5.20 GB download and SHA-256 verification, SDL launch, an LLM turn with a System32-only child PATH, accented save path, preserved generated scenes, old-runtime save compatibility and uninstall. The first uninstall test had a conflicting test-log path; retrying with separate stdout and Inno logs succeeded. Existing AppData files were unchanged (the test started with no files). See the [installation evidence](generated/ministral_qualification/validation/installation.json) and [artifact hashes](generated/ministral_qualification/validation/distribution.json).
+
+The setup and corresponding-source ZIP are available in `output/installer/dist/`, with `Within-the-Latent-Walls-2.2.0-SHA256.txt`. Version 2.1.0 artifacts remain preserved. This local test is not a fresh OS VM: Authenticode signing, clean Windows 10/11 validation and interrupted-download recovery remain public-release gates.

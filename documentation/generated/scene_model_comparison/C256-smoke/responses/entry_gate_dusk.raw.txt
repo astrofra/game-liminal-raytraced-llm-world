@@ -1,0 +1,73 @@
+
+
+Loading model... 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b28-cd60aba
+model      : C:\works\projects\game-liminal-raytraced-llm-world\models\gemma-4-e4b\gemma-4-E4B-it-Q4_K_M.gguf
+ftype      : Q4_K - Medium
+modalities : text
+using custom system prompt
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> You are in scene-audit mode.
+Return only a .scene program, no markdown, no explanations.
+Scene v1 authoring rules for audit mode:
+- output ASCII only
+- one directive per line
+- do not use indented property blocks; every directive must be complete on one line
+- names must be quoted like "roof" or "service_crate"
+- active Eryx directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_crate, prefab_survey_beacon, prefab_crystal_scanner, prefab_crystal_cluster, prefab_extraction_rig, ... (truncated)
+
+[Start thinking]
+
+Plan:
+1.  **Analyze the Request:** The goal is to generate a deterministic scene compiler output (.scene program) for a specific location ("Entry Gate").
+2.  **Analyze Constraints/Rules:**
+    *   Output must be *only* a valid .scene program.
+    *   No markdown fences, no explanations.
+    *   ASCII only, one directive per line, no indented blocks.
+    *   Names must be quoted.
+    *   Must declare one `room` and one `camera`.
+    *   Keep geometry sparse, legible, and within the Venusian crystal-quarry fiction (brutalist infrastructure, gray() usage).
+    *   Use prefab directives where possible.
+    *   The location is a "threshold courtyard" (gate court) facing a datacenter/inner quarry area.
+3.  **Analyze Spatial Brief/Narrative:**
+    *   Title: Entry Gate.
+    *   Archetype: Threshold courtyard.
+    *   Key fixtures: Gate frame, perimeter wall, badge reader, service intercom.
+    *   Visible objects: Badge reader, intercom, warning placard, padlocked crate.
+    *   Favor terms: retaining fin, sample
+[End thinking]
+
+room "Entry Gate Threshold Courtyard"
+camera eye(0.0,1.75,0.0) target(0.0,1.18,0.0) up(0.0,1.0,0.0) fov(46.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+plane "quarry_floor" pos(0.0,0.0,-1.0) normal(0.0,1.0,0.0) size(20.0,10.0) gray(0.14)
+box "perimeter_wall_east" pos(5.0,0.5,0.0) size(0.5,1.1,10.0) gray(0.26)
+box "perimeter_wall_west" pos(-5.0,0.5,0.0) size(0.5,1.1,10.0) gray(0.26)
+box "gate_frame" pos(0.0,0.5,0.0) size(1.0,1.1,10.0) gray(0.20)
+prefab_crate "padlocked_sample_case" pos(3.0,0.55,0.0) size(1.7,1.1,1.4) gray(0.20) detail(0.34)
+prefab_crystal_scanner "badge_reader_scanner" pos(0.0,1.2,3.0) size(1.5,2.4,1.0) gray(0.25) detail(0.44) glow(0.28)
+prefab_survey_beacon "route_datum_intercom" pos(0.0,1.7,3.0) size(1.1,3.4,1.0) gray(0.24) detail(0.43)
+box "retaining_slab_north" pos(0.0,0.55,5.0) size(10.0,1.1,0.7) gray(0.26)
+box "retaining_slab_south" pos(0.0,0.55,-5.0) size(10.0,1.1,0.7) gray(0.26)
+prefab_rock_wide "quarry_outcrop_base" pos(0.0,0.0,10.0) size(20.0,1.4,1.0) gray(0.18)
+
+
+Exiting...

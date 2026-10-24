@@ -1,0 +1,7 @@
+Loaded scene Sally Port Checkpoint
+Loaded 1014 triangles, 52 materials, 180 emissive triangles
+Load time: 6.33 ms
+Rendering 800x400, spp=8, diffuse=3, glass=9, emissive=180, camera_spot=off, openmp=on, threads=16
+  lines 400 / 400
+Render time: 253.61 ms
+Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_model_comparison\D-gemma-guided-full\images\sally_port_checkpoint.png

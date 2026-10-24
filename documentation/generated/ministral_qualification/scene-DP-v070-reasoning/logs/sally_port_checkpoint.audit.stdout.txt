@@ -1,0 +1,7 @@
+Loaded scene Sally Port Checkpoint
+Loaded 838 triangles, 65 materials, 204 emissive triangles
+Load time: 6.55 ms
+Rendering 800x400, spp=8, diffuse=3, glass=9, emissive=204, camera_spot=on, openmp=on, threads=16
+  lines 400 / 400
+Render time: 629.08 ms
+Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\ministral_qualification\scene-DP-v070-reasoning\images\sally_port_checkpoint.png

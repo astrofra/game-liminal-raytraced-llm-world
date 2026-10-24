@@ -1,0 +1,54 @@
+
+
+Loading model... 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b0-620d2225cc436ab0b001e3200e590e3b286ef9ab
+model      : C:\works\projects\game-liminal-raytraced-llm-world\models\ministral-3-8b-reasoning\Ministral-3-8B-Reasoning-2512-Q4_K_M.gguf
+ftype      : Q4_K - Medium
+modalities : text
+using custom system prompt
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> You are in scene-audit mode.
+Return only a .scene program, no markdown, no explanations.
+Scene v1 authoring rules for audit mode:
+- output ASCII only
+- one directive per line
+- do not use indented property blocks; every directive must be complete on one line
+- names must be quoted like "roof" or "service_crate"
+- active Eryx directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_crate, prefab_survey_beacon, prefab_crystal_scanner, prefab_crystal_cluster, prefab_extraction_rig, ... (truncated)
+room "Sally Port Checkpoint"
+camera eye(0.0,1.75,-7.9) target(0.0,1.18,8.8) up(0.0,1.0,0.0) fov(46.0)
+sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
+
+box "inner_gate" pos(0.0,0.0,0.0) size(3.0,5.0,0.5) gray(0.20)
+box "outer_gate" pos(0.0,0.0,-6.0) size(3.0,5.0,0.5) gray(0.20)
+
+box "code_keypad" pos(1.0,1.5,0.0) size(0.5,0.3,0.2) gray(0.18)
+box "steel_cabinet" pos(-1.0,1.5,0.0) size(0.8,1.2,0.4) gray(0.22)
+
+prefab_gate "split_threshold_gate" pos(0.0,2.5,-3.0) size(4.0,6.0,0.5) gray(0.19)
+prefab_crate "sample_case" pos(1.5,0.5,-1.5) size(1.0,0.8,1.2) gray(0.20) detail(0.34)
+prefab_crystal_scanner "affinity_scanner" pos(-1.5,1.2,0.0) size(1.2,1.5,1.0) gray(0.25) detail(0.44) glow(0.28)
+
+prefab_survey_beacon "backline_beacon" pos(-4.0,2.0,-3.0) size(0.8,2.5,0.8) gray(0.24) detail(0.43)
+prefab_rock_wide "quarry_pylon" pos(4.0,0.5,-3.0) size(1.5,1.8,1.2) gray(0.23)
+
+
+Exiting...

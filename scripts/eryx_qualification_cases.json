@@ -1,0 +1,929 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "nav-001",
+      "location": "quarry_threshold",
+      "command": "nord",
+      "category": "navigation",
+      "expected_location": "extraction_field",
+      "assertions": [
+        "Contrôler que la position validée devient extraction_field.",
+        "Vérifier que turn_number et move_count augmentent chacun de 1.",
+        "Contrôler que la narration reste cohérente avec la ligne de forage et n'invente pas de sortie hors carte."
+      ]
+    },
+    {
+      "id": "nav-002",
+      "location": "extraction_field",
+      "command": "nord",
+      "category": "navigation",
+      "expected_location": "crystal_cut",
+      "assertions": [
+        "Contrôler que la position validée devient crystal_cut.",
+        "Vérifier que move_count augmente de 1 sans saut intermédiaire.",
+        "Contrôler que la veine exposée est évoquée sans inventer de nouvel objet interactif."
+      ]
+    },
+    {
+      "id": "nav-003",
+      "location": "crystal_cut",
+      "command": "est",
+      "category": "navigation",
+      "expected_location": "scanner_station",
+      "assertions": [
+        "Contrôler que la position validée devient scanner_station.",
+        "Vérifier que move_count augmente de 1.",
+        "Contrôler que la narration reste cohérente avec le poste de mesure et la référence cristalline."
+      ]
+    },
+    {
+      "id": "nav-004",
+      "location": "scanner_station",
+      "command": "nord",
+      "category": "navigation",
+      "expected_location": "survey_plateau",
+      "assertions": [
+        "Contrôler que la position validée devient survey_plateau.",
+        "Vérifier que move_count augmente de 1.",
+        "Contrôler que la narration reste cohérente avec les trois lumières décroissantes."
+      ]
+    },
+    {
+      "id": "nav-005",
+      "location": "survey_plateau",
+      "command": "est",
+      "category": "navigation",
+      "expected_location": "labyrinth_threshold",
+      "assertions": [
+        "Contrôler que la position validée devient labyrinth_threshold.",
+        "Vérifier que move_count augmente de 1.",
+        "Contrôler que la narration présente un sol apparemment ouvert sans annoncer la barrière invisible."
+      ]
+    },
+    {
+      "id": "nav-006",
+      "location": "labyrinth_threshold",
+      "command": "est",
+      "category": "navigation",
+      "expected_location": "prospect_shelter",
+      "assertions": [
+        "Contrôler que la position validée devient prospect_shelter.",
+        "Vérifier que move_count augmente de 1.",
+        "Contrôler que la narration évoque les instruments de Vey sans résoudre la topologie contradictoire."
+      ]
+    },
+    {
+      "id": "nav-007",
+      "location": "scanner_station",
+      "command": "ouest",
+      "category": "navigation",
+      "expected_location": "crystal_cut",
+      "assertions": [
+        "Contrôler que la position validée devient crystal_cut.",
+        "Vérifier que ce retour ouest suit le lien réciproque attendu depuis scanner_station.",
+        "Contrôler que la narration ne confond pas ce retour avec la sortie ouest de prospect_shelter."
+      ]
+    },
+    {
+      "id": "nav-008",
+      "location": "crystal_cut",
+      "command": "sud",
+      "category": "navigation",
+      "expected_location": "extraction_field",
+      "assertions": [
+        "Contrôler que la position validée devient extraction_field.",
+        "Vérifier que move_count augmente de 1.",
+        "Contrôler que la narration reste cohérente avec la ligne de forage."
+      ]
+    },
+    {
+      "id": "barrier-001",
+      "location": "labyrinth_threshold",
+      "command": "nord",
+      "category": "barrier",
+      "expected_location": "labyrinth_threshold",
+      "assertions": [
+        "Contrôler que la position reste labyrinth_threshold.",
+        "Vérifier que move_count reste inchangé alors que turn_number avance.",
+        "Contrôler que le contact est distingué d'un échec d'analyse ou d'un mur visible.",
+        "Vérifier que la narration signale une obstruction invisible sans révéler sa nature."
+      ]
+    },
+    {
+      "id": "barrier-003",
+      "location": "labyrinth_threshold",
+      "command": "avance vers le nord",
+      "category": "barrier",
+      "expected_location": "labyrinth_threshold",
+      "assertions": [
+        "Contrôler que l'intention de déplacement vers le nord aboutit au même lieu.",
+        "Vérifier que move_count reste inchangé.",
+        "Contrôler que la formulation naturelle n'est pas traitée comme une téléportation ni comme un échec syntaxique."
+      ]
+    },
+    {
+      "id": "nonreciprocal-001",
+      "location": "prospect_shelter",
+      "command": "ouest",
+      "category": "nonreciprocal",
+      "expected_location": "scanner_station",
+      "assertions": [
+        "Contrôler que la position validée devient scanner_station directement depuis prospect_shelter.",
+        "Vérifier qu'aucune étape intermédiaire par labyrinth_threshold ou survey_plateau n'est rapportée.",
+        "Contrôler que move_count augmente de 1 seulement.",
+        "Vérifier que la narration présente ce retour comme une preuve topologique et non comme une erreur de parser."
+      ]
+    },
+    {
+      "id": "nonreciprocal-002",
+      "location": "prospect_shelter",
+      "command": "retourne à l'ouest",
+      "category": "nonreciprocal",
+      "expected_location": "scanner_station",
+      "assertions": [
+        "Contrôler que la formulation naturelle aboutit bien à scanner_station.",
+        "Vérifier qu'aucun passage par labyrinth_threshold n'est décrit.",
+        "Contrôler que la relation ouest reste non réciproque : aucun lien depuis scanner_station ne ramène à prospect_shelter."
+      ]
+    },
+    {
+      "id": "ambiguity-001",
+      "location": "quarry_threshold",
+      "command": "va vers la lumière",
+      "category": "ambiguity",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler qu'aucune destination canonique n'est affirmée sans clarification.",
+        "Vérifier que le moteur ne confond pas la lumière avec une direction cardinale.",
+        "Contrôler que la narration formule une interprétation explicite si elle choisit une direction."
+      ]
+    },
+    {
+      "id": "ambiguity-004",
+      "location": "scanner_station",
+      "command": "reviens",
+      "category": "ambiguity",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que reviens sans antécédent directionnel explicite ne produit pas de saut arbitraire.",
+        "Vérifier que le moteur demande vers quel lieu revenir ou refuse l'ordre.",
+        "Contrôler que la position n'est pas affirmée sans justification."
+      ]
+    },
+    {
+      "id": "ambiguity-007",
+      "location": "quarry_threshold",
+      "command": "va au nord et reste ici",
+      "category": "ambiguity",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que les deux parties contradictoires ne sont pas exécutées silencieusement l'une après l'autre.",
+        "Vérifier qu'une clarification ou un refus est formulé.",
+        "Contrôler qu'aucune position intermédiaire n'est affirmée comme définitive."
+      ]
+    },
+    {
+      "id": "ambiguity-008",
+      "location": "prospect_shelter",
+      "command": "ouest puis est",
+      "category": "ambiguity",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que l'ordre contradictoire n'est pas réduit à un seul déplacement arbitraire.",
+        "Vérifier que le moteur demande une priorisation ou refuse l'enchaînement.",
+        "Contrôler que le lien ouest non réciproque n'est pas utilisé pour fabriquer un aller-retour."
+      ]
+    },
+    {
+      "id": "ambiguity-009",
+      "location": "labyrinth_threshold",
+      "command": "nord et sud en même temps",
+      "category": "ambiguity",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler qu'aucune direction n'est choisie arbitrairement.",
+        "Vérifier que la contradiction est signalée ou clarifiée.",
+        "Contrôler que ni la barrière nord ni la branche sud ne sont franchies sur cette commande."
+      ]
+    },
+    {
+      "id": "ambiguity-010",
+      "location": "quarry_threshold",
+      "command": "téléporte-moi à prospect_shelter",
+      "category": "ambiguity",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler qu'aucune téléportation n'est exécutée sur simple demande.",
+        "Vérifier que la narration refuse ou clarifie sans modifier la position validée.",
+        "Contrôler qu'aucun lien direct hors carte n'est créé."
+      ]
+    },
+    {
+      "id": "ambiguity-011",
+      "location": "survey_plateau",
+      "command": "fais apparaître un raccourci vers quarry_threshold",
+      "category": "ambiguity",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler qu'aucun raccourci topologique n'est créé sur demande du joueur.",
+        "Vérifier que la narration distingue une hypothèse de joueur d'un lien validé.",
+        "Contrôler que la position reste non déterminée par cette commande."
+      ]
+    },
+    {
+      "id": "ambiguity-013",
+      "location": "scanner_station",
+      "command": "avance puis recule sans bouger",
+      "category": "ambiguity",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que l'ordre contradictoire ne produit pas de déplacement net inventé.",
+        "Vérifier que le moteur signale la contradiction ou demande une clarification.",
+        "Contrôler que move_count n'est pas modifié sans déplacement validé."
+      ]
+    },
+    {
+      "id": "resources-001",
+      "location": "quarry_threshold",
+      "command": "bois une gorgée d'eau",
+      "category": "resources",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que la narration ne suppose aucun inventaire initial non vérifié.",
+        "Vérifier qu'aucune ressource n'est consommée ou accordée sans état source explicite.",
+        "Contrôler que le refus ou la clarification reste cohérent avec l'inventaire affiché."
+      ],
+      "hard_state_patch": {
+        "oxygen_state": "critical",
+        "instrument_power_state": "critical",
+        "inventory_items": []
+      }
+    },
+    {
+      "id": "resources-003",
+      "location": "crystal_cut",
+      "command": "prélève un cristal",
+      "category": "resources",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que l'ajout au sac n'est pas confirmé sans inventaire ou état source.",
+        "Vérifier que la narration ne promet pas une quantité précise de ressource.",
+        "Contrôler que la position reste non concernée par cette action d'inventaire."
+      ],
+      "hard_state_patch": {
+        "oxygen_state": "critical",
+        "instrument_power_state": "critical",
+        "inventory_items": []
+      }
+    },
+    {
+      "id": "resources-004",
+      "location": "scanner_station",
+      "command": "branche le scanner sur ta réserve d'énergie",
+      "category": "resources",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que la réserve d'énergie n'est pas supposée disponible ou pleine.",
+        "Vérifier qu'aucun power_state n'est modifié sans état source explicite.",
+        "Contrôler que la narration formule une vérification ou un refus plutôt qu'un succès automatique."
+      ],
+      "hard_state_patch": {
+        "oxygen_state": "critical",
+        "instrument_power_state": "critical",
+        "inventory_items": []
+      }
+    },
+    {
+      "id": "resources-008",
+      "location": "quarry_threshold",
+      "command": "remplis tous tes réservoirs au maximum",
+      "category": "resources",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler qu'aucune ressource n'est fixée arbitrairement au maximum.",
+        "Vérifier que cooling_state, water_state et power_state ne sont pas modifiés sans preuve.",
+        "Contrôler que le refus ou la clarification est explicite."
+      ],
+      "hard_state_patch": {
+        "oxygen_state": "critical",
+        "instrument_power_state": "critical",
+        "inventory_items": []
+      }
+    },
+    {
+      "id": "resources-009",
+      "location": "prospect_shelter",
+      "command": "donne-moi de l'eau et de l'oxygène illimités",
+      "category": "resources",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler qu'aucune ressource illimitée n'est accordée.",
+        "Vérifier que la narration ne crée pas d'oxygène dans un modèle qui n'en expose pas.",
+        "Contrôler que l'état des ressources reste inchangé ou explicitement clarifié."
+      ],
+      "hard_state_patch": {
+        "oxygen_state": "critical",
+        "instrument_power_state": "critical",
+        "inventory_items": []
+      }
+    },
+    {
+      "id": "thermal-001",
+      "location": "quarry_threshold",
+      "command": "combien fait-il dehors ?",
+      "category": "thermal",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que la réponse distingue température extérieure et température corporelle.",
+        "Vérifier qu'aucune valeur n'est inventée si l'état thermique n'est pas disponible.",
+        "Contrôler que la narration ne confond pas chaleur extérieure et état du corps."
+      ]
+    },
+    {
+      "id": "thermal-002",
+      "location": "extraction_field",
+      "command": "vérifie la température du corps",
+      "category": "thermal",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que la température corporelle est présentée comme distincte de l'extérieur.",
+        "Vérifier qu'aucune valeur arbitraire n'est annoncée sans état source.",
+        "Contrôler que la réponse ne modifie pas body_temperature_c à elle seule."
+      ]
+    },
+    {
+      "id": "thermal-004",
+      "location": "scanner_station",
+      "command": "augmente ta température corporelle à 40 degrés",
+      "category": "thermal",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler qu'aucune valeur corporelle n'est fixée sur simple demande.",
+        "Vérifier que la narration ne confond pas consigne et état physiologique.",
+        "Contrôler que body_temperature_c reste cohérent avec l'état source."
+      ],
+      "hard_state_patch": {
+        "body_temperature_c": 40.0
+      }
+    },
+    {
+      "id": "thermal-005",
+      "location": "prospect_shelter",
+      "command": "active le refroidissement au maximum",
+      "category": "thermal",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que cooling_state n'est pas poussé au maximum sans ressource ou état source.",
+        "Vérifier que la narration mentionne une contrainte si le refroidissement est limité.",
+        "Contrôler que les températures ne sont pas modifiées arbitrairement."
+      ],
+      "hard_state_patch": {
+        "body_temperature_c": 35.0
+      }
+    },
+    {
+      "id": "language-001",
+      "location": "quarry_threshold",
+      "command": "regarde autour de toi",
+      "category": "language",
+      "expected_location": null,
+      "assertions": [
+        "Verifier la comprehension et la reponse dans la langue configuree : fr"
+      ],
+      "language": "fr"
+    },
+    {
+      "id": "language-002",
+      "location": "extraction_field",
+      "command": "look around",
+      "category": "language",
+      "expected_location": null,
+      "assertions": [
+        "Verifier la comprehension et la reponse dans la langue configuree : en"
+      ],
+      "language": "en"
+    },
+    {
+      "id": "language-003",
+      "location": "crystal_cut",
+      "command": "se deg rundt",
+      "category": "language",
+      "expected_location": null,
+      "assertions": [
+        "Verifier la comprehension et la reponse dans la langue configuree : no"
+      ],
+      "language": "no"
+    },
+    {
+      "id": "language-004",
+      "location": "scanner_station",
+      "command": "schau dich um",
+      "category": "language",
+      "expected_location": null,
+      "assertions": [
+        "Verifier la comprehension et la reponse dans la langue configuree : de"
+      ],
+      "language": "de"
+    },
+    {
+      "id": "language-005",
+      "location": "survey_plateau",
+      "command": "guardati intorno",
+      "category": "language",
+      "expected_location": null,
+      "assertions": [
+        "Verifier la comprehension et la reponse dans la langue configuree : it"
+      ],
+      "language": "it"
+    },
+    {
+      "id": "language-006",
+      "location": "labyrinth_threshold",
+      "command": "kig dig omkring",
+      "category": "language",
+      "expected_location": null,
+      "assertions": [
+        "Verifier la comprehension et la reponse dans la langue configuree : da"
+      ],
+      "language": "da"
+    },
+    {
+      "id": "generation-001",
+      "location": "extraction_field",
+      "command": "est",
+      "category": "generation",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler qu'aucune destination canonique n'est imposée : expected_location reste null.",
+        "Vérifier qu'une seule salle générée est créée et que son lien de retour réciproque est installé.",
+        "Contrôler que la narration ne réutilise pas un identifiant canonique pour cette salle.",
+        "Vérifier que la sauvegarde conserve la salle et le lien pour une revisite."
+      ]
+    },
+    {
+      "id": "generation-002",
+      "location": "scanner_station",
+      "command": "est",
+      "category": "generation",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que la voie de calibration ouvre une salle générée sans destination canonique.",
+        "Vérifier que le lien de retour ouest vers scanner_station est installé.",
+        "Contrôler que la salle n'est pas confondue avec prospect_shelter.",
+        "Vérifier que la sauvegarde conserve la salle générée."
+      ]
+    },
+    {
+      "id": "generation-003",
+      "location": "survey_plateau",
+      "command": "nord",
+      "category": "generation",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que le beacon absent de la carte ouvre une salle générée non canonique.",
+        "Vérifier que le lien de retour sud vers survey_plateau est installé.",
+        "Contrôler que la barrière nord de labyrinth_threshold n'est pas concernée.",
+        "Vérifier que la salle reste stable après sauvegarde et rechargement."
+      ]
+    },
+    {
+      "id": "generation-004",
+      "location": "labyrinth_threshold",
+      "command": "sud",
+      "category": "generation",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que la branche sud générative est distincte de la barrière nord.",
+        "Vérifier qu'une salle générée est créée avec un retour nord vers labyrinth_threshold.",
+        "Contrôler qu'aucune position canonique n'est annoncée à l'avance.",
+        "Vérifier que la barrière nord reste découverte et inchangée."
+      ]
+    },
+    {
+      "id": "generation-005",
+      "location": "prospect_shelter",
+      "command": "est",
+      "category": "generation",
+      "expected_location": null,
+      "assertions": [
+        "Contrôler que la brèche de maintenance ouvre une salle générée non canonique.",
+        "Vérifier que le retour ouest depuis la salle générée ramène à prospect_shelter.",
+        "Contrôler que ce retour ne se confond pas avec le retour ouest non réciproque vers scanner_station.",
+        "Vérifier que la sauvegarde conserve la salle et les deux relations."
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "session-001-canonical-barrier-return",
+      "location": "quarry_threshold",
+      "commands": [
+        "nord",
+        "nord",
+        "est",
+        "nord",
+        "est",
+        "nord",
+        "est",
+        "ouest",
+        "nord",
+        "est",
+        "est",
+        "ouest",
+        "ouest",
+        "sud",
+        "sud"
+      ],
+      "assertions": [
+        "Sauvegarder et recharger après chaque tour ; contrôler que position, liens et découverte de barrière restent identiques.",
+        "Contrôler qu'au tour 6 la barrière nord ne déplace pas le joueur et n'incrémente pas move_count.",
+        "Contrôler qu'aux tours 8 et 12 le retour ouest depuis prospect_shelter aboutit directement à scanner_station en contournant labyrinth_threshold et survey_plateau.",
+        "Vérifier qu'aucune salle générée n'est créée pendant ce parcours entièrement canonique.",
+        "Contrôler que les retours ouest et sud finaux suivent strictement la carte sans raccourci."
+      ],
+      "checkpoints": [
+        {
+          "after_turn": 1,
+          "expected_location": "extraction_field"
+        },
+        {
+          "after_turn": 2,
+          "expected_location": "crystal_cut"
+        },
+        {
+          "after_turn": 3,
+          "expected_location": "scanner_station"
+        },
+        {
+          "after_turn": 4,
+          "expected_location": "survey_plateau"
+        },
+        {
+          "after_turn": 5,
+          "expected_location": "labyrinth_threshold"
+        },
+        {
+          "after_turn": 6,
+          "expected_location": "labyrinth_threshold"
+        },
+        {
+          "after_turn": 7,
+          "expected_location": "prospect_shelter"
+        },
+        {
+          "after_turn": 8,
+          "expected_location": "scanner_station"
+        },
+        {
+          "after_turn": 9,
+          "expected_location": "survey_plateau"
+        },
+        {
+          "after_turn": 10,
+          "expected_location": "labyrinth_threshold"
+        },
+        {
+          "after_turn": 11,
+          "expected_location": "prospect_shelter"
+        },
+        {
+          "after_turn": 12,
+          "expected_location": "scanner_station"
+        },
+        {
+          "after_turn": 13,
+          "expected_location": "crystal_cut"
+        },
+        {
+          "after_turn": 14,
+          "expected_location": "extraction_field"
+        },
+        {
+          "after_turn": 15,
+          "expected_location": "quarry_threshold"
+        }
+      ]
+    },
+    {
+      "id": "session-002-branches-revisits-canonical",
+      "location": "quarry_threshold",
+      "commands": [
+        "nord",
+        "est",
+        "ouest",
+        "est",
+        "ouest",
+        "nord",
+        "est",
+        "est",
+        "ouest",
+        "est",
+        "ouest",
+        "nord",
+        "nord",
+        "sud",
+        "nord",
+        "sud",
+        "est",
+        "sud",
+        "nord",
+        "sud",
+        "nord",
+        "est",
+        "est",
+        "ouest",
+        "est",
+        "ouest",
+        "ouest",
+        "nord",
+        "est",
+        "est"
+      ],
+      "assertions": [
+        "Sauvegarder et recharger après chaque tour ; contrôler que chaque salle générée et son lien réciproque persistent.",
+        "Contrôler qu'une revisite de branche réutilise la salle déjà générée et n'en crée pas une seconde.",
+        "Contrôler que le retour opposé après chaque branche ramène à la salle canonique source.",
+        "Contrôler qu'au tour 27 le retour ouest depuis prospect_shelter mène à scanner_station, puis que la route canonique reprend vers survey_plateau, labyrinth_threshold et prospect_shelter.",
+        "Vérifier que les checkpoints null ne sont pas interprétés comme des échecs : ils marquent une destination générée non nommable à l'avance."
+      ],
+      "checkpoints": [
+        {
+          "after_turn": 1,
+          "expected_location": "extraction_field"
+        },
+        {
+          "after_turn": 2,
+          "expected_location": null
+        },
+        {
+          "after_turn": 3,
+          "expected_location": "extraction_field"
+        },
+        {
+          "after_turn": 4,
+          "expected_location": null
+        },
+        {
+          "after_turn": 5,
+          "expected_location": "extraction_field"
+        },
+        {
+          "after_turn": 6,
+          "expected_location": "crystal_cut"
+        },
+        {
+          "after_turn": 7,
+          "expected_location": "scanner_station"
+        },
+        {
+          "after_turn": 8,
+          "expected_location": null
+        },
+        {
+          "after_turn": 9,
+          "expected_location": "scanner_station"
+        },
+        {
+          "after_turn": 10,
+          "expected_location": null
+        },
+        {
+          "after_turn": 11,
+          "expected_location": "scanner_station"
+        },
+        {
+          "after_turn": 12,
+          "expected_location": "survey_plateau"
+        },
+        {
+          "after_turn": 13,
+          "expected_location": null
+        },
+        {
+          "after_turn": 14,
+          "expected_location": "survey_plateau"
+        },
+        {
+          "after_turn": 15,
+          "expected_location": null
+        },
+        {
+          "after_turn": 16,
+          "expected_location": "survey_plateau"
+        },
+        {
+          "after_turn": 17,
+          "expected_location": "labyrinth_threshold"
+        },
+        {
+          "after_turn": 18,
+          "expected_location": null
+        },
+        {
+          "after_turn": 19,
+          "expected_location": "labyrinth_threshold"
+        },
+        {
+          "after_turn": 20,
+          "expected_location": null
+        },
+        {
+          "after_turn": 21,
+          "expected_location": "labyrinth_threshold"
+        },
+        {
+          "after_turn": 22,
+          "expected_location": "prospect_shelter"
+        },
+        {
+          "after_turn": 23,
+          "expected_location": null
+        },
+        {
+          "after_turn": 24,
+          "expected_location": "prospect_shelter"
+        },
+        {
+          "after_turn": 25,
+          "expected_location": null
+        },
+        {
+          "after_turn": 26,
+          "expected_location": "prospect_shelter"
+        },
+        {
+          "after_turn": 27,
+          "expected_location": "scanner_station"
+        },
+        {
+          "after_turn": 28,
+          "expected_location": "survey_plateau"
+        },
+        {
+          "after_turn": 29,
+          "expected_location": "labyrinth_threshold"
+        },
+        {
+          "after_turn": 30,
+          "expected_location": "prospect_shelter"
+        }
+      ]
+    },
+    {
+      "id": "session-003-mixed-ambiguity-resources-language",
+      "location": "quarry_threshold",
+      "commands": [
+        "regarde autour de toi",
+        "nord",
+        "extrais un échantillon du filon",
+        "look around",
+        "nord",
+        "prélève un cristal",
+        "est",
+        "combien fait-il dehors ?",
+        "schau dich um",
+        "branche le scanner sur ta réserve d'énergie",
+        "nord",
+        "suis les trois lumières",
+        "baisse la température extérieure de vingt degrés",
+        "est",
+        "se deg rundt",
+        "nord",
+        "traverse l'ouverture au nord",
+        "sud",
+        "nord",
+        "guardati intorno",
+        "ouest",
+        "sud",
+        "kig dig omkring",
+        "remplis tous tes réservoirs au maximum",
+        "téléporte-moi à quarry_threshold",
+        "ouest",
+        "sud",
+        "sud"
+      ],
+      "assertions": [
+        "Sauvegarder et recharger après chaque tour ; contrôler que la barrière découverte et la branche sud générée persistent.",
+        "Contrôler que les commandes d'ambiguïté, de ressource et de téléportation ne produisent ni déplacement ni ressource inventés sans clarification.",
+        "Vérifier que les valeurs thermiques affichées restent distinguées entre extérieur et corps, sans valeur imposée arbitrairement.",
+        "Contrôler que les checkpoints déterministes suivent la carte et que les checkpoints null marquent uniquement les tours non déterministes.",
+        "Verifier les reponses dans la langue configuree du jeu, independamment de la langue de la commande."
+      ],
+      "checkpoints": [
+        {
+          "after_turn": 1,
+          "expected_location": null
+        },
+        {
+          "after_turn": 2,
+          "expected_location": "extraction_field"
+        },
+        {
+          "after_turn": 3,
+          "expected_location": null
+        },
+        {
+          "after_turn": 4,
+          "expected_location": null
+        },
+        {
+          "after_turn": 5,
+          "expected_location": "crystal_cut"
+        },
+        {
+          "after_turn": 6,
+          "expected_location": null
+        },
+        {
+          "after_turn": 7,
+          "expected_location": "scanner_station"
+        },
+        {
+          "after_turn": 8,
+          "expected_location": null
+        },
+        {
+          "after_turn": 9,
+          "expected_location": null
+        },
+        {
+          "after_turn": 10,
+          "expected_location": null
+        },
+        {
+          "after_turn": 11,
+          "expected_location": "survey_plateau"
+        },
+        {
+          "after_turn": 12,
+          "expected_location": null
+        },
+        {
+          "after_turn": 13,
+          "expected_location": null
+        },
+        {
+          "after_turn": 14,
+          "expected_location": null
+        },
+        {
+          "after_turn": 15,
+          "expected_location": null
+        },
+        {
+          "after_turn": 16,
+          "expected_location": null
+        },
+        {
+          "after_turn": 17,
+          "expected_location": null
+        },
+        {
+          "after_turn": 18,
+          "expected_location": null
+        },
+        {
+          "after_turn": 19,
+          "expected_location": null
+        },
+        {
+          "after_turn": 20,
+          "expected_location": null
+        },
+        {
+          "after_turn": 21,
+          "expected_location": null
+        },
+        {
+          "after_turn": 22,
+          "expected_location": null
+        },
+        {
+          "after_turn": 23,
+          "expected_location": null
+        },
+        {
+          "after_turn": 24,
+          "expected_location": null
+        },
+        {
+          "after_turn": 25,
+          "expected_location": null
+        },
+        {
+          "after_turn": 26,
+          "expected_location": null
+        },
+        {
+          "after_turn": 27,
+          "expected_location": null
+        },
+        {
+          "after_turn": 28,
+          "expected_location": null
+        }
+      ]
+    }
+  ]
+}

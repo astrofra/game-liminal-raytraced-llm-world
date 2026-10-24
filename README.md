@@ -13,8 +13,8 @@ The first playable Eryx slice is now present: seven canonical quarry locations, 
 Current state:
 
 - vendored Cornell Box assets
-- vendored `llama.cpp` tree in `vendor/llama.cpp`
-- clean C++11 CLI renderer
+- vendored `llama.cpp v0.7.0` (`620d2225cc436ab0b001e3200e590e3b286ef9ab`) in `vendor/llama.cpp`
+- native C++17 CLI renderer
 - proprietary scene format v1 bootstrap
 - source-generated Eryx quarry prefab vocabulary and visual catalog
 - first handcrafted liminal scene
@@ -39,26 +39,29 @@ Current state:
 - symmetric procedural suit-visor mask around the 3D viewport
 - green-to-pale-yellow Venus sky with doubled radiance on environment misses
 - legacy datacenter/desert scenes retained as historical baselines
-- Python helper to download `Ministral 3 8B Instruct 2512` GGUF
+- pinned, hash-verified Ministral Q4/Q5/Reasoning profiles; Instruct Q4 remains the default
+- Jinja chat templates, separate private/final channels, bounded generation and cooperative cancellation
 - first headless `Ministral` turn pipeline wired to the renderer
 - explicit provenance for the reused 2003 raytracer ideas
 
 Documentation index:
 
 - `documentation/README.md`
+- [`Ministral qualification and model decision`](documentation/MINISTRAL_QUALIFICATION_REPORT.md)
 
 ## Build
 
 ```powershell
-cmake -S . -B build -G "Visual Studio 17 2022"
-cmake --build build --config Release
+python scripts/build_native.py --with-cli --publish
 ```
 
 Windows helper:
 
+The Windows helper uses Ninja, a CUDA-compatible MSVC toolset and the Windows SDK. See [`documentation/MINISTRAL_RUNTIME_GUIDE.md`](documentation/MINISTRAL_RUNTIME_GUIDE.md) for toolset selection, model profiles and qualification commands. Python generates the native model table from `scripts/ministral_models.json`.
+
 ```bat
 build_release.bat
-build_installer.bat --version 0.1.0
+build_installer.bat --version 2.2.0
 run_cornell_test.bat
 download_ministral.bat
 ask_ministral.bat
@@ -70,7 +73,7 @@ play_within_the_latent_walls.bat
 Build the distributable installer from a Windows development machine with:
 
 ```bat
-build_installer.bat --version 0.1.0
+build_installer.bat --version 2.2.0
 ```
 
 The resulting setup executable and GPL corresponding-source archive are written to `output/installer/dist/`. The setup contains the native game, assets, CUDA runtime libraries, and Microsoft runtime libraries, but not the AI weights. During installation it downloads the pinned official `Ministral 3 8B Instruct 2512 Q4_K_M` GGUF (about 5.20 GB), verifies its SHA-256 digest, and installs it beside the game. Internet access is required only during setup; the installed game then runs locally.
@@ -80,17 +83,16 @@ See [`documentation/WINDOWS_DISTRIBUTION.md`](documentation/WINDOWS_DISTRIBUTION
 If you want the vendorized `llama.cpp` build with CUDA enabled, keep the default CMake options:
 
 ```powershell
-cmake -S . -B build -G "Visual Studio 17 2022" -DLIMINAL_ENABLE_LLAMA_CPP=ON -DLIMINAL_ENABLE_LLAMA_CUDA=ON
-cmake --build build --config Release
+python scripts/build_native.py --with-cli --publish
 ```
 
 SDL3 is now enabled by default too. If the library is not already installed on the machine, CMake fetches SDL `3.4.12` automatically and links it statically for the interactive frontend.
 
-OpenMP is enabled by default when the local compiler supports it. To force a mono-thread build:
+OpenMP is enabled by default when the local compiler supports it. After the initial build, a developer shell configured for the same compiler and SDK can select a mono-thread build:
 
 ```powershell
-cmake -S . -B build -G "Visual Studio 17 2022" -DLIMINAL_ENABLE_OPENMP=OFF
-cmake --build build --config Release
+cmake -S . -B build_ministral_v070 -DLIMINAL_ENABLE_OPENMP=OFF
+cmake --build build_ministral_v070 --config Release
 ```
 
 Model download helper:

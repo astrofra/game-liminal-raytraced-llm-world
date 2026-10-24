@@ -1,0 +1,7 @@
+Loaded scene Roof Watch Parapet Walk
+Loaded 1066 triangles, 52 materials, 300 emissive triangles
+Load time: 7.04 ms
+Rendering 800x400, spp=8, diffuse=3, glass=9, emissive=300, camera_spot=on, openmp=on, threads=16
+  lines 400 / 400
+Render time: 1042.12 ms
+Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_model_comparison\B-gemma\images\roof_watch_dusk.png

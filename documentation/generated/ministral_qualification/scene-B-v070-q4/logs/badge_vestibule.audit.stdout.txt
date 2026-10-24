@@ -1,0 +1,7 @@
+Loaded scene Badge Vestibule
+Loaded 616 triangles, 53 materials, 48 emissive triangles
+Load time: 6.06 ms
+Rendering 800x400, spp=8, diffuse=3, glass=9, emissive=48, camera_spot=off, openmp=on, threads=16
+  lines 400 / 400
+Render time: 748.27 ms
+Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\ministral_qualification\scene-B-v070-q4\images\badge_vestibule.png

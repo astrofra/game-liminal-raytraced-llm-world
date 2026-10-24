@@ -1,0 +1,1 @@
+C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\ministral_qualification\scene-DP-v070-reasoning\scenes\server_aisles_dense.scene:18: Plane requires name, pos(), normal(), size(), and gray()

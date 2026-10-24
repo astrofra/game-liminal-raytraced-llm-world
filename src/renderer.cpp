@@ -1,3 +1,4 @@
+#include "file_io.h"
 #include "renderer.h"
 
 #include <math.h>
@@ -9,6 +10,7 @@
 #endif
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STBIW_WINDOWS_UTF8
 #include "stb_image_write.h"
 
 #if defined(LIMINAL_ENABLE_OPENMP)
@@ -979,7 +981,7 @@ static void ToneMapToRgb(const Vec3& radiance, float exposure, unsigned char* rg
 
 static bool WritePgm(const char* output_path, const std::vector<unsigned char>& pixels, int width, int height)
 {
-    FILE* file = fopen(output_path, "wb");
+    FILE* file = liminal::OpenUtf8File(output_path, "wb");
     if (!file) {
         fprintf(stderr, "Cannot open output file: %s\n", output_path);
         return false;

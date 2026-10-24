@@ -2,6 +2,8 @@
 
 Date : **2026-10-24**. Projet : *Within the Latent Walls / Entre les Murs Latents*.
 
+**Mise en application, 2026-10-24 :** le premier prototype porte sur `run_scene_generation_benchmark.bat`. Le téléchargement Gemma, les profils CLI, la séparation des canaux et les contrôles de caméra sont décrits dans [le guide du prototype](SCENE_MODEL_MIGRATION_BENCHMARK.md), avec [une comparaison réelle sur dix scènes](SCENE_BENCHMARK_MODEL_COMPARISON.md). Le statut et les constats ci-dessous restent ceux de l'étude initiale ; l'intégration native et la distribution ne sont pas encore migrées.
+
 Statut : **étude de faisabilité et recommandation**, sans migration ni benchmark d'inférence exécutés. Analyse du répertoire de travail, y compris ses modifications non commitées ; référence Git : `b896babfe2546df2bcc49519bf1e4f6ba0907125`. Les observations décrivent le code présent, pas uniquement cette révision.
 
 ## 1. Recommandation

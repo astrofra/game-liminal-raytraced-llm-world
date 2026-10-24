@@ -1,3 +1,4 @@
+#include "file_io.h"
 #include "scene.h"
 
 #include <algorithm>
@@ -462,7 +463,7 @@ static bool LoadMaterialLibrary(
     char* error_buffer,
     size_t error_buffer_size)
 {
-    FILE* file = fopen(mtl_path, "rb");
+    FILE* file = liminal::OpenUtf8File(mtl_path, "rb");
     if (!file) {
         SetError(error_buffer, error_buffer_size, "Cannot open material file: %s", mtl_path);
         return false;
@@ -2573,7 +2574,7 @@ bool LoadSceneFromObj(const char* obj_path, Scene* scene, char* error_buffer, si
     scene->materials.push_back(default_material);
     material_indices[default_material.name] = 0;
 
-    FILE* file = fopen(obj_path, "rb");
+    FILE* file = liminal::OpenUtf8File(obj_path, "rb");
     if (!file) {
         SetError(error_buffer, error_buffer_size, "Cannot open OBJ file: %s", obj_path);
         return false;
@@ -2733,7 +2734,7 @@ bool LoadSceneFromSceneV1(const char* scene_path, Scene* scene, char* error_buff
     ResetScene(scene);
     scene->name = BasenameOf(scene_path);
 
-    FILE* file = fopen(scene_path, "rb");
+    FILE* file = liminal::OpenUtf8File(scene_path, "rb");
     if (!file) {
         SetError(error_buffer, error_buffer_size, "Cannot open scene file: %s", scene_path);
         return false;

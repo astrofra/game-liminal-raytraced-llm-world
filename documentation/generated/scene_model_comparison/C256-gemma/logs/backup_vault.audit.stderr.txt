@@ -1,0 +1,1 @@
+C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_model_comparison\C256-gemma\scenes\backup_vault.scene:16: prefab_rock_wide requires name, pos(), size(), and gray()

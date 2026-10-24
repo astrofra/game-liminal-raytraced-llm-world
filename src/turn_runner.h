@@ -40,6 +40,10 @@ struct HeadlessTurnConfig {
 };
 
 struct HeadlessTurnResult {
+    int llm_call_count = 0;
+    int reasoning_tokens = 0;
+    int final_tokens = 0;
+    double llm_wall_time_ms = 0.0;
     std::string request_text;
     std::string prompt_text;
     std::string raw_response_text;

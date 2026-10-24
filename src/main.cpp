@@ -1,8 +1,15 @@
+#include "file_io.h"
+#if defined(_WIN32)
+#define NOMINMAX
+#include <windows.h>
+#include <shellapi.h>
+#endif
 #include <chrono>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include "nlohmann/json.hpp"
 
 #include "animated_view.h"
 #include "game_state.h"
@@ -51,6 +58,16 @@ static void PrintUsage()
     printf("  --view-post-process-debug Log post-process cost and affected pixel count\n");
     printf("  --sdl-smoke-test-ms <n> Auto-select English and close SDL cleanly after n milliseconds\n");
     printf("  --sdl-smoke-command <text> Inject text and Return during the timed SDL smoke test\n");
+    printf("  --write-initial-state <json> Export canonical initial state without inference\n");
+    printf("  --llm-profile <name>     ministral-8b-q4, ministral-8b-q5, ministral-8b-reasoning-q4\n");
+    printf("  --llm-reasoning-budget <n> Thought token limit; final budget remains --llm-predict\n");
+    printf("  --llm-context <n>        Fixed context limit (default 8192)\n");
+    printf("  --llm-timeout-ms <n>     Per-call deadline including model load\n");
+    printf("  --llm-seed <n>           Sampling seed\n");
+    printf("  --llm-legacy-template    Qualification only: simplified template path\n");
+    printf("  --llm-probe <json>       Isolated diagnostic completion (role/content array)\n");
+    printf("  --llm-probe-output <json> Save probe channels and diagnostics\n");
+    printf("  --llm-cancel-after <n>   Probe cancellation after n final chunks\n");
     printf("  --model <path>           GGUF model path for --run-turn\n");
     printf("  --llm-temperature <f>    Sampling temperature for --run-turn\n");
     printf("  --llm-predict <n>        Maximum generated tokens for --run-turn\n");
@@ -125,7 +142,7 @@ static bool ReadFileText(const char* path, std::string* text)
         return false;
     }
 
-    FILE* file = fopen(path, "rb");
+    FILE* file = liminal::OpenUtf8File(path, "rb");
     if (!file) {
         return false;
     }
@@ -145,7 +162,7 @@ static bool WriteFileText(const char* path, const std::string& text)
         return false;
     }
 
-    FILE* file = fopen(path, "wb");
+    FILE* file = liminal::OpenUtf8File(path, "wb");
     if (!file) {
         return false;
     }
@@ -306,11 +323,38 @@ static void PrintTurnSummary(const liminal::HeadlessTurnResult& turn_result, boo
 
 int main(int argc, char** argv)
 {
+#if defined(_WIN32)
+    int wide_count = 0;
+    LPWSTR* wide_args = CommandLineToArgvW(GetCommandLineW(), &wide_count);
+    if (!wide_args) return 1;
+    std::vector<std::string> utf8_args;
+    utf8_args.reserve(wide_count);
+    for (int index = 0; index < wide_count; ++index) {
+        const int bytes = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, wide_args[index], -1, nullptr, 0, nullptr, nullptr);
+        if (bytes <= 0) { LocalFree(wide_args); return 1; }
+        std::string text(static_cast<size_t>(bytes), '\0');
+        WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, wide_args[index], -1, &text[0], bytes, nullptr, nullptr);
+        text.pop_back();
+        utf8_args.push_back(text);
+    }
+    LocalFree(wide_args);
+    std::vector<char*> utf8_pointers;
+    for (auto& argument : utf8_args) utf8_pointers.push_back(&argument[0]);
+    utf8_pointers.push_back(nullptr);
+    argc = wide_count;
+    argv = utf8_pointers.data();
+#endif
     const char* scene_path = "assets/scenes/liminal_service_corridor.scene";
     const char* output_path = "output/liminal_service_corridor.png";
     const char* player_command = "look around";
     liminal::RenderConfig config;
     bool print_llama_info_only = false;
+    const char* initial_state_output = nullptr;
+    const char* llm_probe_path = nullptr;
+    const char* llm_probe_output = nullptr;
+    int llm_cancel_after = -1;
+    int llm_cancel_after_checks = -1;
+    bool llm_cancel_during_load = false;
     bool dump_turn_contract = false;
     bool dump_generated_room_prompt = false;
     bool dump_scene_audit_prompt = false;
@@ -512,6 +556,39 @@ int main(int argc, char** argv)
             sdl_smoke_test_command = argv[++index];
             continue;
         }
+        if (strcmp(argv[index], "--llm-profile") == 0 && index + 1 < argc) {
+            std::string error;
+            if (!liminal::ConfigureLlmProfile(argv[++index], &headless_turn_config.generation_config, &error)) {
+                fprintf(stderr, "%s\n", error.c_str()); return 1;
+            }
+            continue;
+        }
+        if (strcmp(argv[index], "--llm-legacy-template") == 0) {
+            headless_turn_config.generation_config.use_jinja = false; continue;
+        }
+        if (strcmp(argv[index], "--write-initial-state") == 0 && index + 1 < argc) { initial_state_output = argv[++index]; continue; }
+        if (strcmp(argv[index], "--llm-cancel-during-load") == 0) { llm_cancel_during_load = true; continue; }
+        if (strcmp(argv[index], "--llm-probe") == 0 && index + 1 < argc) { llm_probe_path = argv[++index]; continue; }
+        if (strcmp(argv[index], "--llm-probe-output") == 0 && index + 1 < argc) { llm_probe_output = argv[++index]; continue; }
+        if (strcmp(argv[index], "--llm-cancel-after") == 0 && index + 1 < argc) {
+            if (!ReadInt(argv[++index], &llm_cancel_after)) return 1; continue;
+        }
+        if (strcmp(argv[index], "--llm-cancel-after-checks") == 0 && index + 1 < argc) {
+            if (!ReadInt(argv[++index], &llm_cancel_after_checks)) return 1; continue;
+        }
+        if (strcmp(argv[index], "--llm-seed") == 0 && index + 1 < argc) {
+            int seed = 0; if (!ReadInt(argv[++index], &seed) || seed < 0) return 1;
+            headless_turn_config.generation_config.seed = static_cast<unsigned int>(seed); continue;
+        }
+        if (strcmp(argv[index], "--llm-reasoning-budget") == 0 && index + 1 < argc) {
+            if (!ReadInt(argv[++index], &headless_turn_config.generation_config.reasoning_budget)) return 1; continue;
+        }
+        if (strcmp(argv[index], "--llm-context") == 0 && index + 1 < argc) {
+            if (!ReadInt(argv[++index], &headless_turn_config.generation_config.n_ctx)) return 1; continue;
+        }
+        if (strcmp(argv[index], "--llm-timeout-ms") == 0 && index + 1 < argc) {
+            if (!ReadInt(argv[++index], &headless_turn_config.generation_config.timeout_ms)) return 1; continue;
+        }
         if (strcmp(argv[index], "--model") == 0 && index + 1 < argc) {
             headless_turn_config.generation_config.model_path = argv[++index];
             continue;
@@ -632,6 +709,55 @@ int main(int argc, char** argv)
         player_command = session_commands.back().c_str();
     }
 
+    if (initial_state_output) {
+        liminal::SessionState initial;
+        if (!liminal::InitializeSessionState(selected_location, &initial, error_buffer, sizeof(error_buffer)) ||
+            !SaveSessionStateToPath(initial_state_output, initial, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr, "%s\n", error_buffer); return 1;
+        }
+        return 0;
+    }
+    if (llm_probe_path) {
+        std::string source;
+        if (!ReadFileText(llm_probe_path, &source)) { fprintf(stderr, "Cannot read probe input\n"); return 1; }
+        const auto input = nlohmann::json::parse(source, nullptr, false);
+        if (!input.is_array()) { fprintf(stderr, "Probe input must be an array of role/content messages\n"); return 1; }
+        std::vector<liminal::LlmPromptMessage> messages;
+        for (const auto& item : input) {
+            if (!item.is_object() || !item.contains("role") || !item["role"].is_string() ||
+                !item.contains("content") || !item["content"].is_string()) return 1;
+            messages.push_back({item["role"].get<std::string>(), item["content"].get<std::string>()});
+        }
+        liminal::LlmGenerationResult result;
+        struct ProbeStream {
+            int remaining; int checks; bool during_load; liminal::LlmGenerationResult* result;
+            int polls = 0; std::string final; bool leaked = false;
+        } stream{llm_cancel_after, llm_cancel_after_checks, llm_cancel_during_load, &result};
+        headless_turn_config.generation_config.purpose = "probe";
+        const bool ok = liminal::GenerateChatCompletion(headless_turn_config.generation_config, messages,
+            [](const char* accumulated, const char* delta, void* data) {
+                auto* probe = static_cast<ProbeStream*>(data);
+                ++probe->polls;
+                if (probe->during_load && probe->polls > 1 && probe->result->load_time_ms == 0) return false;
+                if (probe->result->generated_tokens > 0) {
+                    if (probe->checks == 0) return false;
+                    if (probe->checks > 0) --probe->checks;
+                }
+                probe->final = accumulated;
+                if (probe->final.find("[THINK]") != std::string::npos || probe->final.find("[/THINK]") != std::string::npos) probe->leaked = true;
+                if (probe->remaining == 0) return false;
+                if (probe->remaining > 0 && delta[0]) --probe->remaining;
+                return true;
+            }, &stream, &result);
+        nlohmann::json output = {{"success",ok},{"final",result.response_text},{"raw",result.raw_text},
+            {"thought",result.reasoning_text},{"prompt",result.prompt_text},{"stop_reason",result.stop_reason},
+            {"error",result.error_message},{"stream_final",stream.final},{"stream_leaked_marker",stream.leaked},
+            {"reasoning_tokens",result.reasoning_tokens},{"final_tokens",result.final_tokens},
+            {"wall_time_ms",result.wall_time_ms},{"offloaded_layers",result.offloaded_layers}};
+        if (llm_probe_output && !WriteFileText(llm_probe_output, output.dump(2))) return 1;
+        printf("%s\n", output.dump(2).c_str());
+        return ok ? 0 : 2;
+    }
     if (print_llama_info_only) {
         liminal::PrintLlmRuntimeInfo(stdout);
         liminal::ShutdownLlmRuntime();

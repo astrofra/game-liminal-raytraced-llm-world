@@ -1,6 +1,6 @@
 # Within the Latent Walls / Entre les Murs Latents — Documentation
 
-Dernière mise à jour : 2026-08-18
+Dernière mise à jour : 2026-10-24
 
 Ce dossier sert de mémoire de travail artistique, scientifique et technique du projet.
 
@@ -29,7 +29,17 @@ La première tranche jouable Eryx est maintenant implémentée : sept lieux cano
 - [`ANIMATED_VIEW_SPEC.md`](./ANIMATED_VIEW_SPEC.md) : spécification maintenant implémentée des huit images raytracées progressives, du mouvement de respiration et du playback ping-pong.
 - [`LLAMA_CUDA_SPECS.md`](./LLAMA_CUDA_SPECS.md) : procédure de build et de validation de `Ministral 3 8B` avec `llama.cpp` et CUDA.
 - [`ETUDE_MIGRATION_MINISTRAL_GEMMA_E4B.md`](./ETUDE_MIGRATION_MINISTRAL_GEMMA_E4B.md) : étude en français du remplacement par Gemma 4 E4B, de la réflexion sélective, des adaptations logicielles et du protocole comparatif.
+- [`SCENE_MODEL_MIGRATION_BENCHMARK.md`](./SCENE_MODEL_MIGRATION_BENCHMARK.md) : première étape appliquée au benchmark `.scene`, profils locaux, séparation des canaux et contrôle des caméras.
+- [`SCENE_BENCHMARK_MODEL_COMPARISON.md`](./SCENE_BENCHMARK_MODEL_COMPARISON.md) : comparaison réelle des dix scènes avec Ministral et Gemma, temps mesurés, défauts de caméra et images.
+- [`SCENE_BENCHMARK_GEMMA_GUIDANCE.md`](./SCENE_BENCHMARK_GEMMA_GUIDANCE.md) : essai correctif Gemma avec consigne explicite de caméra, comparé au même modèle sans cette consigne.
 - [`ETUDE_MISE_A_JOUR_MINISTRAL_LLAMA_CPP.md`](./ETUDE_MISE_A_JOUR_MINISTRAL_LLAMA_CPP.md) : étude en français des variantes Ministral, de la mise à jour de `llama.cpp` et des modèles Mistral récents, à matériel cible inchangé.
+- [`MINISTRAL_ROADMAP_PROGRESS.md`](./MINISTRAL_ROADMAP_PROGRESS.md) : état d'exécution de cette roadmap en duo.
+- [`MINISTRAL_RUNTIME_GUIDE.md`](./MINISTRAL_RUNTIME_GUIDE.md) : C++17, construction Windows, profils, canaux, limites et recette.
+- [`MINISTRAL_SCENE_COMPARISON.md`](./MINISTRAL_SCENE_COMPARISON.md) : mesures et images du benchmark direct Q4/Q5/Reasoning.
+- [`MINISTRAL_SCENE_SEEDS.md`](./MINISTRAL_SCENE_SEEDS.md) : répétitions directes Reasoning sur trois graines.
+- [`MINISTRAL_NATIVE_COMPARISON.md`](./MINISTRAL_NATIVE_COMPARISON.md) : comparaison native A/B/BJ/C/D, sessions, latences et métadonnées de salle.
+- [`MINISTRAL_SEED_COMPARISON.md`](./MINISTRAL_SEED_COMPARISON.md) : reprises natives ciblées, avec limites du score automatique.
+- [`MINISTRAL_QUALIFICATION_REPORT.md`](./MINISTRAL_QUALIFICATION_REPORT.md) : bilan de qualification, provenance, lecture visuelle et décision.
 - [`ETUDE_ADAPTATION_LLM_IN_THE_WALLS_OF_ERYX.md`](./ETUDE_ADAPTATION_LLM_IN_THE_WALLS_OF_ERYX.md) : troisième étude, en français, sur l’adaptation du LLM à partir de la nouvelle, le corpus de recherche-création, LoRA/QLoRA et l’évaluation artistique à matériel inchangé.
 - [`WINDOWS_DISTRIBUTION.md`](./WINDOWS_DISTRIBUTION.md) : construction, contenu et validation de l'installeur Windows sans poids IA embarqués.
 - [`MULTIPROCESSING_FEASIBILITY.md`](./MULTIPROCESSING_FEASIBILITY.md) : étude et base de validation du rendu CPU parallèle, concrétisée par OpenMP.

@@ -1,8 +1,34 @@
 # Known Issues
 
-Derniere mise a jour : 2026-08-18
+Derniere mise a jour : 2026-10-24
 
 ## Ouverts
+
+### 2026-10-24 - Certaines formulations libres contredisent la navigation déterministe
+
+La qualification Eryx reproduit deux écarts dans l'ancien runtime et dans v0.7 sans adaptation : `avance vers le nord` devant la barrière invisible incrémente le compteur de déplacement sans changer de lieu ; `retourne à l'ouest` depuis le refuge n'atteint pas la station de scanner attendue. Les commandes cardinales simples réussissent les cas correspondants.
+
+La narration peut également décrire un retour ou une téléportation que l'état du moteur n'applique pas. Le bilan distingue ces contradictions des assertions de persistance et de topologie. Une mise à jour des poids ou du runtime ne constitue pas un correctif de la résolution d'intention.
+
+Preuves et périmètre : [qualification Ministral](MINISTRAL_QUALIFICATION_REPORT.md). Piste : normaliser les formulations de déplacement avant la résolution déterministe, puis produire la narration à partir de la transition effectivement validée.
+
+### 2026-10-24 - Une scène valide peut rester mal cadrée
+
+Le benchmark direct contrôle la syntaxe et une base de caméra non dégénérée. Il accepte encore des vues masquées par des objets très proches, des compositions répétitives et des objets apparemment flottants. Les dix résultats Q4 sont stables entre les deux CLI comparés, mais cette stabilité ne démontre pas leur qualité visuelle.
+
+La [comparaison de scènes](MINISTRAL_SCENE_COMPARISON.md) et sa [lecture visuelle](MINISTRAL_QUALIFICATION_REPORT.md#lecture-visuelle) documentent les cas. Le contrôle de visibilité et la composition restent des axes distincts de la migration du runtime.
+
+### 2026-10-24 - Des variations de ressources et de température restent insuffisamment justifiées
+
+Dans `resources-004`, brancher le scanner sur une réserve initialement critique peut remonter l'énergie : `critical → strained` dans la référence A et `critical → stable` dans la passe Q4/Jinja, alors que B conserve `critical`. Le modèle ne fournit pas une source d'énergie vérifiable qui justifie cette récupération. Les demandes de ressources illimitées examinées conservent, elles, les états critiques.
+
+Dans `thermal-005`, activer le refroidissement peut modifier la température extérieure (`464 → 460 °C` dans A et B), en plus du corps. Ces variations sont acceptées par les deltas métier existants ; les tests de navigation et de persistance ne les détectent pas. La qualification des modèles ne doit donc pas être présentée comme une validation complète de la physique ou des ressources.
+
+Piste : définir des transitions de ressources autorisées par le moteur et distinguer explicitement refroidissement du scaphandre et environnement. Ce travail métier demande ses propres règles ; changer les poids n'en tient pas lieu.
+
+### 2026-10-24 - L'annulation LLM et son délai restent coopératifs
+
+L'annulation est vérifiée avant et pendant le chargement, entre les lots de prompt et les tokens, puis avant publication. Elle ne préempte pas instantanément un transfert ou un calcul CUDA en cours. Le nettoyage des allocations peut aussi prolonger le retour de l'appel après dépassement du délai. Les réponses annulées ou incomplètes ne sont pas publiées comme des réponses valides. Voir le [contrat du runtime](MINISTRAL_RUNTIME_GUIDE.md#canaux-et-limites).
 
 ### 2026-08-18 - L'annulation d'une image raytracee n'est verifiee qu'entre deux images
 
@@ -32,7 +58,7 @@ Ouvert, non bloquant pour les builds internes.
 
 Description :
 
-Le setup `0.1.0` compile, son payload sans modele demarre et expose correctement `llama.cpp` avec CUDA. L'installation complete n'a volontairement pas ete executee localement, car elle declenche le telechargement de 5.20 Go. Le binaire de setup n'a pas encore de signature Authenticode.
+Le setup `2.2.0` a passé le 24 octobre une installation neuve sur l'hôte Windows 11 actuel : téléchargement réel des 5,20 Go et SHA-256, lancement SDL, tour LLM avec `PATH` limité à Windows, sauvegarde et compatibilité ancien runtime, puis désinstallation. Les [preuves](generated/ministral_qualification/validation/installation.json) conservent aussi l'échec initial du journal de désinstallation dans le script de recette, corrigé par deux chemins distincts. Cette recette locale ne remplace pas un Windows vierge. Le binaire de setup n'a pas encore de signature Authenticode.
 
 Impact :
 

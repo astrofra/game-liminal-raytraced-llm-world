@@ -1575,3 +1575,22 @@ Validation :
 - Comparaison entre prompt enrichi, accès aux passages, apprentissage sur texte brut et adaptation supervisée LoRA/QLoRA ; proposition d’une évaluation artistique et technique à matériel inchangé.
 - Inspection des points d’intégration LoRA du runtime vendor ; faisabilité de la chaîne complète et mémoire d’entraînement encore à vérifier par un pilote.
 - Aucun entraînement, dataset dérivé ou adaptateur produit ; cette itération reste documentaire.
+
+## 2026-10-24 - Prototype Gemma dans le benchmark direct, en duo
+
+- Première application de l'étude de migration à `run_scene_generation_benchmark.bat`, avec Codex coordinateur et DeepSeek via Copilot CLI/Ollama dans deux worktrees : helper de téléchargement Gemma (DUO-003), puis contrôle de caméra et tests (DUO-004).
+- GGUF Gemma Q4_K_M téléchargé à révision fixe et vérifié localement (taille, magic, SHA-256). Le CLI existant charge le modèle ; aucune mise à jour vendor ni migration du runtime C++ du jeu à ce stade.
+- Ajout des profils Ministral/Gemma, de Jinja, des budgets de réflexion explicites, de l'extraction du seul canal final, de la vérification EOS, des délais bornés et de la provenance. Chaque run utilise un nouveau dossier ; le benchmark historique est préservé.
+- Matrice réelle sur dix briefs historiques : A0 Ministral 10/10 ; A1 Ministral 10/10 ; Gemma sans réflexion 2/10 ; Gemma avec 256 tokens de réflexion 2/10, en comptant syntaxe et caméra non dégénérée. La syntaxe seule masquait huit caméras invalides sur dix avec Gemma sans réflexion.
+- Correction expérimentale du prompt par `--camera-guidance` : 10/10 scènes à syntaxe et caméra valides, médiane de génération 16,15 s contre 22,17 s pour A1 Ministral. Ce gain inclut un changement de prompt ; `control_hub` reste visuellement très bruité et presque uniforme.
+- Validation : 51 tests réussis, générations réelles, contrôle des empreintes, revue des images et vérification de la préservation des résultats historiques. Le contrôle de caméra respecte les valeurs optionnelles `up` et `fov` après correction d'un faux positif lors de la revue Codex.
+- [Guide du prototype](SCENE_MODEL_MIGRATION_BENCHMARK.md), [comparaison initiale](SCENE_BENCHMARK_MODEL_COMPARISON.md), [essai du prompt corrigé](SCENE_BENCHMARK_GEMMA_GUIDANCE.md). Le modèle du jeu reste Ministral ; la validation artistique Eryx, les appels natifs et la distribution restent à traiter. Aucun commit ni push.
+
+## 2026-10-24 - Roadmap Ministral exécutée en duo
+
+- Lots Copilot CLI / DeepSeek via Ollama : manifeste et téléchargements DUO-005, corpus DUO-006, packaging DUO-007 ; revue complémentaire DUO-008/R1. Codex a contrôlé les livraisons, corrigé et intégré les changements, réalisé l'adaptation native et les mesures.
+- `llama.cpp v0.7.0` intégré au commit `620d2225cc436ab0b001e3200e590e3b286ef9ab`, après audit et conservation des références. Construction C++17/MSVC 19.44/CUDA 13.0, Jinja, canaux séparés, budgets, annulation coopérative, métriques de tous les appels et chemins UTF-8.
+- 70 scènes directes comparatives et 611 tours natifs exécutés, avec variantes Q4/Q5/Reasoning, répétitions et calibration. Les dix scènes Q4 restent identiques entre CLI ; Q5 et Reasoning montrent des gains locaux et des limites de budget, cohérence et stabilité. Aucun gain global de qualité ou de vitesse revendiqué ; Q4 reste le défaut.
+- 57 tests Python, CTest des canaux, trois auto-tests, 11 probes réelles et sept rendus canoniques identiques. Build final publié et contrôle du `.bat` identique à la référence.
+- Distribution interne 2.2.0 : installation réelle, téléchargement et hash du modèle, lancement SDL et tour LLM avec `PATH` isolé, sauvegarde accentuée, scènes conservées, lecture par l'ancien runtime et désinstallation. Conflit de journaux du script de recette corrigé ; aucun changement produit nécessaire. Installeur, sources correspondantes et SHA-256 livrés dans `output/installer/dist/` ; 2.1.0 conservé.
+- [Bilan complet et limites](MINISTRAL_QUALIFICATION_REPORT.md). Les défauts métier et les conditions de diffusion publique restent explicites ; piste 3B optionnelle non activée. Aucun commit ni push.

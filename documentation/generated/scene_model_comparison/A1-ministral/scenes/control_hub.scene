@@ -1,0 +1,13 @@
+room "Sector Control Hub"
+camera eye(0.0,1.75,-3.0) target(0.0,1.2,0.0) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(15.0,30.0) intensity(60.0)
+sky zenith(0.01) horizon(0.18) nadir(0.00) band(0.30) curve(1.80) noise(0.08) stars(0.0025,1.45,0.080) seed(123)
+
+plane "control_floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.0,12.0) gray(0.12)
+box "main_console" pos(0.0,1.5,0.0) size(4.0,2.5,3.0) gray(0.30) detail(0.40)
+box "wall_cabinet" pos(-3.0,1.5,0.0) size(1.5,2.0,1.0) gray(0.25) detail(0.35)
+box "floor_hatch" pos(3.0,0.5,0.0) size(2.0,0.5,2.0) gray(0.20) detail(0.30)
+prefab_prospect_shelter "survey_placard" pos(0.0,2.0,-2.0) size(1.0,1.0,0.1) gray(0.15) detail(0.25)
+prefab_atmospheric_processor "base_route_placard" pos(-2.0,1.8,2.0) size(1.2,1.5,0.2) gray(0.22) detail(0.38)
+prefab_gate "split_threshold_gate" pos(0.0,1.0,-4.0) size(2.0,2.0,0.2) gray(0.28) detail(0.42)
+prefab_crate "sample_case" pos(2.5,0.7,-1.5) size(1.5,1.0,1.2) gray(0.20) detail(0.34)
