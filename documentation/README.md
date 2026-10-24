@@ -30,6 +30,7 @@ La première tranche jouable Eryx est maintenant implémentée : sept lieux cano
 - [`LLAMA_CUDA_SPECS.md`](./LLAMA_CUDA_SPECS.md) : procédure de build et de validation de `Ministral 3 8B` avec `llama.cpp` et CUDA.
 - [`ETUDE_MIGRATION_MINISTRAL_GEMMA_E4B.md`](./ETUDE_MIGRATION_MINISTRAL_GEMMA_E4B.md) : étude en français du remplacement par Gemma 4 E4B, de la réflexion sélective, des adaptations logicielles et du protocole comparatif.
 - [`ETUDE_MISE_A_JOUR_MINISTRAL_LLAMA_CPP.md`](./ETUDE_MISE_A_JOUR_MINISTRAL_LLAMA_CPP.md) : étude en français des variantes Ministral, de la mise à jour de `llama.cpp` et des modèles Mistral récents, à matériel cible inchangé.
+- [`ETUDE_ADAPTATION_LLM_IN_THE_WALLS_OF_ERYX.md`](./ETUDE_ADAPTATION_LLM_IN_THE_WALLS_OF_ERYX.md) : troisième étude, en français, sur l’adaptation du LLM à partir de la nouvelle, le corpus de recherche-création, LoRA/QLoRA et l’évaluation artistique à matériel inchangé.
 - [`WINDOWS_DISTRIBUTION.md`](./WINDOWS_DISTRIBUTION.md) : construction, contenu et validation de l'installeur Windows sans poids IA embarqués.
 - [`MULTIPROCESSING_FEASIBILITY.md`](./MULTIPROCESSING_FEASIBILITY.md) : étude et base de validation du rendu CPU parallèle, concrétisée par OpenMP.
 

@@ -32,28 +32,33 @@ Scene v1 authoring rules for audit mode:
 - one directive per line
 - do not use indented property blocks; every directive must be complete on one line
 - names must be quoted like "roof" or "service_crate"
-- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit
-- every scene must declare one room and one camera
-- keep geome ... (truncated)
+- active Eryx directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_crate, prefab_survey_beacon, prefab_crystal_scanner, prefab_crystal_cluster, prefab_extraction_rig, ... (truncated)
 room "Dust Loading Dock"
-camera eye(0.0,1.75,-3.0) target(0.0,1.0,-1.0) up(0.0,1.0,0.0) fov(46.0)
+camera eye(0.0,1.75,-5.0) target(0.0,1.2,-2.0) up(0.0,1.0,0.0) fov(46.0)
+spotlight panel(1.0,0.8) offset(0.0,0.0,0.35) range(20.0) cone(10.0,30.0) intensity(60.0)
 sky zenith(0.01) horizon(0.24) nadir(0.00) band(0.32) curve(1.95) noise(0.12) stars(0.0036,1.55,0.100) seed(77)
 
-plane "dock_floor" pos(0.0,0.0,-1.0) normal(0.0,1.0,0.0) size(12.0,10.0) gray(0.18)
-plane "dock_wall" pos(0.0,0.0,0.0) normal(0.0,0.0,-1.0) size(12.0,8.0) gray(0.22)
+plane "dock_floor" pos(0.0,0.0,-2.0) normal(0.0,1.0,0.0) size(12.0,16.0) gray(0.14)
+plane "dock_wall_north" pos(0.0,0.0,8.0) normal(0.0,0.0,-1.0) size(12.0,6.0) gray(0.26)
+plane "dock_wall_east" pos(6.0,0.0,0.0) normal(-1.0,0.0,0.0) size(6.0,6.0) gray(0.26)
+plane "dock_wall_west" pos(-6.0,0.0,0.0) normal(1.0,0.0,0.0) size(6.0,6.0) gray(0.26)
 
-prefab_gate "shutter" pos(0.0,0.0,-1.0) size(12.0,8.0) gray(0.28) open(0.5)
-box "dock_lip" pos(0.0,0.0,-1.0) size(12.0,0.2,0.1) gray(0.30)
+box "dock_lip" pos(0.0,0.0,7.9) size(12.0,0.2,0.1) gray(0.30)
+box "shutter_base" pos(0.0,0.0,7.9) size(12.0,0.1,0.1) gray(0.20)
+box "shutter_half_raised" pos(0.0,1.5,7.9) size(12.0,0.1,0.1) gray(0.20)
 
-prefab_crate "cargo_crate" pos(2.0,0.5,-0.5) size(1.5,1.0,1.5) gray(0.20) detail(0.31)
-box "shipping_placard" pos(1.5,1.2,-0.5) size(0.8,0.5,0.05) gray(0.15)
+prefab_gate "split_threshold_gate" pos(0.0,0.0,8.0) size(12.0,2.0,0.1) gray(0.25) detail(0.35)
 
-box "control_switch" pos(-2.0,0.8,-0.5) size(0.3,0.3,0.2) gray(0.25)
-box "lamp_post" pos(-1.0,0.0,-1.0) size(0.2,2.0,0.2) gray(0.20) bent(0.7)
-spotlight "lamp" panel(0.5,0.5) offset(0.0,2.0,0.0) range(3.0) cone(10.0,30.0) intensity(50.0)
+prefab_crate "survey_cargo" pos(3.0,0.55,-1.5) size(1.7,1.1,1.4) gray(0.20) detail(0.34)
+prefab_crate "sample_case" pos(-4.0,0.55,1.0) size(1.7,1.1,1.4) gray(0.20) detail(0.34)
 
-plane "desert_ground" pos(0.0,-0.1,-1.0) normal(0.0,1.0,0.0) size(12.0,10.0) gray(0.12)
-plane "desert_ridge" pos(0.0,-0.1,-1.0) normal(0.0,1.0,0.0) size(12.0,10.0) gray(0.15) noise(0.25)
+prefab_prospect_shelter "base_route_placard" pos(-5.0,1.7,6.0) size(1.0,2.0,0.1) gray(0.24) detail(0.43)
+prefab_atmospheric_processor "control_switch" pos(5.0,1.2,0.0) size(1.5,1.5,0.5) gray(0.28) detail(0.40)
+
+prefab_rock_low "dock_ledge" pos(0.0,0.0,9.0) size(12.0,0.5,0.5) gray(0.23)
+prefab_rock_wide "dust_shelf" pos(2.0,0.0,6.0) size(3.0,0.8,1.0) gray(0.23)
+
+prefab_rock_tall "lamp_post" pos(-3.0,0.0,0.0) size(0.3,2.5,0.3) gray(0.20) detail(0.30)
 
 
 Exiting...

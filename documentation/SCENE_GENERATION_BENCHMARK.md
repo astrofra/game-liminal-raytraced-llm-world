@@ -1,8 +1,6 @@
 # Scene Generation Benchmark
 
-Genere le 2026-08-02 16:08:36.
-
-> **Historical baseline:** This report predates the Eryx reorientation. Its datacenter cases, prompts, responses, measurements, and images are preserved as evidence of the direct `brief -> LLM .scene` experiment. They are not active story or asset requirements. A new Eryx benchmark must be generated from updated source cases after the semantic migration is implemented; the results below must not be extrapolated or renamed.
+Genere le 2026-10-24 08:29:30.
 
 Ce document audite la generation directe de `.scene` par `Ministral` a partir de briefs spatiaux fixes.
 
@@ -16,20 +14,20 @@ Parametres :
 - rendu : `800x400`, `8` spp, `3` bounces, `1` direct samples
 - LLM : `temperature=0.0`, `n_predict=1024`, `ctx=4096`, `seed=42`
 
-Resultat global : `9/10` scenes valides, `1` invalides.
+Resultat global : `10/10` scenes valides, `0` invalides.
 
 | Case | Status | Gen ms | Audit ms | Triangles | Materials |
 | --- | --- | ---: | ---: | ---: | ---: |
-| `entry_gate_dusk` | `valid` | 18067.30 | 462.15 | 220 | 20 |
-| `sally_port_checkpoint` | `valid` | 20972.08 | 582.50 | 518 | 44 |
-| `badge_vestibule` | `valid` | 21665.24 | 630.95 | 276 | 28 |
-| `server_aisles_dense` | `valid` | 23216.06 | 612.73 | 1240 | 105 |
-| `control_hub` | `valid` | 18988.96 | 559.02 | 166 | 18 |
-| `backup_vault` | `valid` | 24317.32 | 774.31 | 772 | 66 |
-| `cooling_exchange_bay` | `valid` | 26772.40 | 968.71 | 736 | 63 |
-| `loading_dock_dust` | `invalid_scene` | 21240.09 | 95.15 | 0 | 0 |
-| `roof_watch_dusk` | `valid` | 20044.93 | 577.93 | 410 | 35 |
-| `stairhead_parapet` | `valid` | 20270.69 | 504.36 | 378 | 34 |
+| `entry_gate_dusk` | `valid` | 37184.71 | 658.97 | 666 | 57 |
+| `sally_port_checkpoint` | `valid` | 31004.92 | 729.08 | 582 | 49 |
+| `badge_vestibule` | `valid` | 28269.64 | 759.44 | 508 | 44 |
+| `server_aisles_dense` | `valid` | 30828.24 | 965.40 | 568 | 49 |
+| `control_hub` | `valid` | 27278.50 | 665.50 | 866 | 43 |
+| `backup_vault` | `valid` | 34522.27 | 1549.85 | 1332 | 67 |
+| `cooling_exchange_bay` | `valid` | 23716.73 | 870.67 | 536 | 46 |
+| `loading_dock_dust` | `valid` | 26465.85 | 671.77 | 992 | 57 |
+| `roof_watch_dusk` | `valid` | 22678.54 | 579.23 | 974 | 52 |
+| `stairhead_parapet` | `valid` | 22649.75 | 703.73 | 590 | 51 |
 
 ## Entry Gate
 
@@ -37,12 +35,12 @@ A concrete gate court faces the datacenter threshold. Dust clings to the bars an
 
 Status : `valid`
 Slug : `entry_gate_dusk`
-Generation : `18067.30 ms`
-Audit + render : `462.15 ms`
-Scene lines : `11`
-Scene chars : `884`
-Triangles : `220`
-Materials : `20`
+Generation : `37184.71 ms`
+Audit + render : `658.97 ms`
+Scene lines : `15`
+Scene chars : `1226`
+Triangles : `666`
+Materials : `57`
 
 State : `generated/scene_generation_benchmark/states/entry_gate_dusk.session.json`
 Prompt : `generated/scene_generation_benchmark/prompts/entry_gate_dusk.prompt.txt`
@@ -72,12 +70,12 @@ A narrow checkpoint sits between two heavy gates. A code keypad, a dead camera h
 
 Status : `valid`
 Slug : `sally_port_checkpoint`
-Generation : `20972.08 ms`
-Audit + render : `582.50 ms`
+Generation : `31004.92 ms`
+Audit + render : `729.08 ms`
 Scene lines : `15`
-Scene chars : `1116`
-Triangles : `518`
-Materials : `44`
+Scene chars : `1241`
+Triangles : `582`
+Materials : `49`
 
 State : `generated/scene_generation_benchmark/states/sally_port_checkpoint.session.json`
 Prompt : `generated/scene_generation_benchmark/prompts/sally_port_checkpoint.prompt.txt`
@@ -107,12 +105,12 @@ A bare vestibule buffers the exterior from the datacenter core. The only relief 
 
 Status : `valid`
 Slug : `badge_vestibule`
-Generation : `21665.24 ms`
-Audit + render : `630.95 ms`
-Scene lines : `15`
-Scene chars : `1124`
-Triangles : `276`
-Materials : `28`
+Generation : `28269.64 ms`
+Audit + render : `759.44 ms`
+Scene lines : `13`
+Scene chars : `1071`
+Triangles : `508`
+Materials : `44`
 
 State : `generated/scene_generation_benchmark/states/badge_vestibule.session.json`
 Prompt : `generated/scene_generation_benchmark/prompts/badge_vestibule.prompt.txt`
@@ -142,12 +140,12 @@ Dense aisles of racks run into darkness. A service cart, a floor hatch, and a si
 
 Status : `valid`
 Slug : `server_aisles_dense`
-Generation : `23216.06 ms`
-Audit + render : `612.73 ms`
-Scene lines : `16`
-Scene chars : `1251`
-Triangles : `1240`
-Materials : `105`
+Generation : `30828.24 ms`
+Audit + render : `965.40 ms`
+Scene lines : `15`
+Scene chars : `1287`
+Triangles : `568`
+Materials : `49`
 
 State : `generated/scene_generation_benchmark/states/server_aisles_dense.session.json`
 Prompt : `generated/scene_generation_benchmark/prompts/server_aisles_dense.prompt.txt`
@@ -177,12 +175,12 @@ A compact control room opens off the aisles. One main console dominates the cent
 
 Status : `valid`
 Slug : `control_hub`
-Generation : `18988.96 ms`
-Audit + render : `559.02 ms`
-Scene lines : `13`
-Scene chars : `937`
-Triangles : `166`
-Materials : `18`
+Generation : `27278.50 ms`
+Audit + render : `665.50 ms`
+Scene lines : `12`
+Scene chars : `1015`
+Triangles : `866`
+Materials : `43`
 
 State : `generated/scene_generation_benchmark/states/control_hub.session.json`
 Prompt : `generated/scene_generation_benchmark/prompts/control_hub.prompt.txt`
@@ -212,12 +210,12 @@ A chilled storage vault holds sealed pods and backup racks. A biometric pad, a w
 
 Status : `valid`
 Slug : `backup_vault`
-Generation : `24317.32 ms`
-Audit + render : `774.31 ms`
-Scene lines : `17`
-Scene chars : `1348`
-Triangles : `772`
-Materials : `66`
+Generation : `34522.27 ms`
+Audit + render : `1549.85 ms`
+Scene lines : `18`
+Scene chars : `1566`
+Triangles : `1332`
+Materials : `67`
 
 State : `generated/scene_generation_benchmark/states/backup_vault.session.json`
 Prompt : `generated/scene_generation_benchmark/prompts/backup_vault.prompt.txt`
@@ -247,12 +245,12 @@ Tall cooling blocks and pipe runs crowd an industrial chamber. A valve wheel, a 
 
 Status : `valid`
 Slug : `cooling_exchange_bay`
-Generation : `26772.40 ms`
-Audit + render : `968.71 ms`
-Scene lines : `19`
-Scene chars : `1511`
-Triangles : `736`
-Materials : `63`
+Generation : `23716.73 ms`
+Audit + render : `870.67 ms`
+Scene lines : `17`
+Scene chars : `1387`
+Triangles : `536`
+Materials : `46`
 
 State : `generated/scene_generation_benchmark/states/cooling_exchange_bay.session.json`
 Prompt : `generated/scene_generation_benchmark/prompts/cooling_exchange_bay.prompt.txt`
@@ -280,14 +278,14 @@ Spatial brief :
 
 A side loading bay opens toward the desert through a half-raised shutter. Pallets, a cargo crate, and a bent lamp post stage a tense threshold between inside and outside.
 
-Status : `invalid_scene`
+Status : `valid`
 Slug : `loading_dock_dust`
-Generation : `21240.09 ms`
-Audit + render : `95.15 ms`
-Scene lines : `14`
-Scene chars : `1103`
-Triangles : `0`
-Materials : `0`
+Generation : `26465.85 ms`
+Audit + render : `671.77 ms`
+Scene lines : `19`
+Scene chars : `1575`
+Triangles : `992`
+Materials : `57`
 
 State : `generated/scene_generation_benchmark/states/loading_dock_dust.session.json`
 Prompt : `generated/scene_generation_benchmark/prompts/loading_dock_dust.prompt.txt`
@@ -309,11 +307,7 @@ Spatial brief :
 - blocked_exits: `north`
 - spatial_anomalies: `dust slips under the shutter in thin sheets`
 
-Erreur :
-
-```text
-C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_generation_benchmark\scenes\loading_dock_dust.scene:8: prefab_gate requires name, pos(), size(), and gray()
-```
+![loading_dock_dust](generated/scene_generation_benchmark/images/loading_dock_dust.png)
 
 ## Roof Watch
 
@@ -321,12 +315,12 @@ The datacenter roof becomes a parapet walk above the desert. A beacon mast, a ha
 
 Status : `valid`
 Slug : `roof_watch_dusk`
-Generation : `20044.93 ms`
-Audit + render : `577.93 ms`
-Scene lines : `13`
-Scene chars : `1012`
-Triangles : `410`
-Materials : `35`
+Generation : `22678.54 ms`
+Audit + render : `579.23 ms`
+Scene lines : `16`
+Scene chars : `1292`
+Triangles : `974`
+Materials : `52`
 
 State : `generated/scene_generation_benchmark/states/roof_watch_dusk.session.json`
 Prompt : `generated/scene_generation_benchmark/prompts/roof_watch_dusk.prompt.txt`
@@ -356,12 +350,12 @@ A concrete stairhead interrupts the roof line. The landing is tight, with a latc
 
 Status : `valid`
 Slug : `stairhead_parapet`
-Generation : `20270.69 ms`
-Audit + render : `504.36 ms`
-Scene lines : `13`
-Scene chars : `1021`
-Triangles : `378`
-Materials : `34`
+Generation : `22649.75 ms`
+Audit + render : `703.73 ms`
+Scene lines : `16`
+Scene chars : `1309`
+Triangles : `590`
+Materials : `51`
 
 State : `generated/scene_generation_benchmark/states/stairhead_parapet.session.json`
 Prompt : `generated/scene_generation_benchmark/prompts/stairhead_parapet.prompt.txt`

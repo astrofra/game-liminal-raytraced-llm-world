@@ -32,25 +32,20 @@ Scene v1 authoring rules for audit mode:
 - one directive per line
 - do not use indented property blocks; every directive must be complete on one line
 - names must be quoted like "roof" or "service_crate"
-- allowed directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_rack, prefab_crate, prefab_cooling_unit
-- every scene must declare one room and one camera
-- keep geome ... (truncated)
+- active Eryx directives: room, camera, spotlight, sky, plane, box, prefab_gate, prefab_crate, prefab_survey_beacon, prefab_crystal_scanner, prefab_crystal_cluster, prefab_extraction_rig, ... (truncated)
 room "Sector Control Hub"
-camera eye(0.0,1.75,-3.0) target(0.0,1.0,-1.0) up(0.0,1.0,0.0) fov(46.0)
+camera eye(0.0,1.75,-3.0) target(0.0,1.2,0.0) up(0.0,1.0,0.0) fov(46.0)
 spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(15.0,30.0) intensity(60.0)
+sky zenith(0.01) horizon(0.18) nadir(0.00) band(0.30) curve(1.80) noise(0.08) stars(0.0025,1.40,0.080) seed(123)
 
-plane "floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.0,12.0) gray(0.18)
-plane "west_wall" pos(0.0,0.0,0.0) normal(1.0,0.0,0.0) size(12.0,8.0) gray(0.22)
-plane "east_wall" pos(0.0,0.0,12.0) normal(-1.0,0.0,0.0) size(12.0,8.0) gray(0.22)
-plane "north_wall" pos(0.0,0.0,6.0) normal(0.0,0.0,-1.0) size(12.0,8.0) gray(0.22)
-plane "ceiling" pos(0.0,8.0,6.0) normal(0.0,-1.0,0.0) size(12.0,12.0) gray(0.14)
-
-box "main_console" pos(0.0,0.5,6.0) size(4.0,2.0,1.5) gray(0.28)
-box "locked_cabinet" pos(-3.0,0.5,1.0) size(1.5,1.5,1.0) gray(0.35)
-box "floor_hatch" pos(3.0,0.0,1.0) size(1.5,0.5,1.5) gray(0.30)
-box "status_placard" pos(0.0,1.5,10.0) size(0.5,1.0,0.1) gray(0.20)
-
-prefab_gate "control_gate" pos(0.0,0.0,-1.0) size(1.0,2.0,0.1) gray(0.25)
+plane "control_floor" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(12.0,12.0) gray(0.12)
+box "main_console" pos(0.0,1.5,0.0) size(4.0,2.5,3.0) gray(0.30) detail(0.40)
+box "wall_cabinet" pos(-3.0,1.5,-2.0) size(1.5,2.0,1.0) gray(0.25) detail(0.35)
+box "floor_hatch" pos(3.0,0.5,2.0) size(2.0,0.5,1.5) gray(0.20) detail(0.30)
+prefab_prospect_shelter "survey_placard" pos(0.0,2.0,-4.0) size(1.0,1.0,0.1) gray(0.15) detail(0.25)
+prefab_gate "split_threshold_gate" pos(0.0,1.0,5.0) size(2.0,2.0,0.2) gray(0.28) detail(0.38)
+prefab_atmospheric_processor "base_route_placard" pos(-2.0,1.8,3.0) size(1.2,1.5,0.1) gray(0.22) detail(0.32)
+prefab_crate "sample_case" pos(4.0,1.0,-1.0) size(1.5,1.0,1.2) gray(0.20) detail(0.34)
 
 
 Exiting...

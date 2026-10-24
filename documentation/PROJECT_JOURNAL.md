@@ -1567,3 +1567,11 @@ Validation :
 - Identification de `llama.cpp v0.7.0` comme candidate à qualifier et examen statique des surfaces d'intégration ; aucune compilation ou mise à jour effectuée.
 - Recherche élargie aux Mistral locaux récents, avec exclusion des scénarios de changement matériel conformément à la demande ; cible RTX 4060 8 Go conservée.
 - Aucun poids téléchargé ni benchmark d'inférence exécuté ; gains et limites à établir par le protocole proposé.
+
+## 2026-10-24 - Étude d’adaptation du LLM à partir d’In the Walls of Eryx
+
+- Ajout de [`ETUDE_ADAPTATION_LLM_IN_THE_WALLS_OF_ERYX.md`](./ETUDE_ADAPTATION_LLM_IN_THE_WALLS_OF_ERYX.md), troisième étude en français, dans le cadre non commercial de recherche-création demandé.
+- Inspection et comptage du corpus anglais local : 11 957 mots lexicaux ; distinction entre source littéraire, voix narratives et transpositions propres au jeu.
+- Comparaison entre prompt enrichi, accès aux passages, apprentissage sur texte brut et adaptation supervisée LoRA/QLoRA ; proposition d’une évaluation artistique et technique à matériel inchangé.
+- Inspection des points d’intégration LoRA du runtime vendor ; faisabilité de la chaîne complète et mémoire d’entraînement encore à vérifier par un pilote.
+- Aucun entraînement, dataset dérivé ou adaptateur produit ; cette itération reste documentaire.
