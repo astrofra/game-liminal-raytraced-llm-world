@@ -450,9 +450,30 @@ static void ParseGeneratedRoomsNode(const json& node, std::vector<GeneratedRoom>
             room.scene_prompt_version=g.at("prompt_version").get<std::string>();
             room.scene_seed=g.at("seed").get<unsigned int>();
             room.scene_repairs=g.at("repairs").get<int>();
-            if(g.at("format_version").get<int>()!=1 || (room.scene_contract_version!=1&&room.scene_contract_version!=2) || room.scene_hash!=SceneTextHash(room.scene_text) ||
+            if(g.at("format_version").get<int>()!=1 || (room.scene_contract_version!=1&&room.scene_contract_version!=2&&room.scene_contract_version!=3) || room.scene_hash!=SceneTextHash(room.scene_text) ||
                room.scene_plan_hash!=SceneTextHash(room.scene_design_json))
                 throw std::runtime_error("Invalid generated scene version or content hash");
+            if(room.scene_contract_version==3) {
+                const auto provenance=json::parse(room.scene_design_json);
+                CardinalDirection entry=kDirectionUnknown,forward=kDirectionUnknown;
+                const auto entry_text=provenance.at("return_direction").get<std::string>();
+                const auto forward_text=provenance.at("forward_direction").get<std::string>();
+                if(provenance.at("mode")!="local-topology-v2"||room.scene_source!="local_direct_v2"||
+                   !provenance.at("brief").is_string()||!provenance.at("landmark").is_string()||
+                   !ParseCardinalDirection(entry_text.c_str(),&entry)||entry==kDirectionUnknown||
+                   !ParseCardinalDirection(forward_text.c_str(),&forward)||forward!=OppositeCardinalDirection(entry))
+                    throw std::runtime_error("Invalid local topology provenance");
+                const auto& exits=provenance.at("accepted_exits");
+                if(!exits.is_object()||exits.size()!=4||!provenance.at("proposal_pending").is_boolean()||
+                    provenance.at("proposal_pending").get<bool>()!=ReadBoolNode(node[index],"metadata_fallback_used",false))
+                    throw std::runtime_error("Invalid local exit proposal state");
+                for(const auto* direction:{"north","east","south","west"}) {
+                    const bool blocked=std::find(room.spatial_state.blocked_exits.begin(),room.spatial_state.blocked_exits.end(),direction)!=room.spatial_state.blocked_exits.end();
+                    if(!exits.at(direction).is_boolean()||exits.at(direction).get<bool>()==blocked)
+                        throw std::runtime_error("Local exits disagree with accepted proposal");
+                }
+                if(!exits.at(entry_text).get<bool>())throw std::runtime_error("Local return exit is closed");
+            }
             if(room.scene_contract_version==2) {
                 const auto provenance=json::parse(room.scene_design_json);
                 if(provenance.at("mode")!="local-fixed-v1"||!provenance.at("brief").is_string()||

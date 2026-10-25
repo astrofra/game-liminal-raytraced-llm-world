@@ -115,7 +115,6 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
         if(!gate.Stage(diagnosis.empty()?(plan?DynamicScenePhase::Design:DynamicScenePhase::Program):DynamicScenePhase::Repair))return false;
         LlmGenerationConfig cfg=model;
         if(!plan&&!config.direct)cfg.temperature=std::min(cfg.temperature,.2f);
-        if(config.fixed_frame)cfg.temperature=.2f;
         // Repeated diagnostics must not replay an identical seeded completion.
         cfg.seed=(model.seed+104729u*static_cast<unsigned int>(result->repairs))&0x7fffffffu;
         if(config.fixed_frame&&result->repairs<2)cfg.seed=model.seed;

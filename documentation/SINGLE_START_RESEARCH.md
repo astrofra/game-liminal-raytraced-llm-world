@@ -2,17 +2,19 @@
 
 Évolution du 25 octobre : voir le [premier livrable fiction et fiabilité](BILAN_FICTION_ET_FIABILITE_SCENES.md) pour les descriptions restaurées, le carnet, les trois compositions au maximum et les nouvelles traces profondeur/ID.
 
+Évolution suivante : les [issues et températures sont proposées par le LLM](BILAN_ISSUES_ET_TEMPERATURE.md), puis validées par le moteur.
+
 25 octobre 2026 — évolution demandée après la première tranche de la roadmap.
 
 ## Jouer
 
 Lancer `play_within_the_latent_walls.bat`. Le jeu commence au **seuil de la carrière**, seul lieu Eryx prédéfini. Son décor natif s'inspire du [concept 12, variante raytracer](concept-art/12-les-vingt-cinq-centimetres-du-vide-raytracer-v2.png) : dalle de verre de 25 cm, parois monumentales à gauche, sol ocre et horizon dégagé à droite. Le [rendu moteur](benchmarks/eryx-local/single-start/start.png) montre la transposition. Les texels procéduraux et la variation de rugosité du concept ne sont pas implémentés par ce lot ; les matériaux diffus restent simples.
 
-**Est** découvre un lieu généré directement par Gemma/Ollama. Continuer à l'est découvre un autre lieu ; **ouest** revient au précédent. La génération intervient à la demande, jamais au chargement d'une archive. La graine initiale change à chaque lancement ; les découvertes et nouvelles tentatives ont des graines distinctes. Les briefs varient entre cinq relations architecturales, sans géométrie prédéfinie.
+Au seuil, **est** découvre un lieu généré directement par Gemma/Ollama. Ensuite, les issues indiquées permettent de découvrir un voisin ou de revenir vers un lieu connu ; leur direction dépend des propositions acceptées du LLM. La génération intervient à la demande, jamais au chargement d'une archive. La graine initiale change à chaque lancement ; les découvertes et nouvelles tentatives ont des graines distinctes. Les briefs varient entre cinq relations architecturales, sans géométrie prédéfinie.
 
 Dans une même partie, les lieux acceptés restent en mémoire et les revisites conservent leur géométrie. À la fermeture, cette mémoire ne devient pas l'entrée de la partie suivante. SDL refuse `--load-state`. La lecture d'un état reste disponible uniquement dans les outils headless de diagnostic.
 
-La navigation reste textuelle. Une génération peut être rejetée après son unique correction ; le joueur reste alors au lieu précédent et peut réessayer. Les sorties nord/sud sont fermées dans ce parcours, et l'ouest est fermé au départ.
+La navigation reste textuelle. Après au maximum trois compositions, un échec conserve le joueur au lieu précédent. Au départ, seul l’est est ouvert. Les lieux suivants proposent leurs propres issues cardinales, avec retour garanti et géométrie validée. BODY peut monter, se stabiliser ou baisser selon le LLM, et modifie l’échantillonnage du tour suivant.
 
 ## Archives automatiques de recherche
 
@@ -39,7 +41,7 @@ Sur cette machine : `C:/Users/fra/AppData/Local/WithinTheLatentWalls/research/`.
 | `state.json` | Dernier état validé, pour analyse et diagnostic, jamais chargé par une nouvelle partie SDL. |
 | `closed.json` | Marqueur de fermeture normale ; son absence signale une interruption possible. |
 
-Les écritures se font au démarrage puis après chaque tour, sans attendre la fermeture. Les revisites ne dupliquent pas les images de lieu ; leur narration reste dans la trace des tours. Une annulation n'ajoute pas de lieu validé. Les archives gardent le dernier candidat et les métriques disponibles, pas nécessairement tous les fragments de toutes les corrections. Les raccourcis locaux d'interface ne sont pas des tours moteur.
+Les écritures se font au démarrage puis après chaque tour, sans attendre la fermeture. Les revisites ne dupliquent pas les images de lieu ; leur narration reste dans la trace des tours. Une annulation n'ajoute pas de lieu validé. Les archives gardent chaque tentative de composition, ses programmes bruts/normalisés, les réparations locales et les bitmaps profondeur/ID disponibles. Les propositions thermiques et topologiques figurent dans les réponses et métriques des tours. Les raccourcis locaux d'interface ne sont pas des tours moteur.
 
 `--research-dir <dossier>` sert aux recettes pour changer la racine, et crée toujours un nouveau sous-dossier. `--llm-seed` permet une reproduction diagnostique ; le lancement normal n'impose aucune graine.
 

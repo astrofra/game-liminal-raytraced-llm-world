@@ -371,6 +371,13 @@ static void LocalPilot() {
         CHECK(messages[1].content.find("portal")==std::string::npos);
         r->success=true;r->reached_eog=true;
         r->response_text=R"({"title":"Les masses et le ciel","summary":"Le passage s'inscrit entre deux masses sombres.","narration":"Les blocs découpent une bande de ciel. Vous êtes au milieu des masses, votre regard suit la distance qui les sépare. La lumière s’attarde sur leurs arêtes, tandis que le sol prend devant vous la teinte sourde des masses environnantes."})";
+        auto response=json::parse(r->response_text);
+        const auto request=json::parse(messages[1].content);
+        response["thermal"]={{"external_temperature_c",request.at("temperature_external_c")},
+            {"body_temperature_c",request.at("temperature_body_c")},{"reason","Protection stable."}};
+        response["exits"]={{"north",false},{"east",true},{"south",false},{"west",true}};
+        for(auto it=request["exit_proposal"]["fixed"].begin();it!=request["exit_proposal"]["fixed"].end();++it)response["exits"][it.key()]=it.value();
+        r->response_text=response.dump();
         return true;
     };
     int calls=0;bool bad=true,truncated=false;
@@ -391,9 +398,9 @@ static void LocalPilot() {
     CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==0);
     CHECK(turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());cfg.stream_callback=nullptr;
     CHECK(RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==1);
-    CHECK(turn.generated_room_scene_source=="local_direct_v1");
+    CHECK(turn.generated_room_scene_source=="local_direct_v2");
     CHECK(turn.generated_rooms_to_add[0].spatial_state.room_title=="Les masses et le ciel");
-    UpdateSessionStateFromTurn("east",turn,&state);CHECK(state.generated_rooms.back().scene_contract_version==2);
+    UpdateSessionStateFromTurn("east",turn,&state);CHECK(state.generated_rooms.back().scene_contract_version==3);
     CHECK(SerializeSessionStateToJsonString(state,&after));SessionState restored;
     CHECK(ParseSessionStateFromJson(after.c_str(),&restored,error,sizeof(error)));
     CHECK(RunHeadlessTurnFromState(restored,"look",cfg,&turn,error,sizeof(error)));CHECK(calls==1);
@@ -437,6 +444,101 @@ static void LocalPilot() {
     CHECK(restored.current_place_id=="canonical:quarry_threshold"&&calls==5);
     auto tampered=json::parse(after);tampered["generated_rooms"].back()["scene_text"]="changed";
     CHECK(!ParseSessionStateFromJson(tampered.dump().c_str(),&restored,error,sizeof(error)));
+
+    // Coupled proposals: branch in every cardinal direction, heat once per turn,
+    // and next-call sampling. These tests use deterministic seams, not a real LLM.
+    CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+    state.language=kGameLanguageFrench;
+    cfg.generation_config.temperature=0;
+    std::vector<float> narrative_temperatures,scene_temperatures;
+    int proposal_calls=0;bool refuse_proposal=false,excessive_heat=false,cancel_after_proposal=false,cancel_now=false;
+    std::string next_exit="north";
+    cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>&,
+        LlmStreamCallback,void*,LlmGenerationResult* r) {
+        scene_temperatures.push_back(c.temperature);r->success=true;r->reached_eog=true;r->response_text=local;return true;
+    };
+    cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
+        LlmStreamCallback,void*,LlmGenerationResult* r) {
+        ++proposal_calls;narrative_temperatures.push_back(c.temperature);
+        if(refuse_proposal)return false;
+        const auto request=json::parse(messages[1].content);
+        const auto& exits=request.at("exit_proposal");
+        json proposed={{"north",false},{"east",false},{"south",false},{"west",false}};
+        if(exits.at("may_improvise").get<bool>())proposed[next_exit]=true;
+        for(auto it=exits.at("fixed").begin();it!=exits.at("fixed").end();++it)proposed[it.key()]=it.value();
+        r->success=true;r->reached_eog=true;
+        r->response_text=json({{"title","Les distances "+std::to_string(proposal_calls)},
+            {"summary","Vous retrouvez la ligne des masses sous le ciel."},
+            {"narration","Vous distinguez des masses sombres sous le ciel. Leurs arêtes prolongent la perspective, sans livrer de mesure certaine. Devant cette étendue, votre regard suit patiemment les intervalles et revient aux distances. "+std::to_string(proposal_calls)},
+            {"exits",proposed},{"thermal",{{"external_temperature_c",request.at("temperature_external_c")},
+            {"body_temperature_c",request.at("temperature_body_c").get<float>()+(excessive_heat?2.f:.2f)},
+            {"reason","Exposition modérée pendant cette action."}}}}).dump();
+        cancel_now=cancel_after_proposal;return true;
+    };
+    auto act=[&](const char* command) {
+        CHECK(RunHeadlessTurnFromState(state,command,cfg,&turn,error,sizeof(error)));
+        CHECK(json::parse(turn.narrative_metrics_json).at("proposal_accepted")==true);
+        UpdateSessionStateFromTurn(command,turn,&state);
+    };
+    act("east");
+    CHECK(fabsf(state.hard_state.body_temperature_c-37.2f)<.001f);
+    CHECK(state.spatial_state.blocked_exits==std::vector<std::string>({"east","south"}));
+    CHECK(fabsf(narrative_temperatures.back()-.1f)<.001f&&fabsf(scene_temperatures.back()-.1f)<.001f);
+    const auto first_scene=state.generated_rooms[0].scene_text;
+    act("attendre");CHECK(fabsf(state.hard_state.body_temperature_c-37.4f)<.001f);
+    CHECK(fabsf(narrative_temperatures.back()-.132f)<.001f);
+    CHECK(scene_temperatures.size()==1);
+    next_exit="east";act("north");CHECK(turn.generated_room_created);
+    CHECK(json::parse(state.generated_rooms.back().scene_design_json).at("return_direction")=="south");
+    CHECK(fabsf(scene_temperatures.back()-.164f)<.001f);
+    act("south");CHECK(turn.rendered_scene_text==first_scene&&scene_temperatures.size()==2);
+    act("north");CHECK(scene_temperatures.size()==2&&proposal_calls==5);
+    next_exit="south";act("east");next_exit="west";act("south");next_exit="north";act("west");
+    CHECK(state.generated_rooms.size()==5&&state.room_links.size()==10);
+    CHECK(json::parse(state.generated_rooms.back().scene_design_json).at("return_direction")=="east");
+    CHECK(SerializeSessionStateToJsonString(state,&before));
+    CHECK(ParseSessionStateFromJson(before.c_str(),&restored,error,sizeof(error)));
+    CHECK(restored.spatial_state.blocked_exits==state.spatial_state.blocked_exits);
+    CHECK(restored.hard_state.body_temperature_c==state.hard_state.body_temperature_c);
+    const auto body=state.hard_state.body_temperature_c;
+    excessive_heat=true;
+    CHECK(RunHeadlessTurnFromState(state,"wait",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.used_turn_fallback&&turn.updated_hard_state.body_temperature_c==body);
+    CHECK(!json::parse(turn.narrative_metrics_json).at("proposal_accepted").get<bool>());
+    excessive_heat=false;cancel_after_proposal=true;
+    cfg.stream_user_data=&cancel_now;
+    cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char*,void* data) {return !*static_cast<bool*>(data);};
+    CHECK(!RunHeadlessTurnFromState(state,"wait",cfg,&turn,error,sizeof(error)));
+    UpdateSessionStateFromTurn("wait",turn,&state);
+    CHECK(SerializeSessionStateToJsonString(state,&after));CHECK(after==before);
+    cfg.stream_callback=nullptr;cancel_after_proposal=false;cancel_now=false;
+    refuse_proposal=true;
+    CHECK(RunHeadlessTurnFromState(state,"north",cfg,&turn,error,sizeof(error)));
+    UpdateSessionStateFromTurn("north",turn,&state);
+    CHECK(state.generated_rooms.back().metadata_fallback_used);
+    const auto pending_geometry=state.generated_rooms.back().scene_text;
+    const auto compositions_before=scene_temperatures.size();
+    CHECK(SerializeSessionStateToJsonString(state,&before));
+    CHECK(ParseSessionStateFromJson(before.c_str(),&restored,error,sizeof(error)));
+    CHECK(restored.generated_rooms.back().metadata_fallback_used);
+    refuse_proposal=false;next_exit="east";act("look");
+    CHECK(!state.generated_rooms.back().metadata_fallback_used);
+    CHECK(state.generated_rooms.back().scene_text==pending_geometry&&scene_temperatures.size()==compositions_before);
+    CHECK(SerializeSessionStateToJsonString(state,&before));
+    CHECK(ParseSessionStateFromJson(before.c_str(),&restored,error,sizeof(error)));
+    auto bad_provenance=json::parse(before);
+    auto design=json::parse(bad_provenance["generated_rooms"].back()["scene_generation"]["design"].get<std::string>());
+    design["return_direction"]="north";
+    bad_provenance["generated_rooms"].back()["scene_generation"]["design"]=design.dump();
+    bad_provenance["generated_rooms"].back()["scene_generation"]["plan_sha256"]=SceneTextHash(design.dump());
+    CHECK(!ParseSessionStateFromJson(bad_provenance.dump().c_str(),&restored,error,sizeof(error)));
+    // Actual triangle clearance: a transparent side obstacle blocks navigation too.
+    CHECK(LoadSceneFromSceneText("clear.scene",local.c_str(),&scene,error,sizeof(error)));
+    CHECK(LocalSceneClearApproaches(scene).size()==4);
+    const auto side_wall=local+"glass_box \"side_wall\" pos(3,1,-10) size(0.2,2,2) gray(0.5)\n";
+    CHECK(LoadSceneFromSceneText("side.scene",side_wall.c_str(),&scene,error,sizeof(error)));
+    const auto approaches=LocalSceneClearApproaches(scene);
+    CHECK(approaches.size()==3&&std::find(approaches.begin(),approaches.end(),"left")==approaches.end());
 }
 static void SingleStart() {
     SessionState state,restored;char error[1024]={};

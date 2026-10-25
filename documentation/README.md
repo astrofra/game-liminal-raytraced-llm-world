@@ -103,3 +103,5 @@ Ne pas renommer ni réinterpréter les résultats historiques comme des benchmar
 - employer la fiction Eryx comme seule direction narrative active, sans réintroduire le vocabulaire des phases antérieures ;
 - employer *Within the Latent Walls* en anglais et *Entre les Murs Latents* en français pour désigner le projet actif ;
 - préférer l'anglais technique concis pour les nouveaux documents, sauf lorsqu'un fichier existant est volontairement maintenu en français.
+
+- [Issues improvisées et boucle thermique restaurée](BILAN_ISSUES_ET_TEMPERATURE.md) : mise en œuvre de la mini-étude, contrat de scène 3 et validation en duo.

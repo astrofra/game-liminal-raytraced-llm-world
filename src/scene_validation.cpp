@@ -198,6 +198,36 @@ bool ParseProgram(const std::string& text,std::vector<Directive>* output,SceneAu
 }
 }
 
+std::vector<std::string> LocalSceneClearApproaches(const Scene& scene) {
+    std::map<int,std::vector<const Triangle*>> solids;
+    for(const auto& t:scene.triangles)solids[t.material_index].push_back(&t);
+    struct Approach { const char* name; Vec3 center,size; };
+    const Approach approaches[]={
+        {"back",Vec3(0,1.25f,-9),Vec3(1.6f,2,6)},
+        {"forward",Vec3(0,1.25f,-6),Vec3(1.6f,2,6)},
+        {"left",Vec3(3,1.25f,-10),Vec3(6,2,1.6f)},
+        {"right",Vec3(-3,1.25f,-10),Vec3(6,2,1.6f)}};
+    std::vector<std::string> clear;
+    for(const auto& approach:approaches) {
+        bool blocked=false;
+        for(const auto& solid:solids) {
+            if(InsideSolid(approach.center,solid.second)){blocked=true;break;}
+            for(const auto* t:solid.second)if(TriangleBox(*t,approach.center,approach.size)){blocked=true;break;}
+            if(blocked)break;
+        }
+        // Sample supporting floor along the approach, including both ends.
+        for(int sample=-1;sample<=1&&!blocked;++sample) {
+            Ray ray;ray.origin=Vec3(approach.center.x,1.7f,approach.center.z);
+            if(approach.size.x>approach.size.z)ray.origin.x+=sample*approach.size.x*.45f;
+            else ray.origin.z+=sample*approach.size.z*.45f;
+            ray.direction=Vec3(0,-1,0);Hit hit;
+            if(!ProbeSceneRay(scene,ray,6,&hit)||hit.t<.35f)blocked=true;
+        }
+        if(!blocked)clear.push_back(approach.name);
+    }
+    return clear;
+}
+
 bool AuditDynamicScene(const std::string& program,const SceneDesignContext& context,
                        const SceneDesignV1* design,Scene* output,SceneAuditReport* r,
                        const SceneViewConstraints* view) {

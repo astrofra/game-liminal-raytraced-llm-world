@@ -73,6 +73,9 @@ std::string LocalSceneExplorationBrief(unsigned int discovery_index);
 std::string LocalScenePilotLandmark();
 std::string BuildLocalSceneProgramPrompt(const std::string& brief,const std::string& landmark);
 bool ValidateLocalSceneContract(const std::string& program,std::string* error);
+// Fixed local camera: forward +Z, screen-right -X. Necessary clear approaches,
+// not an automatic decision to open a route or proof of a continuous distant path.
+std::vector<std::string> LocalSceneClearApproaches(const Scene& scene);
 // Optional view contract for direct benchmarks; defaults preserve the dynamic path.
 struct SceneViewConstraints {
     std::string landmark;

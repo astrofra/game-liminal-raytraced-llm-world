@@ -29,6 +29,7 @@ set(LIMINAL_SOURCES
     src/scene_compiler.cpp
     src/renderer.cpp
     src/turn_contract.cpp
+    src/place_proposal.cpp
     src/turn_runner.cpp
     src/view_post_process.cpp)
 
@@ -67,7 +68,7 @@ add_test(NAME distant_light COMMAND liminal_distant_light_test)
 
 add_executable(liminal_dynamic_scene_test tests/dynamic_scene_test.cpp
     src/scene_design.cpp src/scene_validation.cpp src/scene_normalization.cpp src/dynamic_scene.cpp src/scene.cpp src/renderer.cpp
-    src/game_state.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp src/ollama_runtime.cpp
+    src/game_state.cpp src/place_proposal.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp src/ollama_runtime.cpp
     src/research_archive.cpp
     "${MODEL_HEADER}" "${SCENE_GUIDE_HEADER}")
 target_include_directories(liminal_dynamic_scene_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor"
@@ -229,3 +230,7 @@ if(MSVC)
     target_compile_options(liminal_scene_visibility_test PRIVATE /utf-8)
 endif()
 add_test(NAME scene_visibility COMMAND liminal_scene_visibility_test)
+
+add_executable(liminal_place_proposal_test tests/place_proposal_test.cpp src/place_proposal.cpp)
+target_include_directories(liminal_place_proposal_test PRIVATE src "${LIMINAL_LLAMA_CPP_DIR}/vendor")
+add_test(NAME place_proposal COMMAND liminal_place_proposal_test)

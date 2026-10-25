@@ -12,9 +12,11 @@ The game now has one authored starting place: the quarry threshold, inspired by 
 
 The [fiction and scene reliability delivery](documentation/BILAN_FICTION_ET_FIABILITE_SCENES.md) adds grounded narration, a notebook, fixed 256×128 depth/object-ID validation, conservative syntax recovery and at most three local composition calls.
 
+The [exit and thermal restoration](documentation/BILAN_ISSUES_ET_TEMPERATURE.md) restores LLM-proposed branches and thermal evolution, with body temperature driving subsequent narration and local composition.
+
 Current state:
 
-- normal launch: SDL at the quarry threshold, using local Ollama `gemma4:e4b`; east discovers the next place, west returns; a new game and generation seed at every launch
+- normal launch: SDL at the quarry threshold, using local Ollama `gemma4:e4b`; east leaves the authored threshold, then the LLM proposes available cardinal exits; a new game and generation seed at every launch
 - [local-scene roadmap results and retained images](documentation/LOCAL_SCENE_ROADMAP_RESULTS.md): Gemma selected after a common-backend comparison; 9/10 native pilot discoveries accepted, with visual limitations documented
 - vendored Cornell Box assets
 - vendored `llama.cpp v0.7.0` (`620d2225cc436ab0b001e3200e590e3b286ef9ab`) in `vendor/llama.cpp`

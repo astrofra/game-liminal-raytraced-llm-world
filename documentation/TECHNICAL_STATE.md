@@ -2,7 +2,7 @@
 
 ## Livrable du 25 octobre — fiction et fiabilité
 
-Le [bilan vérifié](BILAN_FICTION_ET_FIABILITE_SCENES.md) décrit le runtime publié : visibilité fixe 256 × 128 avec profondeur et ID, normalisation syntaxique conservatrice, suppression locale bornée des occultants et maximum trois compositions locales. La fiche narrative et les réponses libres sont séparées des effets autoritatifs ; carnet et températures sont restitués depuis l’état réel. Les archives gardent tous les candidats et les bitmaps avant/après. La qualité littéraire reste à affiner. La narration utilise une température de 0,65 ; le mode local compose à 0,2.
+Le [bilan vérifié](BILAN_FICTION_ET_FIABILITE_SCENES.md) décrit le runtime publié : visibilité fixe 256 × 128 avec profondeur et ID, normalisation syntaxique conservatrice, suppression locale bornée des occultants et maximum trois compositions locales. La fiche narrative et les réponses libres sont séparées des effets autoritatifs ; carnet et températures sont restitués depuis l’état réel. Les archives gardent tous les candidats et les bitmaps avant/après. La qualité littéraire reste à affiner. La [restauration des issues et températures](BILAN_ISSUES_ET_TEMPERATURE.md) rétablit ensuite les propositions du LLM et le couplage corporel pour narration et composition, avec validation moteur et contrat de scène 3.
 
 Derniere mise a jour : 2026-10-25
 
@@ -12,7 +12,7 @@ Le dépôt contient un runtime C++17, un renderer à scènes propriétaires et u
 
 Le renderer et l'interface constituent encore une base de prototype plutot qu'un produit final, mais la chaine executable est maintenant suffisamment complete pour des sessions headless et interactives.
 
-Le fonctionnement actuel est décrit dans [un seul départ et archives de recherche](SINGLE_START_RESEARCH.md). Un seul lieu Eryx est prédéfini : `quarry_threshold`, inspiré du concept 12 avec une dalle de verre de 25 cm. Les six autres fixtures, leurs identifiants et leur graphe ont été supprimés. Chaque lancement SDL invente une nouvelle exploration, avec une graine neuve ; l'est découvre un voisin direct Gemma, l'ouest revient au précédent. La géométrie reste stable seulement au sein de la partie. Les archives automatiques conservent descriptions, scènes, images et résultats hors dépôt, sans alimenter le jeu suivant.
+Le fonctionnement actuel est décrit dans [un seul départ et archives de recherche](SINGLE_START_RESEARCH.md). Un seul lieu Eryx est prédéfini : `quarry_threshold`, inspiré du concept 12 avec une dalle de verre de 25 cm. Les six autres fixtures, leurs identifiants et leur graphe ont été supprimés. Chaque lancement SDL invente une nouvelle exploration, avec une graine neuve ; l'est quitte le seuil, puis les quatre directions proposées par le LLM et validées par le moteur permettent découvertes et retours. La géométrie reste stable seulement au sein de la partie. Les archives automatiques conservent descriptions, scènes, images et résultats hors dépôt, sans alimenter le jeu suivant.
 
 La [première campagne locale](LOCAL_SCENE_ROADMAP_RESULTS.md) reste une mesure historique : Gemma 8/10 contre Ministral 8B Q4 4/10 dans le banc commun ; 9/10 sur l'ancienne branche pilote. Elle ne qualifie pas toutes les nouvelles graines aléatoires ni toutes les découvertes successives.
 
@@ -22,7 +22,7 @@ La qualification Ministral du 24 octobre conserve les profils Q4/Q5/Reasoning is
 
 Le vendor est désormais fixé à `v0.7.0`, commit `620d2225cc436ab0b001e3200e590e3b286ef9ab`. La qualification comprend 611 tours natifs exécutés et 70 scènes directes, avec références isolées, répétitions et essai de budget Reasoning. Le Q4 conserve les deux écarts de formulation libre de la référence ; les changements de ressources et la qualité narrative ne sont pas garantis par les seuls scores de navigation. Q5 et Reasoning restent des profils d'expérimentation, avec les limites mesurées dans le bilan.
 
-La distribution interne 2.2.0 précédant ce changement avait été construite et testée avec Ministral. Elle ne distribue pas Ollama/Gemma. Le nouvel exécutable de développement est publié, sans nouvel installeur. Les salles directes utilisent un contrat de sauvegarde 2 ; les anciens contrats 1 restent lisibles, mais un ancien exécutable ne sait pas charger une salle de contrat 2.
+La distribution interne 2.2.0 précédant ce changement avait été construite et testée avec Ministral. Elle ne distribue pas Ollama/Gemma. Le nouvel exécutable de développement est publié, sans nouvel installeur. Les salles directes utilisent désormais le contrat de sauvegarde 3 ; les anciens contrats 1 et 2 restent lisibles, mais un ancien exécutable ne sait pas charger une salle de contrat 3.
 
 ## Frontiere entre reorientation et implementation
 

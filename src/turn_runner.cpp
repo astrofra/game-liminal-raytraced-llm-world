@@ -7,6 +7,7 @@
 
 #include "scene_compiler.h"
 #include "turn_contract.h"
+#include "place_proposal.h"
 #include "nlohmann/json.hpp"
 
 namespace liminal {
@@ -2478,7 +2479,7 @@ static bool LoadSceneForPlace(
         return false;
     }
 
-    if(room->scene_contract_version && ((room->scene_contract_version!=1&&room->scene_contract_version!=2) ||
+    if(room->scene_contract_version && ((room->scene_contract_version!=1&&room->scene_contract_version!=2&&room->scene_contract_version!=3) ||
        room->scene_hash!=SceneTextHash(room->scene_text) || room->scene_plan_hash!=SceneTextHash(room->scene_design_json))) {
         SetError(error_buffer,error_buffer_size,"Invalid generated scene provenance: %s",place_id.c_str());return false;
     }
@@ -2657,9 +2658,48 @@ static std::string SceneFacts(const std::string& program) {
         {"interpretation","Only the listed opaque masses are sampled visible. Dimensions describe bounding extents, not doors or instruments. No object is portable by virtue of being visible. Transparent geometry is excluded from opaque coverage. No exact gap width or surface texture is established."}}).dump();
 }
 
+struct PlaceProposalConstraints {
+    std::map<std::string,bool> fixed;
+    std::vector<std::string> possible;
+    std::map<std::string,std::string> relative_directions;
+};
+
+static PlaceProposalConstraints NewPlaceConstraints(const Scene& scene,const std::string& entry) {
+    const std::vector<std::string> compass={"north","east","south","west"};
+    const auto found=std::find(compass.begin(),compass.end(),entry);
+    PlaceProposalConstraints constraints;
+    if(found==compass.end())return constraints;
+    const int back=static_cast<int>(found-compass.begin()),forward=(back+2)%4;
+    constraints.relative_directions={{"back",entry},{"forward",compass[forward]},
+        {"left",compass[(forward+3)%4]},{"right",compass[(forward+1)%4]}};
+    for(const auto& relative:LocalSceneClearApproaches(scene))
+        constraints.possible.push_back(constraints.relative_directions.at(relative));
+    constraints.fixed[entry]=true;
+    return constraints;
+}
+
 static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& config,
                           const std::string& facts,const std::string& command,const std::string& outcome,
-                          bool arrival,HeadlessTurnResult* result,std::string* title,std::string* summary,std::string* narration) {
+                          bool arrival,HeadlessTurnResult* result,std::string* title,std::string* summary,std::string* narration,
+                          const PlaceProposalConstraints* discovery_constraints=nullptr) {
+    PlaceProposalConstraints constraints;
+    const GeneratedRoom* pending_room=FindGeneratedRoomById(state,result->updated_place_id);
+    bool pending=!discovery_constraints&&pending_room&&pending_room->scene_contract_version==3&&pending_room->metadata_fallback_used;
+    if(discovery_constraints)constraints=*discovery_constraints;
+    else if(pending) {
+        const auto provenance=json::parse(pending_room->scene_design_json);
+        Scene scene;char error[512]={};
+        if(LoadSceneFromSceneText("pending.scene",pending_room->scene_text.c_str(),&scene,error,sizeof(error)))
+            constraints=NewPlaceConstraints(scene,provenance.at("return_direction").get<std::string>());
+        for(const auto& link:state.room_links)if(link.from_place_id==result->updated_place_id)
+            constraints.fixed[CardinalDirectionToString(link.direction)]=true;
+    } else for(const auto* direction:{"north","east","south","west"}) {
+        constraints.possible.push_back(direction);
+        const auto& blocked=result->updated_spatial_state.blocked_exits;
+        constraints.fixed[direction]=std::find(blocked.begin(),blocked.end(),direction)==blocked.end();
+    }
+    const bool propose_exits=discovery_constraints||pending;
+    const bool card=arrival||pending;
     json memory=json::array();
     // Recent global continuity plus older encounters at this very place.
     for(size_t i=0;i<state.history.size();++i) {
@@ -2675,19 +2715,36 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         {"facts",json::parse(facts,nullptr,false)},{"current_title",*title},{"base_description",*summary},
         {"player_command",command},{"engine_outcome",outcome},{"history",memory},{"notebook",notebook},
         {"temperature_external_c",state.hard_state.external_temperature_c},{"temperature_body_c",state.hard_state.body_temperature_c},
-        {"blocked_directions",result->updated_spatial_state.blocked_exits},
-        {"task",arrival?"Invent a specific short literary title without compass directions, a 25-45 word revisit summary, and a 60-100 word arrival narration. Contrast this actual composition with the previous place: choose its most distinctive visible proportions and placement. Never reuse a previous arrival.":
+        {"exit_proposal",{{"may_improvise",propose_exits},{"fixed",constraints.fixed},
+            {"geometrically_possible",constraints.possible},{"view_to_compass",constraints.relative_directions},
+            {"rule","Choose each north/east/south/west true=open or false=closed. Preserve fixed values. Only geometrically_possible may open. A clear approach permits but does NOT require an opening. Invent meaningful branches or a dead end consistent with this place; no east/west template. An opening means an unknown neighbour can be discovered, not an already visited room."}}},
+        {"thermal_rule","Evaluate this action's exposure, effort and protection: body may rise, stay or fall, never automatic. Propose external_temperature_c integer [300,520], change at most 20; body_temperature_c number [34,43], change at most 0.4 from given values; reason briefly justifies your assessment. Waiting is exposure. Real inference time has no physical effect. Match narration to your proposed values without reciting a technical report."},
+        {"task",card?"Invent a specific short literary title without compass directions, a 25-45 word revisit summary, and a 60-100 word arrival narration. Contrast this actual composition with the previous place: choose its most distinctive visible proportions and placement. Never reuse a previous arrival.":
             "Respond to the actual intent and details of the command in 20-60 words, longer only if needed. Keep title and summary unchanged. Recall relevant prior encounters, avoid repeating a menu."}}).dump();
-    LlmGenerationConfig cfg=config.generation_config;cfg.purpose=arrival?"scene_fiction_card_v1":"scene_fiction_turn_v1";
-    cfg.temperature=.65f;
+    LlmGenerationConfig cfg=config.generation_config;cfg.purpose=card?"scene_fiction_card_v2":"scene_fiction_turn_v2";
     cfg.seed=(cfg.seed+65537u*static_cast<unsigned int>(state.hard_state.turn_number))&0x7fffffffu;
-    cfg.n_predict=arrival?1024:640;cfg.timeout_ms=std::min(cfg.timeout_ms,30000);
+    cfg.n_predict=card?1280:896;cfg.timeout_ms=std::min(cfg.timeout_ms,30000);
     cfg.use_json_grammar=true;cfg.grammar_path.clear();
-    cfg.json_schema=R"({"type":"object","properties":{"title":{"type":"string"},"summary":{"type":"string"},"narration":{"type":"string"}},"required":["title","summary","narration"],"additionalProperties":false})";
+    cfg.json_schema=R"({"type":"object","properties":{"title":{"type":"string"},"summary":{"type":"string"},"narration":{"type":"string"},"thermal":{"type":"object","properties":{"external_temperature_c":{"type":"integer"},"body_temperature_c":{"type":"number"},"reason":{"type":"string"}},"required":["external_temperature_c","body_temperature_c","reason"],"additionalProperties":false},"exits":{"type":"object","properties":{"north":{"type":"boolean"},"east":{"type":"boolean"},"south":{"type":"boolean"},"west":{"type":"boolean"}},"required":["north","east","south","west"],"additionalProperties":false}},"required":["title","summary","narration","thermal","exits"],"additionalProperties":false})";
+    // Mirror mechanical bounds in decoding; the independent validator remains authoritative.
+    auto schema=json::parse(cfg.json_schema);
+    for(const auto* direction:{"north","east","south","west"}) {
+        auto& property=schema["properties"]["exits"]["properties"][direction];
+        const auto fixed=constraints.fixed.find(direction);
+        if(fixed!=constraints.fixed.end())property["enum"]=json::array({fixed->second});
+        else if(std::find(constraints.possible.begin(),constraints.possible.end(),direction)==constraints.possible.end())
+            property["enum"]=json::array({false});
+    }
+    auto& thermal_schema=schema["properties"]["thermal"]["properties"];
+    thermal_schema["external_temperature_c"]["minimum"]=std::max(300,state.hard_state.external_temperature_c-20);
+    thermal_schema["external_temperature_c"]["maximum"]=std::min(520,state.hard_state.external_temperature_c+20);
+    thermal_schema["body_temperature_c"]["minimum"]=std::max(34.f,state.hard_state.body_temperature_c-.4f);
+    thermal_schema["body_temperature_c"]["maximum"]=std::min(43.f,state.hard_state.body_temperature_c+.4f);
+    cfg.json_schema=schema.dump();
     std::vector<LlmPromptMessage> messages={{"system",
         "Write literary interactive fiction in the requested language, second person. In French ALWAYS use vous, never tu. Return only the requested JSON. "
-        "ENGINE OUTCOME is binding and already decided: never invent an accomplished movement, manipulation, acquired item, measurement or resource change. "
-        "Geometry and routes are immutable: NEVER say the path back disappears, closes, fades, shifts or becomes only a memory, even metaphorically. "
+        "ENGINE OUTCOME is binding for movement, manipulation and inventory. You also propose thermal evolution and allowed exits under the supplied constraints. Never invent another accomplished action, acquired item or measurement. "
+        "Geometry and established routes are immutable. Choose unknown exits only when exit_proposal.may_improvise is true. NEVER say the path back disappears, closes, fades, shifts or becomes only a memory, even metaphorically. "
         "Narrate perception in the PRESENT, not an imagined prior state. Arrival and revisit happen at a stationary viewpoint after the move. "
         "No bodily contact, taking, touching, walking or turning unless explicitly in engine_outcome. Do not turn technical volume names into objects, a passage, a machine or a portal. "
         "Describe shapes, spaces, distance, light and bodily perception precisely. Metaphor is welcome when not presented as a physical change. "
@@ -2710,32 +2767,56 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     result->raw_response_text=generation.response_text.empty()?stream.raw:generation.response_text;
     result->prompt_tokens+=generation.prompt_tokens;result->generated_tokens+=generation.generated_tokens;
     result->inference_time_ms+=generation.inference_time_ms;
-    std::string reason;
+    std::string reason;bool proposal_accepted=false;PlaceProposal proposal;
     if(!ok)reason=generation.error_message.empty()?"narrative_backend_failure":generation.error_message;
     else if(!generation.reached_eog)reason="incomplete_narration";
     else {
-        const auto response=json::parse(generation.response_text,nullptr,false);
-        if(!response.is_object()||response.size()!=3||!response.contains("title")||!response.contains("summary")||!response.contains("narration")||
-           !response["title"].is_string()||!response["summary"].is_string()||!response["narration"].is_string())reason="invalid_narrative_card";
+        if(!ParsePlaceProposal(generation.response_text,state.hard_state.external_temperature_c,
+            state.hard_state.body_temperature_c,constraints.fixed,constraints.possible,&proposal,&reason)) {}
         else {
+            proposal_accepted=true;
+            result->updated_hard_state.external_temperature_c=proposal.external_temperature_c;
+            result->updated_hard_state.body_temperature_c=proposal.body_temperature_c;
+            if(propose_exits) {
+                result->updated_spatial_state.blocked_exits.clear();
+                for(const auto& exit:proposal.exits)if(!exit.second)result->updated_spatial_state.blocked_exits.push_back(exit.first);
+            }
+            const auto response=json::parse(generation.response_text);
             const auto text=response["narration"].get<std::string>();
-            const auto whole=response.dump();
-            if(text.size()<(arrival?180u:35u)||text.size()>2600||whole.find("volume_")!=std::string::npos||whole.find("portal")!=std::string::npos||std::regex_search(whole,std::regex("volume[s]? [0-9]+")))
+            const auto whole=json({{"title",proposal.title},{"summary",proposal.summary},{"narration",proposal.narration}}).dump();
+            if(text.size()<(card?180u:35u)||text.size()>2600||whole.find("volume_")!=std::string::npos||whole.find("portal")!=std::string::npos||std::regex_search(whole,std::regex("volume[s]? [0-9]+")))
                 reason="short_oversized_or_internal_identifier";
             else if(state.language==kGameLanguageFrench && std::regex_search(whole,std::regex(
                 R"((^|[ \t\n".!?])[Tt](u|on|es) |effac|dispar|referm|réorganis|reorganis)")))reason="voice_or_unvalidated_world_change";
             else {
                 bool duplicate=false;
-                if(arrival)for(const auto& h:state.history)if(h.narration==text)duplicate=true;
+                if(card)for(const auto& h:state.history)if(h.narration==text)duplicate=true;
                 if(duplicate)reason="repeated_arrival";
-                else *narration=ConstrainNarrationText(text,arrival?1800:1100,arrival?10:7);
-                if(arrival&&reason.empty()){*title=ConstrainNarrationText(response["title"].get<std::string>(),96,1);
+                else *narration=ConstrainNarrationText(text,card?1800:1100,card?10:7);
+                if(card&&reason.empty()){*title=ConstrainNarrationText(response["title"].get<std::string>(),96,1);
                     *summary=ConstrainNarrationText(response["summary"].get<std::string>(),800,5);}
             }
         }
     }
+    if(pending&&proposal_accepted) {
+        GeneratedRoom resolved=*pending_room;
+        resolved.spatial_state=result->updated_spatial_state;
+        if(reason.empty()){resolved.spatial_state.room_title=*title;resolved.spatial_state.room_summary=*summary;}
+        resolved.metadata_fallback_used=false;
+        if(reason.empty())resolved.arrival_narration=*narration;
+        auto provenance=json::parse(resolved.scene_design_json);
+        provenance["accepted_exits"]=proposal.exits;provenance["proposal_pending"]=false;
+        resolved.scene_design_json=provenance.dump();resolved.scene_plan_hash=SceneTextHash(resolved.scene_design_json);
+        result->generated_rooms_to_add.push_back(resolved);
+        result->dynamic_scene_design_json=resolved.scene_design_json;
+        result->updated_spatial_state=resolved.spatial_state;
+    }
     result->narrative_metrics_json=json({{"purpose",cfg.purpose},{"success",reason.empty()},
-        {"fallback_reason",reason},{"wall_ms",generation.wall_time_ms},{"tokens",generation.generated_tokens},
+        {"fallback_reason",reason},{"proposal_accepted",proposal_accepted},{"sampling_temperature",cfg.temperature},
+        {"body_before_c",state.hard_state.body_temperature_c},{"body_after_c",result->updated_hard_state.body_temperature_c},
+        {"external_after_c",result->updated_hard_state.external_temperature_c},{"thermal_reason",proposal_accepted?proposal.thermal_reason:""},
+        {"accepted_exits",proposal_accepted?json(proposal.exits):json(nullptr)},{"constraints",{{"fixed",constraints.fixed},{"possible",constraints.possible}}},
+        {"wall_ms",generation.wall_time_ms},{"tokens",generation.generated_tokens},
         {"outcome",outcome},{"displayed",*narration}}).dump();
     if(!reason.empty())result->used_turn_fallback=true;
     return reason.empty();
@@ -2768,9 +2849,9 @@ static std::string SceneActionOutcome(const SessionState& state,const std::strin
         "ecouter","écouter","écoute","ecoute","listen","attendre","attends","wait","comparer","compare","rappeler","rappelle","remember",
         "orienter","orientation","guarda","osserva","schauen","untersuche","se"}))
         return "Perception/reflection only at the current fixed viewpoint. Address the requested detail using accepted geometry and memory. "
-            "If an alleged object/gap is absent or unverifiable, say so naturally. No manipulation, no displacement, no resource change; waiting entails no simulated world change.";
+            "If an alleged object/gap is absent or unverifiable, say so naturally. No manipulation or displacement. Evaluate thermal exposure during perception or waiting; no other resource change.";
     result->turn_result.intent="unavailable_scene_action";
-    return "The requested physical action is NOT performed. No movement, inventory, geometry, resource or topology change. "
+    return "The requested physical action is NOT performed. No movement, inventory, geometry or topology change. Thermal exposure may continue. "
         "Respond to its intended purpose specifically and sensitively using the place. Questions may be answered from facts; do not invent a mechanical reason or a new hazard for refusal.";
 }
 
@@ -3098,7 +3179,7 @@ static bool RunHeadlessTurnFromStateImpl(
                     error_buffer_size)) {
                 return false;
             }
-            AskLlmForThermalUpdate(
+            if(!config.local_scenes)AskLlmForThermalUpdate(
                 body_driven_config,
                 initial_session_state,
                 player_command,
@@ -3139,7 +3220,7 @@ static bool RunHeadlessTurnFromStateImpl(
 
         const bool local_direct=config.local_scenes &&
             (initial_session_state.hard_state.current_location_id==kLocationQuarryThreshold ||
-             IsGeneratedPlaceId(initial_session_state.current_place_id)) && traversal_direction==kDirectionEast;
+             IsGeneratedPlaceId(initial_session_state.current_place_id));
         if(config.dynamic_scenes||local_direct) {
             SceneDesignContext context;
             context.language=GameLanguageEnglishName(initial_session_state.language);
@@ -3209,8 +3290,8 @@ static bool RunHeadlessTurnFromStateImpl(
                 const bool french=initial_session_state.language==kGameLanguageFrench;
                 room.spatial_state.room_title=(french?"Carrière — lieu ":"Quarry — place ")+std::to_string(initial_session_state.next_generated_room_index);
                 generated.design.arrival=french?
-                    "Devant vous, les volumes de la carrière découpent le ciel. Vous vous arrêtez pour en reconnaître les distances. Derrière vous, le chemin de l'ouest demeure ouvert.":
-                    "The quarry masses divide the sky ahead. You pause to distinguish their distances. Behind you, the way west remains open.";
+                    "Devant vous, les volumes de la carrière découpent le ciel. Vous vous arrêtez pour en reconnaître les distances. Derrière vous, le chemin du retour demeure ouvert.":
+                    "The quarry masses divide the sky ahead. You pause to distinguish their distances. Behind you, the way back remains open.";
                 generated.design.arrival+=(french?" Le lieu rassemble ":" The place contains ")+
                     std::to_string(generated.audit.geometry_directives-1)+(french?" masses opaques.":" opaque masses.");
                 room.spatial_state.room_summary=generated.design.arrival;
@@ -3218,10 +3299,14 @@ static bool RunHeadlessTurnFromStateImpl(
                 // Publish the geometry only after the whole turn's final cancellation poll.
                 // Narrative failure keeps this valid geometry and its place-specific fallback.
                 result->updated_spatial_state=room.spatial_state;
-                result->updated_spatial_state.blocked_exits={"north","south"};
+                result->updated_spatial_state.blocked_exits.clear();
+                for(const auto* direction:{"north","east","south","west"})
+                    if(context.entry_direction!=direction)result->updated_spatial_state.blocked_exits.push_back(direction);
+                const auto constraints=NewPlaceConstraints(generated.scene,context.entry_direction);
                 NarrateScene(initial_session_state,body_driven_config,room.narrative_facts_json,player_command?player_command:"east",
-                    "The engine has accepted the new place and the move east. West returns to the previous place; east may discover another. No item gained, no other effect.",
-                    true,result,&room.spatial_state.room_title,&room.spatial_state.room_summary,&generated.design.arrival);
+                    "The engine has accepted this new place and the requested move. The fixed return exit leads to the previous place. Propose the other exits and thermal evolution. No item gained.",
+                    true,result,&room.spatial_state.room_title,&room.spatial_state.room_summary,&generated.design.arrival,&constraints);
+                room.metadata_fallback_used=!json::parse(result->narrative_metrics_json).value("proposal_accepted",false);
                 room.arrival_narration=generated.design.arrival;
             }
             room.spatial_state.location_archetype="dynamic_scene";
@@ -3232,7 +3317,8 @@ static bool RunHeadlessTurnFromStateImpl(
             room.spatial_state.blocked_exits.clear();
             for(const auto& direction:context.allowed_exits) {
                 bool open=false;for(const auto& passage:generated.design.reserved_passages)if(passage.direction==direction)open=true;
-                if(local_direct)open=direction==context.entry_direction||direction=="east";
+                if(local_direct)open=std::find(result->updated_spatial_state.blocked_exits.begin(),
+                    result->updated_spatial_state.blocked_exits.end(),direction)==result->updated_spatial_state.blocked_exits.end();
                 if(!open)room.spatial_state.blocked_exits.push_back(direction);
             }
             // Lighting is an artistic choice; the plan cannot advance the world clock.
@@ -3246,18 +3332,23 @@ static bool RunHeadlessTurnFromStateImpl(
             room.scene_prompt_version="scene-authoring-v8/normalized-design-v1/"+
                 SceneTextHash(BuildSceneDesignPrompt(context)+BuildSceneProgramPrompt(context,&generated.design));
             if(local_direct) {
-                room.scene_source="local_direct_v1";room.scene_contract_version=2;
-                room.scene_design_json=json({{"mode","local-fixed-v1"},{"brief",context.brief},
-                    {"landmark",scene_config.landmark},{"return_direction",context.entry_direction}}).dump();
+                room.scene_source="local_direct_v2";room.scene_contract_version=3;
+                std::map<std::string,bool> exits;
+                for(const auto& direction:context.allowed_exits)exits[direction]=std::find(room.spatial_state.blocked_exits.begin(),room.spatial_state.blocked_exits.end(),direction)==room.spatial_state.blocked_exits.end();
+                room.scene_design_json=json({{"mode","local-topology-v2"},{"brief",context.brief},
+                    {"landmark",scene_config.landmark},{"return_direction",context.entry_direction},
+                    {"forward_direction",CardinalDirectionToString(traversal_direction)},{"accepted_exits",exits},
+                    {"proposal_pending",room.metadata_fallback_used}}).dump();
                 room.scene_plan_hash=SceneTextHash(room.scene_design_json);
                 room.scene_model_filename=config.generation_config.ollama_model;
                 room.scene_profile="ollama/"+config.generation_config.ollama_model;
-                room.scene_prompt_version="local-fixed-v1/"+
+                room.scene_prompt_version="local-topology-v2/"+
                     SceneTextHash(LocalSceneSystemPrompt()+BuildLocalSceneProgramPrompt(context.brief,scene_config.landmark)+LocalSceneRepairPrefix());
                 result->dynamic_scene_design_json=room.scene_design_json;
             }
             result->generated_rooms_to_add.push_back(room);
             result->generated_room_created=true;result->generated_room_scene_source=room.scene_source;
+            result->generated_room_metadata_fallback_used=room.metadata_fallback_used;
             AddRoomLinkUnique(&result->room_links_to_add,result->initial_place_id,traversal_direction,room.room_id);
             AddRoomLinkUnique(&result->room_links_to_add,room.room_id,OppositeCardinalDirection(traversal_direction),result->initial_place_id);
             result->updated_place_id=room.room_id;result->updated_hard_state.current_location_id=kLocationUnknown;
