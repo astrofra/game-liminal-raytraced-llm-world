@@ -373,6 +373,8 @@ static void LocalPilot() {
         r->response_text=R"({"title":"Les masses et le ciel","summary":"Le passage s'inscrit entre deux masses sombres.","narration":"Les blocs découpent une bande de ciel. Vous êtes au milieu des masses, votre regard suit la distance qui les sépare. La lumière s’attarde sur leurs arêtes, tandis que le sol prend devant vous la teinte sourde des masses environnantes."})";
         auto response=json::parse(r->response_text);
         const auto request=json::parse(messages[1].content);
+        CHECK(request.at("carried_items").size()==3);
+        CHECK(request.at("carried_items")[0].at("id")=="survey map slate");
         response["thermal"]={{"external_temperature_c",request.at("temperature_external_c")},
             {"body_temperature_c",request.at("temperature_body_c")},{"reason","Protection stable."}};
         response["exits"]={{"north",false},{"east",true},{"south",false},{"west",true}};
@@ -424,13 +426,13 @@ static void LocalPilot() {
         CHECK(turn.updated_hard_state.move_count==moves&&turn.updated_hard_state.inventory_items==stable_inventory);
         UpdateSessionStateFromTurn(command,turn,&restored);
     }
-    CHECK(restored.field_notes.size()==2&&narratives>=8);
+    CHECK(restored.field_notes.size()==2&&narratives>=7);
     CHECK(SerializeSessionStateToJsonString(restored,&before));
     SessionState saved_notes;CHECK(ParseSessionStateFromJson(before.c_str(),&saved_notes,error,sizeof(error)));
     CHECK(saved_notes.field_notes==restored.field_notes);
     // A narrative failure preserves the accepted scene and commits no invented effect.
     cfg.narrative_completion=[](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult*){return false;};
-    CHECK(RunHeadlessTurnFromState(restored,"prendre le bloc",cfg,&turn,error,sizeof(error)));
+    CHECK(RunHeadlessTurnFromState(restored,"regarder le bloc",cfg,&turn,error,sizeof(error)));
     CHECK(turn.used_turn_fallback&&turn.rendered_scene_text==stable_scene&&turn.updated_hard_state.inventory_items==stable_inventory);
     bad=true;
     CHECK(!RunHeadlessTurnFromState(restored,"east",cfg,&turn,error,sizeof(error)));
@@ -521,6 +523,14 @@ static void LocalPilot() {
     CHECK(SerializeSessionStateToJsonString(state,&before));
     CHECK(ParseSessionStateFromJson(before.c_str(),&restored,error,sizeof(error)));
     CHECK(restored.generated_rooms.back().metadata_fallback_used);
+    const int proposals_before_inventory=proposal_calls;
+    const auto pending_body=state.hard_state.body_temperature_c;
+    CHECK(RunHeadlessTurnFromState(state,"inventaire",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.turn_result.intent=="read_inventory"&&turn.generated_rooms_to_add.empty());
+    CHECK(turn.rendered_scene_text==pending_geometry&&turn.updated_hard_state.body_temperature_c==pending_body);
+    UpdateSessionStateFromTurn("inventaire",turn,&state);
+    CHECK(state.generated_rooms.back().metadata_fallback_used&&proposal_calls==proposals_before_inventory);
+    CHECK(state.hard_state.inventory_items==MakeInitialHardState().inventory_items);
     refuse_proposal=false;next_exit="east";act("look");
     CHECK(!state.generated_rooms.back().metadata_fallback_used);
     CHECK(state.generated_rooms.back().scene_text==pending_geometry&&scene_temperatures.size()==compositions_before);
@@ -540,6 +550,73 @@ static void LocalPilot() {
     const auto approaches=LocalSceneClearApproaches(scene);
     CHECK(approaches.size()==3&&std::find(approaches.begin(),approaches.end(),"left")==approaches.end());
 }
+static void InventoryTurns() {
+    SessionState state;char error[1024]={};HeadlessTurnResult turn;HeadlessTurnConfig cfg;
+    CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+    state.language=kGameLanguageFrench;cfg.local_scenes=true;
+    int narrative_calls=0,scene_calls=0;
+    cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,
+        LlmStreamCallback,void*,LlmGenerationResult*) {++narrative_calls;return false;};
+    cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,
+        LlmStreamCallback,void*,LlmGenerationResult*) {++scene_calls;return false;};
+    const auto possessions=state.hard_state.inventory_items;
+    const auto blocked=state.spatial_state.blocked_exits;
+    std::string canonical;
+    for(const auto* command:{"i","  INVENTAIRE ! ","Qu’est-ce que je porte ?","examiner la tablette",
+        "regarder la craie","examiner les pinces","prendre la craie","utiliser les pinces",
+        "poser la tablette","jeter les pinces","prendre le portail","prendre la craie avec les pinces",
+        "examiner la craie et les pinces"}) {
+        CHECK(RunHeadlessTurnFromState(state,command,cfg,&turn,error,sizeof(error)));
+        CHECK(json::parse(turn.narrative_metrics_json).at("engine_only")==true);
+        CHECK(turn.updated_hard_state.inventory_items==possessions);
+        CHECK(turn.updated_hard_state.body_temperature_c==37.f&&turn.updated_hard_state.external_temperature_c==464);
+        CHECK(turn.updated_hard_state.move_count==0&&turn.updated_spatial_state.blocked_exits==blocked);
+        CHECK(turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty()&&turn.llm_call_count==0);
+        if(canonical.empty())canonical=turn.rendered_scene_text;
+        CHECK(turn.rendered_scene_text==canonical&&!turn.turn_result.narration.empty());
+        UpdateSessionStateFromTurn(command,turn,&state);
+    }
+    CHECK(narrative_calls==0&&scene_calls==0&&state.history.size()==13);
+    CHECK(RunHeadlessTurnFromState(state,"prendre la craie",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.turn_result.intent=="inventory_already_carried");
+    CHECK(turn.turn_result.narration.find("déjà")!=std::string::npos);
+    state.hard_state.inventory_items={"legacy keepsake"};
+    CHECK(RunHeadlessTurnFromState(state,"inventaire",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.turn_result.narration.find("legacy keepsake")!=std::string::npos);
+    CHECK(RunHeadlessTurnFromState(state,"examiner la craie",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.turn_result.intent=="inventory_item_absent");
+    CHECK(RunHeadlessTurnFromState(state,"utiliser les pinces",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.turn_result.intent=="inventory_item_absent");
+    std::string serialized;CHECK(SerializeSessionStateToJsonString(state,&serialized));SessionState restored;
+    CHECK(ParseSessionStateFromJson(serialized.c_str(),&restored,error,sizeof(error)));
+    CHECK(restored.hard_state.inventory_items==state.hard_state.inventory_items);
+    state.hard_state.inventory_items.clear();cfg.local_scenes=false;
+    CHECK(RunHeadlessTurnFromState(state,"i",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.turn_result.intent=="read_inventory"&&narrative_calls==0&&scene_calls==0);
+    CHECK(turn.turn_result.narration.find("craie")==std::string::npos);
+    cfg.local_scenes=true;
+    // Prose cannot invent an acquisition, even on the general narrative path.
+    cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+        LlmStreamCallback,void*,LlmGenerationResult* r) {
+        const auto request=json::parse(messages[1].content);
+        CHECK(request.at("carried_items").empty());
+        r->success=true;r->reached_eog=true;
+        r->response_text=json({{"title","Le seuil"},{"summary","Le sol sous le ciel."},
+            {"narration","Vous ramassez une clé dorée et la rangez avec vos outils pour poursuivre votre voyage."},
+            {"exits",request.at("exit_proposal").at("fixed")},
+            {"thermal",{{"external_temperature_c",464},{"body_temperature_c",37},{"reason","Stable."}}}}).dump();return true;
+    };
+    CHECK(RunHeadlessTurnFromState(state,"observer le ciel",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.used_turn_fallback&&turn.updated_hard_state.inventory_items.empty());
+    CHECK(json::parse(turn.narrative_metrics_json).at("fallback_reason")=="unvalidated_inventory_effect");
+    CHECK(turn.turn_result.narration.find("clé")==std::string::npos);
+    CHECK(SerializeSessionStateToJsonString(state,&serialized));
+    cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char*,void*) {return false;};
+    CHECK(!RunHeadlessTurnFromState(state,"inventaire",cfg,&turn,error,sizeof(error)));
+    UpdateSessionStateFromTurn("inventaire",turn,&state);
+    std::string unchanged;CHECK(SerializeSessionStateToJsonString(state,&unchanged));CHECK(unchanged==serialized);
+}
+
 static void SingleStart() {
     SessionState state,restored;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
@@ -598,6 +675,6 @@ static void ResearchArchives() {
     std::filesystem::remove_all(root);
 }
 int main() {
-    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();SingleStart();ResearchArchives();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation and save integrity passed");return 0;}
+    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();InventoryTurns();SingleStart();ResearchArchives();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

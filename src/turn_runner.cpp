@@ -8,6 +8,7 @@
 #include "scene_compiler.h"
 #include "turn_contract.h"
 #include "place_proposal.h"
+#include "inventory.h"
 #include "nlohmann/json.hpp"
 
 namespace liminal {
@@ -2658,6 +2659,71 @@ static std::string SceneFacts(const std::string& program) {
         {"interpretation","Only the listed opaque masses are sampled visible. Dimensions describe bounding extents, not doors or instruments. No object is portable by virtue of being visible. Transparent geometry is excluded from opaque coverage. No exact gap width or surface texture is established."}}).dump();
 }
 
+// Inventory queries share navigation's Unicode folding, then discard punctuation.
+static std::string NormalizeInventoryText(const std::string& text) {
+    auto normalized=NormalizeNavigationText(text);
+    for(const auto* punctuation:{"’","‘","–","—"}) {
+        size_t pos=0;
+        while((pos=normalized.find(punctuation,pos))!=std::string::npos)normalized.replace(pos,strlen(punctuation)," ");
+    }
+    for(char& c:normalized)if(static_cast<unsigned char>(c)<128 &&
+        std::string("?!.,;:'\"-()[]").find(c)!=std::string::npos)c=' ';
+    return CollapseWhitespaceCopy(normalized);
+}
+
+static std::string InventoryReply(const SessionState& state,const InventoryRequest& request,std::string* intent) {
+    const auto lang=state.language;
+    const auto& items=state.hard_state.inventory_items;
+    const bool owned=!request.item_id.empty()&&std::find(items.begin(),items.end(),request.item_id)!=items.end();
+    const auto name=InventoryItemName(request.item_id,lang);
+    if(request.command==InventoryCommand::List) {
+        *intent="read_inventory";return FormatInventory(items,lang);
+    }
+    if(request.command==InventoryCommand::Ambiguous) {
+        *intent="clarify_inventory";
+        return PlayerText(lang,"Which tool would you like to examine?","Quel outil souhaitez-vous examiner ?",
+            "Hvilket redskap vil du undersøke?","Hvilket redskab vil du undersøge?",
+            "Welches Werkzeug möchten Sie untersuchen?","Quale strumento desiderate esaminare?");
+    }
+    if(!request.item_id.empty()&&!owned) {
+        *intent="inventory_item_absent";
+        return std::string(PlayerText(lang,"You are not carrying this item: ","Vous ne portez pas cet objet : ",
+            "Du har ikke med deg denne gjenstanden: ","Du har ikke denne genstand med dig: ",
+            "Sie tragen diesen Gegenstand nicht bei sich: ","Non avete con voi questo oggetto: "))+name+".";
+    }
+    if(request.command==InventoryCommand::Inspect) {
+        *intent="inspect_inventory_item";return name+" — "+InventoryItemDescription(request.item_id,lang);
+    }
+    if(request.command==InventoryCommand::Take&&owned) {
+        *intent="inventory_already_carried";
+        return std::string(PlayerText(lang,"You already carry this item: ","Vous avez déjà cet objet sur vous : ",
+            "Du har allerede med deg denne gjenstanden: ","Du har allerede denne genstand med dig: ",
+            "Sie tragen diesen Gegenstand bereits bei sich: ","Avete già con voi questo oggetto: "))+name+".";
+    }
+    *intent="inventory_action_unavailable";
+    if(request.command==InventoryCommand::Drop)return PlayerText(lang,
+        "Your equipment stays with you. Setting down, giving away or discarding items is not available yet.",
+        "Votre équipement reste avec vous. Déposer, donner ou jeter un objet n’est pas encore disponible.",
+        "Utstyret blir hos deg. Det er ennå ikke mulig å legge fra seg, gi bort eller kaste gjenstander.",
+        "Udstyret bliver hos dig. Det er endnu ikke muligt at lægge, give eller kaste genstande fra sig.",
+        "Ihre Ausrüstung bleibt bei Ihnen. Ablegen, Verschenken und Wegwerfen sind noch nicht verfügbar.",
+        "L’equipaggiamento resta con voi. Posare, dare o gettare oggetti non è ancora disponibile.");
+    if(request.command==InventoryCommand::Use&&owned)return PlayerText(lang,
+        "What would you like to use this tool on? No manipulation has been performed; using tools on scenery is not available yet.",
+        "Sur quoi souhaitez-vous utiliser cet outil ? Aucune manipulation n’a été effectuée ; l’utilisation des outils sur le décor n’est pas encore disponible.",
+        "Hva vil du bruke redskapet på? Ingenting er manipulert; stedet har ennå ingen angitt brukbar gjenstand.",
+        "Hvad vil du bruge redskabet på? Intet er manipuleret; stedet har endnu ingen angivet brugbar genstand.",
+        "Worauf möchten Sie dieses Werkzeug anwenden? Es wurde nichts verändert; hier ist noch kein nutzbares Ziel festgelegt.",
+        "Su cosa desiderate usare questo strumento? Nulla è stato manipolato; qui non è ancora definito un bersaglio utilizzabile.");
+    return PlayerText(lang,
+        "No item was taken or used. Specify one of your carried tools; collecting objects from the scenery is not available yet.",
+        "Aucun objet n’a été pris ou utilisé. Précisez un outil de votre inventaire ; le ramassage des objets du décor n’est pas encore disponible.",
+        "Ingen gjenstand er tatt eller brukt. Angi et redskap du bærer; omgivelsene har ennå ingen angitt gjenstand som kan tas.",
+        "Ingen genstand er taget eller brugt. Angiv et redskab, du bærer; omgivelserne har endnu ingen angivet genstand, der kan tages.",
+        "Kein Gegenstand wurde aufgenommen oder benutzt. Nennen Sie eines Ihrer Werkzeuge; hier ist noch kein aufnehmbarer Gegenstand festgelegt.",
+        "Nessun oggetto è stato preso o usato. Indicate uno strumento del vostro inventario; lo scenario non contiene ancora oggetti dichiarati raccoglibili.");
+}
+
 struct PlaceProposalConstraints {
     std::map<std::string,bool> fixed;
     std::vector<std::string> possible;
@@ -2710,10 +2776,18 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     if(memory.size()>12)memory.erase(memory.begin(),memory.end()-12);
     const auto note_start=state.field_notes.size()>16?state.field_notes.size()-16:0;
     json notebook=json::array();for(size_t i=note_start;i<state.field_notes.size();++i)notebook.push_back(state.field_notes[i]);
+    json carried=json::array();std::vector<std::string> seen_items;
+    for(const auto& id:state.hard_state.inventory_items) {
+        if(id.empty()||std::find(seen_items.begin(),seen_items.end(),id)!=seen_items.end())continue;
+        seen_items.push_back(id);
+        carried.push_back({{"id",id},{"name",InventoryItemName(id,state.language)},
+            {"description",InventoryItemDescription(id,state.language)},{"known_tool",IsKnownInventoryItem(id)}});
+    }
     const std::string prompt=json({{"language",GameLanguageEnglishName(state.language)},
         {"world","Eryx: Venusian quarry, human explorer inside a protective suit. Material, embodied strangeness; no invented supernatural events."},
         {"facts",json::parse(facts,nullptr,false)},{"current_title",*title},{"base_description",*summary},
         {"player_command",command},{"engine_outcome",outcome},{"history",memory},{"notebook",notebook},
+        {"carried_items",carried},{"inventory_rule","This is the complete authoritative inventory. Known initial tools were carried from the start, not found here. No tool is consumed, acquired, lost, deposited or used by narration. Unknown legacy IDs confer no inferred ability. Mention possessions only when relevant; do not repeat an inventory menu."},
         {"temperature_external_c",state.hard_state.external_temperature_c},{"temperature_body_c",state.hard_state.body_temperature_c},
         {"exit_proposal",{{"may_improvise",propose_exits},{"fixed",constraints.fixed},
             {"geometrically_possible",constraints.possible},{"view_to_compass",constraints.relative_directions},
@@ -2786,6 +2860,8 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             const auto whole=json({{"title",proposal.title},{"summary",proposal.summary},{"narration",proposal.narration}}).dump();
             if(text.size()<(card?180u:35u)||text.size()>2600||whole.find("volume_")!=std::string::npos||whole.find("portal")!=std::string::npos||std::regex_search(whole,std::regex("volume[s]? [0-9]+")))
                 reason="short_oversized_or_internal_identifier";
+            else if(std::regex_search(NormalizeInventoryText(proposal.narration),std::regex(
+                R"((vous (ramassez|empoignez|saisissez|jetez|deposez|recevez|rangez)|vous (avez|venez de) (ramasse|pris|recupere|trouve|perdu)|you (pick up|acquire|discard|drop|receive)|you have (picked up|acquired|lost)|sie (nehmen|werfen|erhalten)|du (tar opp|plukker opp|samler op)|voi (raccogliete|prendete)|aggiungete all inventario))")))reason="unvalidated_inventory_effect";
             else if(state.language==kGameLanguageFrench && std::regex_search(whole,std::regex(
                 R"((^|[ \t\n".!?])[Tt](u|on|es) |effac|dispar|referm|réorganis|reorganis)")))reason="voice_or_unvalidated_world_change";
             else {
@@ -3070,6 +3146,22 @@ static bool RunHeadlessTurnFromStateImpl(
         config.generation_config,
         result->initial_hard_state);
     result->effective_llm_temperature = body_driven_config.generation_config.temperature;
+
+    const auto inventory_request=ParseInventoryRequest(NormalizeInventoryText(player_command?player_command:""));
+    if(inventory_request.command!=InventoryCommand::None) {
+        result->turn_result.narration=InventoryReply(initial_session_state,inventory_request,&result->turn_result.intent);
+        result->updated_soft_state.rolling_summary=result->turn_result.narration;
+        ++result->updated_hard_state.turn_number;
+        result->narrative_metrics_json=json({{"engine_only",true},{"purpose","inventory_v1"},
+            {"intent",result->turn_result.intent},{"item_id",inventory_request.item_id},
+            {"inventory",result->updated_hard_state.inventory_items},{"displayed",result->turn_result.narration}}).dump();
+        const auto* room=FindGeneratedRoomById(initial_session_state,result->initial_place_id);
+        std::string program;
+        if(room)program=room->scene_text;
+        else if(!BuildSceneTextFromSpatialState(result->initial_spatial_state,&program,error_buffer,error_buffer_size))return false;
+        CaptureSceneDebugArtifacts(result->initial_spatial_state,&program,&result->rendered_scene_text,&result->rendered_scene_debug_text);
+        return LoadSceneForPlace(initial_session_state,result->initial_place_id,&result->rendered_scene,error_buffer,error_buffer_size);
+    }
 
     CardinalDirection traversal_direction = kDirectionUnknown;
     if (TryParseTraversalCommand(initial_session_state.language, player_command, &traversal_direction)) {

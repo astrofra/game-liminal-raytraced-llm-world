@@ -22,6 +22,8 @@ Le contexte du jeu se fonde sur trois sources complémentaires :
 
 ## Point d'entrée
 
+- [`BILAN_INVENTAIRE.md`](./BILAN_INVENTAIRE.md) : inventaire des trois outils restauré dans les six langues, commandes et recettes sans LLM.
+
 - [`DIAGNOSTIC_FICTION_ET_FIABILITE_SCENES.md`](./DIAGNOSTIC_FICTION_ET_FIABILITE_SCENES.md) : diagnostic en duo de la régression narrative, comparaison des sources de `main`, faux rejet de visibilité reproduit, tolérance syntaxique et recommandations de correction.
 - [`SINGLE_START_RESEARCH.md`](./SINGLE_START_RESEARCH.md) : fonctionnement actuel, un seul lieu de départ, nouvelle exploration à chaque lancement et archives de recherche automatiques.
 - [`LOCAL_SCENE_ROADMAP_RESULTS.md`](./LOCAL_SCENE_ROADMAP_RESULTS.md) : lancement actuel Gemma/Ollama, première branche directe jouable, comparaison mesurée, images conservées et limites.
@@ -38,6 +40,7 @@ Le contexte du jeu se fonde sur trois sources complémentaires :
 
 ## Architecture et plans actifs
 
+- [`ROADMAP_REMISE_EN_SERVICE_INVENTAIRE.md`](./ROADMAP_REMISE_EN_SERVICE_INVENTAIRE.md) : consultation fiable des trois objets de départ, intégration narrative, usages et extensions de manipulation.
 - [`GENERATION_DYNAMIQUE_DECORS_PLAN.md`](./GENERATION_DYNAMIQUE_DECORS_PLAN.md) : conception illustrée et plan approuvé pour des lieux imaginés et écrits en `.scene` par Ministral pendant la partie.
 - [`GENERATION_DYNAMIQUE_DECORS_RUNTIME.md`](./GENERATION_DYNAMIQUE_DECORS_RUNTIME.md) : implémentation du mode explicite `dynamic`, contrôles, persistance, banc comparatif et limites de qualification.
 - [`GENERATION_DYNAMIQUE_DECORS_BILAN.md`](./GENERATION_DYNAMIQUE_DECORS_BILAN.md) : tests exécutés, essais réels et décision de qualification, distincts des réponses injectées dans les tests.

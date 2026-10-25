@@ -6,6 +6,10 @@ Le [bilan vérifié](BILAN_FICTION_ET_FIABILITE_SCENES.md) décrit le runtime pu
 
 Derniere mise a jour : 2026-10-25
 
+## Inventaire restauré
+
+Les lots 1–2 de la [roadmap inventaire](ROADMAP_REMISE_EN_SERVICE_INVENTAIRE.md) sont livrés : liste et examen des trois outils dans les six langues, commandes traitées directement par le moteur sans LLM ni évolution thermique, possessions transmises au narrateur et archivées avant/après. Le [bilan](BILAN_INVENTAIRE.md) détaille les recettes. Dépôt, prélèvement et marques physiques restent des extensions.
+
 ## Resume
 
 Le dépôt contient un runtime C++17, un renderer à scènes propriétaires et un frontend SDL3. Le lancement normal utilise désormais **Gemma 4 E4B via Ollama local** ; le backend `llama.cpp` reste disponible pour les diagnostics et les profils Ministral. La Cornell Box demeure une référence de rendu.

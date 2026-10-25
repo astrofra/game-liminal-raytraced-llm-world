@@ -14,6 +14,8 @@ The [fiction and scene reliability delivery](documentation/BILAN_FICTION_ET_FIAB
 
 The [exit and thermal restoration](documentation/BILAN_ISSUES_ET_TEMPERATURE.md) restores LLM-proposed branches and thermal evolution, with body temperature driving subsequent narration and local composition.
 
+The [inventory delivery](documentation/BILAN_INVENTAIRE.md) restores listing and examination of the three starting tools in all six languages, without model calls or thermal changes.
+
 Current state:
 
 - normal launch: SDL at the quarry threshold, using local Ollama `gemma4:e4b`; east leaves the authored threshold, then the LLM proposes available cardinal exits; a new game and generation seed at every launch

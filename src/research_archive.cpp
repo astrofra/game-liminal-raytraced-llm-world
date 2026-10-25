@@ -142,7 +142,8 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
     const std::string stem="turns/turn-"+Number(command_index_);
     Write(stem+".json",json({{"utc",UtcTime()},{"command",command_},{"status",status},{"error",error},
         {"from",turn.initial_place_id},{"to",turn.updated_place_id},{"description",turn.turn_result.narration},
-        {"generated_room",turn.generated_room_created},{"prompt",turn.prompt_text},
+        {"generated_room",turn.generated_room_created},{"prompt",turn.prompt_text},{"intent",turn.turn_result.intent},
+        {"inventory_before",turn.initial_hard_state.inventory_items},{"inventory_after",turn.updated_hard_state.inventory_items},
         {"raw_response",turn.raw_response_text},{"repair_response",turn.repair_response_text},
         {"narrative_metrics",turn.narrative_metrics_json},
         {"scene_provenance",turn.dynamic_scene_design_json},{"scene_metrics",turn.dynamic_scene_metrics_json},

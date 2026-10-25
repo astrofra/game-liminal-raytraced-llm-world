@@ -16,6 +16,10 @@ Dans une même partie, les lieux acceptés restent en mémoire et les revisites 
 
 La navigation reste textuelle. Après au maximum trois compositions, un échec conserve le joueur au lieu précédent. Au départ, seul l’est est ouvert. Les lieux suivants proposent leurs propres issues cardinales, avec retour garanti et géométrie validée. BODY peut monter, se stabiliser ou baisser selon le LLM, et modifie l’échantillonnage du tour suivant.
 
+## Inventaire
+
+`i` ou `inventaire` affiche les possessions ; `examiner la tablette`, `examiner la craie`, `examiner les pinces` décrit les trois outils. Les commandes et réponses sont disponibles dans les six langues : voir le [guide et bilan inventaire](BILAN_INVENTAIRE.md). Ces consultations ne demandent aucune inférence et ne changent pas BODY. Les outils restent portés ; le dépôt et le ramassage dans le décor ne sont pas encore disponibles.
+
 ## Archives automatiques de recherche
 
 Sous Windows, chaque partie écrit un dossier unique dans :

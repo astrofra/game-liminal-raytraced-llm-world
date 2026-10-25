@@ -86,7 +86,7 @@ def main():
     print(subprocess.list2cmdline(command), flush=True)
     subprocess.run(command, env=env, cwd=ROOT, check=True)
     if not args.configure_only:
-        targets = ["liminal_cornell_renderer", "liminal_llm_channels_test", "liminal_distant_light_test", "liminal_dynamic_scene_test", "liminal_ollama_test", "liminal_scene_normalization_test", "liminal_scene_visibility_test", "liminal_place_proposal_test"]
+        targets = ["liminal_cornell_renderer", "liminal_llm_channels_test", "liminal_distant_light_test", "liminal_dynamic_scene_test", "liminal_ollama_test", "liminal_scene_normalization_test", "liminal_scene_visibility_test", "liminal_place_proposal_test", "liminal_inventory_test"]
         if args.with_cli:
             targets.append("llama-cli")
         subprocess.run(["cmake", "--build", str(build), "--config", "Release", "--parallel", str(args.parallel),
