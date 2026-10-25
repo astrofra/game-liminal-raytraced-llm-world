@@ -2,13 +2,19 @@
 
 ## Current story direction
 
-The project is titled *Within the Latent Walls* in English and *Entre les Murs Latents* in French. The title connects the invisible architecture of *In the Walls of Eryx* to the latent space in which the LLM constructs and interprets the world. *Le Désert des tokens* now designates only the earlier narrative branch documented in [`NOTES.md`](./NOTES.md) and [`PROJECT_JOURNAL.md`](./PROJECT_JOURNAL.md).
+The project is titled *Within the Latent Walls* in English and *Entre les Murs Latents* in French. The title connects the invisible architecture of *In the Walls of Eryx* to the latent space in which the LLM constructs and interprets the world.
 
 The active fiction places the player in a Venusian extraction zone. The player is a prospector or survey operative moving among a quarry, sparse industrial shelters, extraction machinery, navigation beacons, sample containers, and other human attempts to measure and exploit a hostile environment.
 
 Within this visible infrastructure lies another architecture: a labyrinth whose walls cannot ordinarily be seen. An apparently open route may reject movement. A corridor may reconnect to a different place. A path followed in reverse may not return from the expected direction. A familiar site may preserve its local appearance while acquiring different connections.
 
 The player is therefore not only exploring territory. They are trying to establish whether space can still be trusted.
+
+## Narrative references
+
+Three local sources guide the fiction: the [concept-art atlas and its ten studies](./concept-art/ATLAS_COMPOSITION.md), the [project images](../img/), and [*In the Walls of Eryx*](./IN_THE_WALLS_OF_ERYX.md). The literary motifs supply the crystal lure, invisible contact, uncertain mapping, bodily exhaustion, and an escape overlooked nearby. The concepts translate them into monumental excavations, sparse survey markers, a shelter beneath a heavy slab, ambiguous lights, and a lateral opening missed by the traveler.
+
+The [quarry threshold](../img/004.png) and [extraction field](../img/006.png) show how an instrumented viewport and sparse masses can sustain that fiction. Their captured transcripts are records of earlier play sessions, not narrative instructions. Human construction remains visible and opaque; the alien labyrinth has no visible walls. Concept images express artistic intentions and do not certify implemented places or mechanics.
 
 ## Fictional situation
 
@@ -118,7 +124,7 @@ The world should stay locally legible and globally uncertain. The image is not a
 
 The fiction may use oxygen, suit stress, exposure time, confidence in the map, distance from shelter, or proximity to the labyrinth as pressures on exploration. No such resource should be added merely to imitate survival-game convention.
 
-Temperature is now an active feedback loop grounded in Venus rather than in the superseded datacenter premise. The suit reports the extreme exterior temperature and a slower body temperature. The LLM decides whether exposure, effort, damage, shelter, or atmospheric equipment changes either value; the suit keeps both correlated but deliberately lagged.
+Temperature is now an active feedback loop grounded in Venus. The suit reports the extreme exterior temperature and a slower body temperature. The LLM decides whether exposure, effort, damage, shelter, or atmospheric equipment changes either value; the suit keeps both correlated but deliberately lagged.
 
 Body temperature then raises the sampling temperature used by the LLM to interpret actions and imagine places. This creates an embodied drift from hostile environment to generative instability. It remains subordinate to structured topological mutation: hotter sampling may alter proposals and prose, but it never grants the model direct authority over committed traversal or geometry.
 

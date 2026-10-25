@@ -1,0 +1,57 @@
+{
+  "kind": "hand_authored_renderer_capability_study",
+  "renderer_sha256": "01238440b69b578aa1242a1e76f82811dbb11c41f610b3afa015d6bf75e5925e",
+  "source_commit": "c1bfcb76565cc4c0403ed83e0b26d89e183900af",
+  "settings": {
+    "width": 960,
+    "height": 480,
+    "spp": 128,
+    "diffuse_bounces": 5,
+    "glass_bounces": 9,
+    "direct_samples": 8,
+    "threads": 12,
+    "exposure": 1.0,
+    "seed": 1337
+  },
+  "cases": [
+    {
+      "id": "01",
+      "scene": "01-la-chambre-du-ciel.scene",
+      "scene_sha256": "4933db71176da76d55752b30492851073526a630c7f92a82c900d3aa93097123",
+      "image": "01-la-chambre-du-ciel.png",
+      "exit_code": 0,
+      "wall_seconds": 139.387,
+      "render_ms": 139366.26,
+      "triangles": 446,
+      "materials": 38,
+      "emissive_triangles": 0,
+      "image_sha256": "106932cdb88359542abfe5a44247d1e6945d9fbbd8e48c93049dc33e7b34371e"
+    },
+    {
+      "id": "02",
+      "scene": "02-le-champ-des-diapasons.scene",
+      "scene_sha256": "96baf34fba47124ed3fdff5e087d8fc97e384ea772f04f8bc93467794e72858f",
+      "image": "02-le-champ-des-diapasons.png",
+      "exit_code": 0,
+      "wall_seconds": 32.141,
+      "render_ms": 32121.76,
+      "triangles": 830,
+      "materials": 70,
+      "emissive_triangles": 0,
+      "image_sha256": "612205ee5c316bfdd62626073786cea6fd4ee4b3f4f2e064b30240d832f3ffe1"
+    },
+    {
+      "id": "03",
+      "scene": "03-la-faille-en-chicane.scene",
+      "scene_sha256": "6c369e785c6e5f95658705a4a1e550fbe75175229fa7998088bb3c004949d261",
+      "image": "03-la-faille-en-chicane.png",
+      "exit_code": 0,
+      "wall_seconds": 250.636,
+      "render_ms": 250616.94,
+      "triangles": 302,
+      "materials": 26,
+      "emissive_triangles": 12,
+      "image_sha256": "9bf71a5990ced211d0765395edfb140471a6d7407a17f0bb50c1f66ebb32cfc0"
+    }
+  ]
+}

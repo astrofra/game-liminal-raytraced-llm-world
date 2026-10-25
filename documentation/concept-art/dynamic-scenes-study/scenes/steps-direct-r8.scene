@@ -1,0 +1,32 @@
+room "Staircase to the Tower"
+camera eye(2.5,1.7,0) target(0,1.7,3) fov(60)
+sky zenith(0.02) horizon(0.4) nadir(0) band(0.35) curve(1.6) noise(0) stars(0,0,0) seed(77)
+distant_light direction(-0.6,-1,0.35) intensity(3.5) color(1,0.88,0.55) angular_radius(0.65)
+
+plane "m01_desert_floor" pos(0,0,-3) normal(0,1,0) size(10,10) gray(0.25) emit(0.05)
+box "m01_core_floor_cover" pos(0,0,-3) size(10,0.1,10) gray(0.25)
+
+box "m01_left_support_a" pos(-3.5,0.2,-3) size(0.5,3.5,0.5) gray(0.5)
+box "m01_left_support_b" pos(-3.5,1.7,-2.5) size(0.5,1,0.5) gray(0.6)
+box "m01_right_support_a" pos(3.5,0.2,-3) size(0.5,3.5,0.5) gray(0.5)
+box "m01_right_support_b" pos(3.5,1.7,-2.5) size(0.5,1,0.5) gray(0.6)
+
+box "m02_step_1" pos(-2.5,1.7,-1) size(5,0.2,1) rot(0,90,0) gray(0.8)
+box "m02_step_2" pos(-2.5,1.7,-2.5) size(5,0.2,1) rot(0,90,0) gray(0.8)
+box "m02_step_3" pos(-2.5,1.7,-4) size(5,0.2,1) rot(0,90,0) gray(0.8)
+box "m02_step_4" pos(0,1.7,-4) size(5,0.2,0.5) rot(0,90,0) gray(0.8)
+
+box "m02_frame_left" pos(-3.5,1.7,-2.5) size(0.5,2,0.5) gray(0.7)
+box "m02_frame_right" pos(3.5,1.7,-2.5) size(0.5,2,0.5) gray(0.7)
+
+box "m03_tower_base" pos(0,2.7,-3.5) size(2,2,2) gray(0.6)
+box "m03_tower_wall_a" pos(-0.9,5.7,-3.5) size(0.1,4,1.6) gray(0.7)
+box "m03_tower_wall_b" pos(0.9,5.7,-3.5) size(0.1,4,1.6) gray(0.7)
+box "m03_tower_upper" pos(0,5.5,-3.5) size(1.8,1,1.8) gray(0.75)
+
+plane "m03_tower_doorway" pos(0,5.2,-3.5) normal(0,0,1) size(1.5,2) gray(0.7) emit(0.1)
+plane "m03_tower_ceiling" pos(0,7.5,-3.5) normal(0,-1,0) size(2,2) gray(0.7) emit(0.05)
+
+box "m04_sky_gap_a" pos(-4,7,-4) size(0.1,2,0.1) gray(0.1)
+box "m04_sky_gap_b" pos(4,7,-4) size(0.1,2,0.1) gray(0.1)
+plane "m04_roof_slant" pos(0,7,-3.5) normal(0,1,0) size(3,6) gray(0.6) emit(0.05)

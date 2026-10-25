@@ -1,0 +1,21 @@
+Le champ des diapasons — concept 2
+Date : 2026-10-24
+Génération : outil intégré image_gen ; concept artistique, pas un rendu du moteur.
+Image : 02-le-champ-des-diapasons.png, 1774 × 887, panorama 2:1 sans interface.
+Direction commune : suite de La chambre du ciel, inspirée des références img/ consultées pour le concept 01 ; gris brutaliste, sol ocre, ciel olive vers jaune pâle, illumination globale diffuse.
+
+Transposition envisagée : Répétition de portiques en U : deux piliers et un socle par monument ; dalles plates pour le chemin ; quelques boîtes tournées via rot(...). Plan de sol ocre, ciel ouvert. La répétition demanderait plusieurs directives explicites ; pas de nouveau système d'instanciation présupposé.
+Limites : grain de matière, joints et détails de sol ajoutés par le générateur à simplifier en matériaux uniformes. Les budgets de primitives du prompt sont des intentions et non des mesures. Aucune scène .scene ni validation du rendu moteur produite. La composition libre demanderait un travail distinct pour être générée automatiquement par le compilateur hybride.
+Validation effectuée : revue visuelle ; décodage PNG et dimensions identiques aux cinq images de la série.
+
+PROMPT EXACT
+
+Use case: stylized-concept.
+Create ONE polished environment concept art image for Within the Latent Walls / Entre les Murs Latents, a liminal Venusian exploration game. Wide landscape panorama EXACT 2:1 aspect ratio, preferably 1774x887, full bleed. One continuous scene, no panels, no text, captions, border, UI, visor, HUD, people, logos or watermark.
+Art direction: architectural concept art with the visual discipline of a simple low-poly path-traced maquette. Monumental gray brutalist forms, flat muted ochre quarry floor, desaturated olive-green sky at zenith grading into pale sulfur yellow at horizon. Spacious, uncanny, silent, lonely, inviting exploration. Strong legible silhouettes and physically coherent perspective.
+Technical constraints: geometry directly reconstructible with a modest number of rectangular box primitives and flat rectangular planes; boxes may be rotated, stacked or scaled. Openings are gaps between blocks, not boolean cuts. No curved surfaces, arches, spheres, cylinders, organic geometry, complex machinery, cables, detailed debris, vegetation, water, floating objects or impossible connections. Use broad solid surfaces and clearly grounded structures. Matte gray uniform materials; color on gray faces comes from lighting. Avoid detailed textures, cracks and weathering; subtle render grain only. No high-detail production painting disguised as simple geometry.
+Lighting: convincing soft diffuse global illumination and multi-bounce color transfer; yellow-green skylight, warm ochre bounce from ground, subtle white camera fill in the foreground. Deep but readable contact occlusion. No sun disc, harsh directional sunlight, volumetric fog, god rays, bloom or neon. The composition and illumination should carry the beauty, not surface ornament.
+
+Title for context only, do not print it: Le champ des diapasons.
+Scene: an open immense ochre plateau populated by just nine enigmatic fork-shaped survey monuments, each made from two tall square gray pillars joined by one low rectangular base, like monumental tuning forks with entirely rectangular silhouettes. Height 6 to 15 meters, varied spacing, irregular rhythm. A few pillars lean slightly as rigid rotated boxes, never curved. One very large fork occupies the near left edge, another medium fork right of center frames the tiny far horizon. A low straight route of separated flat rectangular stepping slabs winds through the field with two right-angle turns; two miniature white block beacons mark its distant end. The ground is a single flat plane. No roofs, bridges, pit or enclosed courtyard. Horizon low, sky occupies upper half. First-person eye height, wide three-quarter view with an unusually close massive foreground pillar and a gradual recession of sparse vertical silhouettes. Quiet spatial uncertainty, the space between the pillars is the main subject. Use approximately 30–45 boxes total, not hundreds of columns.
+

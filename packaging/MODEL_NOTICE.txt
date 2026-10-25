@@ -1,27 +1,22 @@
 WITHIN THE LATENT WALLS - MODEL NOTICE
-======================================
+=====================================
 
-The installer does not contain AI model weights.
+This distribution includes Gemma 4 E4B Instruct, quantized Q4_K_M by ggml-org.
+Inference runs locally through the integrated llama.cpp runtime.
+No account, model server or network is required to play or install.
 
-During installation it downloads this official Mistral AI artifact:
+Repository: https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF
+Revision: 51db8454ac67b58ed848e54d4111be2ad16ba4bf
+File: gemma-4-E4B-it-Q4_K_M.gguf
+Size: 5,335,289,824 bytes
+SHA-256: 90ce98129eb3e8cc57e62433d500c97c624b1e3af1fcc85dd3b55ad7e0313e9f
 
-Repository:
-  https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512-GGUF
-
-File:
-  Ministral-3-8B-Instruct-2512-Q4_K_M.gguf
-
-Pinned repository revision:
-  0102285ad796bd99af90f58de616092e5630e970
-
-Expected size:
-  5,198,911,904 bytes
-
-Expected SHA-256:
-  33e7a72cf5e6e2cfc2f2847075acc013d68bba023e35310cef86b5cf8fdca761
-
-Model license:
-  Apache License 2.0
-
-The model is downloaded directly from the publisher's Hugging Face repository.
-The game does not require the multimodal projector GGUF.
+Original model: https://huggingface.co/google/gemma-4-E4B-it
+Model license: Apache License 2.0 (see licenses/third-party/Gemma-LICENSE.txt).
+Publisher license page: https://ai.google.dev/gemma/docs/gemma_4_license
+Verified on 2026-10-25. The pinned quantizer card labels its license "other"
+and names google/gemma-4-E4B-it as its base; the base publisher identifies
+Apache 2.0 and links the license page above. No separate NOTICE or LICENSE
+file is listed in that pinned quantizer revision.
+Only text inference is used; no multimodal projector is included or required.
+The model is separate from the game's GPL source code.

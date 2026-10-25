@@ -21,7 +21,7 @@ La question centrale est :
 
 ## Statut et périmètre
 
-Les fixtures historiques du datacenter ont validé trois régimes visuels utiles : seuil extérieur, intérieur dense et point d'observation ouvert. Les fichiers `assets/scenes/datacenter_*.scene` et leurs mesures restent des baselines techniques, pas des lieux canoniques de la fiction active.
+Les fixtures historiques ont validé trois régimes visuels utiles : seuil extérieur, intérieur dense et point d'observation ouvert. Les fichiers `assets/scenes/datacenter_*.scene` et leurs mesures restent des baselines techniques, pas des lieux canoniques de la fiction active.
 
 Le runtime possède maintenant une barrière invisible typée et une contradiction auteurisée, mais pas encore de validateur de propositions topologiques live. EV-001, EV-002 et le retour impossible d'EV-005 ont une première recette déterministe ; les tests de mutation pilotée par LLM restent un plan.
 
@@ -134,7 +134,7 @@ Invariants visuels :
 
 Critères d'acceptation :
 
-- le lieu n'est pas lu comme un datacenter remaquillé
+- le lieu n'est pas lu comme un intérieur technique générique remaquillé
 - la hiérarchie seuil / infrastructure / terrain est claire
 - le joueur peut identifier au moins deux actions spatiales
 - la scène reste sobre et ne dépend pas de nombreux objets décoratifs

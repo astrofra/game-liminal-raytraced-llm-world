@@ -3,20 +3,24 @@
 import argparse
 import datetime as dt
 import json
+import os
 import pathlib
 import re
 import subprocess
 import sys
 import time
 
+from scene_benchmark_protocol import extract_final_response, parse_generation_metrics, sha256_file
+from scene_benchmark_quality import audit_camera
+from model_profiles import DEFAULT_PROFILE, load_profiles, resolve_model_path
+
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_RENDERER = REPO_ROOT / "build" / "Release" / "liminal_cornell_renderer.exe"
-DEFAULT_LLAMA_CLI = REPO_ROOT / "vendor" / "llama.cpp" / "build-cuda" / "bin" / "Release" / "llama-cli.exe"
-DEFAULT_MODEL = REPO_ROOT / "models" / "ministral-3-8b" / "Ministral-3-8B-Instruct-2512-Q4_K_M.gguf"
+DEFAULT_LLAMA_CLI = REPO_ROOT / "build" / "bin" / "Release" / "llama-cli.exe"
+DEFAULT_MODEL = resolve_model_path()
+MODEL_PROFILES = {name: resolve_model_path(name) for name in load_profiles()["profiles"]}
 DEFAULT_CASES = REPO_ROOT / "scripts" / "scene_generation_benchmark_cases.json"
-DEFAULT_OUTPUT_ROOT = REPO_ROOT / "documentation" / "generated" / "scene_generation_benchmark"
-DEFAULT_MARKDOWN = REPO_ROOT / "documentation" / "SCENE_GENERATION_BENCHMARK.md"
 
 DEFAULT_WIDTH = 800
 DEFAULT_HEIGHT = 400
@@ -35,6 +39,27 @@ SYSTEM_PROMPT = (
     "Return only a valid .scene program. "
     "Do not use markdown fences. Stop after the last scene directive."
 )
+CAMERA_GUIDANCE = (
+    "\nCamera validity check for the final scene:\n"
+    "- eye and target must be distinct; the viewing direction must not be parallel to up.\n"
+    "- With up(0,1,0), eye and target MUST differ in x or z. Never use the same x AND z for both.\n"
+    "- A safe example is camera eye(0,1.75,-7.9) target(0,1.18,8.8) up(0,1,0) fov(46).\n"
+    "- Frame the named anchors in front of the camera. Keep the eye outside walls and solid prefabs.\n"
+)
+
+
+def apply_profile_defaults(options):
+    manifest = load_profiles()
+    name = options.profile
+    profile = manifest["profiles"].get(name, {})
+    defaults = {"temperature": profile.get("temperature", DEFAULT_TEMPERATURE),
+                "top_k": profile.get("top_k", 40), "top_p": profile.get("top_p", .95),
+                "reasoning": "on" if profile.get("reasoning") else "off"}
+    for key, value in defaults.items():
+        if getattr(options, key) is None:
+            setattr(options, key, value)
+    if options.reasoning_budget is None:
+        options.reasoning_budget = 512 if options.reasoning == "on" else 0
 
 
 def load_cases(path):
@@ -61,7 +86,7 @@ def write_json(path, payload):
 
 
 def relative_to_markdown(markdown_path, target_path):
-    return str(target_path.relative_to(markdown_path.parent)).replace("\\", "/")
+    return os.path.relpath(target_path, markdown_path.parent).replace("\\", "/")
 
 
 def build_session_state(case):
@@ -111,7 +136,7 @@ def build_session_state(case):
     }
 
 
-def run_command(command, cwd):
+def run_command(command, cwd, timeout=300):
     start = time.perf_counter()
     completed = subprocess.run(
         command,
@@ -120,6 +145,7 @@ def run_command(command, cwd):
         text=True,
         encoding="utf-8",
         errors="replace",
+        timeout=timeout,
     )
     duration_ms = (time.perf_counter() - start) * 1000.0
     return completed, duration_ms
@@ -182,26 +208,43 @@ def generate_scene_with_llama(
     n_predict,
     temperature,
     seed,
+    options,
+    transcript_path,
 ):
+    system_prompt = SYSTEM_PROMPT
+    if options.reasoning == "on":
+        system_prompt = system_prompt.replace("Return only", "Your final answer must contain only")
+        profile = load_profiles()["profiles"].get(getattr(options, "profile", ""), {})
+        if profile.get("reasoning"):
+            system_prompt += ("\nReason privately inside [THINK] and [/THINK]. All output-format "
+                              "requirements apply only to the final answer after [/THINK].")
     command = [
         str(llama_cli_path),
         "--model",
         str(model_path),
         "--n-gpu-layers",
-        "auto",
+        options.gpu_layers,
         "--ctx-size",
         str(ctx_size),
         "--flash-attn",
         "on",
-        "--conversation",
         "--single-turn",
+        "--jinja",
+        "--reasoning", options.reasoning,
+        "--reasoning-format", "deepseek",
+        "--reasoning-budget", str(options.reasoning_budget),
+        "--batch-size", str(options.batch_size),
+        "--ubatch-size", str(options.ubatch_size),
+        "--top-k", str(options.top_k),
+        "--top-p", str(options.top_p),
+        "--output-file", str(transcript_path),
         "--no-mmproj",
         "--system-prompt",
-        SYSTEM_PROMPT,
+        system_prompt,
         "--file",
         str(prompt_path),
         "--n-predict",
-        str(n_predict),
+        str(n_predict + options.reasoning_budget + (64 if options.reasoning == "on" else 0)),
         "--temperature",
         str(temperature),
         "--seed",
@@ -209,11 +252,15 @@ def generate_scene_with_llama(
         "--no-display-prompt",
         "--no-show-timings",
         "--simple-io",
-        "--log-disable",
+        "--log-verbosity", "5",
+        "--log-colors", "off",
         "--color",
         "off",
     ]
-    return run_command(command, REPO_ROOT)
+    if getattr(options, "cli_supports_conversation", True):
+        command.append("--conversation")
+    transcript_path.parent.mkdir(parents=True, exist_ok=True)
+    return run_command(command, REPO_ROOT, options.generation_timeout)
 
 
 def audit_and_render_scene(
@@ -297,12 +344,15 @@ def render_case(
     n_predict,
     temperature,
     seed,
+    options,
 ):
     slug = case["slug"]
     state_path = output_root / "states" / f"{slug}.session.json"
     prompt_path = output_root / "prompts" / f"{slug}.prompt.txt"
     raw_response_path = output_root / "responses" / f"{slug}.raw.txt"
     llama_stderr_path = output_root / "responses" / f"{slug}.llama.stderr.txt"
+    transcript_path = output_root / "responses" / f"{slug}.transcript.txt"
+    final_path = output_root / "responses" / f"{slug}.final.txt"
     scene_path = output_root / "scenes" / f"{slug}.scene"
     image_path = output_root / "images" / f"{slug}.png"
     audit_stdout_path = output_root / "logs" / f"{slug}.audit.stdout.txt"
@@ -314,6 +364,8 @@ def render_case(
         "room_summary": case.get("room_summary", ""),
         "status": "unknown",
         "valid_scene": False,
+        "syntax_valid_scene": False,
+        "camera_errors": [],
         "prompt_time_ms": 0.0,
         "generation_time_ms": 0.0,
         "audit_time_ms": 0.0,
@@ -331,6 +383,9 @@ def render_case(
         "materials": None,
         "render_time_ms": None,
         "error": "",
+        "stop_reason": "not_started",
+        "final_response_path": str(final_path),
+        "transcript_path": str(transcript_path),
     }
 
     session_state = build_session_state(case)
@@ -346,31 +401,54 @@ def render_case(
         return result
 
     prompt_text = prompt_completed.stdout
+    if options.camera_guidance:
+        write_text(output_root / "prompts" / f"{slug}.engine.prompt.txt", prompt_text)
+        prompt_text += CAMERA_GUIDANCE
     write_text(prompt_path, prompt_text)
 
-    generation_completed, generation_duration_ms = generate_scene_with_llama(
-        llama_cli_path,
-        model_path,
-        prompt_path,
-        ctx_size,
-        n_predict,
-        temperature,
-        seed,
-    )
+    generation_start = time.perf_counter()
+    try:
+        generation_completed, generation_duration_ms = generate_scene_with_llama(
+            llama_cli_path, model_path, prompt_path, ctx_size, n_predict,
+            temperature, seed, options, transcript_path,
+        )
+    except subprocess.TimeoutExpired as exc:
+        result.update(status="timeout", stop_reason="timeout", error="Generation timeout",
+                      generation_time_ms=(time.perf_counter() - generation_start) * 1000)
+        for path, content in ((raw_response_path, exc.stdout), (llama_stderr_path, exc.stderr)):
+            write_text(path, content.decode("utf-8", errors="replace") if isinstance(content, bytes) else (content or ""))
+        return result
     result["generation_time_ms"] = generation_duration_ms
+    result["generation_command"] = generation_completed.args
+    result["prompt_sha256"] = sha256_file(prompt_path)
     write_text(raw_response_path, generation_completed.stdout)
     write_text(llama_stderr_path, generation_completed.stderr)
+    total_budget = n_predict + options.reasoning_budget + (64 if options.reasoning == "on" else 0)
+    result.update(parse_generation_metrics(generation_completed.stderr, total_budget))
     if generation_completed.returncode != 0:
         result["status"] = "llm_failed"
         result["error"] = (generation_completed.stderr or generation_completed.stdout).strip()
         return result
 
-    normalized_scene_text = extract_scene_candidate_text(generation_completed.stdout)
+    if result["stop_reason"] != "eos":
+        result["status"] = "incomplete_generation"
+        result["error"] = "No proven EOS; refusing to audit potentially truncated output"
+        return result
+    try:
+        final_text, reasoning_chars = extract_final_response(
+            transcript_path.read_text(encoding="utf-8"), prompt_text, generation_completed.stdout)
+    except (ValueError, OSError) as exc:
+        result.update(status="invalid_protocol", error=str(exc))
+        return result
+    write_text(final_path, final_text + "\n")
+    result["reasoning_characters"] = reasoning_chars
+    normalized_scene_text = extract_scene_candidate_text(final_text)
     if normalized_scene_text:
         normalized_scene_text += "\n"
     write_text(scene_path, normalized_scene_text)
     result["scene_characters"] = len(normalized_scene_text)
     result["scene_lines"] = len([line for line in normalized_scene_text.splitlines() if line.strip()])
+    result["camera_errors"] = audit_camera(normalized_scene_text)
 
     audit_completed, audit_duration_ms = audit_and_render_scene(
         renderer_path,
@@ -397,6 +475,11 @@ def render_case(
     result["triangles"] = stats.get("triangles")
     result["materials"] = stats.get("materials")
     result["render_time_ms"] = stats.get("render_time_ms")
+    result["syntax_valid_scene"] = True
+    if result["camera_errors"]:
+        result["status"] = "invalid_camera"
+        result["error"] = "; ".join(result["camera_errors"])
+        return result
     result["valid_scene"] = True
     result["status"] = "valid"
     return result
@@ -407,6 +490,7 @@ def write_markdown(markdown_path, output_root, cases, results, args):
     total_cases = len(results)
     valid_cases = sum(1 for item in results if item["valid_scene"])
     invalid_cases = total_cases - valid_cases
+    syntax_valid_cases = sum(1 for item in results if item["syntax_valid_scene"])
 
     case_lookup = {case["slug"]: case for case in cases}
 
@@ -415,7 +499,7 @@ def write_markdown(markdown_path, output_root, cases, results, args):
         "",
         f"Genere le {generated_at}.",
         "",
-        "Ce document audite la generation directe de `.scene` par `Ministral` a partir de briefs spatiaux fixes.",
+        f"Generation directe de `.scene` ; profil `{args.profile}`, modele `{args.model.name}`.",
         "",
         "Pipeline :",
         "- le moteur fabrique le prompt exact via `--dump-scene-audit-prompt`",
@@ -426,8 +510,10 @@ def write_markdown(markdown_path, output_root, cases, results, args):
         "Parametres :",
         f"- rendu : `{args.width}x{args.height}`, `{args.samples}` spp, `{args.bounces}` bounces, `{args.direct_samples}` direct samples",
         f"- LLM : `temperature={args.temperature}`, `n_predict={args.n_predict}`, `ctx={args.ctx_size}`, `seed={args.seed}`",
+        f"- reflexion : `{args.reasoning}`, budget `{args.reasoning_budget}` ; top_k `{args.top_k}`, top_p `{args.top_p}`",
+        "- seul le canal final termine par EOS est audite ; les sorties tronquees sont refusees",
         "",
-        f"Resultat global : `{valid_cases}/{total_cases}` scenes valides, `{invalid_cases}` invalides.",
+        f"Resultat global : `{valid_cases}/{total_cases}` scenes avec syntaxe et camera valides, `{invalid_cases}` invalides. Syntaxe seule : `{syntax_valid_cases}/{total_cases}`.",
         "",
         "| Case | Status | Gen ms | Audit ms | Triangles | Materials |",
         "| --- | --- | ---: | ---: | ---: | ---: |",
@@ -461,6 +547,8 @@ def write_markdown(markdown_path, output_root, cases, results, args):
                 f"State : `{relative_to_markdown(markdown_path, pathlib.Path(item['state_path']))}`",
                 f"Prompt : `{relative_to_markdown(markdown_path, pathlib.Path(item['prompt_path']))}`",
                 f"Raw response : `{relative_to_markdown(markdown_path, pathlib.Path(item['raw_response_path']))}`",
+                f"Final response : `{relative_to_markdown(markdown_path, pathlib.Path(item['final_response_path']))}`",
+                f"Stop reason : `{item['stop_reason']}`",
                 f"Scene : `{relative_to_markdown(markdown_path, pathlib.Path(item['scene_path']))}`",
                 f"Audit stdout : `{relative_to_markdown(markdown_path, pathlib.Path(item['audit_stdout_path']))}`",
                 f"Audit stderr : `{relative_to_markdown(markdown_path, pathlib.Path(item['audit_stderr_path']))}`",
@@ -481,7 +569,7 @@ def write_markdown(markdown_path, output_root, cases, results, args):
             ]
         )
 
-        if item["valid_scene"] and pathlib.Path(item["image_path"]).is_file():
+        if pathlib.Path(item["image_path"]).is_file():
             image_rel = relative_to_markdown(markdown_path, pathlib.Path(item["image_path"]))
             lines.extend(
                 [
@@ -489,7 +577,7 @@ def write_markdown(markdown_path, output_root, cases, results, args):
                     "",
                 ]
             )
-        else:
+        if not item["valid_scene"]:
             lines.extend(
                 [
                     "Erreur :",
@@ -508,10 +596,11 @@ def main():
     parser = argparse.ArgumentParser(description="Run a reproducible local benchmark for direct .scene generation.")
     parser.add_argument("--renderer", type=pathlib.Path, default=DEFAULT_RENDERER)
     parser.add_argument("--llama-cli", type=pathlib.Path, default=DEFAULT_LLAMA_CLI)
-    parser.add_argument("--model", type=pathlib.Path, default=DEFAULT_MODEL)
+    parser.add_argument("--profile", choices=sorted(MODEL_PROFILES), default=DEFAULT_PROFILE)
+    parser.add_argument("--model", type=pathlib.Path, help="Override the selected profile's GGUF path")
     parser.add_argument("--cases", type=pathlib.Path, default=DEFAULT_CASES)
-    parser.add_argument("--output-root", type=pathlib.Path, default=DEFAULT_OUTPUT_ROOT)
-    parser.add_argument("--markdown", type=pathlib.Path, default=DEFAULT_MARKDOWN)
+    parser.add_argument("--output-root", type=pathlib.Path, help="New directory; existing non-empty directories are refused")
+    parser.add_argument("--markdown", type=pathlib.Path, help="New report path (default: OUTPUT_ROOT/report.md)")
     parser.add_argument("--width", type=int, default=DEFAULT_WIDTH)
     parser.add_argument("--height", type=int, default=DEFAULT_HEIGHT)
     parser.add_argument("--samples", type=int, default=DEFAULT_SAMPLES)
@@ -521,10 +610,34 @@ def main():
     parser.add_argument("--exposure", type=float, default=DEFAULT_EXPOSURE)
     parser.add_argument("--ctx-size", type=int, default=DEFAULT_CTX)
     parser.add_argument("--n-predict", type=int, default=DEFAULT_PREDICT)
-    parser.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE)
+    parser.add_argument("--temperature", type=float, help="Override the profile's sampling temperature")
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    parser.add_argument("--reasoning", choices=("off", "on"), help="Override profile default")
+    parser.add_argument("--reasoning-budget", type=int, help="Thinking tokens; default 512 when reasoning is on, otherwise 0")
+    parser.add_argument("--top-k", type=int)
+    parser.add_argument("--top-p", type=float)
+    parser.add_argument("--batch-size", type=int, default=512)
+    parser.add_argument("--ubatch-size", type=int, default=128)
+    parser.add_argument("--gpu-layers", default="auto")
+    parser.add_argument("--generation-timeout", type=float, default=300)
+    parser.add_argument("--camera-guidance", action="store_true", help="Append explicit camera-basis rules to the engine prompt (separate experiment)")
     parser.add_argument("--case", action="append", default=[], help="Run only the specified case slug. May be repeated.")
     args = parser.parse_args()
+    apply_profile_defaults(args)
+
+    if args.reasoning_budget < 0 or (args.reasoning == "on") != (args.reasoning_budget > 0):
+        parser.error("Use --reasoning off --reasoning-budget 0, or on with a positive budget")
+    if min(args.n_predict, args.ctx_size, args.batch_size, args.ubatch_size, args.generation_timeout) <= 0:
+        parser.error("Token, context, batch and timeout limits must be positive")
+    if args.ubatch_size > args.batch_size or not 0 < args.top_p <= 1 or args.top_k < 0:
+        parser.error("Invalid micro-batch or sampling limits")
+    total_budget = args.n_predict + args.reasoning_budget + (64 if args.reasoning == "on" else 0)
+    if total_budget >= args.ctx_size:
+        parser.error("Context must exceed the total generation budget and leave room for the prompt")
+    args.model = args.model or MODEL_PROFILES[args.profile]
+    run_name = dt.datetime.now().strftime("%Y%m%d-%H%M%S-%f") + f"-{args.profile}-{args.reasoning}"
+    args.output_root = args.output_root or REPO_ROOT / "documentation/generated/scene_generation_benchmark_runs" / run_name
+    args.markdown = args.markdown or args.output_root / "report.md"
 
     renderer_path = args.renderer.resolve()
     llama_cli_path = args.llama_cli.resolve()
@@ -532,6 +645,11 @@ def main():
     cases_path = args.cases.resolve()
     output_root = args.output_root.resolve()
     markdown_path = args.markdown.resolve()
+
+    if output_root.exists() and (not output_root.is_dir() or any(output_root.iterdir())):
+        parser.error("Output directory must be new or empty; previous results are preserved")
+    if markdown_path.exists():
+        parser.error("Markdown report already exists; choose a new path")
 
     ensure_file(renderer_path, "Renderer")
     ensure_file(llama_cli_path, "llama-cli")
@@ -541,11 +659,51 @@ def main():
     cases = load_cases(cases_path)
     if args.case:
         selected = set(args.case)
+        unknown = selected - {case.get("slug") for case in cases}
+        if unknown:
+            parser.error("Unknown case(s): " + ", ".join(sorted(unknown)))
         cases = [case for case in cases if case.get("slug") in selected]
         if not cases:
             print("No benchmark case matched the requested slug filter.", file=sys.stderr)
             return 1
 
+    if not cases:
+        parser.error("No benchmark cases")
+    slugs = [case["slug"] for case in cases]
+    if len(set(slugs)) != len(slugs) or any(not re.fullmatch(r"[A-Za-z0-9_-]+", slug) for slug in slugs):
+        parser.error("Case slugs must be unique simple filenames")
+    help_run, _ = run_command([str(llama_cli_path), "--help"], REPO_ROOT, 30)
+    args.cli_supports_conversation = "--conversation" in help_run.stdout + help_run.stderr
+    required = ("--jinja", "--reasoning", "--reasoning-budget", "--output-file", "--log-verbosity")
+    if help_run.returncode or any(flag not in help_run.stdout + help_run.stderr for flag in required):
+        parser.error("llama-cli does not expose the required protocol/telemetry options")
+    version, _ = run_command([str(llama_cli_path), "--version"], REPO_ROOT, 30)
+    print("[benchmark] hashing model and executables for provenance", flush=True)
+    provenance = {
+        "model_sha256": sha256_file(model_path), "model_size": model_path.stat().st_size,
+        "llama_cli_sha256": sha256_file(llama_cli_path),
+        "renderer_sha256": sha256_file(renderer_path),
+        "llama_cli_version": (version.stdout + version.stderr).strip(),
+        "vendor_source_commit": (REPO_ROOT / "vendor/llama.cpp/VENDORED_COMMIT.txt").read_text().strip(),
+        "cases_sha256": sha256_file(cases_path),
+        "benchmark_script_sha256": sha256_file(pathlib.Path(__file__)),
+        "protocol_script_sha256": sha256_file(pathlib.Path(__file__).with_name("scene_benchmark_protocol.py")),
+        "quality_script_sha256": sha256_file(pathlib.Path(__file__).with_name("scene_benchmark_quality.py")),
+        "driver_gpu": None,
+        "note": "Binary version/hash and vendored source revision recorded separately; no equivalence assumed.",
+    }
+    build_record = llama_cli_path.parent / "runtime-build.json"
+    if build_record.is_file():
+        record = json.loads(build_record.read_text(encoding="utf-8"))
+        if record.get("artifacts", {}).get(llama_cli_path.name) != provenance["llama_cli_sha256"]:
+            parser.error("llama-cli does not match its runtime-build.json provenance")
+        provenance["runtime_build"] = record
+    try:
+        gpu, _ = run_command(["nvidia-smi", "--query-gpu=name,memory.total,memory.used,driver_version", "--format=csv"], REPO_ROOT, 10)
+        provenance["driver_gpu"] = gpu.stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    write_json(output_root / "provenance.json", provenance)
     results = []
     for case in cases:
         print(f"[benchmark] {case['slug']} -> prompt -> llm -> audit")
@@ -566,8 +724,10 @@ def main():
             args.n_predict,
             args.temperature,
             args.seed,
+            args,
         )
         results.append(result)
+        write_json(output_root / "partial_results.json", results)
         print(
             f"[benchmark] {case['slug']} status={result['status']} "
             f"gen={result['generation_time_ms']:.2f}ms audit={result['audit_time_ms']:.2f}ms"
@@ -588,7 +748,18 @@ def main():
         "n_predict": args.n_predict,
         "temperature": args.temperature,
         "seed": args.seed,
+        "profile": args.profile,
+        "camera_guidance": args.camera_guidance,
+        "reasoning": args.reasoning,
+        "reasoning_budget": args.reasoning_budget,
+        "total_generation_budget": total_budget,
+        "top_k": args.top_k, "top_p": args.top_p,
+        "batch_size": args.batch_size, "ubatch_size": args.ubatch_size,
+        "gpu_layers": args.gpu_layers, "generation_timeout_seconds": args.generation_timeout,
+        "render_seed": args.render_seed, "exposure": args.exposure,
+        "provenance": provenance,
         "valid_scenes": sum(1 for item in results if item["valid_scene"]),
+        "syntax_valid_scenes": sum(1 for item in results if item["syntax_valid_scene"]),
         "total_cases": len(results),
         "results": results,
     }
@@ -600,8 +771,12 @@ def main():
     print(f"[benchmark] valid scenes: {valid_scenes}/{total_cases}")
     print(f"[benchmark] markdown: {markdown_path}")
     print(f"[benchmark] summary: {output_root / 'results.json'}")
-    return 0
+    return 0 if valid_scenes == total_cases else 2
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
+        print(f"[benchmark] ERROR: {exc}", file=sys.stderr)
+        raise SystemExit(1)

@@ -155,7 +155,7 @@ prefab_quarry_pylon "catalog_quarry_datum" pos(0.0,2.00,0.0) size(1.60,4.00,1.40
 
 ## prefab_atmospheric_processor
 
-Unité de service atmosphérique et d'oxygène : masse basse, double cheminée et prises d'air frontales. Elle remplace la climatisation de datacenter par un besoin propre à Vénus.
+Unité de service atmosphérique et d'oxygène : masse basse, double cheminée et prises d'air frontales. Elle remplace l'ancien bloc de climatisation par un besoin propre à Vénus.
 
 Scene gauche : `generated/prefab_catalog/scenes/prefab_atmospheric_processor_left.scene`
 Scene droite : `generated/prefab_catalog/scenes/prefab_atmospheric_processor_right.scene`

@@ -11,12 +11,6 @@ namespace liminal {
 enum LocationId {
     kLocationUnknown = 0,
     kLocationQuarryThreshold,
-    kLocationExtractionField,
-    kLocationCrystalCut,
-    kLocationScannerStation,
-    kLocationSurveyPlateau,
-    kLocationLabyrinthThreshold,
-    kLocationProspectShelter,
     // Historical datacenter fixtures retained as technical baselines.
     kLocationGate,
     kLocationServerAisles,
@@ -288,6 +282,17 @@ struct GeneratedRoom {
     SpatialState spatial_state;
     std::string scene_text;
     std::string scene_source;
+    std::string arrival_narration;
+    std::string narrative_facts_json;
+    int scene_contract_version = 0; // Zero identifies legacy scenes, retained without regeneration.
+    std::string scene_design_json;
+    std::string scene_hash;
+    std::string scene_plan_hash;
+    std::string scene_profile;
+    std::string scene_model_filename;
+    std::string scene_prompt_version;
+    unsigned int scene_seed = 0;
+    int scene_repairs = 0;
     bool metadata_fallback_used;
     bool scene_fallback_used;
 
@@ -334,6 +339,7 @@ struct SessionState {
     std::vector<GeneratedRoom> generated_rooms;
     std::vector<RoomLink> room_links;
     std::vector<InvisibleBarrier> invisible_barriers;
+    std::vector<std::string> field_notes; // Player-requested notes, confined to this game.
 
     SessionState()
         : language(kGameLanguageEnglish)

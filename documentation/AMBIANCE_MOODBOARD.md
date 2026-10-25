@@ -1,10 +1,12 @@
 # Ambiance: Incomplete but Operational Space
 
-Last updated: 2026-08-09
+Last updated: 2026-10-25
 
 ## Purpose
 
-This document reads the images in `documentation/moodboard` through the active Eryx direction in [`SPEC.md`](./SPEC.md). It is not a style-shopping list and does not propose a retro filter.
+This document reads the visual corpus through the active Eryx direction in [`SPEC.md`](./SPEC.md). The primary references are the [concept-art atlas](./concept-art/ATLAS_COMPOSITION.md), the [project images](../img/), and the literary motifs in [*In the Walls of Eryx*](./IN_THE_WALLS_OF_ERYX.md). The images in `documentation/moodboard` provide the broader visual and demoscene lineage.
+
+The concept series establishes excavated masses, open plateaus, small survey instruments, shelters, crystal attraction, and uncertain routes. The project views establish sparse rendering and perception through a visor: see the [quarry threshold](../img/004.png) and [extraction field](../img/006.png). Captured text belongs to historical sessions; it does not override the Eryx fiction. Neither concept images nor screenshots establish that every proposed narrative mechanism is implemented.
 
 The corpus establishes a contemporary visual grammar for:
 
@@ -305,7 +307,7 @@ Latency should acquire rhythm without becoming a false spectacle of technical ac
 - separation between authoritative state and generated text
 - local room generation, caching, and weak global topology
 
-These are implemented technical foundations, even though the current build still uses datacenter/desert semantics.
+These are implemented technical foundations, even though the current build still relies on legacy naming and fixtures.
 
 ### Planned Eryx adaptations
 
@@ -321,7 +323,7 @@ These are intentions, not current runtime features. [`TECHNICAL_STATE.md`](./TEC
 
 ### Avoid
 
-- generic cyberpunk or datacenter-horror iconography
+- generic cyberpunk or industrial-horror iconography
 - NASA-style realism used as a substitute for a coherent mediated Venus
 - decorative “Lovecraftian” symbols or cosmic-horror clichés
 - a visible corridor maze that eliminates perceptual uncertainty

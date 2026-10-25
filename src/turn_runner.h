@@ -8,6 +8,7 @@
 #include "game_state.h"
 #include "llm_runtime.h"
 #include "scene.h"
+#include "dynamic_scene.h"
 
 namespace liminal {
 
@@ -15,6 +16,9 @@ enum HeadlessTurnStreamPhase {
     kHeadlessTurnStreamPrimaryResponse = 0,
     kHeadlessTurnStreamRepairResponse,
     kHeadlessTurnStreamSceneProgram,
+    kHeadlessTurnStreamSceneDesign,
+    kHeadlessTurnStreamSceneAudit,
+    kHeadlessTurnStreamScenePreview,
 };
 
 typedef bool (*HeadlessTurnStreamCallback)(
@@ -25,6 +29,10 @@ typedef bool (*HeadlessTurnStreamCallback)(
 
 struct HeadlessTurnConfig {
     LlmGenerationConfig generation_config;
+    bool dynamic_scenes = false;
+    bool local_scenes = false; // Generate persistent places along the eastward exploration route.
+    DynamicSceneConfig dynamic_scene_config;
+    SceneCompletion narrative_completion; // Optional deterministic seam for fiction tests.
     bool request_candidate_scene;
     bool prefer_candidate_scene;
     HeadlessTurnStreamCallback stream_callback;
@@ -40,11 +48,20 @@ struct HeadlessTurnConfig {
 };
 
 struct HeadlessTurnResult {
+    bool accepted = false; // Set only after the full turn and last cancellation poll succeed.
+    int llm_call_count = 0;
+    int reasoning_tokens = 0;
+    int final_tokens = 0;
+    double llm_wall_time_ms = 0.0;
     std::string request_text;
     std::string prompt_text;
     std::string raw_response_text;
     std::string repair_response_text;
     std::string raw_scene_audit_response_text;
+    std::string dynamic_scene_design_json;
+    std::string dynamic_scene_metrics_json;
+    std::vector<DynamicSceneResult::Attempt> scene_attempts;
+    std::string narrative_metrics_json;
     std::string thermal_prompt_text;
     std::string thermal_response_text;
     std::string rendered_scene_text;

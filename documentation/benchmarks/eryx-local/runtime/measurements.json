@@ -1,0 +1,425 @@
+[
+  {
+    "seed": 42,
+    "accepted": true,
+    "total_ms": 4834.582899999987,
+    "repairs": 0,
+    "calls": [
+      {
+        "eos": true,
+        "final_tokens": 565,
+        "generated_tokens": 565,
+        "inference_ms": 3840.145,
+        "load_ms": 4.377,
+        "offloaded_layers": -1,
+        "prompt_sha256": "40770ac37a547ed28f7c560965e32488f2467845f0360dbfa6e32e966b15618e",
+        "prompt_tokens": 708,
+        "purpose": "scene_program_v1",
+        "reasoning_tokens": 0,
+        "seed": 42,
+        "stop_reason": "eos",
+        "success": true,
+        "temperature": 0.20000000298023224,
+        "wall_ms": 3936.4078
+      }
+    ],
+    "audit": {
+      "accepted": true,
+      "bounds_derived": false,
+      "diagnostics": [],
+      "focal_coverage": 0.00390625,
+      "geometry_directives": 11,
+      "luminance_deviation": 38.908309277183406,
+      "materials": 11,
+      "mean_luminance": 126.93706965331924,
+      "near_coverage": 0.0,
+      "sky_coverage": 0.068359375,
+      "triangles": 122
+    },
+    "image": "trial-00.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "seed": 43,
+    "accepted": true,
+    "total_ms": 4304.4018999999025,
+    "repairs": 0,
+    "calls": [
+      {
+        "eos": true,
+        "final_tokens": 528,
+        "generated_tokens": 528,
+        "inference_ms": 3400.767,
+        "load_ms": 5.0491,
+        "offloaded_layers": -1,
+        "prompt_sha256": "40770ac37a547ed28f7c560965e32488f2467845f0360dbfa6e32e966b15618e",
+        "prompt_tokens": 708,
+        "purpose": "scene_program_v1",
+        "reasoning_tokens": 0,
+        "seed": 43,
+        "stop_reason": "eos",
+        "success": true,
+        "temperature": 0.20000000298023224,
+        "wall_ms": 3441.7777
+      }
+    ],
+    "audit": {
+      "accepted": true,
+      "bounds_derived": false,
+      "diagnostics": [],
+      "focal_coverage": 0.00244140625,
+      "geometry_directives": 10,
+      "luminance_deviation": 31.266389348565383,
+      "materials": 10,
+      "mean_luminance": 128.08376576537913,
+      "near_coverage": 0.0,
+      "sky_coverage": 0.0283203125,
+      "triangles": 110
+    },
+    "image": "trial-01.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "seed": 44,
+    "accepted": true,
+    "total_ms": 4270.166600000266,
+    "repairs": 0,
+    "calls": [
+      {
+        "eos": true,
+        "final_tokens": 526,
+        "generated_tokens": 526,
+        "inference_ms": 3374.7090000000003,
+        "load_ms": 4.5519,
+        "offloaded_layers": -1,
+        "prompt_sha256": "40770ac37a547ed28f7c560965e32488f2467845f0360dbfa6e32e966b15618e",
+        "prompt_tokens": 708,
+        "purpose": "scene_program_v1",
+        "reasoning_tokens": 0,
+        "seed": 44,
+        "stop_reason": "eos",
+        "success": true,
+        "temperature": 0.20000000298023224,
+        "wall_ms": 3448.6063
+      }
+    ],
+    "audit": {
+      "accepted": true,
+      "bounds_derived": false,
+      "diagnostics": [],
+      "focal_coverage": 0.00390625,
+      "geometry_directives": 10,
+      "luminance_deviation": 30.081717544552863,
+      "materials": 10,
+      "mean_luminance": 128.5230572021473,
+      "near_coverage": 0.0,
+      "sky_coverage": 0.0419921875,
+      "triangles": 110
+    },
+    "image": "trial-02.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "seed": 45,
+    "accepted": true,
+    "total_ms": 4316.00250000065,
+    "repairs": 0,
+    "calls": [
+      {
+        "eos": true,
+        "final_tokens": 525,
+        "generated_tokens": 525,
+        "inference_ms": 3405.647,
+        "load_ms": 4.1421,
+        "offloaded_layers": -1,
+        "prompt_sha256": "40770ac37a547ed28f7c560965e32488f2467845f0360dbfa6e32e966b15618e",
+        "prompt_tokens": 708,
+        "purpose": "scene_program_v1",
+        "reasoning_tokens": 0,
+        "seed": 45,
+        "stop_reason": "eos",
+        "success": true,
+        "temperature": 0.20000000298023224,
+        "wall_ms": 3432.2492
+      }
+    ],
+    "audit": {
+      "accepted": true,
+      "bounds_derived": false,
+      "diagnostics": [],
+      "focal_coverage": 0.00390625,
+      "geometry_directives": 10,
+      "luminance_deviation": 40.01215201225037,
+      "materials": 10,
+      "mean_luminance": 123.16067700805725,
+      "near_coverage": 0.0,
+      "sky_coverage": 0.0458984375,
+      "triangles": 110
+    },
+    "image": "trial-03.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "seed": 46,
+    "accepted": true,
+    "total_ms": 4323.826499999996,
+    "repairs": 0,
+    "calls": [
+      {
+        "eos": true,
+        "final_tokens": 524,
+        "generated_tokens": 524,
+        "inference_ms": 3360.224,
+        "load_ms": 4.9239,
+        "offloaded_layers": -1,
+        "prompt_sha256": "40770ac37a547ed28f7c560965e32488f2467845f0360dbfa6e32e966b15618e",
+        "prompt_tokens": 708,
+        "purpose": "scene_program_v1",
+        "reasoning_tokens": 0,
+        "seed": 46,
+        "stop_reason": "eos",
+        "success": true,
+        "temperature": 0.20000000298023224,
+        "wall_ms": 3394.5723
+      }
+    ],
+    "audit": {
+      "accepted": true,
+      "bounds_derived": false,
+      "diagnostics": [],
+      "focal_coverage": 0.00390625,
+      "geometry_directives": 10,
+      "luminance_deviation": 44.60706915155264,
+      "materials": 10,
+      "mean_luminance": 119.54364989623956,
+      "near_coverage": 0.0,
+      "sky_coverage": 0.04296875,
+      "triangles": 110
+    },
+    "image": "trial-04.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "seed": 47,
+    "accepted": true,
+    "total_ms": 4451.328299999659,
+    "repairs": 0,
+    "calls": [
+      {
+        "eos": true,
+        "final_tokens": 535,
+        "generated_tokens": 535,
+        "inference_ms": 3428.116,
+        "load_ms": 4.3667,
+        "offloaded_layers": -1,
+        "prompt_sha256": "40770ac37a547ed28f7c560965e32488f2467845f0360dbfa6e32e966b15618e",
+        "prompt_tokens": 708,
+        "purpose": "scene_program_v1",
+        "reasoning_tokens": 0,
+        "seed": 47,
+        "stop_reason": "eos",
+        "success": true,
+        "temperature": 0.20000000298023224,
+        "wall_ms": 3480.014
+      }
+    ],
+    "audit": {
+      "accepted": true,
+      "bounds_derived": false,
+      "diagnostics": [],
+      "focal_coverage": 0.0048828125,
+      "geometry_directives": 10,
+      "luminance_deviation": 42.98200577366301,
+      "materials": 10,
+      "mean_luminance": 92.07330687866184,
+      "near_coverage": 0.0,
+      "sky_coverage": 0.0185546875,
+      "triangles": 110
+    },
+    "image": "trial-05.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "seed": 48,
+    "accepted": true,
+    "total_ms": 4460.863499999505,
+    "repairs": 0,
+    "calls": [
+      {
+        "eos": true,
+        "final_tokens": 528,
+        "generated_tokens": 528,
+        "inference_ms": 3399.59,
+        "load_ms": 4.4744,
+        "offloaded_layers": -1,
+        "prompt_sha256": "40770ac37a547ed28f7c560965e32488f2467845f0360dbfa6e32e966b15618e",
+        "prompt_tokens": 708,
+        "purpose": "scene_program_v1",
+        "reasoning_tokens": 0,
+        "seed": 48,
+        "stop_reason": "eos",
+        "success": true,
+        "temperature": 0.20000000298023224,
+        "wall_ms": 3449.7269
+      }
+    ],
+    "audit": {
+      "accepted": true,
+      "bounds_derived": false,
+      "diagnostics": [],
+      "focal_coverage": 0.00390625,
+      "geometry_directives": 10,
+      "luminance_deviation": 45.48910608266576,
+      "materials": 10,
+      "mean_luminance": 117.47893827514633,
+      "near_coverage": 0.0,
+      "sky_coverage": 0.0390625,
+      "triangles": 110
+    },
+    "image": "trial-06.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "seed": 49,
+    "accepted": false,
+    "total_ms": 8207.262599999922,
+    "repairs": 1,
+    "calls": [
+      {
+        "eos": true,
+        "final_tokens": 602,
+        "generated_tokens": 602,
+        "inference_ms": 3909.0620000000004,
+        "load_ms": 4.5363,
+        "offloaded_layers": -1,
+        "prompt_sha256": "40770ac37a547ed28f7c560965e32488f2467845f0360dbfa6e32e966b15618e",
+        "prompt_tokens": 708,
+        "purpose": "scene_program_v1",
+        "reasoning_tokens": 0,
+        "seed": 49,
+        "stop_reason": "eos",
+        "success": true,
+        "temperature": 0.20000000298023224,
+        "wall_ms": 3985.2414
+      },
+      {
+        "eos": true,
+        "final_tokens": 680,
+        "generated_tokens": 680,
+        "inference_ms": 4098.416,
+        "load_ms": 4.8438,
+        "offloaded_layers": -1,
+        "prompt_sha256": "69e9863f1af1d6166c63c9e748a4f004e011b806be52d99185b455995408b8fe",
+        "prompt_tokens": 1503,
+        "purpose": "scene_program_v1",
+        "reasoning_tokens": 0,
+        "seed": 49,
+        "stop_reason": "eos",
+        "success": true,
+        "temperature": 0.20000000298023224,
+        "wall_ms": 4134.6476
+      }
+    ],
+    "audit": {
+      "accepted": false,
+      "bounds_derived": false,
+      "diagnostics": [
+        {
+          "code": "landmark_not_visible",
+          "detail": "Named solid must cover at least 3 of 2048 view probes; observed=1. desert_floor blocks 2/12 rays towards the landmark's surface. Raise or move the landmark outside that solid and clear its sightline.",
+          "object_id": "portal"
+        }
+      ],
+      "focal_coverage": 0.00048828125,
+      "geometry_directives": 14,
+      "luminance_deviation": 0.0,
+      "materials": 14,
+      "mean_luminance": 0.0,
+      "near_coverage": 0.0,
+      "sky_coverage": 0.0771484375,
+      "triangles": 158
+    },
+    "image": "trial-07.png",
+    "diagnostic_image_only": true
+  },
+  {
+    "seed": 50,
+    "accepted": true,
+    "total_ms": 4320.02729999931,
+    "repairs": 0,
+    "calls": [
+      {
+        "eos": true,
+        "final_tokens": 526,
+        "generated_tokens": 526,
+        "inference_ms": 3367.7459989999998,
+        "load_ms": 4.2143,
+        "offloaded_layers": -1,
+        "prompt_sha256": "40770ac37a547ed28f7c560965e32488f2467845f0360dbfa6e32e966b15618e",
+        "prompt_tokens": 708,
+        "purpose": "scene_program_v1",
+        "reasoning_tokens": 0,
+        "seed": 50,
+        "stop_reason": "eos",
+        "success": true,
+        "temperature": 0.20000000298023224,
+        "wall_ms": 3440.3586
+      }
+    ],
+    "audit": {
+      "accepted": true,
+      "bounds_derived": false,
+      "diagnostics": [],
+      "focal_coverage": 0.00390625,
+      "geometry_directives": 10,
+      "luminance_deviation": 37.635109687605365,
+      "materials": 10,
+      "mean_luminance": 122.85176867675652,
+      "near_coverage": 0.0,
+      "sky_coverage": 0.0283203125,
+      "triangles": 110
+    },
+    "image": "trial-08.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "seed": 51,
+    "accepted": true,
+    "total_ms": 4770.887199999379,
+    "repairs": 0,
+    "calls": [
+      {
+        "eos": true,
+        "final_tokens": 614,
+        "generated_tokens": 614,
+        "inference_ms": 3947.781,
+        "load_ms": 4.4131,
+        "offloaded_layers": -1,
+        "prompt_sha256": "40770ac37a547ed28f7c560965e32488f2467845f0360dbfa6e32e966b15618e",
+        "prompt_tokens": 708,
+        "purpose": "scene_program_v1",
+        "reasoning_tokens": 0,
+        "seed": 51,
+        "stop_reason": "eos",
+        "success": true,
+        "temperature": 0.20000000298023224,
+        "wall_ms": 3979.8411
+      }
+    ],
+    "audit": {
+      "accepted": true,
+      "bounds_derived": false,
+      "diagnostics": [],
+      "focal_coverage": 0.00390625,
+      "geometry_directives": 12,
+      "luminance_deviation": 38.99418038374348,
+      "materials": 12,
+      "mean_luminance": 104.30288353881977,
+      "near_coverage": 0.0,
+      "sky_coverage": 0.0439453125,
+      "triangles": 134
+    },
+    "image": "trial-09.png",
+    "diagnostic_image_only": false
+  }
+]

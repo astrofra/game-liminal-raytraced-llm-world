@@ -1,12 +1,22 @@
 # Scene Format V1
 
-Dernière mise à jour : 2026-08-09
+Dernière mise à jour : 2026-10-25
+
+## Dalle de verre du seuil unique
+
+`glass_box` a la même géométrie fermée et les mêmes dimensions complètes que `box`, avec le matériau diélectrique déjà utilisé par les cristaux. Position au centre, rotations Euler en degrés, douze triangles et une épaisseur réelle :
+
+```text
+glass_box "threshold_pane" pos(-0.76,2,-2.34) size(7,4,0.25) rot(0,38,0) gray(0.66)
+```
+
+La syntaxe et l'audit géométrique prennent cette directive en charge. Le contrat de génération locale reste limité à `box` : l'ajout sert au lieu de départ auteurisé. Cette dalle visible n'installe aucune barrière topologique invisible. Aucun nouveau modèle de rugosité ou texture procédurale n'est ajouté.
 
 ## Statut
 
 Ce document decrit le format de scene proprietaire v1 actuellement implemente dans le depot.
 
-Le format cible plus large de la spec n'est pas encore entièrement supporté. L'implémentation actuelle couvre un sous-ensemble volontairement petit, suffisant pour le pipeline scène -> validation -> rendu. Le vocabulaire de prefabs actif est désormais orienté vers la carrière de cristal vénusienne ; les prefabs datacenter restent lisibles pour la compatibilité des scènes historiques.
+Le format cible plus large de la spec n'est pas encore entièrement supporté. L'implémentation actuelle couvre un sous-ensemble volontairement petit, suffisant pour le pipeline scène -> validation -> rendu. Le vocabulaire de prefabs actif est désormais orienté vers la carrière de cristal vénusienne ; les prefabs historiques restent lisibles pour la compatibilité des scènes antérieures.
 
 ## Intentions
 
@@ -72,6 +82,25 @@ Exemple :
 spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(12.0) cone(16.0,38.0) intensity(180.0)
 ```
 
+### `distant_light`
+
+Définit une lumière directionnelle à l’infini, par exemple un soleil. Elle est indépendante de la caméra et n’a ni position, ni atténuation avec la distance. Elle est désactivée si la directive est absente ; une nouvelle déclaration remplace la précédente.
+
+- `direction(x,y,z)` obligatoire : direction des rayons **du soleil vers la scène**, en coordonnées du monde ; le moteur normalise ce vecteur non nul. `(0,-1,0)` éclaire verticalement vers le bas.
+- `intensity(value)` obligatoire : intensité positive ou nulle, exprimant l’éclairement d’une surface face à la direction centrale, avant multiplication par la couleur. `0` coupe la source.
+- `color(r,g,b)` optionnel : multiplicateur RGB linéaire, chaque canal dans `[0,1]` ; blanc `(1,1,1)` par défaut. Il colore la lumière, pas l’albédo des objets.
+- `angular_radius(value)` optionnel : **rayon**, en degrés, dans `[0,10]` ; `0` par défaut pour des rayons strictement parallèles et des ombres nettes. Une valeur positive produit une pénombre par échantillonnage d’un cône autour de la direction centrale. L’énergie sur une surface face à la lumière est conservée lorsque ce rayon change.
+
+Les valeurs non finies, directions nulles et paramètres hors domaine sont rejetés. Le nombre de tirages dépend de `--direct-samples` ; pour un rayon nul, un seul rayon d’ombre suffit. Les obstacles et la transmission du verre sont évalués par le chemin d’ombre existant ; l’éclairage contribue aussi aux rebonds diffus.
+
+```text
+distant_light direction(-0.6,-1,0.35) intensity(3.5) color(1,0.92,0.72) angular_radius(0.65)
+```
+
+Cette source n’ajoute aucun triangle, disque visible dans le ciel ou reflet direct du disque solaire. Le fond `sky` reste indépendant ; il n’est pas recoloré automatiquement. Le verre conserve son modèle de transport existant, sans technique dédiée aux caustiques. Les scènes historiques sans cette directive restent inchangées.
+
+Voir les [comparaisons avec les concepts 01, 02, 03 et 09](concept-art/raytracer-study/README.md).
+
 ### `sky`
 
 Active un fond proceduriel palette-limitee pour les rayons qui ne rencontrent aucune geometrie.
@@ -116,7 +145,7 @@ prefab_gate "entry_gate" pos(0.0,1.55,4.8) size(6.15,3.10,0.40) gray(0.46) detai
 
 ### `prefab_rack` — legacy
 
-Prefab historique de baie ou rack technique, conservé pour les scènes et benchmarks datacenter.
+Prefab historique de baie ou rack technique, conservé pour les scènes et benchmarks antérieurs.
 
 Le renderer injecte automatiquement de petites LEDs rouges sur la facade du rack. Elles n'ont pas besoin d'etre decrites dans le fichier `.scene`.
 
@@ -218,7 +247,7 @@ prefab_atmospheric_processor "oxygen_service" pos(-4.4,1.5,3.2) size(2.2,3.0,1.7
 
 ### `prefab_cooling_unit` — legacy
 
-Prefab historique de bloc de climatisation, conservé pour les scènes datacenter. Utiliser `prefab_atmospheric_processor` pour les nouvelles scènes d'Eryx.
+Prefab historique de bloc de climatisation, conservé pour les scènes antérieures. Utiliser `prefab_atmospheric_processor` pour les nouvelles scènes d'Eryx.
 
 Proprietes supportees :
 
@@ -339,10 +368,10 @@ Le format implemente ne supporte pas encore :
 
 ## Limites importantes pour la validation spatiale
 
-Pour la premiere batterie de tests exterieurs autour du datacenter et du desert, il faut garder a l'esprit que :
+Pour la premiere batterie de tests exterieurs autour de la carriere, du plateau et du seuil, il faut garder a l'esprit que :
 
 - un exterieur vaste devra etre suggere avec tres peu de masses
-- le desert ne peut pas encore exister comme type de surface dedie
+- la plaine desertique ne peut pas encore exister comme type de surface dedie
 - le ciel de fin de journee passe maintenant par un fond proceduriel optionnel, pas par une primitive riche de scene
 - la lisibilite devra venir surtout du cadrage, du parapet, du seuil, des grandes surfaces et de la ligne d'horizon
 - les prefabs actuels sont volontairement simples et axis-alignes
@@ -350,6 +379,6 @@ Pour la premiere batterie de tests exterieurs autour du datacenter et du desert,
 
 ## Exemple complet
 
-Voir [../assets/scenes/liminal_service_corridor.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/liminal_service_corridor.scene:1).
+Voir [../assets/scenes/liminal_service_corridor.scene](../assets/scenes/liminal_service_corridor.scene).
 
 Pour la prochaine phase de travail, voir aussi [SPATIAL_VALIDATION_PLAN.md](./SPATIAL_VALIDATION_PLAN.md).

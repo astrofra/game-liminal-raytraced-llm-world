@@ -1,4 +1,5 @@
 #include "game_state.h"
+#include "scene_design.h"
 
 #include <math.h>
 #include <string.h>
@@ -261,6 +262,15 @@ static json MakeGeneratedRoomsJson(const std::vector<GeneratedRoom>& rooms)
         item["spatial_state"] = MakeSpatialStateJson(rooms[index].spatial_state);
         item["scene_text"] = rooms[index].scene_text;
         item["scene_source"] = rooms[index].scene_source;
+        item["arrival_narration"] = rooms[index].arrival_narration;
+        item["narrative_facts"] = rooms[index].narrative_facts_json;
+        const auto& room=rooms[index];
+        if(room.scene_contract_version) {
+            item["scene_generation"]={{"contract_version",room.scene_contract_version},{"format_version",1},
+                {"design",room.scene_design_json},{"sha256",room.scene_hash},{"plan_sha256",room.scene_plan_hash},
+                {"profile",room.scene_profile},{"model_filename",room.scene_model_filename},{"prompt_version",room.scene_prompt_version},
+                {"seed",room.scene_seed},{"repairs",room.scene_repairs}};
+        }
         item["metadata_fallback_used"] = rooms[index].metadata_fallback_used;
         item["scene_fallback_used"] = rooms[index].scene_fallback_used;
         node.push_back(item);
@@ -427,6 +437,50 @@ static void ParseGeneratedRoomsNode(const json& node, std::vector<GeneratedRoom>
         }
         room.scene_text = ReadStringNode(node[index], "scene_text");
         room.scene_source = ReadStringNode(node[index], "scene_source");
+        room.arrival_narration = ReadStringNode(node[index], "arrival_narration");
+        room.narrative_facts_json = ReadStringNode(node[index], "narrative_facts");
+        if(node[index].contains("scene_generation")) {
+            const auto& g=node[index].at("scene_generation");
+            room.scene_contract_version=g.at("contract_version").get<int>();
+            room.scene_design_json=g.at("design").get<std::string>();
+            room.scene_hash=g.at("sha256").get<std::string>();
+            room.scene_plan_hash=g.at("plan_sha256").get<std::string>();
+            room.scene_profile=g.at("profile").get<std::string>();
+            room.scene_model_filename=g.value("model_filename",std::string());
+            room.scene_prompt_version=g.at("prompt_version").get<std::string>();
+            room.scene_seed=g.at("seed").get<unsigned int>();
+            room.scene_repairs=g.at("repairs").get<int>();
+            if(g.at("format_version").get<int>()!=1 || (room.scene_contract_version!=1&&room.scene_contract_version!=2&&room.scene_contract_version!=3) || room.scene_hash!=SceneTextHash(room.scene_text) ||
+               room.scene_plan_hash!=SceneTextHash(room.scene_design_json))
+                throw std::runtime_error("Invalid generated scene version or content hash");
+            if(room.scene_contract_version==3) {
+                const auto provenance=json::parse(room.scene_design_json);
+                CardinalDirection entry=kDirectionUnknown,forward=kDirectionUnknown;
+                const auto entry_text=provenance.at("return_direction").get<std::string>();
+                const auto forward_text=provenance.at("forward_direction").get<std::string>();
+                if(provenance.at("mode")!="local-topology-v2"||room.scene_source!="local_direct_v2"||
+                   !provenance.at("brief").is_string()||!provenance.at("landmark").is_string()||
+                   !ParseCardinalDirection(entry_text.c_str(),&entry)||entry==kDirectionUnknown||
+                   !ParseCardinalDirection(forward_text.c_str(),&forward)||forward!=OppositeCardinalDirection(entry))
+                    throw std::runtime_error("Invalid local topology provenance");
+                const auto& exits=provenance.at("accepted_exits");
+                if(!exits.is_object()||exits.size()!=4||!provenance.at("proposal_pending").is_boolean()||
+                    provenance.at("proposal_pending").get<bool>()!=ReadBoolNode(node[index],"metadata_fallback_used",false))
+                    throw std::runtime_error("Invalid local exit proposal state");
+                for(const auto* direction:{"north","east","south","west"}) {
+                    const bool blocked=std::find(room.spatial_state.blocked_exits.begin(),room.spatial_state.blocked_exits.end(),direction)!=room.spatial_state.blocked_exits.end();
+                    if(!exits.at(direction).is_boolean()||exits.at(direction).get<bool>()==blocked)
+                        throw std::runtime_error("Local exits disagree with accepted proposal");
+                }
+                if(!exits.at(entry_text).get<bool>())throw std::runtime_error("Local return exit is closed");
+            }
+            if(room.scene_contract_version==2) {
+                const auto provenance=json::parse(room.scene_design_json);
+                if(provenance.at("mode")!="local-fixed-v1"||!provenance.at("brief").is_string()||
+                   !provenance.at("landmark").is_string()||provenance.at("return_direction")!="west"||
+                   room.scene_source!="local_direct_v1")throw std::runtime_error("Invalid local scene provenance");
+            }
+        }
         room.metadata_fallback_used = ReadBoolNode(node[index], "metadata_fallback_used", false);
         room.scene_fallback_used = ReadBoolNode(node[index], "scene_fallback_used", false);
         if (room.scene_source.empty()) {
@@ -582,18 +636,6 @@ const char* LocationIdToString(LocationId value)
     switch (value) {
     case kLocationQuarryThreshold:
         return "quarry_threshold";
-    case kLocationExtractionField:
-        return "extraction_field";
-    case kLocationCrystalCut:
-        return "crystal_cut";
-    case kLocationScannerStation:
-        return "scanner_station";
-    case kLocationSurveyPlateau:
-        return "survey_plateau";
-    case kLocationLabyrinthThreshold:
-        return "labyrinth_threshold";
-    case kLocationProspectShelter:
-        return "prospect_shelter";
     case kLocationGate:
         return "gate";
     case kLocationServerAisles:
@@ -736,36 +778,6 @@ bool ParseLocationId(const char* text, LocationId* value)
     if (EqualsAsciiNoCase(text, "quarry_threshold") || EqualsAsciiNoCase(text, "quarry-threshold") ||
         EqualsAsciiNoCase(text, "quarry")) {
         *value = kLocationQuarryThreshold;
-        return true;
-    }
-    if (EqualsAsciiNoCase(text, "extraction_field") || EqualsAsciiNoCase(text, "extraction-field") ||
-        EqualsAsciiNoCase(text, "extraction")) {
-        *value = kLocationExtractionField;
-        return true;
-    }
-    if (EqualsAsciiNoCase(text, "crystal_cut") || EqualsAsciiNoCase(text, "crystal-cut") ||
-        EqualsAsciiNoCase(text, "cut")) {
-        *value = kLocationCrystalCut;
-        return true;
-    }
-    if (EqualsAsciiNoCase(text, "scanner_station") || EqualsAsciiNoCase(text, "scanner-station") ||
-        EqualsAsciiNoCase(text, "scanner")) {
-        *value = kLocationScannerStation;
-        return true;
-    }
-    if (EqualsAsciiNoCase(text, "survey_plateau") || EqualsAsciiNoCase(text, "survey-plateau") ||
-        EqualsAsciiNoCase(text, "plateau")) {
-        *value = kLocationSurveyPlateau;
-        return true;
-    }
-    if (EqualsAsciiNoCase(text, "labyrinth_threshold") || EqualsAsciiNoCase(text, "labyrinth-threshold") ||
-        EqualsAsciiNoCase(text, "labyrinth")) {
-        *value = kLocationLabyrinthThreshold;
-        return true;
-    }
-    if (EqualsAsciiNoCase(text, "prospect_shelter") || EqualsAsciiNoCase(text, "prospect-shelter") ||
-        EqualsAsciiNoCase(text, "shelter")) {
-        *value = kLocationProspectShelter;
         return true;
     }
     if (EqualsAsciiNoCase(text, "gate")) {
@@ -1030,81 +1042,33 @@ std::string DescribePlaceLabel(const SessionState& state, const std::string& pla
             switch (location_id) {
             case kLocationQuarryThreshold:
                 return "Seuil de la carrière";
-            case kLocationExtractionField:
-                return "Champ d'extraction";
-            case kLocationCrystalCut:
-                return "Entaille cristalline";
-            case kLocationScannerStation:
-                return "Scanner d'affinité";
-            case kLocationSurveyPlateau:
-                return "Plateau de la balise";
-            case kLocationLabyrinthThreshold:
-                return "Repère ouvert";
-            case kLocationProspectShelter:
-                return "Abri de Vey";
             default:
                 break;
             }
         } else if (state.language == kGameLanguageNorwegian) {
             switch (location_id) {
             case kLocationQuarryThreshold: return "Steinbruddets terskel";
-            case kLocationExtractionField: return "Utvinningsfelt";
-            case kLocationCrystalCut: return "Krystallsnitt";
-            case kLocationScannerStation: return "Affinitetsskanner";
-            case kLocationSurveyPlateau: return "Signalplatå";
-            case kLocationLabyrinthThreshold: return "Åpent referansepunkt";
-            case kLocationProspectShelter: return "Veys ly";
             default: break;
             }
         } else if (state.language == kGameLanguageDanish) {
             switch (location_id) {
             case kLocationQuarryThreshold: return "Stenbruddets tærskel";
-            case kLocationExtractionField: return "Udvindingsfelt";
-            case kLocationCrystalCut: return "Krystalsnit";
-            case kLocationScannerStation: return "Affinitetsscanner";
-            case kLocationSurveyPlateau: return "Signalplateau";
-            case kLocationLabyrinthThreshold: return "Åbent referencepunkt";
-            case kLocationProspectShelter: return "Veys ly";
             default: break;
             }
         } else if (state.language == kGameLanguageGerman) {
             switch (location_id) {
             case kLocationQuarryThreshold: return "Steinbruchschwelle";
-            case kLocationExtractionField: return "Abbaugebiet";
-            case kLocationCrystalCut: return "Kristallschnitt";
-            case kLocationScannerStation: return "Affinitätsscanner";
-            case kLocationSurveyPlateau: return "Signalplateau";
-            case kLocationLabyrinthThreshold: return "Offener Messpunkt";
-            case kLocationProspectShelter: return "Veys Schutzraum";
             default: break;
             }
         } else if (state.language == kGameLanguageItalian) {
             switch (location_id) {
             case kLocationQuarryThreshold: return "Soglia della cava";
-            case kLocationExtractionField: return "Campo di estrazione";
-            case kLocationCrystalCut: return "Taglio cristallino";
-            case kLocationScannerStation: return "Scanner di affinità";
-            case kLocationSurveyPlateau: return "Altopiano del faro";
-            case kLocationLabyrinthThreshold: return "Caposaldo aperto";
-            case kLocationProspectShelter: return "Rifugio di Vey";
             default: break;
             }
         }
         switch (location_id) {
         case kLocationQuarryThreshold:
             return "Quarry Threshold";
-        case kLocationExtractionField:
-            return "Extraction Field";
-        case kLocationCrystalCut:
-            return "Crystal Cut";
-        case kLocationScannerStation:
-            return "Affinity Scanner";
-        case kLocationSurveyPlateau:
-            return "Beacon Plateau";
-        case kLocationLabyrinthThreshold:
-            return "Open Datum";
-        case kLocationProspectShelter:
-            return "Vey Shelter";
         default:
             break;
         }
@@ -1142,30 +1106,6 @@ bool GetCanonicalWorldPose(LocationId location_id, float* world_x, float* world_
     case kLocationQuarryThreshold:
         *world_x = 0.0f;
         *world_z = 0.0f;
-        return true;
-    case kLocationExtractionField:
-        *world_x = 0.0f;
-        *world_z = 4.5f;
-        return true;
-    case kLocationCrystalCut:
-        *world_x = 0.0f;
-        *world_z = 9.0f;
-        return true;
-    case kLocationScannerStation:
-        *world_x = 4.5f;
-        *world_z = 9.0f;
-        return true;
-    case kLocationSurveyPlateau:
-        *world_x = 4.5f;
-        *world_z = 13.5f;
-        return true;
-    case kLocationLabyrinthThreshold:
-        *world_x = 9.0f;
-        *world_z = 13.5f;
-        return true;
-    case kLocationProspectShelter:
-        *world_x = 13.5f;
-        *world_z = 13.5f;
         return true;
     case kLocationGate:
         *world_x = 0.0f;
@@ -1490,6 +1430,7 @@ bool SerializeSessionStateToJsonString(const SessionState& state, std::string* j
     root["spatial_state"] = MakeSpatialStateJson(state.spatial_state);
     root["history"] = MakeSessionHistoryJson(state.history);
     root["origin_place_id"] = state.origin_place_id;
+    root["field_notes"] = state.field_notes;
     root["current_place_id"] = state.current_place_id;
     root["next_generated_room_index"] = state.next_generated_room_index;
     root["generated_rooms"] = MakeGeneratedRoomsJson(state.generated_rooms);
@@ -1518,6 +1459,27 @@ bool ParseSessionStateFromJson(
             return false;
         }
 
+        // Do not silently remap a removed canonical place or overwrite its save.
+        // Traverse identifiers, including old links and histories, before normalization.
+        const auto check_places = [](const auto& self, const json& node) -> void {
+            if (node.is_object()) {
+                for (auto it=node.begin(); it!=node.end(); ++it) {
+                    if (it.value().is_string()) {
+                        const std::string value=it.value().get<std::string>();
+                        const bool location_key=it.key()=="location_id"||it.key()=="current_location_id";
+                        const bool canonical=value.compare(0,10,"canonical:")==0;
+                        LocationId id=kLocationUnknown;
+                        if ((canonical&&!ParseCanonicalPlaceId(value,&id)) ||
+                            (location_key&&!value.empty()&&value!="unknown"&&!ParseLocationId(value.c_str(),&id)))
+                            throw std::runtime_error("Save references a removed location: "+value+
+                                ". Start a new game; the original save has not been modified.");
+                    }
+                    self(self,it.value());
+                }
+            } else if(node.is_array())for(const auto& child:node)self(self,child);
+        };
+        check_places(check_places,root);
+
         if (root.contains("hard_state")) {
             ParseHardStateNode(root["hard_state"], &state->hard_state);
         }
@@ -1532,6 +1494,7 @@ bool ParseSessionStateFromJson(
             ParseHistoryNode(root["history"], &state->history);
         }
         state->origin_place_id = ReadStringNode(root, "origin_place_id");
+        state->field_notes = root.value("field_notes",std::vector<std::string>());
         state->current_place_id = ReadStringNode(root, "current_place_id");
         state->next_generated_room_index = ReadIntNode(root, "next_generated_room_index", state->next_generated_room_index);
         if (root.contains("generated_rooms")) {

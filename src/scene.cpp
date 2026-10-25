@@ -1,6 +1,8 @@
+#include "file_io.h"
 #include "scene.h"
 
 #include <algorithm>
+#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,6 +34,7 @@ static void ResetScene(Scene* scene)
 {
     scene->name.clear();
     scene->camera_spotlight = CameraSpotlight();
+    scene->distant_light = DistantLight();
     scene->sky_background = SkyBackground();
     scene->materials.clear();
     scene->triangles.clear();
@@ -462,7 +465,7 @@ static bool LoadMaterialLibrary(
     char* error_buffer,
     size_t error_buffer_size)
 {
-    FILE* file = fopen(mtl_path, "rb");
+    FILE* file = liminal::OpenUtf8File(mtl_path, "rb");
     if (!file) {
         SetError(error_buffer, error_buffer_size, "Cannot open material file: %s", mtl_path);
         return false;
@@ -628,9 +631,12 @@ static void AddBoxPrimitive(
     const Vec3& size,
     const Vec3& rotation_degrees,
     float gray_value,
-    float emission_value)
+    float emission_value,
+    bool use_glass = false)
 {
-    const int material_index = AddPrimitiveMaterial(scene, name, gray_value, emission_value);
+    const int material_index = use_glass
+        ? AddGlassPrimitiveMaterial(scene, name, gray_value, emission_value)
+        : AddPrimitiveMaterial(scene, name, gray_value, emission_value);
     const Vec3 half_size = size * 0.5f;
 
     Vec3 corners[8];
@@ -1869,6 +1875,41 @@ static bool ParseSceneV1Directive(
         return true;
     }
 
+    if (line == "distant_light" || StartsWith(line, "distant_light ")) {
+        DistantLight light;
+        if (!ExtractVec3Property(line, "direction(", &light.direction) ||
+            !ExtractFloatProperty(line, "intensity(", &light.intensity)) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number,
+                "Distant light requires direction() and intensity()");
+            return false;
+        }
+        if ((line.find("color(") != std::string::npos &&
+                !ExtractVec3Property(line, "color(", &light.color)) ||
+            (line.find("angular_radius(") != std::string::npos &&
+                !ExtractFloatProperty(line, "angular_radius(", &light.angular_radius_degrees))) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number,
+                "Distant light has malformed color() or angular_radius()");
+            return false;
+        }
+        const float length_squared = LengthSquared(light.direction);
+        if (!std::isfinite(length_squared) || length_squared <= kEpsilon * kEpsilon ||
+            !std::isfinite(light.intensity) || light.intensity < 0.0f ||
+            !std::isfinite(light.angular_radius_degrees) ||
+            light.angular_radius_degrees < 0.0f || light.angular_radius_degrees > 10.0f ||
+            !std::isfinite(light.color.x) || !std::isfinite(light.color.y) || !std::isfinite(light.color.z) ||
+            light.color.x < 0.0f || light.color.x > 1.0f ||
+            light.color.y < 0.0f || light.color.y > 1.0f ||
+            light.color.z < 0.0f || light.color.z > 1.0f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number,
+                "Distant light requires a finite nonzero direction, nonnegative intensity, color in [0,1], and angular_radius in [0,10] degrees");
+            return false;
+        }
+        light.direction = Normalize(light.direction);
+        light.enabled = true;
+        scene->distant_light = light;
+        return true;
+    }
+
     if (StartsWith(line, "sky ")) {
         float zenith_luminance = scene->sky_background.zenith_luminance;
         float horizon_luminance = scene->sky_background.horizon_luminance;
@@ -2491,7 +2532,7 @@ static bool ParseSceneV1Directive(
         return true;
     }
 
-    if (StartsWith(line, "box ")) {
+    if (StartsWith(line, "box ") || StartsWith(line, "glass_box ")) {
         std::string name;
         Vec3 position;
         Vec3 size;
@@ -2519,7 +2560,7 @@ static bool ParseSceneV1Directive(
 
         ExtractVec3Property(line, "rot(", &rotation);
         ExtractFloatProperty(line, "emit(", &emission_value);
-        AddBoxPrimitive(scene, name, position, size, rotation, gray_value, emission_value);
+        AddBoxPrimitive(scene, name, position, size, rotation, gray_value, emission_value, StartsWith(line, "glass_box "));
         return true;
     }
 
@@ -2573,7 +2614,7 @@ bool LoadSceneFromObj(const char* obj_path, Scene* scene, char* error_buffer, si
     scene->materials.push_back(default_material);
     material_indices[default_material.name] = 0;
 
-    FILE* file = fopen(obj_path, "rb");
+    FILE* file = liminal::OpenUtf8File(obj_path, "rb");
     if (!file) {
         SetError(error_buffer, error_buffer_size, "Cannot open OBJ file: %s", obj_path);
         return false;
@@ -2733,7 +2774,7 @@ bool LoadSceneFromSceneV1(const char* scene_path, Scene* scene, char* error_buff
     ResetScene(scene);
     scene->name = BasenameOf(scene_path);
 
-    FILE* file = fopen(scene_path, "rb");
+    FILE* file = liminal::OpenUtf8File(scene_path, "rb");
     if (!file) {
         SetError(error_buffer, error_buffer_size, "Cannot open scene file: %s", scene_path);
         return false;

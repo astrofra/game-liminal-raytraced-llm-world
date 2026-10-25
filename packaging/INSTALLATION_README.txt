@@ -1,23 +1,17 @@
 WITHIN THE LATENT WALLS / ENTRE LES MURS LATENTS
 ================================================
 
-This installer contains the native game, its assets, fonts, and required
-application-local runtime libraries. It deliberately does not contain the AI
-model.
+This offline distribution includes the native game, assets, fonts, runtime
+libraries and the verified Gemma 4 E4B model. No download or account is needed.
+Keep the Setup executable and every .bin volume in the same directory.
+The portable folder also runs directly through WithinTheLatentWalls.exe.
 
-The installer will download Ministral 3 8B Instruct 2512 Q4_K_M directly from
-Mistral AI's official Hugging Face repository. The download is approximately
-5.20 GB and is verified against its pinned SHA-256 digest before installation.
-An Internet connection is therefore mandatory during setup.
+Windows 10 x64 version 1809 or newer is required. Allow 16 GB of free disk
+space for the package and installation. An NVIDIA GPU with a current driver
+is recommended; the CPU backend can run with sufficient system RAM.
+CUDA Toolkit, Python and compilation tools are not required on the player PC.
 
-Hardware and system notes:
-
-- 64-bit Windows 10 version 1809 or newer is required.
-- Allow at least 12 GB of free disk space for installation and temporary files.
-- An NVIDIA GPU and current NVIDIA driver are strongly recommended.
-- CUDA and Microsoft runtime DLLs required by this build are installed beside
-  the game executable.
-- Model inference can require substantial VRAM or system RAM.
-
-The installed game and model can be removed from Windows Settings > Apps.
-Saved session data is kept under Local AppData when the game is uninstalled.
+Choose your language on launch. Every launch starts a fresh exploration.
+Only the first place is predefined. Research descriptions, scene programs and
+images are written under Local AppData/WithinTheLatentWalls/research.
+These archives never initialize the next game and survive uninstallation.

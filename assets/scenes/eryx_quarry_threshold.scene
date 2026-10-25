@@ -3,19 +3,34 @@
 
 room "Eryx quarry threshold"
 
-camera eye(0.0,1.72,-13.5) target(0.0,1.65,8.0) up(0.0,1.0,0.0) fov(45.0)
-spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(34.0) cone(12.0,29.0) intensity(82.0)
-sky zenith(0.01) horizon(0.25) nadir(0.00) band(0.34) curve(1.92) noise(0.12) stars(0.0032,1.45,0.095) seed(211)
+camera eye(0.0,1.68,-10.5) target(-0.6,1.9,4.0) up(0.0,1.0,0.0) fov(50.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(44.0) cone(15.0,36.0) intensity(58.0)
+distant_light direction(0.75,-0.42,0.35) intensity(3.6) color(1.0,0.90,0.74) angular_radius(0.40)
+sky zenith(0.04) horizon(0.35) nadir(0.00) band(0.34) curve(1.92) noise(0.12) stars(0,0,0) seed(257)
 
-plane "quarry_approach" pos(0.0,0.0,0.0) normal(0.0,1.0,0.0) size(30.0,54.0) gray(0.14)
-box "left_split_crown" pos(-7.2,3.0,9.8) size(7.4,6.0,5.4) gray(0.22)
-box "right_split_crown" pos(7.2,3.0,9.8) size(7.4,6.0,5.4) gray(0.23)
-box "left_upper_cantilever" pos(-5.1,6.2,8.8) size(10.2,1.1,7.2) gray(0.19)
-box "right_upper_cantilever" pos(5.1,6.2,8.8) size(10.2,1.1,7.2) gray(0.20)
-box "left_buttress" pos(-10.1,1.7,3.6) size(2.2,3.4,9.0) gray(0.25)
-box "right_buttress" pos(10.1,1.7,3.6) size(2.2,3.4,9.0) gray(0.24)
+plane "desert_quarry_floor" pos(-0.0,0.0,6.0) normal(0.0,1.0,0.0) size(96.0,132.0) gray(0.20)
 
-prefab_gate "survey_gate" pos(0.0,1.65,7.1) size(6.4,3.3,0.6) gray(0.33) detail(0.48) bars(5)
-prefab_survey_beacon "entry_datum" pos(-4.7,1.7,1.2) size(1.1,3.4,1.0) gray(0.25) detail(0.44)
-prefab_quarry_pylon "quarry_index" pos(5.4,1.9,3.0) size(1.4,3.8,1.2) gray(0.27) detail(0.44)
-prefab_crate "survey_cargo" pos(3.1,0.6,-2.2) size(1.9,1.2,1.5) gray(0.20) detail(0.34)
+box "ridge_west_escarpment_near" pos(13.5,5.0,-1.0) size(13.0,10.0,18.0) gray(0.19)
+box "ridge_west_escarpment_mid" pos(16.5,7.0,16.0) size(17.0,14.0,22.0) gray(0.16)
+box "ridge_west_crown" pos(10.5,10.5,9.0) size(8.0,5.0,11.0) rot(0.0,-9.0,0.0) gray(0.22)
+box "ridge_west_stratum_a" pos(11.8,8.4,3.0) size(9.0,1.1,10.0) rot(0.0,-10.0,0.0) gray(0.24)
+box "ridge_west_stratum_b" pos(14.0,11.6,12.0) size(11.0,1.2,13.0) rot(0.0,8.0,0.0) gray(0.20)
+box "ridge_west_bench" pos(9.0,2.6,5.0) size(3.0,5.2,12.0) rot(0.0,7.0,0.0) gray(0.25)
+box "ridge_west_buttress" pos(7.8,4.2,17.0) size(2.4,8.4,7.0) rot(0.0,-6.0,0.0) gray(0.21)
+box "ridge_west_talus" pos(7.4,0.9,1.0) size(4.0,1.8,10.0) rot(0.0,12.0,0.0) gray(0.27)
+
+box "ridge_horizon_east" pos(-30.0,1.7,80.0) size(38.0,3.4,10.0) gray(0.18)
+box "ridge_horizon_east_low" pos(-13.0,1.0,60.0) size(20.0,2.0,9.0) rot(0.0,4.0,0.0) gray(0.16)
+box "desert_berm_mid" pos(-15.0,0.5,21.0) size(14.0,1.0,9.0) rot(0.0,5.0,0.0) gray(0.15)
+
+box "outcrop_east_shelf" pos(-11.5,0.7,6.5) size(6.0,1.4,7.0) rot(0.0,-10.0,0.0) gray(0.20)
+prefab_rock_low "outcrop_east_stone" pos(-8.6,0.360,2.6) size(2.2,1.8,1.9) gray(0.23)
+box "outcrop_east_chip" pos(-9.9,0.22,10.2) size(1.1,0.44,0.9) rot(0.0,-12.0,0.0) gray(0.22)
+
+prefab_rock_low "outcrop_fragment_near" pos(4.9,0.160,-4.6) size(1.8,0.8,1.5) gray(0.22)
+prefab_rock_low "outcrop_fragment_chip" pos(-1.6,0.088,-5.6) size(0.8,0.44,0.7) gray(0.23)
+prefab_rock_low "outcrop_fragment_mid" pos(-4.4,0.120,-2.0) size(1.2,0.6,1.0) gray(0.25)
+prefab_rock_low "outcrop_fragment_far" pos(1.0,0.140,3.2) size(1.4,0.7,1.2) gray(0.19)
+prefab_rock_low "outcrop_fragment_east" pos(-7.2,0.112,4.8) size(1.6,0.56,1.3) gray(0.20)
+
+glass_box "threshold_pane" pos(-0.76,2.0,-2.34) size(7.0,4.0,0.25) rot(0.0,38.0,0.0) gray(0.66)

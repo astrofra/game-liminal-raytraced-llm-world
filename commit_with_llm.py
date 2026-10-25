@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
 
-DEFAULT_MODEL = "ministral-3:14b"
+DEFAULT_MODEL = "gemma4:e4b"
 DEFAULT_MAX_DIFF_CHARS = 45000
 DEFAULT_MAX_FILE_MB = 90.0
 DEFAULT_LOG_COUNT = 12

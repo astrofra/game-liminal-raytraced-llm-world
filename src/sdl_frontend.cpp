@@ -1,3 +1,5 @@
+#include "resource_paths.h"
+#include "narrative_language.h"
 #include "sdl_frontend.h"
 
 #include <algorithm>
@@ -17,6 +19,7 @@
 #include "animated_view.h"
 #include "renderer.h"
 #include "scene_compiler.h"
+#include "research_archive.h"
 
 namespace liminal {
 
@@ -37,6 +40,7 @@ struct WorkerSharedState {
     bool result_ready;
     bool error_ready;
     WorkerActivity activity;
+    GameLanguage language = kGameLanguageEnglish;
     std::string status_text;
     std::string error_text;
     bool terminal_stream_open;
@@ -220,22 +224,31 @@ static const char* StreamPhaseLabel(HeadlessTurnStreamPhase phase)
             return "repair-json";
         case kHeadlessTurnStreamSceneProgram:
             return "scene-program";
+        case kHeadlessTurnStreamSceneDesign: return "scene-design";
+        case kHeadlessTurnStreamSceneAudit: return "scene-audit";
+        case kHeadlessTurnStreamScenePreview: return "scene-preview";
         default:
             return "stream";
     }
 }
 
-static const char* StreamPhaseStatus(HeadlessTurnStreamPhase phase)
+static const char* StreamPhaseStatus(HeadlessTurnStreamPhase phase, GameLanguage language)
 {
     switch (phase) {
         case kHeadlessTurnStreamPrimaryResponse:
-            return "Streaming turn response...";
+            return UiText(language,"Thinking...","Réflexion...","Tenker...","Tænker...","Überlegt...","Riflessione...");
         case kHeadlessTurnStreamRepairResponse:
-            return "Repairing malformed turn JSON...";
+            return UiText(language,"Adjusting the place...","Ajustement du lieu...","Justerer stedet...","Justerer stedet...","Ort wird angepasst...","Adattamento del luogo...");
         case kHeadlessTurnStreamSceneProgram:
-            return "Streaming candidate scene program...";
+            return UiText(language,"Building the place...","Construction du lieu...","Bygger stedet...","Bygger stedet...","Ort wird aufgebaut...","Costruzione del luogo...");
+        case kHeadlessTurnStreamSceneDesign:
+            return UiText(language,"Imagining the place...","Composition du lieu...","Forestiller stedet...","Forestiller stedet...","Ort wird entworfen...","Ideazione del luogo...");
+        case kHeadlessTurnStreamSceneAudit:
+            return UiText(language,"Checking the passages...","Vérification des passages...","Sjekker passasjene...","Kontrollerer passagerne...","Durchgänge werden geprüft...","Verifica dei passaggi...");
+        case kHeadlessTurnStreamScenePreview:
+            return UiText(language,"Preparing the view...","Préparation de la vue...","Forbereder utsikten...","Forbereder udsigten...","Ansicht wird vorbereitet...","Preparazione della vista...");
         default:
-            return "Streaming...";
+            return UiText(language,"Thinking...","Réflexion...","Tenker...","Tænker...","Überlegt...","Riflessione...");
     }
 }
 
@@ -410,27 +423,7 @@ static bool OpenFontWithFallbacks(const char* asset_path, float point_size, TTF_
         return false;
     }
 
-    if (TryOpenFontCandidate(asset_path, point_size, font)) {
-        return true;
-    }
-
-    const char* base_path = SDL_GetBasePath();
-    if (base_path) {
-        const std::string base(base_path);
-
-        const std::string candidates[] = {
-            base + asset_path,
-            base + "../" + asset_path,
-            base + "../../" + asset_path,
-        };
-        for (size_t index = 0; index < sizeof(candidates) / sizeof(candidates[0]); ++index) {
-            if (TryOpenFontCandidate(candidates[index].c_str(), point_size, font)) {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return TryOpenFontCandidate(ResourcePath(asset_path).c_str(), point_size, font);
 }
 
 static bool LoadUiFonts(UiFonts* fonts, char* error_buffer, size_t error_buffer_size)
@@ -854,28 +847,10 @@ static std::string ExpandInfocomShortcutCommand(const std::string& command, Game
     return command;
 }
 
-static bool LooksPredominantlyEnglishForUi(const std::string& text)
-{
-    const std::string lower = " " + ToLowerAsciiCopy(CollapseAsciiWhitespace(text)) + " ";
-    const char* markers[] = {
-        " the ", " you ", " your ", " and ", " with ", " into ", " from ", " this ", " that ",
-        " its ", " is ", " are ", " across ", " beyond ", " through ", " remains ", " stands ",
-        " fractured ", " quarry ", " survey ", " north ", " east ", " south ", " west ",
-        " shelter ", " room ", " field ", " cut ", " trench ",
-    };
-    int score = 0;
-    for (size_t index = 0; index < sizeof(markers) / sizeof(markers[0]); ++index) {
-        if (lower.find(markers[index]) != std::string::npos) {
-            ++score;
-        }
-    }
-    return score >= 2 || lower.compare(0, 5, " the ") == 0 || lower.compare(0, 5, " you ") == 0;
-}
-
 static std::string DescribeCurrentPlaceLabelForUi(const SessionState& session_state)
 {
     const std::string label = DescribeCurrentPlaceLabel(session_state);
-    if (session_state.language != kGameLanguageEnglish && LooksPredominantlyEnglishForUi(label)) {
+    if (IsClearlyWrongNarrativeLanguage(label,session_state.language)) {
         return UiText(
             session_state.language, "Survey Sector", "Secteur de prospection", "Prospekteringssektor",
             "Prospekteringssektor", "Prospektionssektor", "Settore di prospezione");
@@ -1126,7 +1101,7 @@ static SDL_Color HudPhosphorColor(bool full_intensity)
 {
     return full_intensity
         ? SDL_Color{184, 254, 80, 255}
-        : SDL_Color{92, 127, 40, 255};
+        : SDL_Color{61, 84, 26, 255};
 }
 
 static void DrawCompassDirectionCell(
@@ -1141,11 +1116,16 @@ static void DrawCompassDirectionCell(
     }
 
     const SDL_Color phosphor = HudPhosphorColor(open);
-    const SDL_FRect outer_rect = {rect.x - 1.0f, rect.y - 1.0f, rect.w + 2.0f, rect.h + 2.0f};
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+    const SDL_BlendMode blend_mode = SDL_BLENDMODE_ADD;
+    SDL_SetRenderDrawBlendMode(renderer, blend_mode);
     SDL_SetRenderDrawColor(renderer, phosphor.r, phosphor.g, phosphor.b, phosphor.a);
-    SDL_RenderRect(renderer, &outer_rect);
     SDL_RenderRect(renderer, &rect);
+    if (open) {
+        const SDL_FRect one_pixel_rect = {rect.x - 1.0f, rect.y - 1.0f, rect.w + 2.0f, rect.h + 2.0f};
+        const SDL_FRect two_pixel_rect = {rect.x - 2.0f, rect.y - 2.0f, rect.w + 4.0f, rect.h + 4.0f};
+        SDL_RenderRect(renderer, &one_pixel_rect);
+        SDL_RenderRect(renderer, &two_pixel_rect);
+    }
 
     if (!font || !label || !label[0]) {
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -1163,7 +1143,7 @@ static void DrawCompassDirectionCell(
         label_height,
         phosphor,
         0,
-        SDL_BLENDMODE_ADD);
+        blend_mode);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 }
 
@@ -1179,8 +1159,10 @@ static void DrawExitCompass(
 
     const float cell_size = 30.0f;
     const float gap = 8.0f;
-    const float anchor_x = scene_rect.x + scene_rect.w - 112.0f;
-    const float anchor_y = scene_rect.y + scene_rect.h - 112.0f;
+    const float compass_size = 3.0f * cell_size + 2.0f * gap;
+    // Leave room for the curved visor edge and the thicker open-exit border.
+    const float anchor_x = scene_rect.x + scene_rect.w - compass_size - 48.0f;
+    const float anchor_y = scene_rect.y + scene_rect.h - compass_size - 32.0f;
 
     const SDL_FRect north_rect = {anchor_x + cell_size + gap, anchor_y, cell_size, cell_size};
     const SDL_FRect west_rect = {anchor_x, anchor_y + cell_size + gap, cell_size, cell_size};
@@ -1191,25 +1173,25 @@ static void DrawExitCompass(
         renderer,
         fonts.regular,
         north_rect,
-        "N",
+        LocalizedDirectionShortcut(kDirectionNorth,session_state.language),
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionNorth));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         east_rect,
-        UiText(session_state.language, "E", "E", "Ø", "Ø", "O", "E"),
+        LocalizedDirectionShortcut(kDirectionEast,session_state.language),
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionEast));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         south_rect,
-        "S",
+        LocalizedDirectionShortcut(kDirectionSouth,session_state.language),
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionSouth));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         west_rect,
-        UiText(session_state.language, "W", "O", "V", "V", "W", "O"),
+        LocalizedDirectionShortcut(kDirectionWest,session_state.language),
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest));
 }
 
@@ -1284,8 +1266,9 @@ static void DrawThermalHud(
         MeasureTextWidth(fonts.regular, external_buffer),
         MeasureTextWidth(fonts.regular, body_buffer))) + 20.0f;
     const float panel_height = static_cast<float>(label_height) + 12.0f;
-    const float panel_x = scene_rect.x + 14.0f;
-    const float body_y = scene_rect.y + scene_rect.h - panel_height - 14.0f;
+    // Center the aligned pair in the left clear area, away from rim and nose notch.
+    const float panel_x = scene_rect.x + scene_rect.w * 0.22f - panel_width * 0.5f;
+    const float body_y = scene_rect.y + scene_rect.h - panel_height - 32.0f;
     const SDL_FRect external_rect = {panel_x, body_y - panel_height - 8.0f, panel_width, panel_height};
     const SDL_FRect body_rect = {panel_x, body_y, panel_width, panel_height};
     DrawThermalIndicator(renderer, fonts, external_rect, external_buffer);
@@ -1492,9 +1475,15 @@ static bool OnHeadlessTurnStream(
 
     std::lock_guard<std::mutex> lock(shared_state->mutex);
     shared_state->activity = kWorkerActivityLlm;
-    shared_state->status_text = StreamPhaseStatus(phase);
+    shared_state->status_text = StreamPhaseStatus(phase,shared_state->language);
     WriteTerminalStreamChunkLocked(shared_state, phase, delta_text);
     return !shared_state->stop_requested.load();
+}
+
+static const char* TurnCancelledText(GameLanguage language)
+{
+    return UiText(language,"Cancelled. You remain here.","Annulé. Vous restez ici.",
+        "Avbrutt. Du blir her.","Annulleret. Du bliver her.","Abgebrochen. Du bleibst hier.","Annullato. Rimani qui.");
 }
 
 static void FinalizeWorkerFailure(WorkerSharedState* shared_state, const char* message)
@@ -1509,8 +1498,26 @@ static void FinalizeWorkerFailure(WorkerSharedState* shared_state, const char* m
     shared_state->result_ready = false;
     shared_state->error_ready = true;
     shared_state->activity = kWorkerActivityFailed;
-    shared_state->status_text = "Turn failed.";
-    shared_state->error_text = message ? message : "Unknown error.";
+    shared_state->status_text = UiText(shared_state->language,"Turn failed.","Échec du tour.","Turen mislyktes.","Turen mislykkedes.","Zug fehlgeschlagen.","Turno non riuscito.");
+    if (message) fprintf(stderr, "Turn failed: %s\n", message);
+    const std::string detail = message ? message : "";
+    const bool model_error = detail.find("Model file not found") != std::string::npos ||
+        detail.find("Model SHA-256") != std::string::npos || detail.find("Failed to load") != std::string::npos;
+    shared_state->error_text = shared_state->stop_requested.load() ? TurnCancelledText(shared_state->language) :
+        model_error ? UiText(shared_state->language,
+            "The local model is missing or unreadable. Check the complete game package.",
+            "Le modèle local manque ou est illisible. Vérifiez le paquet complet du jeu.",
+            "Den lokale modellen mangler eller kan ikke leses. Kontroller hele spillpakken.",
+            "Den lokale model mangler eller kan ikke læses. Kontrollér hele spilpakken.",
+            "Das lokale Modell fehlt oder ist nicht lesbar. Prüfe das vollständige Spielpaket.",
+            "Il modello locale manca o non è leggibile. Verifica il pacchetto completo del gioco.") :
+        UiText(shared_state->language,
+            "This turn could not be completed. You remain here.",
+            "Ce tour n’a pas pu aboutir. Vous restez ici.",
+            "Denne turen kunne ikke fullføres. Du blir her.",
+            "Denne tur kunne ikke gennemføres. Du bliver her.",
+            "Dieser Zug konnte nicht abgeschlossen werden. Du bleibst hier.",
+            "Questo turno non è stato completato. Rimani qui.");
 }
 
 static PeripheralPostProcessConfig PostProcessConfigForAnimationImage(
@@ -1536,16 +1543,15 @@ static void RunTurnWorker(
         return;
     }
 
-    shared_state->stop_requested.store(false);
-
     HeadlessTurnConfig turn_config = config.turn_config;
     turn_config.stream_callback = OnHeadlessTurnStream;
     turn_config.stream_user_data = shared_state;
 
     {
         std::lock_guard<std::mutex> lock(shared_state->mutex);
+        shared_state->language=initial_session_state.language;
         shared_state->activity = kWorkerActivityLlm;
-        shared_state->status_text = "Preparing turn...";
+        shared_state->status_text = StreamPhaseStatus(kHeadlessTurnStreamPrimaryResponse,shared_state->language);
         shared_state->error_text.clear();
     }
 
@@ -1553,6 +1559,13 @@ static void RunTurnWorker(
     memset(error_buffer, 0, sizeof(error_buffer));
 
     HeadlessTurnResult turn_result;
+    auto fail_turn = [&](const char* message) {
+        {
+            std::lock_guard<std::mutex> lock(shared_state->mutex);
+            shared_state->turn_result = turn_result;
+        }
+        FinalizeWorkerFailure(shared_state, message);
+    };
     if (!RunHeadlessTurnFromState(
             initial_session_state,
             player_command.c_str(),
@@ -1561,15 +1574,15 @@ static void RunTurnWorker(
             error_buffer,
             sizeof(error_buffer))) {
         if (shared_state->stop_requested.load()) {
-            FinalizeWorkerFailure(shared_state, "Turn cancelled.");
+            fail_turn("Turn cancelled.");
         } else {
-            FinalizeWorkerFailure(shared_state, error_buffer[0] ? error_buffer : "Headless turn failed.");
+            fail_turn(error_buffer[0] ? error_buffer : "Headless turn failed.");
         }
         return;
     }
 
     if (shared_state->stop_requested.load()) {
-        FinalizeWorkerFailure(shared_state, "Turn cancelled.");
+        fail_turn("Turn cancelled.");
         return;
     }
 
@@ -1579,16 +1592,16 @@ static void RunTurnWorker(
     {
         std::lock_guard<std::mutex> lock(shared_state->mutex);
         CloseTerminalStreamLocked(shared_state);
-        PrintTurnProvenance(updated_session_state, turn_result);
-        PrintHeadlessTurnDebugTrace(turn_result, stdout);
         shared_state->activity = kWorkerActivityRenderer;
-        shared_state->status_text = "Raytracing scene...";
+        shared_state->status_text = UiText(shared_state->language,"Calculating the view...","Calcul de la vue...",
+            "Beregner utsikten...","Beregner udsigten...","Ansicht wird berechnet...","Calcolo della vista...");
     }
 
     const std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();
     std::vector<unsigned char> pixels;
-    if (!RenderSceneToPixels(turn_result.rendered_scene, config.render_config, &pixels)) {
-        FinalizeWorkerFailure(shared_state, "Rendering failed.");
+    RenderControl control{[](void* state) { return !static_cast<WorkerSharedState*>(state)->stop_requested.load(); },shared_state};
+    if (!RenderSceneToPixels(turn_result.rendered_scene, config.render_config, &pixels,&control)) {
+        fail_turn("Rendering failed.");
         return;
     }
     if (!ApplyPeripheralViewPostProcess(
@@ -1597,25 +1610,27 @@ static void RunTurnWorker(
             config.render_config.height,
             PostProcessConfigForAnimationImage(config.post_process_config, target_generation_id, 0),
             0)) {
-        FinalizeWorkerFailure(shared_state, "View post-processing failed.");
+        fail_turn("View post-processing failed.");
         return;
     }
     const double render_duration_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - render_start).count();
 
     if (shared_state->stop_requested.load()) {
-        FinalizeWorkerFailure(shared_state, "Turn cancelled.");
+        fail_turn("Turn cancelled.");
         return;
     }
 
     {
         std::lock_guard<std::mutex> lock(shared_state->mutex);
         CloseTerminalStreamLocked(shared_state);
+        PrintTurnProvenance(updated_session_state, turn_result);
+        PrintHeadlessTurnDebugTrace(turn_result, stdout);
         shared_state->busy = false;
         shared_state->result_ready = true;
         shared_state->error_ready = false;
         shared_state->activity = kWorkerActivityComplete;
-        shared_state->status_text = "Turn complete.";
+        shared_state->status_text = UiText(shared_state->language,"Turn complete.","Tour terminé.","Turen er ferdig.","Turen er færdig.","Zug abgeschlossen.","Turno completato.");
         std::swap(shared_state->session_state, updated_session_state);
         std::swap(shared_state->turn_result, turn_result);
         shared_state->pixels.swap(pixels);
@@ -1680,7 +1695,13 @@ static void RunAnimationWorker(
         scene_snapshot.camera = CalculateAnimatedCameraPose(pose_a, pose_b, image_index);
         const std::chrono::steady_clock::time_point frame_start = std::chrono::steady_clock::now();
         std::vector<unsigned char> pixels;
-        if (!RenderSceneToPixels(scene_snapshot, render_config, &pixels)) {
+        struct AnimationGate { AnimationWorkerSharedState* state; uint64_t generation; } gate{shared_state,generation_id};
+        RenderControl control{[](void* p) {
+            const auto& g=*static_cast<AnimationGate*>(p);
+            return !g.state->stop_requested.load() && g.state->active_generation_id.load()==g.generation;
+        },&gate};
+        if (!RenderSceneToPixels(scene_snapshot, render_config, &pixels,&control)) {
+            if(shared_state->stop_requested.load() || shared_state->active_generation_id.load()!=generation_id) {cancelled=true;break;}
             failed = true;
             failure_text = "Animated-view raytracing failed.";
             break;
@@ -1867,7 +1888,7 @@ static void BuildTranscriptLines(
         MarkWrappedLinesAsCommand(lines, start_line);
         if (!record.narration.empty()) {
             const std::string narration =
-                session_state.language != kGameLanguageEnglish && LooksPredominantlyEnglishForUi(record.narration)
+                IsClearlyWrongNarrativeLanguage(record.narration,session_state.language)
                 ? UiText(
                     session_state.language,
                     "This turn remains archived in its original language.",
@@ -2067,6 +2088,12 @@ bool RunSdlFrontend(
 {
     SessionState current_session_state = initial_session_state;
     RestoreAuthoritativeCanonicalTopology(&current_session_state);
+    ResearchArchive archive;
+    if (!archive.Start(config.research_root,current_session_state,config.turn_config.generation_config,config.render_config)) {
+        SetError(error_buffer,error_buffer_size,archive.Error().c_str());return false;
+    }
+    bool archive_ok = true;
+    unsigned int command_sequence = 0;
     std::vector<std::string> command_history;
     for (size_t index = 0; index < current_session_state.history.size(); ++index) {
         if (!current_session_state.history[index].player_command.empty()) {
@@ -2100,6 +2127,7 @@ bool RunSdlFrontend(
     }
     const double initial_render_duration_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - initial_render_start).count();
+    archive_ok = archive.Image(current_session_state,rgb_pixels) && archive_ok;
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SetSdlError(error_buffer, error_buffer_size, "SDL_Init failed");
@@ -2249,9 +2277,9 @@ bool RunSdlFrontend(
     bool smoke_test_text_pushed = false;
     bool smoke_test_return_pushed = false;
     if (config.automated_smoke_test_duration_ms > 0) {
-        current_session_state.language = kGameLanguageEnglish;
+        current_session_state.language = config.automated_smoke_test_language;
         language_selected = true;
-        persistent_hint = "Automated animated-view smoke test.";
+        persistent_hint = ReadyHint(current_session_state.language);
     }
 
     while (running) {
@@ -2362,7 +2390,7 @@ bool RunSdlFrontend(
                 bool busy = false;
                 {
                     std::lock_guard<std::mutex> lock(worker_shared_state.mutex);
-                    busy = worker_shared_state.busy;
+                    busy = worker_shared_state.busy || worker_shared_state.result_ready;
                 }
                 if (busy) {
                     worker_shared_state.stop_requested.store(true);
@@ -2392,7 +2420,7 @@ bool RunSdlFrontend(
                 bool busy = false;
                 {
                     std::lock_guard<std::mutex> lock(worker_shared_state.mutex);
-                    busy = worker_shared_state.busy;
+                    busy = worker_shared_state.busy || worker_shared_state.result_ready;
                 }
                 if (busy) {
                     ui_message = UiText(
@@ -2419,6 +2447,7 @@ bool RunSdlFrontend(
                 }
 
                 pending_command = command;
+                archive_ok = archive.Command(command) && archive_ok;
                 persistent_hint.clear();
                 input_text.clear();
                 input_cursor = 0;
@@ -2431,13 +2460,16 @@ bool RunSdlFrontend(
                     worker_shared_state.result_ready = false;
                     worker_shared_state.error_ready = false;
                     worker_shared_state.activity = kWorkerActivityLlm;
-                    worker_shared_state.status_text = "Preparing turn...";
+                    worker_shared_state.language = current_session_state.language;
+                    worker_shared_state.status_text = StreamPhaseStatus(kHeadlessTurnStreamPrimaryResponse,current_session_state.language);
                     worker_shared_state.error_text.clear();
                 }
                 worker_shared_state.stop_requested.store(false);
+                SdlFrontendConfig request_config=config;
+                request_config.turn_config.generation_config.seed += 104729u * command_sequence++;
                 worker_thread = std::thread(
                     RunTurnWorker,
-                    config,
+                    request_config,
                     current_session_state,
                     command,
                     next_generation_id + 1u,
@@ -2502,6 +2534,11 @@ bool RunSdlFrontend(
             worker_activity = worker_shared_state.activity;
             worker_status = worker_shared_state.status_text.empty() ? "idle" : worker_shared_state.status_text;
 
+            if(worker_shared_state.result_ready && worker_shared_state.stop_requested.load()) {
+                worker_shared_state.result_ready=false;
+                worker_shared_state.error_ready=true;
+                worker_shared_state.error_text=TurnCancelledText(worker_shared_state.language);
+            }
             if (worker_shared_state.result_ready) {
                 std::swap(completed_session_state, worker_shared_state.session_state);
                 std::swap(completed_turn_result, worker_shared_state.turn_result);
@@ -2511,6 +2548,7 @@ bool RunSdlFrontend(
                 turn_result_ready = true;
             } else if (worker_shared_state.error_ready) {
                 failure_text = worker_shared_state.error_text;
+                completed_turn_result = worker_shared_state.turn_result;
                 worker_shared_state.error_ready = false;
                 turn_failed = true;
                 ui_message = current_session_state.language == kGameLanguageEnglish
@@ -2566,6 +2604,8 @@ bool RunSdlFrontend(
                 uploaded_generation_id = active_animated_view.generation_id;
                 uploaded_image_index = 0;
                 turn_completed = true;
+                archive_ok = archive.Turn(current_session_state,last_turn_result,
+                    active_animated_view.images[0].pixels) && archive_ok;
                 ui_message.clear();
                 fprintf(
                     stdout,
@@ -2576,6 +2616,8 @@ bool RunSdlFrontend(
             }
         }
 
+        if (turn_failed && archive.Pending())
+            archive_ok = archive.Failure(failure_text,completed_turn_result) && archive_ok;
         if (!worker_joined && !worker_busy && worker_thread.joinable()) {
             worker_thread.join();
             worker_joined = true;
@@ -2737,7 +2779,8 @@ bool RunSdlFrontend(
             worker_busy,
             SDL_GetTicks());
 
-        const std::string display_message = !ui_message.empty() ? ui_message : persistent_hint;
+        const std::string display_message = !ui_message.empty() ? ui_message :
+            (worker_busy && config.turn_config.dynamic_scenes ? worker_status : persistent_hint);
         BuildTranscriptLines(
             current_session_state,
             pending_command,
@@ -2815,6 +2858,9 @@ bool RunSdlFrontend(
     if (final_session_state) {
         *final_session_state = current_session_state;
     }
+    if (archive.Pending())
+        archive_ok = archive.Failure("Closed during turn; not committed.",worker_shared_state.turn_result) && archive_ok;
+    archive_ok = archive.Close(current_session_state) && archive_ok;
 
     SDL_DestroyTexture(scene_texture);
     SDL_StopTextInput(window);
@@ -2823,7 +2869,8 @@ bool RunSdlFrontend(
     SDL_DestroyWindow(window);
     SDL_Quit();
 
-    success = true;
+    success = archive_ok;
+    if (!success) SetError(error_buffer,error_buffer_size,archive.Error().c_str());
     return success;
 }
 

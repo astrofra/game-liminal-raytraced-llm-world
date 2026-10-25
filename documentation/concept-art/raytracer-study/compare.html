@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concepts / raytracer — comparaison</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#151814;color:#e8e9df}
+body{max-width:1300px;margin:auto;padding:24px}
+h1{font-size:clamp(1.5rem,3vw,2.5rem);font-weight:650;letter-spacing:-.03em;margin-bottom:.5rem}
+h2{font-size:1.2rem;margin:0 0 12px}p{line-height:1.6;max-width:90ch;color:#c9cbbb}
+a{color:#e0cf7c}header{margin-bottom:28px}.controls{display:flex;gap:24px;flex-wrap:wrap;align-items:center;background:#24291f;padding:16px;border-radius:8px}
+select{font:inherit;padding:6px;border:1px solid #87916d;border-radius:4px}
+article{margin:28px 0 40px}.frame{position:relative;aspect-ratio:2/1;overflow:hidden;background:#060806;border:1px solid #444c39}
+.frame img{display:block;width:100%;height:100%;object-fit:contain}
+.render{position:absolute;inset:0;clip-path:inset(0 50% 0 0)}
+.marker{position:absolute;top:0;bottom:0;left:50%;width:2px;background:#fff9;pointer-events:none}
+.tag{position:absolute;top:10px;background:#151814df;padding:5px 10px;font-size:.8rem;border-radius:3px;pointer-events:none}
+.tag.left{left:10px}.tag.right{right:10px}
+.slider{display:flex;gap:16px;align-items:center;margin-top:10px}.slider label{min-width:100px}.slider input{width:100%;accent-color:#d5c771}
+.links{font-size:.9rem;display:flex;gap:20px;flex-wrap:wrap;margin-top:10px}
+.side .frame{display:grid;grid-template-columns:1fr 1fr;gap:2px;aspect-ratio:auto}
+.side .render{position:static;clip-path:none;order:1}.side .reference{order:2}
+.side .frame img{height:auto;aspect-ratio:2/1}
+.side .marker,.side .slider{display:none}
+footer{border-top:1px solid #444c39;margin:20px 0;padding:16px 0;color:#b5b9a6}
+</style>
+</head>
+<body>
+<header>
+<h1>Du concept à la scène calculée</h1>
+<p>Quatre reconstructions manuelles, avec le langage <code>.scene</code> et le raytracer actuel.
+Une seconde série utilise la nouvelle lumière directionnelle. La composition reste approximative. Les images calculées sont les PNG natifs, sans retouche ni débruitage.</p>
+<p>Concepts : 1774 × 887. Qualité : 960 × 480, 128 échantillons/pixel. Budget : 800 × 400, 16 échantillons/pixel.
+Même ratio 2:1 ; affichage redimensionné par le navigateur. <a href="README.md">Lire les observations, mesures et limites</a>.</p>
+<div class="controls">
+<label>Rendu affiché <select id="profile"><option value="sun" selected>Soleil · 128 échantillons</option><option value="quality">Éclairage initial · 128 échantillons</option><option value="budget">Budget · 16 échantillons</option></select></label>
+<label><input type="checkbox" id="side"> Côte à côte</label>
+<span id="profile-note" aria-live="polite">Soleil pour 01–03 · 09 reste nocturne</span>
+</div>
+</header>
+<main>
+<article data-stem="01-la-chambre-du-ciel">
+<h2>01 — La chambre du ciel</h2>
+<div class="frame">
+<img class="reference" src="../01-la-chambre-du-ciel.png" alt="Concept original — 01 — La chambre du ciel">
+<img class="render" src="renders/quality/01-la-chambre-du-ciel.png" alt="Rendu natif — 01 — La chambre du ciel">
+<span class="marker"></span><span class="tag left">Raytracer</span><span class="tag right">Concept</span>
+</div>
+<div class="slider"><label for="slider-01">Superposition</label><input id="slider-01" type="range" min="0" max="100" value="50" aria-valuetext="50 % de rendu visible"></div>
+<div class="links"><a class="scene-link" href="scenes/01-la-chambre-du-ciel.scene">Fichier .scene</a><a class="render-link" href="renders/quality/01-la-chambre-du-ciel.png">PNG du rendu</a><a href="../01-la-chambre-du-ciel.png">Concept original</a></div>
+</article>
+<article data-stem="02-le-champ-des-diapasons">
+<h2>02 — Le champ des diapasons</h2>
+<div class="frame">
+<img class="reference" src="../02-le-champ-des-diapasons.png" alt="Concept original — 02 — Le champ des diapasons">
+<img class="render" src="renders/quality/02-le-champ-des-diapasons.png" alt="Rendu natif — 02 — Le champ des diapasons">
+<span class="marker"></span><span class="tag left">Raytracer</span><span class="tag right">Concept</span>
+</div>
+<div class="slider"><label for="slider-02">Superposition</label><input id="slider-02" type="range" min="0" max="100" value="50" aria-valuetext="50 % de rendu visible"></div>
+<div class="links"><a class="scene-link" href="scenes/02-le-champ-des-diapasons.scene">Fichier .scene</a><a class="render-link" href="renders/quality/02-le-champ-des-diapasons.png">PNG du rendu</a><a href="../02-le-champ-des-diapasons.png">Concept original</a></div>
+</article>
+<article data-stem="03-la-faille-en-chicane">
+<h2>03 — La faille en chicane</h2>
+<div class="frame">
+<img class="reference" src="../03-la-faille-en-chicane.png" alt="Concept original — 03 — La faille en chicane">
+<img class="render" src="renders/quality/03-la-faille-en-chicane.png" alt="Rendu natif — 03 — La faille en chicane">
+<span class="marker"></span><span class="tag left">Raytracer</span><span class="tag right">Concept</span>
+</div>
+<div class="slider"><label for="slider-03">Superposition</label><input id="slider-03" type="range" min="0" max="100" value="50" aria-valuetext="50 % de rendu visible"></div>
+<div class="links"><a class="scene-link" href="scenes/03-la-faille-en-chicane.scene">Fichier .scene</a><a class="render-link" href="renders/quality/03-la-faille-en-chicane.png">PNG du rendu</a><a href="../03-la-faille-en-chicane.png">Concept original</a></div>
+</article>
+<article data-stem="09-la-veille-des-lumieres">
+<h2>09 — La veille des lumières</h2>
+<div class="frame">
+<img class="reference" src="../09-la-veille-des-lumieres.png" alt="Concept original — 09 — La veille des lumières">
+<img class="render" src="renders/quality/09-la-veille-des-lumieres.png" alt="Rendu natif — 09 — La veille des lumières">
+<span class="marker"></span><span class="tag left">Raytracer</span><span class="tag right">Concept</span>
+</div>
+<div class="slider"><label for="slider-09">Superposition</label><input id="slider-09" type="range" min="0" max="100" value="50" aria-valuetext="50 % de rendu visible"></div>
+<div class="links"><a class="scene-link" href="scenes/09-la-veille-des-lumieres.scene">Fichier .scene</a><a class="render-link" href="renders/quality/09-la-veille-des-lumieres.png">PNG du rendu</a><a href="../09-la-veille-des-lumieres.png">Concept original</a></div>
+</article>
+</main>
+<footer>Fixtures de calibration écrites par Codex. Première série avec le moteur initial, seconde avec distant_light. Aucune génération par Ministral pour cet essai. Les sources de lumière supplémentaires sont déclarées dans les scènes. <a href="CAPABILITIES_AUDIT.md">Audit des capacités</a>.</footer>
+<script>
+document.querySelectorAll('article').forEach(article => {
+  article.querySelector('input[type=range]').addEventListener('input', event => {
+    const amount = Number(event.target.value);
+    article.querySelector('.render').style.clipPath = 'inset(0 ' + (100 - amount) + '% 0 0)';
+    article.querySelector('.marker').style.left = amount + '%';
+    event.target.setAttribute('aria-valuetext', amount + ' % de rendu visible');
+  });
+});
+document.querySelector('#side').addEventListener('change', event => {
+  document.body.classList.toggle('side', event.target.checked);
+  document.querySelectorAll('article').forEach(article => {
+    const amount = Number(article.querySelector('input[type=range]').value);
+    article.querySelector('.render').style.clipPath = event.target.checked ? 'none' : 'inset(0 ' + (100 - amount) + '% 0 0)';
+  });
+});
+document.querySelector('#profile').addEventListener('change', event => {
+  const profile = event.target.value;
+  document.querySelectorAll('article').forEach(article => {
+    const selected = profile === 'sun' && article.dataset.stem.startsWith('09') ? 'quality' : profile;
+    const path = 'renders/' + selected + '/' + article.dataset.stem + '.png';
+    article.querySelector('.render').src = path;
+    article.querySelector('.render-link').href = path;
+    article.querySelector('.scene-link').href = (selected === 'sun' ? 'scenes-sun/' : 'scenes/') + article.dataset.stem + '.scene';
+  });
+  document.querySelector('#profile-note').textContent = profile !== 'budget'
+    ? (profile === 'sun' ? 'Soleil pour 01–03 · 09 reste nocturne' : '960 × 480 · 5 rebonds diffus · 8 échantillons directs')
+    : '800 × 400 · 3 rebonds diffus · 2 échantillons directs';
+});
+document.querySelector('#profile').dispatchEvent(new Event('change'));
+</script>
+</body></html>

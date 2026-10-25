@@ -1,9 +1,19 @@
 # Project Reorientation Brief for Codex
-## From *Le Désert des tokens* to an Eryx-based generative labyrinth
+## Eryx-based generative labyrinth — active framing: *Within the Latent Walls* / *Entre les Murs Latents*
+
+**Status of this document:** initial brief dated 2026-08-09; narrative framing consolidated on 2026-10-25. The numbered sections preserve the initial editorial plan. The propositions below remain to be read together with [TECHNICAL_STATE.md](./TECHNICAL_STATE.md) and do not constitute an authorization to modify the runtime.
 
 **Purpose:** This document is an editorial and conceptual instruction for reconfiguring the documentary material of `astrofra/game-liminal-raytraced-llm-world`.
 
-**Primary task:** Rewrite the project documentation so that the current datacenter/desert narrative is replaced by a new artistic and research direction built around the lineage of *In the Walls of Eryx*, ASD's *Beyond the Walls of Eryx*, Mandarine's *Within the Mesh*, and the present LLM-driven interactive work.
+**Primary task:** Converge the project documentation on the Eryx-based artistic and research direction built around the lineage of *In the Walls of Eryx*, ASD's *Beyond the Walls of Eryx*, Mandarine's *Within the Mesh*, and the present LLM-driven interactive work.
+
+**Priority local references:**
+
+- [concept-art/ATLAS_COMPOSITION.md](./concept-art/ATLAS_COMPOSITION.md) and the fiches in [concept-art/](./concept-art/) for composition principles.
+- [../img/](../img/) for project views: historical captures, not a new textual canon.
+- [IN_THE_WALLS_OF_ERYX.md](./IN_THE_WALLS_OF_ERYX.md) for the literary motifs.
+
+The concepts express composition intentions; project screenshots record successive versions. Their captured transcripts do not override the Eryx narrative. The literary source supplies motifs to reinterpret, rather than a fixed sequence of levels.
 
 **Important:** This is primarily a **documentation-first reorientation**. Do not use this brief as an excuse to redesign working code indiscriminately. Preserve implemented technical facts, file paths, test results, performance measurements, rendering architecture, and runtime behavior unless a later code task explicitly changes them.
 
@@ -17,15 +27,13 @@ The current project grew out of a strong technical and artistic premise:
 
 That premise remains valid and should remain central.
 
-The current implementation already has several strong elements: local Ministral inference through `llama.cpp`, a native C++ runtime, a deliberately simple grayscale CPU raytracer, a player-facing parser interface, an authoritative state outside the model, an intermediate spatial state, a deterministic compilation path from spatial state to renderable scene, intentionally weak global topology, room generation and caching, and a visual language based on simple geometry, low information density, and visible technical limits.
+The current implementation already has several strong elements: local Gemma inference through `llama.cpp`, a native C++ runtime, a deliberately simple grayscale CPU raytracer, a player-facing parser interface, an authoritative state outside the model, an intermediate spatial state, a deterministic compilation path from spatial state to renderable scene, intentionally weak global topology, room generation and caching, and a visual language based on simple geometry, low information density, and visible technical limits.
 
 The problem is not the technical architecture. The problem is the **narrative and research anchoring**.
 
-The previous story, *Le Désert des tokens*, imagined an officer posted in an autonomous datacenter in the desert, waiting for an undefined massive cyberattack. The datacenter heated its own environment, while the fictional desert temperature influenced the LLM sampling temperature. This created an elegant loop between computational activity, energy, heat, ecological absurdity, and increasingly unstable language.
+The Eryx framing supplies that anchoring directly. Venus as an extractive frontier gives the work crystals, survey routes, pressure shelters, atmospheric processing, bodily resources and an incomplete instrumented perception of the terrain; the invisible labyrinth gives it a spatial model based on mapping attempts that fail and on topology that cannot be trusted. These motifs are already carried in part by the implemented slice, not merely planned.
 
-That concept remains artistically interesting, but it has one major weakness in the context of the author's PhD research: the connection to the demoscene is indirect. It depends mostly on the visual language of constraint and on the broader idea of expressive computational allocation.
-
-The Eryx reorientation solves this problem by making the demoscene lineage **historical, personal, explicit, and structurally embedded in the work**.
+The demoscene lineage then becomes **historical, personal, explicit, and structurally embedded in the work**, instead of being inferred from a general aesthetics of constraint.
 
 ---
 
@@ -81,13 +89,13 @@ The present work introduces a new transformation that the previous stages could 
 
 The player does not merely watch a representation of the labyrinth.
 
-The player **inhabits a computational labyrinth whose topology can actually change**.
+The player **inhabits a computational labyrinth whose topology is designed to change under engine validation**.
 
 The LLM is no longer only a narrator. It participates in the production of spatial uncertainty.
 
 The central conceptual move is:
 
-> The invisible and possibly changing labyrinth of Eryx becomes a generative spatial system in which the LLM can continually reconfigure the player's field of movement.
+> The invisible and possibly changing labyrinth of Eryx becomes a generative spatial system in which the LLM is meant to reconfigure the player's field of movement under engine control.
 
 This makes the known weakness of LLM-based world simulation — imperfect global spatial continuity — artistically productive.
 
@@ -97,11 +105,11 @@ The model's difficulty in maintaining a perfectly stable global topology is not 
 
 # 3. The new central artistic proposition
 
-The revised project should no longer be primarily framed as an ecological datacenter allegory.
+The project is framed through Venusian prospecting and spatial uncertainty.
 
-Its new core proposition is:
+Its core proposition is:
 
-> Build an interactive, locally coherent but globally unstable world in which the player explores a Venusian extraction zone and encounters an invisible labyrinth whose spatial organization is continually re-negotiated by the generative system.
+> Build an interactive, locally coherent but globally unstable world in which the player explores a Venusian extraction zone and encounters an invisible labyrinth whose spatial organization is meant to be re-negotiated by the generative system under engine validation.
 
 The work should preserve the project's original counterfactual question about computational allocation:
 
@@ -113,31 +121,29 @@ The new work should be understood as an **interactive continuation of a demoscen
 
 ---
 
-# 4. What should be preserved from *Le Désert des tokens*
+# 4. Research principles to preserve across the Eryx framing
 
-Do not erase the intellectual history of the previous concept from the project journal and research notes. It was a legitimate stage of the research.
+Preserve the research decisions, dates, evidence and technical results accumulated before the Eryx framing. They document the project's method and its continuity; they do not need to be restated as fiction.
 
 Preserve the following principles: inversion of computational load; local LLM inference as the expensive computational center; deliberately inexpensive image generation; visual poverty as a consequence of constraint rather than a retro filter; explicit visibility of computation and latency; local coherence combined with global drift; the project as a research instrument rather than a thesis illustration; a native executable and direct technical ownership; the possibility of an autonomous ghost-player version for exhibition or demoparty presentation; the idea that the machine's own computation can become aesthetically meaningful; and the relationship between text and image as partial, asymmetric mediation.
 
-Supersede as main fiction: the autonomous military datacenter, the officer waiting for a cyberattack, cyber-threat interpretation as the main narrative engine, desert heat caused by server infrastructure, water consumption of the datacenter as the primary dramatic resource, institutional paranoia as the main theme, and the direct fictional equation "desert temperature → LLM temperature" as the central mechanic.
+The main fiction is now Venusian prospecting: crystal deposits, survey work, pressure shelters, atmospheric services, bodily resources under a hostile sky, incomplete perception, and an invisible labyrinth that resists mapping. These elements carry the drama without requiring a prior setting to be preserved.
 
-Do not delete all traces of these ideas from historical notes. Mark them as an earlier narrative branch where appropriate.
+Historical notes may record that an earlier narrative branch preceded this framing. Label it as a closed stage where useful, without presenting it as current canon.
 
-The title *Le Désert des tokens* should be treated as a **previous working title**, not silently rewritten out of the project history.
-
-Do not invent a final new title unless one has been explicitly chosen by the author.
+The active title is already fixed: *Within the Latent Walls* (English) / *Entre les Murs Latents* (French). The filename of this brief is kept unchanged for link stability, and no further title decision is requested here.
 
 ---
 
-# 5. What can be retained from the temperature idea
+# 5. The embodied temperature loop
 
-The old temperature mechanism should not automatically be imported wholesale into Eryx.
+The temperature loop is present in the runtime: the suit exposes an integer exterior temperature and a slower body temperature, and the body temperature drives the effective sampling temperature used for turn interpretation and place imagination. The HUD presents both values.
 
-Its conceptual strength was the coupling of physical temperature, machine temperature, and model sampling temperature. That remains an interesting research mechanism, but it should now be considered **optional and subordinate**.
+The loop must serve Eryx. Exposure, effort, damage, shelter and atmospheric equipment act on the suit values; they do not turn the labyrinth into a thermal puzzle.
 
-If retained, it must serve Eryx rather than distort Eryx into the old datacenter story.
+The conceptual strength is the coupling of environmental stress, bodily state and sampling variation, with the body as the lagging term. This loop remains **subordinate to structured spatial mutation**: hotter sampling may change proposals and prose, but it does not grant the model direct authority over committed traversal or geometry.
 
-Possible reinterpretations include environmental stress on Venus, oxygen depletion, suit stress, exposure time, psychological disorientation, proximity to the labyrinth's interior, or a "spatial entropy" / confidence-loss value mapped to sampling variation.
+Other possible pressures include oxygen depletion, suit stress, exposure time, psychological disorientation, proximity to the labyrinth's interior, or a "spatial entropy" / confidence-loss value.
 
 Do not make LLM temperature the sole source of spatial change. Randomness is not the same thing as meaningful instability.
 
@@ -165,13 +171,15 @@ render
 
 Keep this architecture.
 
-Do not return to unconstrained `.scene` generation.
+This initial brief established the deterministic compilation path. Later scene-generation work is documented in [document historique archivé](HISTORIQUE_RECHERCHE.md) and `TECHNICAL_STATE.md`; the narrative consolidation does not revise those technical decisions.
 
 Instead, reinterpret the spatial layer so it can express an invisible and mutable labyrinth.
 
 The LLM should be allowed to propose changes such as an exit that existed previously becoming blocked, a corridor reconnecting to a different known location, a path returning to a location from an impossible direction, a newly discovered invisible barrier dividing an apparently open area, a known barrier disappearing, a room or open quarry acquiring a hidden substructure, a previously mapped path contradicting the player's map, or the player returning to a location whose local geometry remains recognizable while its connectivity has changed.
 
 The engine should decide which mutations are accepted.
+
+**Implementation boundary (2026-10-25):** the authoritative state, intermediate spatial state and deterministic compilation path are implemented, and the canonical route already contains an authored, deterministic contradiction. The live mutation path is still planned: the LLM does not yet emit a separate topological proposal, and the engine has no `accepted` / `adjusted` / `rejected` / `deferred` decision or mutation history. Treat the mutation examples in this brief as design intent.
 
 This preserves debuggability while giving the LLM genuine authorship over the labyrinth.
 
@@ -194,6 +202,8 @@ The research question becomes sharper:
 Do not solve the invisible labyrinth by introducing an ordinary visible `prefab_invisible_wall` rendered as a wall.
 
 The whole point is the mismatch between perception and collision/topology.
+
+**Implementation boundary:** a persistent `InvisibleBarrier` type, separate from `blocked_exits`, is implemented and serialized with place, direction, evidence and discovery status; the current contact sits north of `labyrinth_threshold`. The indirect visual cues listed below remain optional intentions, not implemented effects.
 
 Invisible walls belong primarily to spatial semantics, collision or traversal constraints, narrative feedback, and optional diagnostic visualization.
 
@@ -231,31 +241,26 @@ This allows the current renderer's strengths to become purposeful. Boxes and sla
 
 # 9. Prefab redesign
 
-The current prefab catalog is strongly tied to the datacenter story, with elements such as racks and cooling units.
+The semantic catalog now follows the Eryx setting. Nine Eryx prefabs are active: `prefab_gate`, `prefab_crate`, `prefab_survey_beacon`, `prefab_crystal_scanner`, `prefab_crystal_cluster`, `prefab_extraction_rig`, `prefab_prospect_shelter`, `prefab_quarry_pylon` and `prefab_atmospheric_processor`. The generated catalog renders those nine objects.
 
-Rework the semantic catalog around the new setting.
+The migration was an intention of the initial brief and is partly realized. Legacy identifiers such as `prefab_rack` and `prefab_cooling_unit`, together with the earlier fixtures and expanded primitives, remain accessible through legacy archetypes and baselines for technical compatibility. They are not narrative canon and should not be reintroduced as Eryx furniture.
 
-Do not assume every existing prefab must be deleted. Reuse geometry when it can be reinterpreted convincingly.
+The current semantic direction is:
 
-Suggested direction:
-
-- keep `prefab_gate`, reinterpreted as a mining perimeter gate, pressure threshold, survey checkpoint, or labyrinth access marker;
-- keep `prefab_crate`, reinterpreted as prospecting cargo, sample container, oxygen supply case, or mining equipment;
-- de-emphasize or repurpose `prefab_rack` as field instrumentation / survey electronics;
-- replace or reinterpret `prefab_cooling_unit` as atmospheric processing, oxygen service, drilling support, pump, or extraction equipment;
-- add a survey beacon / navigation mast;
-- add a crystal scanner / sample instrument;
-- add a crystal cluster or specimen;
-- add a mining drill / extraction rig;
-- add a shelter / prospecting station module;
-- add a quarry marker / industrial pylon;
-- optionally add a dead or abandoned prospector proxy only if it can be represented coherently with the renderer's primitive vocabulary.
+- `prefab_gate` as a mining perimeter gate, pressure threshold, survey checkpoint, or labyrinth access marker;
+- `prefab_crate` as prospecting cargo, sample container, oxygen supply case, or mining equipment;
+- `prefab_atmospheric_processor` as atmospheric processing, oxygen service, drilling support, pump, or extraction equipment;
+- `prefab_survey_beacon` as a navigation mast;
+- `prefab_crystal_scanner` and `prefab_crystal_cluster` as sample instrument and specimen;
+- `prefab_extraction_rig` as the mining drill / extraction rig;
+- `prefab_prospect_shelter` as a shelter / prospecting station module;
+- `prefab_quarry_pylon` as a quarry marker / industrial pylon.
 
 Do not create large numbers of decorative assets.
 
 The prefab system must remain consistent with the project's aesthetic of **high semantic value per geometric element**.
 
-After real prefab geometry is implemented, regenerate the visual catalog from source. Do not manually fake generated catalog images.
+Regenerate the visual catalog from source whenever prefab geometry changes. Do not manually fake generated catalog images.
 
 ---
 
@@ -330,6 +335,8 @@ Its most important role in the new project is **spatial mediation and destabiliz
 
 The LLM interprets free-form player commands, narrates local consequences, updates selected world-state facts, proposes spatial changes, creates local descriptions that remain actionable, and may introduce contradictions at the level of the global map.
 
+The turn loop already interprets commands, narrates local consequences and applies validated state deltas. Proposing separate topological changes and global-map contradictions remains planned, as noted in section 6.
+
 This provides a strong conceptual correspondence between the source motif and the model's actual computational behavior.
 
 A weakness of generative models becomes an artistic property:
@@ -368,7 +375,7 @@ It should now derive from extraction infrastructure, quarry geometry, slabs, ret
 
 The visual world should feel **constructed, excavated, surveyed, and partially unreadable**.
 
-Do not turn the game into generic cyberpunk, datacenter horror, or NASA realism.
+Do not turn the game into generic cyberpunk, industrial-horror spectacle, or NASA realism.
 
 ---
 
@@ -425,13 +432,15 @@ This remains one of the strongest mediation devices connecting the artwork to th
 
 # 17. Documentation files to update
 
-Perform a coherent pass over the whole documentation tree.
+This section records the initial editorial plan. Several items are already realized — the active title, the substance of `STORY.md`, the nine Eryx prefabs — and are listed here as alignment checks rather than pending rewrites.
+
+Perform a coherent pass over the whole documentation tree. Verify each file against the current tree before editing it.
 
 ## `documentation/STORY.md`
 
-This file requires the largest rewrite.
+This file now carries the active fiction and should stay aligned with the Eryx-based project direction: Venus/extraction context, invisible labyrinth, controlled possibility of changing topology, player/prospector role, relationship between visible human infrastructure and invisible alien space, resource or orientation pressure if useful, and the four-stage lineage from story to ASD to Mandarine to the current work.
 
-Replace the datacenter/desert story with the Eryx-based project direction. Explain the Venus/extraction context, invisible labyrinth, possibility of changing topology, player/prospector role, relationship between visible human infrastructure and invisible alien space, resource or orientation pressure if useful, and the four-stage lineage from story to ASD to Mandarine to the current work.
+Keep the incident described in `STORY.md` consistent with `TECHNICAL_STATE.md`: the canonical route, the invisible contact at the threshold, Vey's shelter and the non-reciprocal return are realized; live topological mutation remains planned.
 
 Do not reproduce the original short story's prose or copy its plot mechanically.
 
@@ -455,11 +464,11 @@ Retain the argument that low-fi aesthetics are not a retro skin.
 
 ## `documentation/NOTES.md`
 
-Preserve historical thought rather than rewriting it as if the datacenter phase never existed.
+Preserve the research decisions, dates, evidence and technical results accumulated before the Eryx framing; they document the project's method and must not be rewritten as if nothing had preceded it.
 
-Add a new dated section explaining the reorientation.
+Add a new dated section recording the narrative reorientation.
 
-Clearly label the *Désert des tokens* branch as a previous conceptual stage.
+Record the earlier narrative branch as a closed stage, without presenting its fiction as current canon.
 
 Add the four-stage genealogy and the reasoning behind the shift.
 
@@ -487,15 +496,15 @@ Do not turn the invisible maze into visible corridors everywhere.
 
 This is generated documentation.
 
-Update semantic descriptions only when source prefabs have actually changed.
+Update semantic descriptions only when source prefabs have actually changed; the catalog now documents the nine active Eryx prefabs.
 
-Plan the new catalog and record required prefab work, but do not fabricate render outputs.
+Do not fabricate render outputs.
 
-After new prefabs exist, regenerate the catalog using the existing generation pipeline.
+Regenerate the catalog from source whenever prefab geometry changes.
 
 ## `documentation/DECISIONS.md`
 
-Append a dated decision documenting the narrative reorientation, including the reason for abandoning the datacenter as main fiction, the direct demoscene lineage, Eryx labyrinth as model for controlled topological instability, the decision to preserve technical architecture, and the decision to reinterpret rather than erase prior research.
+Append a dated decision documenting the narrative reorientation: the adoption of the Venusian extraction zone and the invisible labyrinth as main fiction, the direct demoscene lineage, Eryx labyrinth as the model for controlled topological instability, the decision to preserve the technical architecture, and the decision to preserve prior research as decisions, dates, evidence and results rather than to rewrite it.
 
 ## `documentation/PROJECT_JOURNAL.md`
 
@@ -503,19 +512,17 @@ Append a chronological entry.
 
 Do not rewrite history.
 
-Describe the datacenter concept as the immediately preceding phase and explain why the Eryx lineage is a stronger fit for the thesis.
+Record the immediately preceding phase through its research decisions, dates, evidence and technical results, then explain why the Eryx lineage is a stronger fit for the thesis. Do not restate the preceding fiction as canon.
 
 ## `documentation/TECHNICAL_STATE.md`
 
 Only change factual statements if necessary.
 
-Do not transform conceptual intent into an implemented feature.
-
-If invisible barriers are not implemented yet, list them as planned rather than current.
+Do not transform conceptual intent into an implemented feature. Invisible barriers are now implemented as a separate spatial type; indirect visual cues, live topological mutation and mutation history remain planned.
 
 ## `documentation/KNOWN_ISSUES.md`
 
-Add transitional issues such as datacenter-specific prefab semantics remaining in the current build, runtime names/scripts still referencing `desert_des_tokens`, current prompts still encoding datacenter concepts, current spatial state not yet explicitly distinguishing invisible barriers from ordinary blocked exits, and the prefab catalog not yet being Eryx-specific.
+Record the remaining transitional items: legacy prefab identifiers and earlier fixtures kept for technical compatibility, prompt or runtime identifiers that still carry the earlier framing, and the still-planned live topological mutation path. Do not list as an issue anything already resolved, such as the separate `InvisibleBarrier` type or the exterior/body temperature loop.
 
 Remove an issue only when actually resolved in code.
 
@@ -551,7 +558,7 @@ Update Markdown source first, then regenerate PDFs using the project's existing 
 2. Separate implemented facts from intentions. If an Eryx feature is only planned, say so.
 3. Do not invent benchmark results.
 4. Do not silently change technical architecture.
-5. Do not remove useful generic research because its examples came from the datacenter phase. Reframe it.
+5. Do not remove useful generic research because its examples came from an earlier narrative framing. Reframe it.
 6. Do not overuse Lovecraftian vocabulary or generic cosmic-horror clichés. The project is about unstable computed space, not fan-fiction atmosphere.
 7. Do not turn the Eryx references into decorative lore. The lineage must explain the work structurally.
 8. Do not make the invisible maze a conventional visible maze.
@@ -582,7 +589,7 @@ The documentation should openly credit the literary and demoscene sources.
 
 Use the following as a conceptual basis, not necessarily verbatim:
 
-> This project explores a four-stage lineage of unstable computed space. Lovecraft and Kenneth Sterling's *In the Walls of Eryx* imagines a Venusian prospector trapped in an invisible labyrinth whose topology may itself be changing. ASD's *Beyond the Walls of Eryx* transformed that motif into a demoscene audiovisual work in 2007. Mandarine's *Within the Mesh*, co-created by the present project's author in 2013, explicitly continued that demoscene lineage. The current work makes a further transformation: the labyrinth becomes interactive and generative. A local language model interprets the player's actions and is granted controlled authority over selected spatial relationships, allowing the world to remain locally navigable while its global topology drifts. The GPU therefore spends much of its computational budget on inference and world interpretation, while a deliberately constrained CPU raytracer produces sparse grayscale images. The work uses AI not to escape computational constraint, but to relocate it.
+> This project explores a four-stage lineage of unstable computed space. Lovecraft and Kenneth Sterling's *In the Walls of Eryx* imagines a Venusian prospector trapped in an invisible labyrinth whose topology may itself be changing. ASD's *Beyond the Walls of Eryx* transformed that motif into a demoscene audiovisual work in 2007. Mandarine's *Within the Mesh*, co-created by the present project's author in 2013, explicitly continued that demoscene lineage. The current work makes a further transformation: the labyrinth becomes interactive and generative. A local language model interprets the player's actions and is designed to receive controlled authority over selected spatial relationships, under engine validation, so that the world can remain locally navigable while its global topology drifts. The GPU therefore spends much of its computational budget on inference and world interpretation, while a deliberately constrained CPU raytracer produces sparse grayscale images. The work uses AI not to escape computational constraint, but to relocate it.
 
 ---
 
@@ -638,15 +645,15 @@ This gives the project a coherent triangle:
 
 The documentation reorientation is complete when:
 
-- `STORY.md` no longer presents the datacenter as the active main fiction;
+- `STORY.md` presents the Venusian extraction zone and its invisible labyrinth as the active fiction;
 - `SPEC.md` explicitly establishes the four-stage Eryx/demoscene lineage;
 - the LLM's controlled role in topological mutation is clearly stated;
 - the moodboard explains how Eryx, ASD, and *Within the Mesh* connect to the current visual language;
 - spatial-validation documentation treats invisible/mutable topology as a primary design problem;
-- prefab documentation clearly identifies the migration from datacenter assets to Venusian extraction/prospecting assets;
+- prefab documentation distinguishes the nine active Eryx prefabs from legacy identifiers kept for technical compatibility;
 - `DECISIONS.md` and `PROJECT_JOURNAL.md` preserve the history of the reorientation;
 - technical documents do not claim unimplemented Eryx features;
-- datacenter-specific language remains only where it documents historical development or current legacy implementation;
+- legacy technical identifiers and earlier fixtures are documented as such, without being presented as narrative canon;
 - the demoscene connection is no longer justified merely as "adjacency";
 - the project still preserves the original computational-inversion thesis;
 - the WinUAE/DMA mediation research remains visible;

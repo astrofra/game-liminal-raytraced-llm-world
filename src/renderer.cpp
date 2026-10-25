@@ -1,14 +1,18 @@
+#include "file_io.h"
 #include "renderer.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <atomic>
+#include <mutex>
 
 #if defined(LIMINAL_ENABLE_OPENMP)
   #include <omp.h>
 #endif
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STBIW_WINDOWS_UTF8
 #include "stb_image_write.h"
 
 #if defined(LIMINAL_ENABLE_OPENMP)
@@ -66,6 +70,33 @@ static const float kSampleRadianceClamp = 6.0f;
 static const float kRayOriginOffset = 0.001f;
 static const int kMaxShadowGlassIntersections = 16;
 static const int kMaxActiveGlassMedia = 8;
+
+struct DistantLightState {
+    bool enabled = false;
+    Vec3 to_light;
+    Vec3 tangent;
+    Vec3 bitangent;
+    Vec3 irradiance;
+    float cone_cos = 1.0f;
+};
+
+static DistantLightState BuildDistantLightState(const DistantLight& light)
+{
+    DistantLightState state;
+    if (!light.enabled || light.intensity <= 0.0f) {
+        return state;
+    }
+    state.enabled = true;
+    state.to_light = Normalize(-light.direction);
+    const Vec3 helper = fabsf(state.to_light.y) < 0.99f ? Vec3(0, 1, 0) : Vec3(1, 0, 0);
+    state.tangent = Normalize(Cross(helper, state.to_light));
+    state.bitangent = Cross(state.to_light, state.tangent);
+    state.cone_cos = cosf(light.angular_radius_degrees * kPi / 180.0f);
+    // A uniform solid-angle cone has mean axial cosine (1 + cos(radius)) / 2.
+    // Normalize it so changing softness preserves irradiance on a facing plane.
+    state.irradiance = light.color * (light.intensity * 2.0f / (1.0f + state.cone_cos));
+    return state;
+}
 
 static float Saturate(float value)
 {
@@ -763,21 +794,60 @@ static Vec3 EstimateCameraSpotLighting(
     return contribution / static_cast<float>(light_samples);
 }
 
+static Vec3 EstimateDistantLighting(
+    const Scene& scene,
+    const DistantLightState& light,
+    const Hit& hit,
+    const Material& material,
+    int light_samples,
+    Rng* rng)
+{
+    if (!light.enabled || light_samples <= 0 || IsNearBlack(material.albedo)) {
+        return Vec3(0.0f);
+    }
+    Vec3 contribution(0.0f);
+    // A zero-radius source is deterministic: one shadow ray is sufficient.
+    const int count = light.cone_cos == 1.0f ? 1 : light_samples;
+    for (int sample = 0; sample < count; ++sample) {
+        Vec3 direction = light.to_light;
+        if (light.cone_cos < 1.0f) {
+            const float cosine = 1.0f - rng->NextFloat() * (1.0f - light.cone_cos);
+            const float sine = sqrtf(std::max(0.0f, 1.0f - cosine * cosine));
+            const float phi = 2.0f * kPi * rng->NextFloat();
+            direction = Normalize(light.to_light * cosine +
+                light.tangent * (sine * cosf(phi)) + light.bitangent * (sine * sinf(phi)));
+        }
+        const float cosine = Dot(hit.normal, direction);
+        if (cosine <= 0.0f) {
+            continue;
+        }
+        Ray shadow;
+        shadow.origin = hit.position + hit.normal * kRayOriginOffset;
+        shadow.direction = direction;
+        contribution += TraceShadowTransmittance(scene, shadow, kHuge) *
+            (material.albedo / kPi) * light.irradiance * cosine;
+    }
+    return contribution / static_cast<float>(count);
+}
+
 static Vec3 EstimateDirectLighting(
     const Scene& scene,
     const CameraLightState& camera_light,
+    const DistantLightState& distant_light,
     const Hit& hit,
     const Material& material,
     int light_samples,
     Rng* rng)
 {
     return EstimateEmissiveTriangleLighting(scene, hit, material, light_samples, rng) +
-        EstimateCameraSpotLighting(scene, camera_light, hit, material, light_samples, rng);
+        EstimateCameraSpotLighting(scene, camera_light, hit, material, light_samples, rng) +
+        EstimateDistantLighting(scene, distant_light, hit, material, light_samples, rng);
 }
 
 static Vec3 TracePath(
     const Scene& scene,
     const CameraLightState& camera_light,
+    const DistantLightState& distant_light,
     const RenderConfig& config,
     const Ray& camera_ray,
     int dispersion_channel,
@@ -910,7 +980,7 @@ static Vec3 TracePath(
         ++diffuse_events;
 
         radiance += throughput *
-            EstimateDirectLighting(scene, camera_light, hit, material, config.direct_light_samples, rng);
+            EstimateDirectLighting(scene, camera_light, distant_light, hit, material, config.direct_light_samples, rng);
 
         if (IsNearBlack(material.albedo)) {
             break;
@@ -979,7 +1049,7 @@ static void ToneMapToRgb(const Vec3& radiance, float exposure, unsigned char* rg
 
 static bool WritePgm(const char* output_path, const std::vector<unsigned char>& pixels, int width, int height)
 {
-    FILE* file = fopen(output_path, "wb");
+    FILE* file = liminal::OpenUtf8File(output_path, "wb");
     if (!file) {
         fprintf(stderr, "Cannot open output file: %s\n", output_path);
         return false;
@@ -1034,7 +1104,8 @@ static bool RenderSceneInternal(
     const Scene& scene,
     const RenderConfig& config,
     bool print_progress,
-    std::vector<unsigned char>* pixels)
+    std::vector<unsigned char>* pixels,
+    const RenderControl* control)
 {
     if (!pixels || config.width <= 0 || config.height <= 0) {
         return false;
@@ -1042,6 +1113,7 @@ static bool RenderSceneInternal(
 
     const CameraBasis basis = BuildCameraBasis(scene.camera);
     const CameraLightState camera_light = BuildCameraLightState(scene, basis);
+    const DistantLightState distant_light = BuildDistantLightState(scene.distant_light);
     pixels->assign(static_cast<size_t>(config.width * config.height * 3), 0u);
     bool parallel_enabled = false;
     int openmp_threads = 1;
@@ -1053,7 +1125,7 @@ static bool RenderSceneInternal(
 
     if (print_progress) {
         printf(
-            "Rendering %dx%d, spp=%d, diffuse=%d, glass=%d, emissive=%d, camera_spot=%s, openmp=%s, threads=%d\n",
+            "Rendering %dx%d, spp=%d, diffuse=%d, glass=%d, emissive=%d, camera_spot=%s, distant_light=%s, openmp=%s, threads=%d\n",
             config.width,
             config.height,
             config.samples_per_pixel,
@@ -1061,13 +1133,22 @@ static bool RenderSceneInternal(
             config.max_glass_bounces,
             static_cast<int>(scene.emissive_triangles.size()),
             camera_light.enabled ? "on" : "off",
+            distant_light.enabled ? "on" : "off",
             parallel_enabled ? "on" : "off",
             openmp_threads);
     }
 
+    std::atomic<bool> cancelled(false);
+    std::mutex control_mutex;
     LIMINAL_OMP_PARALLEL_FOR
     for (int y = 0; y < config.height; ++y) {
+        if (control && control->continue_render) {
+            std::lock_guard<std::mutex> lock(control_mutex);
+            if (!cancelled.load() && !control->continue_render(control->user)) cancelled.store(true);
+        }
+        if (cancelled.load()) continue;
         for (int x = 0; x < config.width; ++x) {
+            if (control && cancelled.load()) break;
             const uint32_t pixel_seed =
                 config.seed ^ (static_cast<uint32_t>(x) * 1973u) ^ (static_cast<uint32_t>(y) * 9277u);
             Rng rng(pixel_seed);
@@ -1076,7 +1157,7 @@ static bool RenderSceneInternal(
             for (int sample_index = 0; sample_index < config.samples_per_pixel; ++sample_index) {
                 const Ray ray = GenerateCameraRay(scene.camera, basis, x, y, config, &rng);
                 const int dispersion_channel = (sample_index + x + y) % 3;
-                accumulated += TracePath(scene, camera_light, config, ray, dispersion_channel, &rng);
+                accumulated += TracePath(scene, camera_light, distant_light, config, ray, dispersion_channel, &rng);
             }
 
             const Vec3 average = accumulated / static_cast<float>(config.samples_per_pixel);
@@ -1093,24 +1174,31 @@ static bool RenderSceneInternal(
         printf("  lines %d / %d\n", config.height, config.height);
     }
 
-    return true;
+    return !cancelled.load();
 }
 
 }  // namespace
 
-bool RenderSceneToPixels(const Scene& scene, const RenderConfig& config, std::vector<unsigned char>* pixels)
+bool ProbeSceneRay(const Scene& scene, const Ray& ray, float max_distance, Hit* hit)
 {
-    return RenderSceneInternal(scene, config, false, pixels);
+    return hit && IntersectScene(scene, ray, max_distance, hit);
 }
 
-bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const char* output_path)
+bool RenderSceneToPixels(const Scene& scene, const RenderConfig& config, std::vector<unsigned char>* pixels,
+                         const RenderControl* control)
+{
+    return RenderSceneInternal(scene, config, false, pixels, control);
+}
+
+bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const char* output_path,
+                       const RenderControl* control)
 {
     if (!output_path) {
         return false;
     }
 
     std::vector<unsigned char> pixels;
-    if (!RenderSceneInternal(scene, config, true, &pixels)) {
+    if (!RenderSceneInternal(scene, config, true, &pixels, control)) {
         return false;
     }
 

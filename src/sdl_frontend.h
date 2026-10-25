@@ -21,7 +21,9 @@ struct SdlFrontendConfig {
     int window_width;
     int window_height;
     int automated_smoke_test_duration_ms;
+    GameLanguage automated_smoke_test_language;
     std::string automated_smoke_test_command;
+    std::string research_root;
 
     SdlFrontendConfig()
         : logical_width(1000)
@@ -29,6 +31,7 @@ struct SdlFrontendConfig {
         , window_width(1400)
         , window_height(1120)
         , automated_smoke_test_duration_ms(0)
+        , automated_smoke_test_language(kGameLanguageEnglish)
     {
     }
 };

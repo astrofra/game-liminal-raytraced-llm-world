@@ -1,0 +1,24 @@
+room "Eryx local composition"
+camera eye(0,1.7,-10) target(0,2,8) up(0,1,0) fov(55)
+sky zenith(0.12) horizon(0.35) nadir(0.02) band(0.3) curve(1.5) noise(0)
+distant_light direction(-0.6,-1,0.35) intensity(2.5) color(1,0.92,0.72) angular_radius(0)
+spotlight panel(1,1) offset(0,0,0.35) range(40) cone(20,60) intensity(100)
+plane "desert_floor" pos(0,0,10) normal(0,1,0) size(100,100) gray(0.3)
+
+box "quarry_wall_left" pos(-12,12,15) size(12,24,1) gray(0.7)
+box "quarry_wall_right" pos(12,12,15) size(12,24,1) gray(0.7)
+box "quarry_top_left" pos(-12,24,15) size(12,1,12) gray(0.7)
+box "quarry_top_right" pos(12,24,15) size(12,1,12) gray(0.7)
+box "quarry_front" pos(0,12,35) size(18,12,1) gray(0.7)
+box "quarry_back" pos(0,12,-5) size(18,12,1) gray(0.7)
+box "quarry_base" pos(0,0,10) size(18,12,20) gray(0.7)
+
+box "portal" pos(0,12,10) size(2,12,2) gray(0.2)
+box "portal_lintel_left" pos(-1,13,10) size(1,0.5,2) gray(0.2)
+box "portal_lintel_right" pos(1,13,10) size(1,0.5,2) gray(0.2)
+box "portal_post_left" pos(-1,12,10) size(0.5,1,2) gray(0.2)
+box "portal_post_right" pos(1,12,10) size(0.5,1,2) gray(0.2)
+
+box "quarry_ledge" pos(0,12,10) size(18,0.5,2) gray(0.6)
+box "quarry_ledge_support_left" pos(-8,11.75,10) size(1,0.5,2) gray(0.6)
+box "quarry_ledge_support_right" pos(8,11.75,10) size(1,0.5,2) gray(0.6)

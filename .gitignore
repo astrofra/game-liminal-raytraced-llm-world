@@ -1,5 +1,9 @@
 build/
 build_verify/
+build_native/
+build_*/
+build_distant_light/
+build_settings.local.json
 output/*.pgm
 output/*.ppm
 output/*.bmp

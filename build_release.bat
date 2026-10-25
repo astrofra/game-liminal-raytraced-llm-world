@@ -3,18 +3,11 @@ setlocal
 
 set "ROOT_DIR=%~dp0"
 if "%ROOT_DIR:~-1%"=="\" set "ROOT_DIR=%ROOT_DIR:~0,-1%"
-set "BUILD_DIR=%ROOT_DIR%\build"
-set "GENERATOR=Visual Studio 17 2022"
-set "EXE_PATH=%BUILD_DIR%\Release\liminal_cornell_renderer.exe"
+set "EXE_PATH=%ROOT_DIR%\build\Release\liminal_cornell_renderer.exe"
 
 echo.
-echo === Configure CMake ===
-cmake -S "%ROOT_DIR%" -B "%BUILD_DIR%" -G "%GENERATOR%"
-if errorlevel 1 goto :end
-
-echo.
-echo === Build Release ===
-cmake --build "%BUILD_DIR%" --config Release
+echo === Build Release with MSVC and Ninja ===
+python "%ROOT_DIR%\scripts\build_native.py" --publish %*
 if errorlevel 1 goto :end
 
 echo.

@@ -103,7 +103,7 @@ Entropy and both temperatures now use distinct C++ members. The loader still acc
 - Five canonical exits are intentionally open and unlinked, making the generated-room pipeline reachable during ordinary play.
 - Canonical fixtures use contrasting camera axes, scales, enclosure and hero silhouettes rather than one repeated frontal composition.
 - Active prompts use Eryx vocabulary and preserve `spatial_entropy` as an internal topological measure. The player HUD instead exposes Venusian external and body temperatures.
-- Historical datacenter fixtures and legacy prefab directives remain available as technical baselines.
+- Historical fixtures and legacy prefab directives remain available as technical baselines.
 
 ## Still planned
 

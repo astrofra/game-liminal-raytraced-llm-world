@@ -1,0 +1,22 @@
+Le dédale à contre-jour — concept 11
+Date : 2026-10-25
+Génération : outil intégré image_gen ; concept artistique, pas un rendu du moteur.
+Image : 11-le-dedale-a-contre-jour.png, 1774 × 887, panorama 2:1 sans interface.
+
+Intention : Vue d'ensemble à hauteur humaine : plusieurs parois décalées organisent un dédale dans une carrière ouverte. Les pylônes visibles à travers donnent des repères de profondeur.
+Direction commune : sol ocre, ciel olive/jaune, masses de carrière grises, géométrie rectangulaire et lumière indirecte.
+Demande spécifique : parois presque totalement transparentes, épaisses de 25 cm, avec un effet discret de dispersion chromatique. Cette exploration ajoute volontairement un indice optique aux murs invisibles, contrairement à la consigne d'invisibilité absolue des concepts 01–10 ; elle ne modifie pas ces concepts.
+Revue visuelle : Les grandes faces laissent nettement lire le paysage. La tranche proche montre deux interfaces ; les arêtes prismatiques sont plus continues et plus saturées que la discrétion initialement demandée.
+Limites : 25 cm est une cible du prompt, pas une dimension mesurable ou certifiée dans cette image générée. La dispersion représentée est une intention artistique, pas une simulation optique validée. Le sol détaillé et les matières seraient à simplifier pour une transposition. Aucune scène .scene ni modification du runtime produite.
+Validation effectuée : revue visuelle, décodage PNG et dimensions vérifiées.
+
+PROMPT EXACT
+
+Use case: stylized-concept.
+Create ONE environment concept art for the liminal Venusian game Within the Latent Walls / Entre les Murs Latents.
+FORMAT: wide landscape panorama 2:1, ideally 1774x887. One full-bleed continuous scene. No text, labels, diagrams, UI, visor, HUD, borders, watermark, people or creatures.
+STYLE: restrained brutalist architectural maquette, convincing raytraced diffuse global illumination, subtle rendering grain. Sparse matte gray rectangular quarry architecture, muted ochre flat ground, olive-green zenith fading to pale sulfur-yellow horizon, warm ground bounce. Minimal surfaces and coherent perspective, unsettling empty scale. No elaborate rubble, organic vegetation or science-fiction machinery.
+PRIMARY SUBJECT: the nearly invisible walls of the Eryx labyrinth. Tall, perfectly planar freestanding solid slabs, EXACTLY 0.25 meter thick, roughly 3 meters high, long orthogonal runs forming a maze. They are almost completely optically transparent and colorless. The landscape and architecture remain clearly visible through their broad faces at almost unchanged brightness and contrast. Most of each wall must disappear into the surroundings. Reveal the physical thickness only at selected close exposed end faces, two closely spaced front/back edges with a 25 cm gap in world scale. No metal frames, posts, panel seams, hardware, opaque bases or frosted surfaces.
+OPTICAL EFFECT: very subtle wavelength dispersion, tiny separated red/green/blue-violet fringes at a FEW grazing edges and a slight spectral splitting of high-contrast background silhouettes viewed through the slab. A faint restrained prismatic trace on the ground is acceptable. Material-local dispersion only; rest of the image sharp and normally colored. No glowing outlines, luminous force fields, neon rainbow grids, broad rainbow washes, global chromatic aberration, heavy reflections, mirror surfaces, tinted glass, milky opacity or conspicuous glass boxes. The impression should be almost empty space that quietly betrays an invisible obstacle.
+COMPOSITION: Le dédale à contre-jour. Human eye-level wide view from the threshold of an open-air invisible maze on a flat ochre Venusian quarry plateau. Several staggered transparent parallel walls and two perpendicular returns suggest a navigable zigzag; avoid a dense regular grid. A near wall ends in the left foreground, its narrow 25 cm deep exposed vertical end face seen at a grazing angle; only a delicate pair of chromatic edges reveals it. Further walls largely vanish. Beyond them, three sparse gray monolithic quarry pylons and a low distant rectangular extraction structure are cleanly visible through the walls. A distant bright pale-yellow horizon backlights these gray silhouettes, producing minute localized spectral displacements through the walls. Strong negative space, wide low horizon, beautifully balanced architectural composition. The invisible labyrinth is the subject, opaque architecture only provides distant visual references. Do not draw every wall perimeter.
+

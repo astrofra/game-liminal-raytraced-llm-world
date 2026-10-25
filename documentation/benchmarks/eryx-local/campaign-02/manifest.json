@@ -1,0 +1,105 @@
+{
+  "ollama_version": {
+    "version": "0.40.10"
+  },
+  "renderer_sha256": "f8360600fe4f9e6caa7db3946073656582279fad4af5cc91a8067b401b7fac4b",
+  "cases_sha256": "ea11563a0ca0368dfe9dd5156d7f742df66b0fa55eef61afb54fd60426ed195b",
+  "models": {
+    "gemma4:e4b": {
+      "details": {
+        "parent_model": "gemma4-validation-20260929:e4b-imatrix-attention-q6-q8-draft2",
+        "format": "gguf",
+        "family": "gemma4",
+        "families": [
+          "gemma4"
+        ],
+        "parameter_size": "7.5B",
+        "quantization_level": "Q4_K_M",
+        "runner": "llamacpp"
+      },
+      "parameters": "draft_num_predict              3\ntemperature                    1\ntop_k                          64\ntop_p                          0.95",
+      "thinking_requested": false,
+      "cold_wall_ms": 5804.516899999726,
+      "cold_metrics": {
+        "model": "gemma4:e4b",
+        "created_at": "2026-10-25T08:19:05.8986484Z",
+        "response": "",
+        "done": true,
+        "done_reason": "load"
+      },
+      "residency": {
+        "models": [
+          {
+            "name": "gemma4:e4b",
+            "model": "gemma4:e4b",
+            "size": 373565684,
+            "digest": "dc35e8d9c6061baa6f0fa870975ab6932e2542b579b13ea0f199fa4bb7300c9c",
+            "details": {
+              "parent_model": "",
+              "format": "gguf",
+              "family": "gemma4",
+              "families": [
+                "gemma4"
+              ],
+              "parameter_size": "7.5B",
+              "quantization_level": "Q4_K_M"
+            },
+            "expires_at": "2026-10-25T09:29:06.0537562+01:00",
+            "size_vram": 373565684,
+            "context_length": 8192,
+            "runner": "llamacpp"
+          }
+        ]
+      },
+      "digest": "dc35e8d9c6061baa6f0fa870975ab6932e2542b579b13ea0f199fa4bb7300c9c"
+    },
+    "eryx-ministral8b:q4": {
+      "details": {
+        "parent_model": "Ministral-3-8B-Instruct-2512-Q4_K_M.gguf",
+        "format": "gguf",
+        "family": "mistral3",
+        "families": [
+          "mistral3"
+        ],
+        "parameter_size": "8.5B",
+        "quantization_level": "Q4_K_M",
+        "runner": "llamacpp"
+      },
+      "parameters": null,
+      "thinking_requested": "unsupported",
+      "cold_wall_ms": 3198.6753000001045,
+      "cold_metrics": {
+        "model": "eryx-ministral8b:q4",
+        "created_at": "2026-10-25T08:20:05.0616778Z",
+        "response": "",
+        "done": true,
+        "done_reason": "load"
+      },
+      "residency": {
+        "models": [
+          {
+            "name": "eryx-ministral8b:q4",
+            "model": "eryx-ministral8b:q4",
+            "size": 6159408823,
+            "digest": "5a75a38239c41cedebebedf748e2eb2eba5f452f71670015dc4699ce801f8ec4",
+            "details": {
+              "parent_model": "",
+              "format": "gguf",
+              "family": "mistral3",
+              "families": [
+                "mistral3"
+              ],
+              "parameter_size": "8.5B",
+              "quantization_level": "Q4_K_M"
+            },
+            "expires_at": "2026-10-25T09:30:05.5597155+01:00",
+            "size_vram": 6159408823,
+            "context_length": 8192,
+            "runner": "llamacpp"
+          }
+        ]
+      },
+      "digest": "5a75a38239c41cedebebedf748e2eb2eba5f452f71670015dc4699ce801f8ec4"
+    }
+  }
+}

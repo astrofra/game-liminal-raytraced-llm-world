@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "default_profile": "gemma-4-e4b-q4",
+  "profiles": {
+    "gemma-4-e4b-q4": {
+      "repo_id": "ggml-org/gemma-4-E4B-it-GGUF",
+      "revision": "51db8454ac67b58ed848e54d4111be2ad16ba4bf",
+      "filename": "gemma-4-E4B-it-Q4_K_M.gguf",
+      "size_bytes": 5335289824,
+      "sha256": "90ce98129eb3e8cc57e62433d500c97c624b1e3af1fcc85dd3b55ad7e0313e9f",
+      "relative_path": "models/gemma-4-e4b/gemma-4-E4B-it-Q4_K_M.gguf",
+      "reasoning": false,
+      "temperature": 0.0,
+      "top_k": 40,
+      "top_p": 0.95
+    }
+  }
+}

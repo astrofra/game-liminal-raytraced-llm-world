@@ -1,0 +1,70 @@
+{
+  "kind": "hand_authored_renderer_capability_study",
+  "renderer_sha256": "e08221359bb7689a5395f3d9749e274aeeed486c16f8df6ef169db1b854b4169",
+  "source_commit": "c1bfcb76565cc4c0403ed83e0b26d89e183900af",
+  "settings": {
+    "width": 960,
+    "height": 480,
+    "spp": 128,
+    "diffuse_bounces": 5,
+    "glass_bounces": 9,
+    "direct_samples": 8,
+    "threads": 12,
+    "exposure": 1.0,
+    "seed": 1337
+  },
+  "cases": [
+    {
+      "id": "01",
+      "scene": "01-la-chambre-du-ciel.scene",
+      "scene_sha256": "255cc811e4075312571232094b6079e931a9afeca79a1b5a4ad3aab1cdb4163a",
+      "image": "01-la-chambre-du-ciel.png",
+      "exit_code": 0,
+      "wall_seconds": 246.351,
+      "render_ms": 246265.85,
+      "triangles": 448,
+      "materials": 39,
+      "emissive_triangles": 2,
+      "image_sha256": "236de9e973aefc3336a5d1d363c1fc35d158b79278d5d285fcf91b34012827db"
+    },
+    {
+      "id": "02",
+      "scene": "02-le-champ-des-diapasons.scene",
+      "scene_sha256": "e19403e98b4916d10c137ece3e008db548085758f0a140e2fe45460cef3ce797",
+      "image": "02-le-champ-des-diapasons.png",
+      "exit_code": 0,
+      "wall_seconds": 38.952,
+      "render_ms": 38865.56,
+      "triangles": 832,
+      "materials": 71,
+      "emissive_triangles": 2,
+      "image_sha256": "0fe1e24ef65a9bd8e27a4af7092b8cdc6fe8f463f4d1c6a70b6c63e51f4801af"
+    },
+    {
+      "id": "03",
+      "scene": "03-la-faille-en-chicane.scene",
+      "scene_sha256": "1bc441e9fc2f45d98337ddf78ce9f65b343bc1f542e1f4a57e96b2085f37b06c",
+      "image": "03-la-faille-en-chicane.png",
+      "exit_code": 0,
+      "wall_seconds": 259.283,
+      "render_ms": 259196.94,
+      "triangles": 304,
+      "materials": 27,
+      "emissive_triangles": 14,
+      "image_sha256": "1a4f81c787b97e89ab3229f5842a638f0087f045294a49b4a441c4e2b08609bd"
+    },
+    {
+      "id": "09",
+      "scene": "09-la-veille-des-lumieres.scene",
+      "scene_sha256": "46039b1debaa0f445347b5e29ba3e4007c264eb09a0b2ecee254f43e475ca559",
+      "image": "09-la-veille-des-lumieres.png",
+      "exit_code": 0,
+      "wall_seconds": 64.205,
+      "render_ms": 64109.23,
+      "triangles": 858,
+      "materials": 84,
+      "emissive_triangles": 40,
+      "image_sha256": "f351e62922707a5b8f281bc834e1eba07bd6ded71194b2baa2473aa95eaebdc7"
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+#include "resource_paths.h"
+#include "file_io.h"
 #include "scene_compiler.h"
 
 #include <math.h>
@@ -313,7 +315,7 @@ static bool ReadTextFile(const char* path, std::string* text, char* error_buffer
         return false;
     }
 
-    FILE* file = fopen(path, "rb");
+    FILE* file = liminal::OpenUtf8File(path, "rb");
     if (!file) {
         SetError(error_buffer, error_buffer_size, "Cannot open text file: %s", path);
         return false;
@@ -333,18 +335,6 @@ static const char* CanonicalFixturePath(LocationId location_id)
     switch (location_id) {
     case kLocationQuarryThreshold:
         return "assets/scenes/eryx_quarry_threshold.scene";
-    case kLocationExtractionField:
-        return "assets/scenes/eryx_extraction_field.scene";
-    case kLocationCrystalCut:
-        return "assets/scenes/eryx_crystal_cut.scene";
-    case kLocationScannerStation:
-        return "assets/scenes/eryx_scanner_station.scene";
-    case kLocationSurveyPlateau:
-        return "assets/scenes/eryx_survey_plateau.scene";
-    case kLocationLabyrinthThreshold:
-        return "assets/scenes/eryx_labyrinth_threshold.scene";
-    case kLocationProspectShelter:
-        return "assets/scenes/eryx_prospect_shelter.scene";
     case kLocationGate:
         return "assets/scenes/datacenter_entry_gate.scene";
     case kLocationServerAisles:
@@ -359,7 +349,7 @@ static const char* CanonicalFixturePath(LocationId location_id)
 static void SetCommonQuarryThresholdSpatialState(SpatialState* state)
 {
     state->room_title = "Quarry Threshold";
-    state->room_summary = "A split-crown pressure gate opens north onto the Erycinian quarry; a survey beacon and descending ramp establish the first reliable datum.";
+    state->room_summary = "A transparent slab, twenty-five centimetres thick, stands before immense quarry walls. The ochre ground opens to the eastern horizon; the route beyond has not yet been explored.";
     state->location_archetype = "quarry_threshold";
     state->canonical_fixture = CanonicalFixturePath(kLocationQuarryThreshold);
     state->time_of_day = kTimeDusk;
@@ -367,183 +357,17 @@ static void SetCommonQuarryThresholdSpatialState(SpatialState* state)
     state->desert_state = kDesertStill;
     state->interior_density = kInteriorSparse;
     state->alert_level = 1;
-    state->anchors.push_back("split_crown_gate");
-    state->anchors.push_back("datum_beacon_zero");
-    state->anchors.push_back("descending_quarry_ramp");
-    state->visible_objects.push_back("survey gate control");
-    state->visible_objects.push_back("route beacon");
-    state->visible_objects.push_back("sample cargo case");
-    state->visible_objects.push_back("map slate cradle");
-    state->blocked_exits.push_back("east");
-    state->blocked_exits.push_back("south");
-    state->blocked_exits.push_back("west");
-    state->scene_constraints.push_back("hero quarry gate");
-    state->scene_constraints.push_back("split brutalist crown");
-    state->scene_constraints.push_back("survey beacon north");
-    state->scene_constraints.push_back("open venus horizon");
-}
-
-static void SetCommonExtractionFieldSpatialState(SpatialState* state)
-{
-    state->room_title = "Extraction Field";
-    state->room_summary = "A diamond drill stands among retaining fins and atmospheric machinery; the marked quarry cut continues north while an unmapped service track leaves east.";
-    state->location_archetype = "extraction_field";
-    state->canonical_fixture = CanonicalFixturePath(kLocationExtractionField);
-    state->time_of_day = kTimeDusk;
-    state->visibility_level = kVisibilityDusty;
-    state->desert_state = kDesertWindy;
-    state->interior_density = kInteriorSparse;
-    state->alert_level = 1;
-    state->anchors.push_back("diamond_drill");
-    state->anchors.push_back("retaining_fins");
-    state->anchors.push_back("atmospheric_processor");
-    state->anchors.push_back("east_service_track");
-    state->visible_objects.push_back("drill service lever");
-    state->visible_objects.push_back("oxygen manifold");
-    state->visible_objects.push_back("quarry datum pylon");
-    state->visible_objects.push_back("sealed equipment crate");
-    state->visible_objects.push_back("unmapped east service track");
-    state->blocked_exits.push_back("west");
-    state->scene_constraints.push_back("hero extraction rig");
-    state->scene_constraints.push_back("brutalist retaining fins");
-    state->scene_constraints.push_back("atmospheric processor flank");
-    state->scene_constraints.push_back("keep quarry ramp clear");
-    state->scene_constraints.push_back("east service track open");
-}
-
-static void SetCommonCrystalCutSpatialState(SpatialState* state)
-{
-    state->room_title = "Crystal Cut";
-    state->room_summary = "An exposed crystal vein interrupts a narrow excavation; the sample track turns east toward the affinity scanner.";
-    state->location_archetype = "quarry_cut";
-    state->canonical_fixture = CanonicalFixturePath(kLocationCrystalCut);
-    state->time_of_day = kTimeDusk;
-    state->visibility_level = kVisibilityLow;
-    state->desert_state = kDesertStill;
-    state->interior_density = kInteriorSparse;
-    state->alert_level = 2;
-    state->anchors.push_back("exposed_crystal_vein");
-    state->anchors.push_back("stepped_cut_wall");
-    state->anchors.push_back("east_sample_track");
-    state->visible_objects.push_back("loose crystal sample");
-    state->visible_objects.push_back("sample case");
-    state->visible_objects.push_back("vein marker");
-    state->visible_objects.push_back("drill cutoff");
-    state->blocked_exits.push_back("north");
-    state->blocked_exits.push_back("west");
-    state->scene_constraints.push_back("hero crystal cluster");
-    state->scene_constraints.push_back("deep quarry cut");
-    state->scene_constraints.push_back("east route clear");
-    state->scene_constraints.push_back("faceted specimen glow");
-}
-
-static void SetCommonScannerStationSpatialState(SpatialState* state)
-{
-    state->room_title = "Affinity Scanner";
-    state->room_summary = "A scanner hangs beneath a heavy cantilever; the beacon route climbs north while an unlogged calibration lane continues east.";
-    state->location_archetype = "scanner_station";
-    state->canonical_fixture = CanonicalFixturePath(kLocationScannerStation);
-    state->time_of_day = kTimeNight;
-    state->visibility_level = kVisibilityClear;
-    state->desert_state = kDesertStill;
-    state->interior_density = kInteriorSparse;
-    state->alert_level = 2;
-    state->anchors.push_back("scanner_cantilever");
-    state->anchors.push_back("reference_crystal");
-    state->anchors.push_back("north_beacon");
-    state->visible_objects.push_back("affinity scanner controls");
-    state->visible_objects.push_back("reference crystal");
-    state->visible_objects.push_back("route comparison display");
-    state->visible_objects.push_back("survey beacon access plate");
-    state->visible_objects.push_back("unmapped east calibration lane");
-    state->blocked_exits.push_back("south");
-    state->scene_constraints.push_back("hero crystal scanner");
-    state->scene_constraints.push_back("heavy cantilever frame");
-    state->scene_constraints.push_back("reference crystal center");
-    state->scene_constraints.push_back("north survey beacon");
-    state->scene_constraints.push_back("east calibration lane open");
-}
-
-static void SetCommonSurveyPlateauSpatialState(SpatialState* state)
-{
-    state->room_title = "Beacon Plateau";
-    state->room_summary = "A sparse line of survey beacons crosses the plateau toward eastern pylons; a lone northern beacon has no matching map entry.";
-    state->location_archetype = "venus_plateau";
-    state->canonical_fixture = CanonicalFixturePath(kLocationSurveyPlateau);
-    state->time_of_day = kTimeNight;
-    state->visibility_level = kVisibilityLow;
-    state->desert_state = kDesertWindy;
-    state->interior_density = kInteriorSparse;
-    state->alert_level = 3;
-    state->anchors.push_back("beacon_line");
-    state->anchors.push_back("split_horizon_mass");
-    state->anchors.push_back("east_datum_pair");
-    state->visible_objects.push_back("route beacon plate");
-    state->visible_objects.push_back("survey mark post");
-    state->visible_objects.push_back("wind-scoured sample crate");
-    state->visible_objects.push_back("unmapped north beacon");
-    state->blocked_exits.push_back("west");
-    state->scene_constraints.push_back("hero survey beacon line");
-    state->scene_constraints.push_back("east datum pylons");
-    state->scene_constraints.push_back("minimal venus plateau");
-    state->scene_constraints.push_back("open horizon");
-    state->scene_constraints.push_back("isolated north beacon");
-}
-
-static void SetCommonLabyrinthThresholdSpatialState(SpatialState* state)
-{
-    state->room_title = "Open Datum";
-    state->room_summary = "Two quarry pylons frame an apparently open northern field; interrupted scans imply contact ahead while chalk marks diverge south.";
-    state->location_archetype = "labyrinth_threshold";
-    state->canonical_fixture = CanonicalFixturePath(kLocationLabyrinthThreshold);
-    state->time_of_day = kTimeNight;
-    state->visibility_level = kVisibilityClear;
-    state->desert_state = kDesertStill;
-    state->interior_density = kInteriorSparse;
-    state->alert_level = 4;
-    state->anchors.push_back("paired_datum_pylons");
-    state->anchors.push_back("suspended_fragment");
-    state->anchors.push_back("eastern_shelter_beacon");
-    state->visible_objects.push_back("boundary probe head");
-    state->visible_objects.push_back("chalk datum marker");
-    state->visible_objects.push_back("suspended crystal fragment");
-    state->visible_objects.push_back("shelter route beacon");
-    state->visible_objects.push_back("southern divergence marks");
-    state->spatial_anomalies.push_back("the northern scan line terminates without visible geometry");
-    state->scene_constraints.push_back("hero labyrinth threshold");
-    state->scene_constraints.push_back("paired quarry pylons");
-    state->scene_constraints.push_back("suspended contact evidence");
-    state->scene_constraints.push_back("no visible wall");
-    state->scene_constraints.push_back("south divergence marks");
-}
-
-static void SetCommonProspectShelterSpatialState(SpatialState* state)
-{
-    state->room_title = "Vey Shelter";
-    state->room_summary = "A low pressure shelter preserves Vey's equipment; its west hatch returns to the scanner while an east maintenance breach has no mapped destination.";
-    state->location_archetype = "prospecting_shelter";
-    state->canonical_fixture = CanonicalFixturePath(kLocationProspectShelter);
-    state->time_of_day = kTimeNight;
-    state->visibility_level = kVisibilityLow;
-    state->desert_state = kDesertStill;
-    state->interior_density = kInteriorDense;
-    state->alert_level = 4;
-    state->anchors.push_back("split_roof_shelter");
-    state->anchors.push_back("oxygen_stacks");
-    state->anchors.push_back("vey_route_map");
-    state->visible_objects.push_back("Vey route recorder");
-    state->visible_objects.push_back("scratched survey map");
-    state->visible_objects.push_back("oxygen service manifold");
-    state->visible_objects.push_back("sealed crystal sample case");
-    state->visible_objects.push_back("east maintenance breach");
+    state->anchors.push_back("threshold_pane");
+    state->anchors.push_back("western_quarry_walls");
+    state->anchors.push_back("open_eastern_horizon");
+    state->visible_objects.push_back("transparent slab with a twenty-five-centimetre edge");
+    state->visible_objects.push_back("angular quarry fragments");
     state->blocked_exits.push_back("north");
     state->blocked_exits.push_back("south");
-    state->spatial_anomalies.push_back("the west return relation bypasses the open datum");
-    state->scene_constraints.push_back("hero prospect shelter");
-    state->scene_constraints.push_back("split brutalist roof");
-    state->scene_constraints.push_back("atmospheric processor rear");
-    state->scene_constraints.push_back("west hatch clear");
-    state->scene_constraints.push_back("east maintenance breach open");
+    state->blocked_exits.push_back("west");
+    state->scene_constraints.push_back("physical transparent slab, not an invisible topology barrier");
+    state->scene_constraints.push_back("monumental quarry walls to the left");
+    state->scene_constraints.push_back("open eastern horizon and persistent generated discoveries");
 }
 
 static void SetCommonGateSpatialState(SpatialState* state)
@@ -3149,24 +2973,6 @@ bool BuildCanonicalSpatialState(LocationId location_id, SpatialState* spatial_st
     case kLocationQuarryThreshold:
         SetCommonQuarryThresholdSpatialState(spatial_state);
         return true;
-    case kLocationExtractionField:
-        SetCommonExtractionFieldSpatialState(spatial_state);
-        return true;
-    case kLocationCrystalCut:
-        SetCommonCrystalCutSpatialState(spatial_state);
-        return true;
-    case kLocationScannerStation:
-        SetCommonScannerStationSpatialState(spatial_state);
-        return true;
-    case kLocationSurveyPlateau:
-        SetCommonSurveyPlateauSpatialState(spatial_state);
-        return true;
-    case kLocationLabyrinthThreshold:
-        SetCommonLabyrinthThresholdSpatialState(spatial_state);
-        return true;
-    case kLocationProspectShelter:
-        SetCommonProspectShelterSpatialState(spatial_state);
-        return true;
     case kLocationGate:
         SetCommonGateSpatialState(spatial_state);
         return true;
@@ -3197,7 +3003,7 @@ bool BuildSceneTextFromSpatialState(
         ? CanonicalFixturePath(spatial_state.location_id)
         : spatial_state.canonical_fixture.c_str();
     if (fixture_path && fixture_path[0]) {
-        return ReadTextFile(fixture_path, scene_text, error_buffer, error_buffer_size);
+        return ReadTextFile(ResourcePath(fixture_path).c_str(), scene_text, error_buffer, error_buffer_size);
     }
 
     return BuildProceduralSceneText(spatial_state, scene_text, error_buffer, error_buffer_size);

@@ -2,7 +2,7 @@
 
 ## Artistic, Research, and Technical Specification
 
-Status: active direction as of 2026-08-18. The selected English title is *Within the Latent Walls*; the French title is *Entre les Murs Latents*. *Le Désert des tokens* designates the previous narrative branch. A first seven-place Eryx slice, typed invisible barrier, and authored impossible return are implemented; live validated LLM topology proposals remain planned.
+Status: active direction as of 2026-08-18. The selected English title is *Within the Latent Walls*; the French title is *Entre les Murs Latents*. A first seven-place Eryx slice, typed invisible barrier, and authored impossible return are implemented; live validated LLM topology proposals remain planned.
 
 ## 1. Premise
 
@@ -127,7 +127,7 @@ The implemented renderer currently uses a locked semantic RGB palette rather tha
 - repeated extraction or atmospheric-processing modules
 - harsh open terrain and incomplete sensing
 
-The project must not drift into generic cyberpunk, datacenter horror, or NASA realism.
+The project must not drift into generic cyberpunk, industrial horror, or NASA realism.
 
 ### 4.4 Local coherence, controlled global drift
 
@@ -205,7 +205,7 @@ Inference latency may be presented as visible machine activity rather than hidde
 
 ### 7.2 Narrative generation
 
-- Use `Ministral 3 8B Instruct 2512` in GGUF format through `llama.cpp` as the current target.
+- Use `Gemma 4 E4B Instruct` in GGUF format through `llama.cpp` as the current target.
 - Generate short-form prose during active play.
 - Maintain recurring locations, objects, named entities, and discoveries through external state.
 - Optimize for playable coherence rather than maximal literary flourish.
@@ -262,9 +262,9 @@ Invisible barriers belong to traversal and collision semantics. Optional diagnos
 ### 7.6 Runtime and distribution
 
 - Distribute a native desktop build.
-- Use `llama.cpp`; do not require Ollama.
+- Use in-process `llama.cpp`; do not require an external model service.
 - On Windows, distribute the game and its application-local runtime libraries through the project installer.
-- Do not embed the AI weights in the setup executable. Download the pinned official `Ministral 3 8B Instruct 2512 Q4_K_M` GGUF during installation and verify its exact size and SHA-256 digest before accepting it.
+- Include the pinned Gemma Q4_K_M GGUF in the offline distribution and local installer volumes. Verify its exact size and SHA-256 during packaging; installation must not download it.
 - Run offline after setup.
 - Support save/load.
 - Keep CPU-only inference possible, even if slower, while supporting available hardware acceleration.
@@ -298,7 +298,7 @@ Avoid Python services or external model daemons in the shipped runtime. Reposito
 
 Assume:
 
-- model: `Ministral 3 8B Instruct 2512`
+- model: `Gemma 4 E4B Instruct`
 - preferred artifact: GGUF `Q4_K_M`
 - runtime: `llama.cpp`
 - primary development acceleration: CUDA
@@ -461,7 +461,7 @@ Goals:
 
 - Windows and macOS native builds
 - Linux if practical
-- no Python or Ollama requirement for players
+- no Python or inference-service requirement for players
 - no mandatory network dependency after setup
 
 For the active Windows distribution, model weights are downloaded during installation from Mistral AI's official Hugging Face repository. The game payload and corresponding source archive are distributed separately from those weights. Other platforms still require platform-specific packaging decisions.
@@ -471,12 +471,12 @@ For the active Windows distribution, model weights are downloaded during install
 ### Phase A — Preserve and baseline the current runtime
 
 - retain the working `llama.cpp`, SDL3, state, compiler, raytracer, save/load, and benchmark paths
-- keep datacenter fixtures and benchmarks as historical technical baselines
+- keep historical fixtures and benchmarks as technical baselines
 - verify factual documentation without renaming runtime identifiers prematurely
 
 ### Phase B — Eryx semantic migration
 
-- replace active datacenter prompts and default narrative vocabulary
+- replace active legacy prompts and default narrative vocabulary
 - define extraction/prospecting location archetypes and object semantics
 - distinguish invisible barriers from ordinary blocked exits in spatial state
 - define a structured topological mutation proposal and validator

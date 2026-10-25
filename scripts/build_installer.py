@@ -12,6 +12,12 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+if __package__:
+    from .model_profiles import DEFAULT_PROFILE, get_profile
+else:
+    # Direct execution (``python scripts/build_installer.py``) puts scripts/ on sys.path.
+    from model_profiles import DEFAULT_PROFILE, get_profile
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BUILD_DIR = PROJECT_ROOT / "build"
@@ -25,11 +31,14 @@ PACKAGING_DIR = PROJECT_ROOT / "packaging"
 INNO_SCRIPT = PACKAGING_DIR / "within_the_latent_walls.iss"
 STAGED_EXE_NAME = "WithinTheLatentWalls.exe"
 
-MODEL_REPOSITORY = "mistralai/Ministral-3-8B-Instruct-2512-GGUF"
-MODEL_REVISION = "0102285ad796bd99af90f58de616092e5630e970"
-MODEL_FILENAME = "Ministral-3-8B-Instruct-2512-Q4_K_M.gguf"
-MODEL_SIZE = 5_198_911_904
-MODEL_SHA256 = "33e7a72cf5e6e2cfc2f2847075acc013d68bba023e35310cef86b5cf8fdca761"
+MODEL_PROFILE = get_profile()
+MODEL_PROFILE_NAME = DEFAULT_PROFILE
+MODEL_REPOSITORY = MODEL_PROFILE["repo_id"]
+MODEL_REVISION = MODEL_PROFILE["revision"]
+MODEL_FILENAME = MODEL_PROFILE["filename"]
+MODEL_SIZE = MODEL_PROFILE["size_bytes"]
+MODEL_SHA256 = MODEL_PROFILE["sha256"]
+MODEL_RELATIVE_PATH = MODEL_PROFILE["relative_path"]
 
 INNO_VERSION = "6.7.3"
 INNO_URL = (
@@ -73,16 +82,17 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Stage and build the Windows installer for Within the Latent Walls. "
-            "The AI model is never included in the installer."
+            "The verified Gemma model is included for offline installation."
         )
     )
-    parser.add_argument("--version", default="0.1.0", help="Installer application version.")
+    parser.add_argument("--version", default="3.0.0", help="Installer application version.")
     parser.add_argument("--skip-build", action="store_true", help="Reuse the current Release executable.")
     parser.add_argument(
         "--skip-source-archive",
         action="store_true",
         help="Do not create the GPL corresponding-source ZIP beside the installer.",
     )
+    parser.add_argument("--portable-only", action="store_true", help="Stage the complete offline folder without compiling Setup.")
     parser.add_argument("--iscc", type=Path, help="Explicit path to Inno Setup's ISCC.exe.")
     parser.add_argument(
         "--no-bootstrap-inno",
@@ -134,13 +144,13 @@ def find_dumpbin() -> Path:
         return Path(from_path).resolve()
 
     roots = [
-        Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Microsoft Visual Studio" / "2022",
-        Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio" / "2022",
+        Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Microsoft Visual Studio",
+        Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio",
     ]
     candidates: list[Path] = []
     for root in roots:
         if root.exists():
-            candidates.extend(root.glob("*/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"))
+            candidates.extend(root.glob("*/*/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"))
     if not candidates:
         raise RuntimeError("dumpbin.exe was not found. Install the Visual Studio C++ x64 tools.")
     return sorted(candidates, key=lambda path: version_key(path.parents[3]))[-1].resolve()
@@ -157,16 +167,14 @@ def find_runtime_directories() -> list[tuple[str, Path]]:
 
     vs_roots = [
         Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
-        / "Microsoft Visual Studio"
-        / "2022",
+        / "Microsoft Visual Studio",
         Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"))
-        / "Microsoft Visual Studio"
-        / "2022",
+        / "Microsoft Visual Studio",
     ]
     redist_versions: list[Path] = []
     for vs_root in vs_roots:
         if vs_root.exists():
-            redist_versions.extend(vs_root.glob("*/VC/Redist/MSVC/*"))
+            redist_versions.extend(vs_root.glob("*/*/VC/Redist/MSVC/*"))
     for version_dir in sorted(redist_versions, key=version_key, reverse=True):
         for runtime_dir in sorted((version_dir / "x64").glob("Microsoft.VC*.CRT"), reverse=True):
             if runtime_dir.is_dir():
@@ -270,21 +278,36 @@ def copy_runtime_dependencies(source_exe: Path, staged_exe: Path) -> list[dict[s
 
 
 def copy_distribution_payload(version: str) -> None:
+    if not SOURCE_EXE.is_file():
+        raise FileNotFoundError(f"Release executable not found: {SOURCE_EXE}")
+    provenance_path = SOURCE_EXE.parent / "runtime-build.json"
+    if not provenance_path.is_file():
+        raise RuntimeError("Build provenance missing; run scripts/build_native.py --publish first")
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    if provenance.get("artifacts", {}).get(SOURCE_EXE.name) != sha256_file(SOURCE_EXE):
+        raise RuntimeError("Release executable differs from its recorded build")
+    if provenance.get("model_manifest_sha256") != sha256_file(PROJECT_ROOT / "scripts/models.json"):
+        raise RuntimeError("Model manifest differs from the native build; rebuild before packaging")
+    expected_commit = (PROJECT_ROOT / "vendor/llama.cpp/VENDORED_COMMIT.txt").read_text().strip()
+    if provenance.get("llama_cpp_commit") != expected_commit:
+        raise RuntimeError("Native build and packaged vendor revision differ")
+    model_source = PROJECT_ROOT / MODEL_RELATIVE_PATH
+    if not model_source.is_file() or model_source.stat().st_size != MODEL_SIZE or sha256_file(model_source) != MODEL_SHA256:
+        raise RuntimeError("The pinned Gemma model is missing or invalid; run download_gemma.bat before packaging")
     reset_directory(STAGE_DIR)
     DIST_DIR.mkdir(parents=True, exist_ok=True)
 
-    if not SOURCE_EXE.is_file():
-        raise FileNotFoundError(f"Release executable not found: {SOURCE_EXE}")
-
     staged_exe = STAGE_DIR / STAGED_EXE_NAME
     shutil.copy2(SOURCE_EXE, staged_exe)
+    shutil.copy2(provenance_path, STAGE_DIR / "runtime-build.json")
     shutil.copytree(PROJECT_ROOT / "assets", STAGE_DIR / "assets")
     shutil.copy2(PROJECT_ROOT / "LICENSE", STAGE_DIR / "LICENSE.txt")
     shutil.copy2(PROJECT_ROOT / "README.md", STAGE_DIR / "README.md")
     shutil.copy2(PACKAGING_DIR / "MODEL_NOTICE.txt", STAGE_DIR / "MODEL_NOTICE.txt")
     shutil.copy2(PACKAGING_DIR / "INSTALLATION_README.txt", STAGE_DIR / "INSTALLATION_README.txt")
     (STAGE_DIR / "output").mkdir()
-    (STAGE_DIR / "models" / "ministral-3-8b").mkdir(parents=True)
+    (STAGE_DIR / Path(MODEL_RELATIVE_PATH).parent).mkdir(parents=True)
+    shutil.copy2(model_source, STAGE_DIR / MODEL_RELATIVE_PATH)
 
     license_dir = STAGE_DIR / "licenses" / "third-party"
     license_dir.mkdir(parents=True)
@@ -293,6 +316,7 @@ def copy_distribution_payload(version: str) -> None:
         raise RuntimeError("CUDA_PATH is required to package the CUDA redistribution notices.")
     cuda_root = Path(cuda_path_value)
     third_party_licenses = [
+        (PACKAGING_DIR / "Gemma-LICENSE.txt", "Gemma-LICENSE.txt"),
         (PROJECT_ROOT / "vendor" / "llama.cpp" / "LICENSE", "llama.cpp-LICENSE.txt"),
         (BUILD_DIR / "_deps" / "sdl3-src" / "LICENSE.txt", "SDL3-LICENSE.txt"),
         (BUILD_DIR / "_deps" / "sdl3_ttf-src" / "LICENSE.txt", "SDL3_ttf-LICENSE.txt"),
@@ -328,8 +352,8 @@ def copy_distribution_payload(version: str) -> None:
     runtime_records = copy_runtime_dependencies(SOURCE_EXE, staged_exe)
 
     gguf_files = list(STAGE_DIR.rglob("*.gguf"))
-    if gguf_files:
-        raise RuntimeError(f"The staged payload must not contain model weights: {gguf_files}")
+    if gguf_files != [STAGE_DIR / MODEL_RELATIVE_PATH]:
+        raise RuntimeError(f"Unexpected model payload: {gguf_files}")
 
     payload_files: list[dict[str, object]] = []
     for path in sorted(STAGE_DIR.rglob("*")):
@@ -346,14 +370,17 @@ def copy_distribution_payload(version: str) -> None:
         "application": "Within the Latent Walls / Entre les Murs Latents",
         "version": version,
         "executable": STAGED_EXE_NAME,
-        "model_embedded": False,
+        "model_embedded": True,
+        "llama_cpp_commit": (PROJECT_ROOT / "vendor/llama.cpp/VENDORED_COMMIT.txt").read_text().strip(),
         "model": {
+            "profile": MODEL_PROFILE_NAME,
             "repository": MODEL_REPOSITORY,
             "revision": MODEL_REVISION,
             "filename": MODEL_FILENAME,
+            "relative_path": MODEL_RELATIVE_PATH,
             "bytes": MODEL_SIZE,
             "sha256": MODEL_SHA256,
-            "downloaded_during_installation": True,
+            "downloaded_during_installation": False,
         },
         "runtime_dependencies": runtime_records,
         "payload_files": payload_files,
@@ -369,7 +396,12 @@ def copy_distribution_payload(version: str) -> None:
 def smoke_test_staged_executable() -> None:
     executable = STAGE_DIR / STAGED_EXE_NAME
     print("Running staged executable smoke test...")
-    run([str(executable), "--llama-info"], cwd=STAGE_DIR)
+    result = subprocess.run([str(executable), "--llama-info"], cwd=INSTALLER_ROOT,
+                            capture_output=True, text=True, check=True)
+    print(result.stdout, end="")
+    expected_commit = (PROJECT_ROOT / "vendor/llama.cpp/VENDORED_COMMIT.txt").read_text().strip()
+    if f"llama.cpp vendored commit: {expected_commit}" not in result.stdout:
+        raise RuntimeError("Staged binary and packaged llama.cpp source revision differ")
 
 
 def download_verified(url: str, expected_sha256: str, destination: Path) -> None:
@@ -468,12 +500,9 @@ def build_inno_installer(version: str, iscc: Path) -> Path:
     )
     if not expected_output.is_file():
         raise RuntimeError(f"Inno Setup did not create the expected installer: {expected_output}")
-    # The external 5.20 GB GGUF must never be compiled into the setup executable.
-    if expected_output.stat().st_size >= 1_000_000_000:
-        raise RuntimeError(
-            f"Installer is unexpectedly large ({expected_output.stat().st_size:,} bytes); "
-            "the external model may have been embedded."
-        )
+    slices = list(DIST_DIR.glob(f"Within-the-Latent-Walls-Setup-{version}-*.bin"))
+    if not slices or sum(path.stat().st_size for path in slices) < MODEL_SIZE:
+        raise RuntimeError("Offline installer data volumes are incomplete")
     return expected_output
 
 
@@ -486,7 +515,7 @@ def iter_source_files() -> list[tuple[Path, Path]]:
         PROJECT_ROOT / "README.md",
     ]
     root_files.extend(PROJECT_ROOT.glob("*.bat"))
-    root_files.extend(PROJECT_ROOT.glob("*.py"))
+    # Personal commit automation is not required to build or run the game.
     for source in root_files:
         if source.is_file():
             pairs.append((source, source.relative_to(PROJECT_ROOT)))
@@ -495,18 +524,20 @@ def iter_source_files() -> list[tuple[Path, Path]]:
         (PROJECT_ROOT / "src", Path("src")),
         (PROJECT_ROOT / "assets", Path("assets")),
         (PROJECT_ROOT / "scripts", Path("scripts")),
+        (PROJECT_ROOT / "tests", Path("tests")),
         (PROJECT_ROOT / "packaging", Path("packaging")),
         (PROJECT_ROOT / "vendor" / "stb", Path("vendor/stb")),
         (PROJECT_ROOT / "vendor" / "llama.cpp", Path("vendor/llama.cpp")),
         (BUILD_DIR / "_deps" / "sdl3-src", Path("external-build-sources/SDL")),
         (BUILD_DIR / "_deps" / "sdl3_ttf-src", Path("external-build-sources/SDL_ttf")),
     ]
-    excluded_parts = {".git", "__pycache__", ".cache"}
+    excluded_parts = {".git", "__pycache__", ".cache", "CMakeFiles", "node_modules", "build", "build-cuda"}
     for source_root, archive_root in source_trees:
         if not source_root.is_dir():
             raise FileNotFoundError(f"Corresponding-source directory is missing: {source_root}")
         for source in source_root.rglob("*"):
-            if not source.is_file() or any(part in excluded_parts for part in source.relative_to(source_root).parts):
+            parts = source.relative_to(source_root).parts
+            if not source.is_file() or any(part in excluded_parts for part in parts[:-1]):
                 continue
             # llama.cpp ships vocabulary fixtures as GGUF. They are not source code,
             # are not required to build the game, and must not blur the no-weights rule.
@@ -545,10 +576,16 @@ def main() -> int:
         raise RuntimeError("The current installer builder targets 64-bit Windows only.")
 
     if not args.skip_build:
-        run(["cmake", "--build", str(BUILD_DIR), "--config", "Release"])
+        run([sys.executable, str(PROJECT_ROOT / "scripts/build_native.py"), "--publish"])
 
     copy_distribution_payload(args.version)
     smoke_test_staged_executable()
+
+    if args.portable_only:
+        if not args.skip_source_archive:
+            build_source_archive(args.version)
+        print(f"Complete offline portable folder: {STAGE_DIR}")
+        return 0
 
     iscc = find_iscc(args.iscc)
     if not iscc:
@@ -558,14 +595,14 @@ def main() -> int:
     print(f"Inno Setup compiler: {iscc}")
 
     installer = build_inno_installer(args.version, iscc)
-    outputs = [installer]
+    outputs = [installer, *sorted(DIST_DIR.glob(f"Within-the-Latent-Walls-Setup-{args.version}-*.bin"))]
     if not args.skip_source_archive:
         outputs.append(build_source_archive(args.version))
 
     print("\nDistribution artifacts:")
     for output in outputs:
         print(f"  {output} ({output.stat().st_size:,} bytes, SHA-256 {sha256_file(output)})")
-    print("\nThe model is external and will be downloaded by the installer.")
+    print("\nGemma is included. Keep Setup.exe and every .bin volume together; installation needs no network.")
     return 0
 
 
