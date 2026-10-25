@@ -4,9 +4,9 @@ Dernière mise à jour : 2026-10-24
 
 Ce dossier sert de mémoire de travail artistique, scientifique et technique du projet.
 
-*Within the Latent Walls* / *Entre les Murs Latents* est une œuvre interactive fondée sur la lignée d'Eryx : un monde d'extraction vénusien localement cohérent, traversé par un labyrinthe invisible dont le LLM peut proposer des mutations topologiques contrôlées. *Le Désert des tokens* désigne uniquement la phase narrative immédiatement précédente.
+*Within the Latent Walls* / *Entre les Murs Latents* est une œuvre interactive fondée sur la lignée d'Eryx : un monde d'extraction vénusien localement cohérent, traversé par un labyrinthe invisible dont le LLM peut proposer des mutations topologiques contrôlées.
 
-La première tranche jouable Eryx est maintenant implémentée : sept lieux canoniques, neuf prefabs de carrière, prompts et états actifs, une barrière invisible typée et un retour non réciproque volontaire. Les anciens objets et fixtures datacenter restent disponibles comme compatibilité historique. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) sépare cette tranche réelle des mutations topologiques encore planifiées.
+La première tranche jouable Eryx est maintenant implémentée : sept lieux canoniques, neuf prefabs de carrière, prompts et états actifs, une barrière invisible typée et un retour non réciproque volontaire. Les anciens objets et fixtures restent disponibles comme compatibilité technique. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) sépare cette tranche réelle des mutations topologiques encore planifiées.
 
 ## Point d'entrée
 
@@ -54,14 +54,14 @@ La première tranche jouable Eryx est maintenant implémentée : sept lieux cano
 - [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) : photographie factuelle du dépôt et frontière entre implémentation legacy et cible Eryx.
 - [`KNOWN_ISSUES.md`](./KNOWN_ISSUES.md) : bugs, limites, dettes de migration et risques ouverts.
 - [`DECISIONS.md`](./DECISIONS.md) : décisions techniques et conceptuelles stabilisées.
-- [`PROJECT_JOURNAL.md`](./PROJECT_JOURNAL.md) : historique chronologique ; les étapes datacenter y restent volontairement intactes.
-- [`NOTES.md`](./NOTES.md) : recherches et formulations, y compris la phase *Le Désert des tokens*, la généalogie Eryx et la médiation DMA WinUAE.
+- [`PROJECT_JOURNAL.md`](./PROJECT_JOURNAL.md) : historique chronologique, conservé tel quel.
+- [`NOTES.md`](./NOTES.md) : recherches et formulations, généalogie Eryx et médiation DMA WinUAE.
 
 ## Documents générés et baselines historiques
 
 - [`PREFAB_CATALOG.md`](./PREFAB_CATALOG.md) : catalogue généré depuis les géométries C++ actives de la carrière d'Eryx, avec deux vues et une scène d'audit par objet.
-- [`SCENE_GENERATION_BENCHMARK.md`](./SCENE_GENERATION_BENCHMARK.md) : benchmark historique de génération `.scene` directe sur des briefs datacenter.
-- [`HYBRID_SCENE_GENERATION_BENCHMARK.md`](./HYBRID_SCENE_GENERATION_BENCHMARK.md) : benchmark historique de la chaîne hybride datacenter.
+- [`SCENE_GENERATION_BENCHMARK.md`](./SCENE_GENERATION_BENCHMARK.md) : benchmark historique de génération `.scene` directe.
+- [`HYBRID_SCENE_GENERATION_BENCHMARK.md`](./HYBRID_SCENE_GENERATION_BENCHMARK.md) : benchmark historique de la chaîne hybride.
 - `generated/` : prompts, réponses, états, scènes, logs et images soutenant ces résultats.
 
 Ne pas renommer ni réinterpréter les résultats historiques comme des benchmarks Eryx. Une nouvelle série doit être générée depuis des prompts, assets et cas sources réellement migrés.
@@ -84,6 +84,6 @@ Ne pas renommer ni réinterpréter les résultats historiques comme des benchmar
 - donner le contexte de toute mesure de performance ;
 - conserver les problèmes non résolus visibles ;
 - préserver les anciennes branches dans les notes et le journal ;
-- employer l'ancien récit datacenter uniquement comme histoire, baseline ou dette d'implémentation ;
+- employer la fiction Eryx comme seule direction narrative active, sans réintroduire le vocabulaire des phases antérieures ;
 - employer *Within the Latent Walls* en anglais et *Entre les Murs Latents* en français pour désigner le projet actif ;
 - préférer l'anglais technique concis pour les nouveaux documents, sauf lorsqu'un fichier existant est volontairement maintenu en français.

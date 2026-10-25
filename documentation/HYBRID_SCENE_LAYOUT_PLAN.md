@@ -16,7 +16,7 @@ L'objectif reste un pipeline stable, déterministe, auditable et assez expressif
 
 La voie hybride active possède les huit archétypes Eryx proposés dans ce document, les neuf prefabs de prospection/extraction, des coques dédiées et des fallbacks de carrière. Les sept lieux canoniques utilisent des fixtures source afin de garantir la composition de la première tranche.
 
-La barrière invisible est maintenant représentée dans l'état de traversal et reste absente de la géométrie visible. Les benchmarks datacenter restent une baseline historique ; ils ne décrivent pas les prompts actifs. Le validateur de propositions topologiques live reste à implémenter.
+La barrière invisible est maintenant représentée dans l'état de traversal et reste absente de la géométrie visible. Les benchmarks antérieurs restent une baseline historique ; ils ne décrivent pas les prompts actifs. Le validateur de propositions topologiques live reste à implémenter.
 
 ## Hypothèse directrice
 
@@ -270,7 +270,7 @@ La topologie invisible est évaluée en parallèle pour la traversal. Elle n'ent
 
 ## Guide textuel de variation
 
-Le système actuel dérive un guide de monde depuis une pose cachée autour du datacenter. La migration Eryx doit remplacer cette sémantique par des cues comme :
+Le système actuel dérive un guide de monde depuis une pose cachée autour de l'infrastructure humaine. La migration Eryx doit remplacer cette sémantique par des cues comme :
 
 - relation au camp ou à l'abri de prospection
 - profondeur dans la carrière ou distance sur le plateau
@@ -401,7 +401,7 @@ Un fallback technique ne doit pas introduire une mutation topologique ni être p
 - ajouter les archétypes Eryx
 - borner `scene_constraints`
 - documenter les repères persistants
-- supprimer les instructions actives de prompt datacenter
+- supprimer les instructions actives de prompt héritées
 
 ### B — Prefabs — première passe réalisée le 2026-08-09
 
@@ -434,7 +434,7 @@ Un fallback technique ne doit pas introduire une mutation topologique ni être p
 
 ## Plan de benchmark
 
-Conserver les rapports datacenter du 2026-08-02 comme baseline historique. Une nouvelle batterie Eryx ne doit être générée qu'après implémentation des archétypes et prefabs réels.
+Conserver les rapports antérieurs du 2026-08-02 comme baseline historique. Une nouvelle batterie Eryx ne doit être générée qu'après implémentation des archétypes et prefabs réels.
 
 Cas recommandés :
 
@@ -460,7 +460,7 @@ Mesures :
 
 La migration hybride Eryx est validée si :
 
-- les lieux lisent comme extraction/prospection plutôt que datacenter
+- les lieux lisent comme extraction/prospection plutôt que comme intérieur technique générique
 - les extérieurs ouverts restent composés avec peu d'éléments
 - les revisites préservent des repères locaux
 - une mutation topologique n'oblige pas à reconstruire toute la scène

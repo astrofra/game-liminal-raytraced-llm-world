@@ -6,7 +6,7 @@ Dernière mise à jour : 2026-10-24
 
 Ce document decrit le format de scene proprietaire v1 actuellement implemente dans le depot.
 
-Le format cible plus large de la spec n'est pas encore entièrement supporté. L'implémentation actuelle couvre un sous-ensemble volontairement petit, suffisant pour le pipeline scène -> validation -> rendu. Le vocabulaire de prefabs actif est désormais orienté vers la carrière de cristal vénusienne ; les prefabs datacenter restent lisibles pour la compatibilité des scènes historiques.
+Le format cible plus large de la spec n'est pas encore entièrement supporté. L'implémentation actuelle couvre un sous-ensemble volontairement petit, suffisant pour le pipeline scène -> validation -> rendu. Le vocabulaire de prefabs actif est désormais orienté vers la carrière de cristal vénusienne ; les prefabs historiques restent lisibles pour la compatibilité des scènes antérieures.
 
 ## Intentions
 
@@ -135,7 +135,7 @@ prefab_gate "entry_gate" pos(0.0,1.55,4.8) size(6.15,3.10,0.40) gray(0.46) detai
 
 ### `prefab_rack` — legacy
 
-Prefab historique de baie ou rack technique, conservé pour les scènes et benchmarks datacenter.
+Prefab historique de baie ou rack technique, conservé pour les scènes et benchmarks antérieurs.
 
 Le renderer injecte automatiquement de petites LEDs rouges sur la facade du rack. Elles n'ont pas besoin d'etre decrites dans le fichier `.scene`.
 
@@ -237,7 +237,7 @@ prefab_atmospheric_processor "oxygen_service" pos(-4.4,1.5,3.2) size(2.2,3.0,1.7
 
 ### `prefab_cooling_unit` — legacy
 
-Prefab historique de bloc de climatisation, conservé pour les scènes datacenter. Utiliser `prefab_atmospheric_processor` pour les nouvelles scènes d'Eryx.
+Prefab historique de bloc de climatisation, conservé pour les scènes antérieures. Utiliser `prefab_atmospheric_processor` pour les nouvelles scènes d'Eryx.
 
 Proprietes supportees :
 
@@ -358,10 +358,10 @@ Le format implemente ne supporte pas encore :
 
 ## Limites importantes pour la validation spatiale
 
-Pour la premiere batterie de tests exterieurs autour du datacenter et du desert, il faut garder a l'esprit que :
+Pour la premiere batterie de tests exterieurs autour de la carriere, du plateau et du seuil, il faut garder a l'esprit que :
 
 - un exterieur vaste devra etre suggere avec tres peu de masses
-- le desert ne peut pas encore exister comme type de surface dedie
+- la plaine desertique ne peut pas encore exister comme type de surface dedie
 - le ciel de fin de journee passe maintenant par un fond proceduriel optionnel, pas par une primitive riche de scene
 - la lisibilite devra venir surtout du cadrage, du parapet, du seuil, des grandes surfaces et de la ligne d'horizon
 - les prefabs actuels sont volontairement simples et axis-alignes

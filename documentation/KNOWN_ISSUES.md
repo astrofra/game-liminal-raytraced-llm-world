@@ -116,7 +116,7 @@ Piste :
 
 Mesurer la latence et la dérive sur une session longue, puis ajuster la courbe corporelle, les bornes par tour et éventuellement la fréquence des évaluations thermiques sans donner au modèle d'autorité topologique.
 
-### 2026-08-18 - Certains noms membres de ressources restent liés à la phase datacenter/désert
+### 2026-08-18 - Certains noms membres de ressources restent liés aux phases antérieures
 
 Statut :
 
@@ -506,11 +506,11 @@ Ouvert.
 
 Description :
 
-Le fond proceduriel `sky` ameliore nettement le ciel, l'horizon et la lecture des scenes exterieures. En revanche, le format `scene v1` reste encore pauvre pour decrire un exterieur desertique vaste avec peu de primitives semantiques.
+Le fond proceduriel `sky` ameliore nettement le ciel, l'horizon et la lecture des scenes exterieures. En revanche, le format `scene v1` reste encore pauvre pour decrire une plaine desertique vaste avec peu de primitives semantiques.
 
 Impact :
 
-- le ciel lit mieux qu'avant, mais le desert repose encore sur peu de masses
+- le ciel lit mieux qu'avant, mais la plaine desertique repose encore sur peu de masses
 - le toit reste credible comme poste d'observation, mais le dehors est encore tres abstrait
 - l'absence de prefabs ou d'objets stables limite la reconnaissance immediate de certains lieux
 
@@ -652,7 +652,7 @@ Résolution :
 - fenêtre SDL et écran de langue raccordés à la nouvelle identité
 - helper renommé `play_within_the_latent_walls.bat`
 - exemples de lancement et documents actifs mis à jour
-- *Le Désert des tokens* maintenu uniquement dans les passages qui documentent explicitement la branche narrative historique
+- aucun vocabulaire antérieur conservé en dehors des identifiants de code
 
 ### 2026-08-18 - Une salle générée en mode français pouvait encore exposer de l'anglais
 
@@ -668,7 +668,7 @@ Résolution :
 - directions développées dans la langue sélectionnée, par exemple `N` vers `NORD`
 - ancien titre anglais remplacé à l'affichage par un libellé français neutre et ancienne narration anglaise masquée par une notice française
 
-### 2026-08-18 - Les prompts, lieux canoniques et fallbacks restaient liés au datacenter
+### 2026-08-18 - Les prompts, lieux canoniques et fallbacks restaient liés aux phases antérieures
 
 Statut :
 
@@ -679,7 +679,7 @@ Résolution :
 - sept identifiants et fixtures canoniques Eryx
 - prompts, schémas JSON, états initiaux, HUD, bandes cachées et fallbacks migrés
 - huit archétypes de layout et intégration contextuelle des neuf prefabs actifs
-- conservation explicite des fixtures et directives datacenter comme baselines historiques
+- conservation explicite des fixtures et directives antérieures comme baselines historiques
 
 ### 2026-08-18 - Les barrières invisibles étaient confondues avec `blocked_exits`
 
@@ -691,7 +691,7 @@ Résolution :
 
 `InvisibleBarrier` possède un lieu, une direction, une preuve et un statut de découverte persistants. Le mouvement reconnu peut être refusé sans géométrie visible, sans changement de lieu et sans incrément de `move_count`. La narration distingue explicitement ce cas d'un échec de parser ou d'un obstacle visible.
 
-### 2026-08-09 - Les prefabs et leur catalogue restaient sémantiquement liés au datacenter
+### 2026-08-09 - Les prefabs et leur catalogue restaient sémantiquement liés aux phases antérieures
 
 Statut :
 

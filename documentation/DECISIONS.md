@@ -254,9 +254,9 @@ Decision :
 
 Avant d'ouvrir largement la generation de scenes par le LLM, la premiere validation spatiale du projet passera par trois lieux de reference :
 
-- le portail d'entree du datacenter
-- l'interieur du datacenter avec ses travees de serveurs
-- le toit du datacenter comme tour de ronde ouvrant vers le desert
+- le seuil de la carrière d'extraction
+- le champ d'extraction avec son rig de forage
+- le plateau de balises ouvrant sur la plaine désertique
 
 Raison :
 
@@ -307,12 +307,12 @@ La prochaine etape doit definir un contrat de tour structure, les structures de 
 
 Decision :
 
-Le renderer n'est plus strictement monochrome. Il produit maintenant une image RGB tres contrainte : ciel bleu, desert ocre, LEDs de racks rouges, et tout le reste en niveaux de gris.
+Le renderer n'est plus strictement monochrome. Il produit maintenant une image RGB tres contrainte : ciel vénusien, plaine désertique ocre, repères techniques rouges, et tout le reste en niveaux de gris.
 
 Raison :
 
 - la palette limitee renforce la lisibilite spatiale sans perdre l'austerite du projet
-- le contraste bleu / ocre / rouge aide a distinguer exterieur, desert et repere technique
+- le contraste bleu / ocre / rouge aide a distinguer exterieur, plaine désertique et repere technique
 - laisser la couleur libre au format `.scene` ou au LLM serait trop instable pour la preuve de concept
 - garder `gray()` comme seule entree materielle reste plus simple pour le parseur et pour le prompt
 
@@ -324,7 +324,7 @@ Le coeur du renderer et les buffers memoire passent en RGB, mais le langage `.sc
 
 Decision :
 
-Le datacenter autonome de *Le Désert des tokens* cesse d'être la fiction principale. La direction active devient une zone d'extraction vénusienne traversée par un labyrinthe invisible et potentiellement changeant.
+La fiction principale devient une zone d'extraction vénusienne traversée par un labyrinthe invisible et potentiellement changeant.
 
 La généalogie structurante est désormais explicite :
 
@@ -339,7 +339,7 @@ Le LLM pourra proposer des mutations topologiques limitées, mais l'état autori
 
 Raison :
 
-- le récit datacenter établissait une boucle forte entre calcul, chaleur, écologie et interprétation, mais sa relation à la démoscène restait indirecte
+- le récit antérieur établissait une boucle forte entre calcul, chaleur, écologie et interprétation, mais sa relation à la démoscène restait indirecte
 - Eryx fournit une lignée historique dans la démoscène à travers ASD
 - *Within the Mesh*, co-créé par l'auteur du projet, rend cette lignée personnelle et antérieure au projet actuel
 - le labyrinthe invisible donne une fonction fictionnelle précise à la cohérence locale et à la dérive globale déjà présentes dans l'architecture
@@ -353,12 +353,11 @@ Decisions associées :
 - ne pas rendre les murs invisibles comme des murs opaques ordinaires
 - valider toute proposition topologique avant commit
 - réinterpréter les recherches et géométries antérieures plutôt que les effacer
-- conserver *Le Désert des tokens* comme ancien titre de travail et phase historique
-- traiter les noms runtime, prompts, fixtures, prefabs et benchmarks datacenter comme dette de migration ou baseline tant qu'aucun refactor code ne les remplace
+- traiter les noms runtime, prompts, fixtures, prefabs et benchmarks antérieurs comme dette de migration ou baseline tant qu'aucun refactor code ne les remplace
 
 Consequence :
 
-La documentation artistique et les plans de validation adoptent Eryx immédiatement. Le binaire courant reste factuellement datacenter/désert jusqu'à une tâche de migration du code, des prompts et des assets. Aucune fonctionnalité Eryx ne doit être décrite comme implémentée avant cette étape.
+La documentation artistique et les plans de validation adoptent Eryx immédiatement. Le binaire courant conserve encore des identifiants et des fixtures issus des phases antérieures jusqu'à une tâche de migration du code, des prompts et des assets. Aucune fonctionnalité Eryx ne doit être décrite comme implémentée avant cette étape.
 
 ## 2026-08-09 - Faire du catalogue de prefabs la première migration source vers Eryx
 
@@ -495,11 +494,11 @@ Raison :
 - `Walls` / `Murs` maintient la filiation explicite avec *In the Walls of Eryx*
 - `Latent` / `Latents` relie l'architecture invisible à l'espace latent du modèle de langage
 - les deux formulations sont immédiatement compréhensibles et conservent la même structure conceptuelle
-- le titre décrit mieux le projet vénusien actuel que l'ancien imaginaire du désert et du datacenter
+- le titre décrit mieux le projet vénusien actuel que l'imaginaire de la phase narrative précédente
 
 Consequence :
 
-La fenêtre SDL, les documents actifs et le helper Windows emploient la nouvelle identité. Le launcher devient `play_within_the_latent_walls.bat`. *Le Désert des tokens* demeure uniquement comme nom historique de la branche narrative précédente.
+La fenêtre SDL, les documents actifs et le helper Windows emploient la nouvelle identité. Le launcher devient `play_within_the_latent_walls.bat`.
 
 ## 2026-08-18 - Distribuer le modele 8B hors de l'installeur Windows
 

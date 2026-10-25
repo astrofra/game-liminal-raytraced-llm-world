@@ -206,7 +206,7 @@ Un modèle conservé en mémoire pourrait réduire les rechargements répétés,
 
 Employer les mêmes états initiaux et contrats sémantiques, avec le template propre à chaque modèle. Relever quantification, empreintes, runtime, GPU/pilote, contexte, paramètres effectifs et graine. Une graine identique ne rend pas les générations comparables token par token entre modèles ; pour les profils stochastiques, répéter avec plusieurs graines.
 
-Préparer au moins **40 cas Eryx**, puis quelques sessions de 15 à 30 tours : déplacements canoniques, barrière invisible, retour non réciproque de l'abri, commandes ambiguës, ressources insuffisantes, thermique, langues, cinq branches génératives, revisites et sauvegarde/rechargement. Les baselines datacenter de [HYBRID_SCENE_GENERATION_BENCHMARK.md](./HYBRID_SCENE_GENERATION_BENCHMARK.md) restent historiques ; elles ne démontrent pas la qualité Eryx.
+Préparer au moins **40 cas Eryx**, puis quelques sessions de 15 à 30 tours : déplacements canoniques, barrière invisible, retour non réciproque de l'abri, commandes ambiguës, ressources insuffisantes, thermique, langues, cinq branches génératives, revisites et sauvegarde/rechargement. Les baselines antérieures de [HYBRID_SCENE_GENERATION_BENCHMARK.md](./HYBRID_SCENE_GENERATION_BENCHMARK.md) restent historiques ; elles ne démontrent pas la qualité Eryx.
 
 Mesurer :
 

@@ -2,7 +2,7 @@
 
 ## Artistic, Research, and Technical Specification
 
-Status: active direction as of 2026-08-18. The selected English title is *Within the Latent Walls*; the French title is *Entre les Murs Latents*. *Le Désert des tokens* designates the previous narrative branch. A first seven-place Eryx slice, typed invisible barrier, and authored impossible return are implemented; live validated LLM topology proposals remain planned.
+Status: active direction as of 2026-08-18. The selected English title is *Within the Latent Walls*; the French title is *Entre les Murs Latents*. A first seven-place Eryx slice, typed invisible barrier, and authored impossible return are implemented; live validated LLM topology proposals remain planned.
 
 ## 1. Premise
 
@@ -127,7 +127,7 @@ The implemented renderer currently uses a locked semantic RGB palette rather tha
 - repeated extraction or atmospheric-processing modules
 - harsh open terrain and incomplete sensing
 
-The project must not drift into generic cyberpunk, datacenter horror, or NASA realism.
+The project must not drift into generic cyberpunk, industrial horror, or NASA realism.
 
 ### 4.4 Local coherence, controlled global drift
 
@@ -471,12 +471,12 @@ For the active Windows distribution, model weights are downloaded during install
 ### Phase A — Preserve and baseline the current runtime
 
 - retain the working `llama.cpp`, SDL3, state, compiler, raytracer, save/load, and benchmark paths
-- keep datacenter fixtures and benchmarks as historical technical baselines
+- keep historical fixtures and benchmarks as technical baselines
 - verify factual documentation without renaming runtime identifiers prematurely
 
 ### Phase B — Eryx semantic migration
 
-- replace active datacenter prompts and default narrative vocabulary
+- replace active legacy prompts and default narrative vocabulary
 - define extraction/prospecting location archetypes and object semantics
 - distinguish invisible barriers from ordinary blocked exits in spatial state
 - define a structured topological mutation proposal and validator

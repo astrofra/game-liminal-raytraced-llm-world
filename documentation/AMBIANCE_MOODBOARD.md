@@ -305,7 +305,7 @@ Latency should acquire rhythm without becoming a false spectacle of technical ac
 - separation between authoritative state and generated text
 - local room generation, caching, and weak global topology
 
-These are implemented technical foundations, even though the current build still uses datacenter/desert semantics.
+These are implemented technical foundations, even though the current build still relies on legacy naming and fixtures.
 
 ### Planned Eryx adaptations
 
@@ -321,7 +321,7 @@ These are intentions, not current runtime features. [`TECHNICAL_STATE.md`](./TEC
 
 ### Avoid
 
-- generic cyberpunk or datacenter-horror iconography
+- generic cyberpunk or industrial-horror iconography
 - NASA-style realism used as a substitute for a coherent mediated Venus
 - decorative “Lovecraftian” symbols or cosmic-horror clichés
 - a visible corridor maze that eliminates perceptual uncertainty

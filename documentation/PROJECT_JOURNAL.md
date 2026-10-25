@@ -382,7 +382,7 @@ Commencer la boucle verticale `GameState -> input texte -> appel LLM -> resultat
 
 Objectif :
 
-Preparer la premiere vraie validation du lien entre fiction du datacenter, texte de lieu, scene v1 et rendu 3D.
+Preparer la premiere vraie validation du lien entre fiction de lieu, texte de lieu, scene v1 et rendu 3D.
 
 Travail effectue :
 
@@ -432,7 +432,7 @@ Le depot contient maintenant trois fixtures spatiales explicites qui couvrent :
 
 - le seuil exterieur
 - l'interieur technique dense
-- le point haut d'observation vers le desert
+- le point haut d'observation vers la plaine
 
 Observations :
 
@@ -455,8 +455,8 @@ Ce qui a bien marche :
 
 Ce qui reste fragile :
 
-- le desert et le ciel reposent encore sur des approximations de composition
-- l'interieur du datacenter reste typologiquement juste, mais pas encore assez signe comme "baies de serveurs"
+- le seuil, la plaine désertique et le ciel reposent encore sur des approximations de composition
+- l'interieur dense reste typologiquement juste, mais pas encore assez signe comme "baies de serveurs"
 - le lien entre description textuelle et scene n'est pas encore automatise par un contrat de donnees
 
 Prochaine etape recommandee :
@@ -467,7 +467,7 @@ Comparer chaque fixture a un brief narratif court, documenter les pertes de trad
 
 Objectif :
 
-Remplacer les faux plans de ciel des scenes exterieures par un vrai fond proceduriel mieux adapte au toit du datacenter et a l'entree.
+Remplacer les faux plans de ciel des scenes exterieures par un vrai fond proceduriel mieux adapte au point d'observation et au seuil.
 
 Travail effectue :
 
@@ -503,13 +503,13 @@ Ce qui a bien marche :
 
 Ce qui reste fragile :
 
-- le desert lui-meme reste peu semantique
+- la plaine elle-meme reste peu semantique
 - les etoiles pourraient encore etre affinees artistiquement
 - le projet ne dispose pas encore d'une bibliotheque de prefabs stables pour les objets recurrents
 
 Prochaine etape recommandee :
 
-Commencer une petite couche de prefabs stables pour `rack`, `gate`, `crate`, `cooling_unit` et autres objets recurrents du datacenter.
+Commencer une petite couche de prefabs stables pour `rack`, `gate`, `crate`, `cooling_unit` et autres objets recurrents de l'infrastructure.
 
 ## 2026-07-31 - Iteration 0014 - Premiere couche de prefabs stables
 
@@ -535,7 +535,7 @@ Le projet dispose maintenant d'une premiere couche de stabilisation semantique d
 
 Observations :
 
-- les travees du datacenter lisent mieux comme rangees de racks
+- les travees de l'interieur dense lisent mieux comme rangees de racks
 - le portail beneficie d'une definition plus stable et plus reusable
 - le toit gagne quelques objets techniques recurrents plus convaincants
 - le cout geometrique augmente fortement, surtout sur les travées
@@ -627,7 +627,7 @@ Travail effectue :
 - conservation du `PGM` legacy par projection en luminance
 - ajout d'une palette semantique verrouillee :
   - ciel bleu degrade
-  - desert ocre via nommage `ground` / `desert_*` / `ridge_*` / `outcrop_*`
+  - plaine ocre via nommage `ground` / `desert_*` / `ridge_*` / `outcrop_*`
   - LEDs rouges injectees automatiquement dans `prefab_rack`
   - reste du decor en gris
 - retrait des LEDs du sampling de lumiere directe pour eviter qu'elles ne degradent tout le rendu interieur par un bruit rouge excessif
@@ -1008,7 +1008,7 @@ Reconsidérer la direction artistique et de recherche du projet sans réécrire 
 
 Contexte immédiatement précédent :
 
-La phase *Le Désert des tokens* mettait en scène un officier affecté à un datacenter autonome dans le désert, dans l'attente d'une cyberattaque indéterminée. Le calcul du centre chauffait et consommait ses ressources, tandis que la température fictionnelle devait influencer la température d'échantillonnage du modèle. Cette boucle reliait infrastructure numérique, écologie, attente institutionnelle, tokens et dérive interprétative.
+La phase narrative précédente mettait en scène un officier affecté à un centre autonome, dans l'attente d'une cyberattaque indéterminée. Le calcul du centre chauffait et consommait ses ressources, tandis que la température fictionnelle devait influencer la température d'échantillonnage du modèle. Cette boucle reliait infrastructure numérique, écologie, attente institutionnelle, tokens et dérive interprétative.
 
 Ce concept reste une étape légitime. Il a aidé à préciser :
 
@@ -1020,7 +1020,7 @@ Ce concept reste une étape légitime. Il a aidé à préciser :
 
 Motif de la réorientation :
 
-La relation du datacenter à la démoscène restait principalement analogique : contrainte, allocation du calcul et grammaire visuelle héritée. Le motif d'Eryx fournit un ancrage plus direct pour la thèse :
+La relation du centre à la démoscène restait principalement analogique : contrainte, allocation du calcul et grammaire visuelle héritée. Le motif d'Eryx fournit un ancrage plus direct pour la thèse :
 
 ```text
 Lovecraft et Kenneth J. Sterling, *In the Walls of Eryx*
@@ -1034,13 +1034,13 @@ ASD a déjà transformé le labyrinthe invisible en espace calculé de démo. *W
 Décisions documentaires prises :
 
 - la fiction active devient une zone d'extraction vénusienne et un labyrinthe alien invisible
-- le datacenter, l'officier et la cyberattaque sont conservés comme phase historique, pas comme fiction active
-- aucun titre final n'est inventé ; *Le Désert des tokens* reste identifié comme ancien titre de travail
+- le centre, l'officier et la cyberattaque sont conservés comme phase historique, pas comme fiction active
+- aucun titre final n'est inventé ; la phase narrative précédente reste identifiable dans l'historique
 - le LLM est défini comme interprète et auteur de propositions topologiques contrôlées, pas comme source de vérité globale
 - le hard state et le compilateur déterministe restent autoritatifs
 - les barrières invisibles doivent exister d'abord dans la traversal et la sémantique, pas comme murs visibles ordinaires
 - la validation spatiale devient un axe majeur de recherche et de playtest
-- les benchmarks et catalogues existants restent des baselines factuelles datacenter
+- les benchmarks et catalogues existants restent des baselines factuelles des phases antérieures
 - les notes sur le visualiseur DMA WinUAE et l'allocation des ressources sont préservées
 
 Travail effectué :
@@ -1059,7 +1059,7 @@ Aucun code, prompt runtime, prefab, fixture ou résultat de benchmark n'a été 
 
 Prochaine étape recommandée :
 
-Définir puis implémenter le plus petit contrat de barrière invisible et de proposition topologique, tout en remplaçant progressivement les prompts et archétypes datacenter par la sémantique de prospection/extraction. Régénérer les catalogues et benchmarks seulement après ces changements source.
+Définir puis implémenter le plus petit contrat de barrière invisible et de proposition topologique, tout en remplaçant progressivement les prompts et archétypes antérieurs par la sémantique de prospection/extraction. Régénérer les catalogues et benchmarks seulement après ces changements source.
 
 ## 2026-08-09 - Iteration 0023 - Transcription Markdown de *In the Walls of Eryx*
 
@@ -1230,14 +1230,14 @@ Implémentation :
 - ajout de sept fixtures source `assets/scenes/eryx_*.scene`
 - composition de chaque lieu avec les prefabs actifs de seuil, balise, scanner, cristal, extraction, abri, pylône, cargo et traitement atmosphérique
 - ajout de huit archétypes Eryx au compilateur hybride et migration des fallbacks de génération
-- remplacement du vocabulaire datacenter dans les prompts de tour, de salle et d'audit
+- remplacement du vocabulaire antérieur dans les prompts de tour, de salle et d'audit
 - exposition JSON de `spatial_entropy`, `suit_state`, `oxygen_state`, `instrument_power_state` et `surface_weather`, avec lecture rétrocompatible des anciennes clés
 - ajout d'une structure persistante `InvisibleBarrier`, indépendante de `blocked_exits`
 - installation d'une route canonique de douze liens dirigés
 - contact invisible au nord de `labyrinth_threshold`
 - retour non réciproque `prospect_shelter --west--> scanner_station`
 - passage du HUD à `ENTROPY` et du lieu CLI par défaut à `quarry_threshold`
-- conservation des scènes et directives datacenter comme baselines historiques
+- conservation des scènes et directives antérieures comme baselines historiques
 
 Validation :
 
@@ -1247,7 +1247,7 @@ Validation :
 - parcours headless de huit commandes : sept mouvements effectifs, barrière découverte, détour et retour impossible
 - état final vérifié : `scanner_station`, `spatial_entropy=55`, douze liens, une barrière découverte et huit tours d'historique
 - sauvegarde puis rechargement réussis ; un mouvement ouest supplémentaire rejoint `crystal_cut`
-- prompts actifs inspectés sans vocabulaire datacenter dans le contrat de tour ou de génération de salle
+- prompts actifs inspectés sans vocabulaire antérieur dans le contrat de tour ou de génération de salle
 
 Limites assumées :
 
@@ -1606,7 +1606,7 @@ Validation :
 ## 2026-10-24 - Reconstruction de quatre concepts et lumière directionnelle
 
 - Création manuelle de quatre `.scene` correspondant aux concepts 01, 02, 03 et 09 ; rendu natif, profil qualité et profil réduit, sans retouche d’image. [Comparatif illustré, scènes et mesures](./concept-art/raytracer-study/README.md), avec comparateur local interactif.
-- Géométrie principale réalisable en boîtes/plans ; écarts de cadrage, matières uniformes, palette et bruit distingués. Découverte du déclencheur sémantique `bridge` → `ridge` → teinte désert ; noms des passerelles corrigés dans les fixtures.
+- Géométrie principale réalisable en boîtes/plans ; écarts de cadrage, matières uniformes, palette et bruit distingués. Découverte du déclencheur sémantique `bridge` → `ridge` → teinte de plaine ; noms des passerelles corrigés dans les fixtures.
 - DUO-010 : audit statique délégué, puis relu et corrigé par Codex. Écart de lecture par comptage global des sources consigné dans la [revue](./duo/reviews/DUO-010.md).
 - À la demande de l’utilisateur pendant les essais, ajout de `distant_light` : direction mondiale, intensité sans atténuation, couleur, rayon angulaire, ombres et rebonds diffus. Trois variantes diurnes remplacent les panneaux d’appoint et spots caméra par ce soleil. La scène 09 reste nocturne.
 - Tests natifs de parsing, rechargement, direction, distance, occultation, pénombre, énergie, couleur et GI ; quatre PNG de régression sans soleil identiques entre ancien et nouveau renderer. Build complet SDL3/llama.cpp/CUDA réussi, 2/2 CTest et 3/3 auto-tests ; deux contrôles de rendu du runtime complet conformes. Exécutable local mis à jour ; 11 PNG et 62 liens vérifiés. Les résultats détaillés sont consignés dans le comparatif.

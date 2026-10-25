@@ -205,7 +205,7 @@ Conserver les anciens poids, l'exécutable de référence et les configurations 
 
 Lors de D, rejouer également le 8B Instruct avec la couche de templates adaptée : autrement, une amélioration due à Jinja serait attribuée à tort au checkpoint Reasoning.
 
-Réutiliser le corpus Eryx proposé dans [l'étude Gemma](./ETUDE_MIGRATION_MINISTRAL_GEMMA_E4B.md) pour permettre une comparaison commune : au moins 40 cas et quelques sessions de 15 à 30 tours, avec commandes ambiguës, ressources, barrière invisible, retour non réciproque, cinq branches génératives, revisites et rechargement. Les benchmarks datacenter historiques ne remplacent pas cette validation.
+Réutiliser le corpus Eryx proposé dans [l'étude Gemma](./ETUDE_MIGRATION_MINISTRAL_GEMMA_E4B.md) pour permettre une comparaison commune : au moins 40 cas et quelques sessions de 15 à 30 tours, avec commandes ambiguës, ressources, barrière invisible, retour non réciproque, cinq branches génératives, revisites et rechargement. Les benchmarks historiques ne remplacent pas cette validation.
 
 Mesurer les réponses finales valides du premier coup, réparations, replis, contradictions, qualité du français, latences p50/p95, tokens par canal, durée complète incluant chargements, pic VRAM/RAM et offload effectif. Les paramètres réellement utilisés, notamment la température après modulation corporelle, doivent être consignés. Répéter les profils stochastiques sur plusieurs graines.
 

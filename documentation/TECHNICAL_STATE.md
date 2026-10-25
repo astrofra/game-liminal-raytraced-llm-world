@@ -46,7 +46,7 @@ Une premiere tranche Eryx est implementee dans le runtime :
 
 La frontiere encore ouverte est la mutation **live** : le LLM ne produit pas encore de proposition topologique separee, et le moteur n'a pas encore de decision `accepted`, `adjusted`, `rejected` ou `deferred` ni d'historique de mutation. La contradiction actuelle est auteurisee et deterministe.
 
-L'entropie spatiale et les deux températures possèdent maintenant des membres C++ distincts. La lecture de l'ancienne clé `datacenter_temperature_c` reste acceptée comme alias de sauvegarde pour `spatial_entropy`. Les noms membres `cooling_state`, `water_state`, `power_state` et `desert_state` restent legacy. Les lieux, prefabs et fixtures datacenter sont préservés comme baselines historiques.
+L'entropie spatiale et les deux températures possèdent maintenant des membres C++ distincts. La lecture de l'ancienne clé `datacenter_temperature_c` reste acceptée comme alias de sauvegarde pour `spatial_entropy`. Les noms membres `cooling_state`, `water_state`, `power_state` et `desert_state` restent legacy. Les lieux, prefabs et fixtures antérieurs sont préservés comme baselines historiques.
 
 ## Verrous d'architecture actes
 
@@ -164,8 +164,8 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - recomposition Monte-Carlo pondérée des trois canaux sans tripler le nombre de chemins par impact
 - Palette visuelle verrouillee :
   - ciel vénusien vert vers jaune clair
-  - desert ocre
-  - LEDs de racks rouges
+  - plaine désertique ocre
+  - repères techniques rouges
   - reste du decor en gris
 - Parallelisation optionnelle de la boucle de rendu par lignes via OpenMP, avec fallback mono-thread.
 - Sortie image en `PNG` RGB via `stb_image_write`.
@@ -180,7 +180,7 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - structs `HardState`, `SoftState`, `SpatialState`, `TurnResult`
   - contrat de tour structure et prompt builder v1
   - prompt d'audit direct pour une sortie `.scene`
-  - compilateur deterministe des sept lieux Eryx et des trois baselines datacenter depuis `SpatialState`
+  - compilateur deterministe des sept lieux Eryx et des trois baselines antérieures depuis `SpatialState`
 - Premier runtime headless `Ministral` branche au moteur :
   - `GenerateChatCompletion()` via `llama.cpp`
   - callback de streaming token par token exploitable par l'HMI
@@ -213,7 +213,7 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - bascule entre service pressurise, carriere, plateau et champ ouvert selon l'etat cache et les cues semantiques
   - shells Eryx distincts : couronne fendue, work slab, cut walls, cantilever, ligne d'horizon et abri
   - injection procedurale de rigs, scanners, cristaux, pylones, balises, cargo et traitement atmospherique
-  - les cactus, racks et masses datacenter ne restent accessibles que par les archetypes et fixtures legacy
+  - les cactus, racks et masses antérieures ne restent accessibles que par les archetypes et fixtures legacy
   - reconnaissance dédiée des cues `crystal`, `scanner`, `drill`, `prospect shelter`, `survey beacon`, `quarry pylon` et `atmospheric processor` vers les nouvelles primitives Eryx
 - Premiere HMI `SDL3` desktop :
   - event loop non bloquante
@@ -307,9 +307,9 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
 - [../assets/scenes/liminal_service_corridor.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/liminal_service_corridor.scene:1) : premiere scene proprietaire liminale.
 - [../assets/scenes/eryx_quarry_threshold.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/eryx_quarry_threshold.scene:1) : premiere fixture de la route canonique Eryx.
 - [ERYX_PLAYABLE_SPATIAL_ROADMAP.md](./ERYX_PLAYABLE_SPATIAL_ROADMAP.md) : carte, grammaire visuelle et recette du parcours Eryx.
-- [../assets/scenes/datacenter_entry_gate.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_entry_gate.scene:1) : fixture historique du portail datacenter.
-- [../assets/scenes/datacenter_server_aisles.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_server_aisles.scene:1) : fixture canonique des travees de serveurs.
-- [../assets/scenes/datacenter_roof_watch.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_roof_watch.scene:1) : fixture canonique du toit / tour de ronde.
+- [../assets/scenes/datacenter_entry_gate.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_entry_gate.scene:1) : fixture historique du seuil d'entrée.
+- [../assets/scenes/datacenter_server_aisles.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_server_aisles.scene:1) : fixture historique d'un intérieur dense.
+- [../assets/scenes/datacenter_roof_watch.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/datacenter_roof_watch.scene:1) : fixture historique d'un point d'observation ouvert.
 - [../scripts/download_ministral.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/download_ministral.py:1) : telechargement et validation du modele cible.
 - [../scripts/generate_prefab_catalog.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/generate_prefab_catalog.py:1) : regeneration du catalogue visuel des prefabs.
 - [../scripts/run_scene_generation_benchmark.py](/C:/works/projects/game-liminal-raytraced-llm-world/scripts/run_scene_generation_benchmark.py:1) : benchmark local de generation de scenes `.scene`.
@@ -434,9 +434,9 @@ Contexte : build `Release` local sur la machine de travail actuelle, apres ajout
 
 Contexte : build `Release` local sur la machine de travail actuelle, scenes canoniques de validation spatiale, `800x400`, `16 spp`, `3 bounces`.
 
-- portail d'entree du datacenter avec prefab gate : environ `8331.42 ms`
-- travees de serveurs avec prefabs : environ `23903.92 ms`
-- toit / tour de ronde avec prefabs : environ `7797.88 ms`
+- seuil d'entrée avec prefab gate : environ `8331.42 ms`
+- intérieur dense avec prefabs : environ `23903.92 ms`
+- point d'observation ouvert avec prefabs : environ `7797.88 ms`
 
 ### 2026-07-31 - Validation OpenMP
 
@@ -583,7 +583,7 @@ Observation importante :
 
 ## Ecart assume par rapport a la spec longue
 
-La spec longue parlait initialement d'une image strictement grayscale. Le depot a maintenant bifurque vers un RGB tres contraint : ciel vénusien vert/jaune, desert ocre, LEDs rouges et tout le reste en gris, tout en conservant la lumiere portee par la camera et le grain brutaliste.
+La spec longue parlait initialement d'une image strictement grayscale. Le depot a maintenant bifurque vers un RGB tres contraint : ciel vénusien vert/jaune, plaine désertique ocre, repères rouges et tout le reste en gris, tout en conservant la lumiere portee par la camera et le grain brutaliste.
 
 Le depot n'est plus limite a la Cornell Box : il sait maintenant rendre une premiere scene proprietaire a primitives et l'eclairer avec un spot analytique attache a la camera.
 

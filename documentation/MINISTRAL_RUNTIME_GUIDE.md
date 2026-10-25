@@ -55,7 +55,7 @@ python scripts/verify_native_llm.py --exe build_ministral_v070/Release/liminal_c
 run_scene_generation_benchmark.bat --profile ministral-8b-q5
 ```
 
-`verify_native_llm.py` charge réellement les trois modèles. Les sorties de probe comprennent volontairement le brut, la réflexion, la réponse finale et le flux visible pour inspection. Le benchmark de scènes refuse les dossiers de résultats déjà remplis. Les rapports historiques datacenter restent distincts du corpus Eryx.
+`verify_native_llm.py` charge réellement les trois modèles. Les sorties de probe comprennent volontairement le brut, la réflexion, la réponse finale et le flux visible pour inspection. Le benchmark de scènes refuse les dossiers de résultats déjà remplis. Les rapports historiques restent distincts du corpus Eryx.
 
 Le corpus `scripts/eryx_qualification_cases.json` contient 40 cas et trois sessions de 15, 30 et 28 tours. `--write-initial-state <json>` exporte une fixture canonique sans inférence. Le runner `run_eryx_qualification.py --fixtures <dossier>` applique les états de stress et les langues déclarés, passe les commandes via des fichiers UTF-8, et sauvegarde/recharge chaque tour dans un processus neuf. Les assertions narratives nécessitent une lecture des résultats ; une scène valide ou un processus réussi ne suffit pas à les valider.
 

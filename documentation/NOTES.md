@@ -479,13 +479,13 @@ C’est précisément à cette condition que le dispositif pourra devenir à la 
 
 ### Why the narrative focus changed
 
-The immediately preceding narrative branch, developed under the working title *Le Désert des tokens*, placed an officer in an autonomous desert datacenter waiting for a massive cyberattack that might not exist. Server heat, water consumption, environmental damage, institutional interpretation, and LLM sampling temperature formed a feedback loop.
+The immediately preceding narrative branch placed an officer in an autonomous extraction facility waiting for a massive cyberattack that might not exist. Server heat, water consumption, environmental damage, institutional interpretation, and LLM sampling temperature formed a feedback loop.
 
 That branch remains intellectually useful. It made computation, latency, heat, ecological cost, and self-amplifying interpretation part of the fiction. It also clarified the inversion at the center of the project: GPU resources were spent on local language inference while the CPU produced a deliberately poor raytraced image.
 
 Its weakness for the PhD research was structural. The relationship to the demoscene depended mainly on an aesthetic of constraint and on an analogy of resource allocation. The active Eryx direction gives the work a direct historical and personal genealogy while preserving the engine architecture that the earlier phase helped define.
 
-The datacenter, the officer waiting for an attack, cyber-threat interpretation, heat/water feedback, and the direct equation `desert temperature -> LLM temperature` are therefore superseded as the main fiction. They remain documented here and in the chronological journal as a previous conceptual stage.
+The facility, the officer waiting for an attack, cyber-threat interpretation, heat/water feedback, and the direct equation `surface temperature -> LLM temperature` are therefore superseded as the main fiction. They remain documented here and in the chronological journal as a previous conceptual stage.
 
 ### Four-stage genealogy
 

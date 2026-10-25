@@ -40,7 +40,7 @@ Les huit images Q5 valides ont également été examinées. `entry_gate_dusk` es
 
 Les huit images valides de la seconde passe Reasoning (DP) ont été examinées : `sally_port_checkpoint` et `cooling_exchange_bay` sont plus dégagées, mais les compositions répètent souvent porte, scanner et caisse. `roof_watch_dusk` présente notamment des objets apparemment flottants sur un fond presque vide. Aucun de ces essais ne démontre une amélioration visuelle générale.
 
-Les briefs historiques datacenter sont volontairement conservés alors que le vocabulaire du prompt est Eryx ; cette tension limite leur emploi comme score artistique de la carrière vénusienne.
+Les briefs historiques sont volontairement conservés alors que le vocabulaire du prompt est Eryx ; cette tension limite leur emploi comme score artistique de la carrière vénusienne.
 
 ### Répétitions directes Reasoning
 

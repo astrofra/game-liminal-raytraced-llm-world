@@ -278,7 +278,7 @@ Compositions Eryx implémentées :
 - `extraction_field` + rig + pylônes + horizon
 - `venus_plateau` + repères locaux rares + sous-structure invisible
 
-Ces archétypes et prefabs sont implémentés. Les identifiants `gate`, `server_aisles`, `roof_watch` et les salles datacenter restent des fixtures legacy utiles pour vérifier la rétrocompatibilité du pipeline.
+Ces archétypes et prefabs sont implémentés. Les identifiants `gate`, `server_aisles`, `roof_watch` et les salles historiques restent des fixtures legacy utiles pour vérifier la rétrocompatibilité du pipeline.
 
 ## Fallbacks
 
