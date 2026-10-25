@@ -1,7 +1,0 @@
-Loaded scene Primary Server Aisles
-Loaded 1018 triangles, 59 materials, 336 emissive triangles
-Load time: 7.40 ms
-Rendering 800x400, spp=8, diffuse=3, glass=9, emissive=336, camera_spot=on, openmp=on, threads=16
-  lines 400 / 400
-Render time: 2871.16 ms
-Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_model_comparison\B-gemma\images\server_aisles_dense.png

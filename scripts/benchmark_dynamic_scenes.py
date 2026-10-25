@@ -3,7 +3,7 @@
 import argparse, datetime, hashlib, html, json, os, random, re, subprocess, sys, time
 from pathlib import Path
 from urllib.parse import quote
-METHODS = ("direct", "two-pass", "hybrid")
+METHODS = ("local", "direct", "two-pass", "hybrid")
 SIDES = {"north", "east", "south", "west"}
 VISUAL_SCORES = ("silhouette", "profondeur", "vide", "focale", "lumiere", "coherence", "diversite")
 ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -54,7 +54,7 @@ def metrics_issue(metrics, method, seed):
     if not isinstance(metrics["seed"], int) or isinstance(metrics["seed"], bool):
         return "métriques invalides: seed entier attendu"
     if metrics["seed"] != seed: return f"métriques incohérentes: seed {metrics['seed']} != {seed}"
-    if metrics["method"] != method: return f"métriques incohérentes: method {metrics['method']!r} != {method!r}"
+    if metrics["method"] != ("local-fixed-v1" if method == "local" else method): return f"métriques incohérentes: method {metrics['method']!r} != {method!r}"
     return None
 def execute(root, exe, case, method, seed, profile, record, gpu_layers=99):
     outdir = root / case["id"] / method / str(seed)
@@ -157,7 +157,7 @@ def main():
     parser.add_argument("--corpus", default="tests/data/dynamic_scene_briefs.json")
     parser.add_argument("--seeds", type=int, nargs="+", default=[77, 1337])
     parser.add_argument("--methods", nargs="+", choices=METHODS, default=list(METHODS))
-    parser.add_argument("--profile", default="ministral-8b-q4")
+    parser.add_argument("--profile", default="gemma-4-e4b-q4")
     parser.add_argument("--gpu-layers", type=int, default=99)
     parser.add_argument("--limit", type=int, default=3)
     parser.add_argument("--split", choices=("calibration", "holdout", "all"), default="calibration")

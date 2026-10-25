@@ -1,8 +1,8 @@
 # Décors imaginés pendant la partie
 
-Le mode `dynamic` demande à Ministral un plan spatial, puis le programme `.scene` correspondant. Les lieux ne proviennent pas d'un catalogue de niveaux. Le guide embarqué transmet des principes de composition ; le corpus de briefs sert au banc et n'est pas consulté par le jeu.
+Le mode `dynamic` demande à Gemma un plan spatial, puis le programme `.scene` correspondant. Les lieux ne proviennent pas d'un catalogue de niveaux. Le guide embarqué transmet des principes de composition ; le corpus de briefs sert au banc et n'est pas consulté par le jeu.
 
-L'implémentation est en qualification. Le défaut reste `hybrid` tant que la campagne visuelle n'a pas établi les critères du [plan approuvé](GENERATION_DYNAMIQUE_DECORS_PLAN.md). L'optimisation du temps d'inférence est différée à la demande de l'utilisateur.
+L'implémentation est en qualification. Le défaut reste `hybrid` tant que la campagne visuelle n'a pas établi les critères du [document historique archivé](HISTORIQUE_RECHERCHE.md). L'optimisation du temps d'inférence est différée à la demande de l'utilisateur.
 
 ## Essayer dans le jeu
 
@@ -24,7 +24,7 @@ Le moteur fournit le côté d'arrivée, les directions admissibles, le lieu pré
 
 Le schéma demande les dimensions avant les centres pour rendre le calcul des hauteurs explicite. La proposition utilise `bounds: "auto"` : le moteur calcule cette métadonnée à partir des enveloppes orientées, des passages et de la caméra proposés. Il n'ajoute aucun objet et ne déplace aucune masse. L'enveloppe numérique obtenue est conservée dans le plan accepté. Ce choix évite de demander au modèle de recalculer une boîte globale redondante, source d'échecs observés pendant le pilote.
 
-Le sol est une proposition obligatoire : `ground` donne son identifiant, `width_x`, `depth_z`, `center_x` et `center_z`. La référence verticale locale est `floor_y=0` pour les nouveaux plans ; elle ne fixe pas l'altitude du lieu dans le monde. Cette notation décrit un plan horizontal voulu par le modèle ; elle est conservée comme un groupe `ground` d'épaisseur nulle dans le plan normalisé. Le moteur n'en agrandit pas les dimensions pour corriger un passage mal placé. Le programme `.scene` reste écrit par Ministral et doit reproduire ce sol. Les anciennes notations X/Z en tableaux et les anciens plans à une autre altitude restent lisibles.
+Le sol est une proposition obligatoire : `ground` donne son identifiant, `width_x`, `depth_z`, `center_x` et `center_z`. La référence verticale locale est `floor_y=0` pour les nouveaux plans ; elle ne fixe pas l'altitude du lieu dans le monde. Cette notation décrit un plan horizontal voulu par le modèle ; elle est conservée comme un groupe `ground` d'épaisseur nulle dans le plan normalisé. Le moteur n'en agrandit pas les dimensions pour corriger un passage mal placé. Le programme `.scene` reste écrit par Gemma et doit reproduire ce sol. Les anciennes notations X/Z en tableaux et les anciens plans à une autre altitude restent lisibles.
 
 Le repère principal est décrit dans `focal_mass`, avant les groupes secondaires. Son identifiant devient directement `focal_object_id` dans le plan normalisé. Cela évite qu'un repère annoncé après une liste pleine fasse référence à un objet jamais défini. Le modèle choisit toujours sa forme, ses dimensions, son emplacement et ses appuis ; aucune scène de référence n'est insérée.
 
@@ -92,7 +92,7 @@ Le guide [`composition_v1.txt`](../assets/scene_generation/composition_v1.txt) e
 
 ```powershell
 python scripts/build_native.py --publish
-ctest --test-dir build_ministral_v070 -C Release --output-on-failure
+ctest --test-dir build_native -C Release --output-on-failure
 python -m unittest discover -s tests -p test_dynamic_scene_benchmark.py
 ```
 

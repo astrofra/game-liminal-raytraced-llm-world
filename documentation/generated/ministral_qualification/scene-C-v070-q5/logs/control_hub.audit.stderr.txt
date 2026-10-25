@@ -1,1 +1,0 @@
-C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\ministral_qualification\scene-C-v070-q5\scenes\control_hub.scene:15: Unknown scene directive

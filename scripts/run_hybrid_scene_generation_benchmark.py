@@ -12,7 +12,8 @@ import time
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_RENDERER = REPO_ROOT / "build" / "Release" / "liminal_cornell_renderer.exe"
-DEFAULT_MODEL = REPO_ROOT / "models" / "ministral-3-8b" / "Ministral-3-8B-Instruct-2512-Q4_K_M.gguf"
+from model_profiles import resolve_model_path
+DEFAULT_MODEL = resolve_model_path()
 DEFAULT_CASES = REPO_ROOT / "scripts" / "scene_generation_benchmark_cases.json"
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "documentation" / "generated" / "hybrid_scene_generation_benchmark"
 DEFAULT_MARKDOWN = REPO_ROOT / "documentation" / "HYBRID_SCENE_GENERATION_BENCHMARK.md"
@@ -188,7 +189,7 @@ def run_hybrid_turn(
     image_path.parent.mkdir(parents=True, exist_ok=True)
     command = [
         str(renderer_path),
-        "--run-turn",
+        "--run-turn", "--scene-generation-mode", "hybrid",
         "--load-state",
         str(initial_state_path),
         "--save-state",
@@ -520,7 +521,7 @@ def write_markdown(markdown_path, cases, results, args):
         "- audit du `.scene` compile et rendu PNG",
         "",
         "Comparaison :",
-        "- le benchmark historique `SCENE_GENERATION_BENCHMARK.md` mesure la voie directe `brief -> .scene brut par Ministral`",
+        "- le benchmark historique `SCENE_GENERATION_BENCHMARK.md` mesure la voie directe `brief -> .scene brut par le modèle`",
         "- ce benchmark mesure la voie runtime `brief source -> room JSON -> compilateur hybride -> rendu`",
         "",
         "Parametres :",

@@ -1,7 +1,0 @@
-Loaded scene Cooling Exchange Bay
-Loaded 546 triangles, 46 materials, 60 emissive triangles
-Load time: 6.09 ms
-Rendering 800x400, spp=8, diffuse=3, glass=9, emissive=60, camera_spot=on, openmp=on, threads=16
-  lines 400 / 400
-Render time: 487.47 ms
-Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\ministral_qualification\scene-A-old-cli-q4\images\cooling_exchange_bay.png

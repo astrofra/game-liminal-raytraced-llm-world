@@ -1,7 +1,0 @@
-Loaded scene Dust Loading Dock
-Loaded 1170 triangles, 68 materials, 84 emissive triangles
-Load time: 6.59 ms
-Rendering 800x400, spp=8, diffuse=3, glass=9, emissive=84, camera_spot=on, openmp=on, threads=16
-  lines 400 / 400
-Render time: 762.20 ms
-Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\ministral_qualification\scene-C-v070-q5\images\loading_dock_dust.png

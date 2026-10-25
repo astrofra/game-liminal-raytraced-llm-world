@@ -114,8 +114,8 @@ bool ResearchArchive::Start(const std::string& root,const SessionState& state,
         if(!created)throw std::runtime_error("Cannot allocate a unique research archive");
         std::filesystem::create_directory(path_/"places");std::filesystem::create_directory(path_/"turns");
         Write("manifest.json",json({{"schema",1},{"started_utc",UtcTime()},{"status","running"},
-            {"new_game",true},{"llm_seed",model.seed},{"model",model.use_ollama?model.ollama_model:model.model_path},
-            {"backend",model.use_ollama?"ollama":"native"},{"width",render.width},{"height",render.height},
+            {"new_game",true},{"llm_seed",model.seed},{"model",model.model_path},
+            {"backend","llama.cpp"},{"width",render.width},{"height",render.height},
             {"samples",render.samples_per_pixel},{"render_seed",render.seed},
             {"scene_system_prompt",LocalSceneSystemPrompt()},{"repair_prefix",LocalSceneRepairPrefix()},
             {"image_kind","first displayed frame, post-processing included, without HUD"}}).dump(2)+"\n");

@@ -1,3 +1,4 @@
+#include "resource_paths.h"
 #include "file_io.h"
 #include "scene_compiler.h"
 
@@ -3002,7 +3003,7 @@ bool BuildSceneTextFromSpatialState(
         ? CanonicalFixturePath(spatial_state.location_id)
         : spatial_state.canonical_fixture.c_str();
     if (fixture_path && fixture_path[0]) {
-        return ReadTextFile(fixture_path, scene_text, error_buffer, error_buffer_size);
+        return ReadTextFile(ResourcePath(fixture_path).c_str(), scene_text, error_buffer, error_buffer_size);
     }
 
     return BuildProceduralSceneText(spatial_state, scene_text, error_buffer, error_buffer_size);

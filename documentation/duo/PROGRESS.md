@@ -1,62 +1,18 @@
-# Progression — Duo sur Within the Latent Walls
+# Progression du duo — 25 octobre 2026
 
-Mise à jour : 25 octobre 2026. Coordinateur : Codex. Exécutant : DeepSeek via Copilot CLI/Ollama.
+Codex coordonne les interfaces, le runtime, la validation et l'intégration.
+DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de ce kit.
 
-| ID | Statut | Preuve | Suite |
-|---|---|---|---|
-| DUO-024 — Retour natif autonome | Étude intégrée après revue et corrections ; migration à réaliser | [Revue](reviews/DUO-024.md), [étude et plan](../ETUDE_RETOUR_LLAMA_CPP_AUTONOME.md), [audit de distribution](AUDIT_DISTRIBUTION_AUTONOME.md) ; SHA Gemma vérifié, texte et scène acceptée via llama.cpp CPU | Poids résidents, canaux Gemma, raccord du jeu actuel, suppression Ollama/Ministral, paquet hors ligne ; performances GPU à qualifier |
-| Fiction et fiabilité — premier livrable | Publié et vérifié | [Bilan](../BILAN_FICTION_ET_FIABILITE_SCENES.md) : 6 CTest, 72 tests Python, parcours français, archives SDL et annulation, 8/8 compositions initiales sur le corpus final | Qualité littéraire à poursuivre ; gain réel du troisième appel non établi ; aucun commit ni push |
-| DUO-019 | Tests intégrés et validés ; écarts de protocole consignés | [Revue](reviews/DUO-019.md) | Sept cas de visibilité réussis |
-| DUO-018 | Intégré après corrections et tests | [Revue](reviews/DUO-018.md) | Normaliseur natif actif, validation stricte conservée |
-| DUO-017 | Diagnostic documentaire intégré après revue critique | [Revue](reviews/DUO-017.md), [diagnostic et recommandations](../DIAGNOSTIC_FICTION_ET_FIABILITE_SCENES.md) ; écrasement narratif observé et faux rejet de visibilité reproduit | Aucun changement produit ; propositions de narration, normalisation syntaxique et troisième appel borné à mettre en œuvre dans des lots distincts |
-| DUO-016 | Composition intégrée et rendue après revue et corrections Codex | [Revue](reviews/DUO-016.md), [nouveau départ et archives](../SINGLE_START_RESEARCH.md) | Livré, aucun commit ni push |
-| Départ unique et recherche | Intégré, build publié et recette réussie | [Preuves](../SINGLE_START_RESEARCH.md) : deux parties SDL indépendantes et distinctes, parcours de deux découvertes avec retour, annulation archivée sans déplacement ; 4 CTest et 72 tests Python réussis | Qualité artistique à poursuivre ; archives automatiques hors dépôt, aucune reprise SDL |
-| DUO-015 | Intégré après revue et corrections Codex | [Revue](reviews/DUO-015.md) : cinq briefs Eryx, rapport comparatif et sept tests réussis | Livrables utilisés dans la campagne commune Gemma/Ministral |
-| Roadmap scènes 3D locales | Première tranche jouable intégrée ; jalons 1–6 exécutés, qualité artistique partielle | [Bilan et images](../LOCAL_SCENE_ROADMAP_RESULTS.md) : comparaison 8/10 contre 4/10, recette native 9/10, correction réelle, persistance et SDL ; 4 CTest + 72 tests Python réussis | Corriger les défauts de support/passerelle puis étendre aux quatre autres sorties ; aucun nouvel installeur livré |
-| Installation Windows | Validé | [Configuration et versions](SETUP.md) ; doctor positif ; 45 tests réussis ; 14 empreintes du kit conformes | Environnement prêt |
-| DUO-001 | Bloqué lors du run, clos sans intégration | [Revue](reviews/DUO-001.md) : HTTP 401, aucune écriture | Connexion Ollama effectuée par l'utilisateur |
-| DUO-001-R1 | Rejeté, clos sans intégration | [Revue](reviews/DUO-001-R1.md) : dossier parent absent, tentative hors contrat | Contrat révisé par Codex après deux tentatives |
-| DUO-002 | Validé | [Revue](reviews/DUO-002.md) : un create, un view, aucun écart ; [livrable](DUO_DEMO.md) intégré | Recette terminée ; appliquer ce circuit aux prochains lots bornés |
-| DUO-003 | Validé | [Revue](reviews/DUO-003.md) : téléchargement Gemma fixé et contrôlé réellement | Intégré au prototype benchmark |
-| DUO-004 | Validé après correction Codex | [Revue](reviews/DUO-004.md) : contrôle caméra, 28 tests ; écart de lecture et faux positif corrigé documentés | Intégré au bilan visuel |
-| DUO-005 | Validé après revue Codex | [Revue](reviews/DUO-005.md) : manifeste, révision de téléchargement fixée, 54 tests Python ; Q5 vérifié sur disque | Qualification terminée, 57 tests finaux |
-| DUO-006 | Intégré après corrections Codex | [Revue](reviews/DUO-006.md) : 40 cas, langues réelles, stress et trois sessions | 611 tours exécutés, revue mécanique et narrative documentée |
-| DUO-007 | Intégré après revue Codex | [Revue](reviews/DUO-007.md) : packaging relié au manifeste | Installeur 2.2.0 construit et testé avec téléchargement réel |
-| DUO-008 / R1 | Revue terminée, aucun correctif généré intégré | [Revue](reviews/DUO-008.md) : accès externe refusé puis audit d'extraits ; constats vérifiés, contrat des callbacks clarifié | Limites coopératives documentées |
-| DUO-009 | Intégré après revue et corrections éditoriales Codex | [Revue](reviews/DUO-009.md) ; [atlas illustré](../concept-art/ATLAS_COMPOSITION.md), dix fiches et dix images liées | Annexe du plan dynamique disponible |
-| DUO-010 | Audit intégré après vérification et corrections Codex | [Revue](reviews/DUO-010.md) : imprécisions corrigées et comptage hors périmètre consigné ; [comparatif](../concept-art/raytracer-study/README.md) rédigé et calculé par Codex | 11 PNG vérifiés ; soleil intégré, build complet, 2 CTest et 3 auto-tests réussis ; scènes disponibles pour le banc visuel |
-| DUO-014 | Intégré après revue et corrections éditoriales Codex | [Revue](reviews/DUO-014.md) : brief Eryx consolidé, 26 éditions sur un seul fichier ; écart d'énumération en lecture consigné | Sources narratives explicites ; benchmarks et implémentation inchangés |
-| Décors dynamiques | Implémentation native en qualification, mode explicite | [Plan approuvé](../GENERATION_DYNAMIQUE_DECORS_PLAN.md), [guide runtime](../GENERATION_DYNAMIQUE_DECORS_RUNTIME.md), [bilan des essais](../GENERATION_DYNAMIQUE_DECORS_BILAN.md) ; DUO-011/R1 et DUO-012/R1 intégrés après revue | Terminer le pilote réel et sa revue visuelle avant toute promotion du défaut |
-| Migration — benchmark direct | Prototype validé, bascule du jeu non décidée | [Guide et résultats](../SCENE_MODEL_MIGRATION_BENCHMARK.md) : matrice de 10 cas par variante ; correction du prompt Gemma 10/10 syntaxe et caméra, limites visuelles restantes ; 51 tests | Évaluation artistique et corpus Eryx avant intégration native |
-| Roadmap Ministral | Terminée | [Bilan](../MINISTRAL_QUALIFICATION_REPORT.md) : 70 scènes, 611 tours, protocole, builds, installation et retour arrière ; v0.7 intégré | Q4 retenu ; Q5/Reasoning expérimentaux ; limites métier et diffusion publique documentées |
+| Lot | État | Preuves et suite |
+|---|---|---|
+| Runtime autonome | Livré, qualification locale effectuée | [Bilan](../BILAN_RUNTIME_AUTONOME.md) : parcours 20 commandes, tests des langues, protocole et poids résidents |
+| DUO-025 | Audit DeepSeek relu, nettoyage intégré | [Contrat](tasks/DUO-025.md), [revue](reviews/DUO-025.md) ; outils HTTP orphelins et anciens profils supprimés, bancs natifs conservés |
+| DUO-023 | HUD livré | [Revue](reviews/DUO-023.md) ; positions et contraste conservés dans le runtime actuel |
+| DUO-022 | Langues livrées | [Revue](reviews/DUO-022.md) ; garde linguistique et traductions compilées conservés |
+| DUO-021 | Inventaire livré | [Revue](reviews/DUO-021.md) ; trois outils, six langues, sans inférence |
+| DUO-020 | Propositions autoritatives livrées | [Revue](reviews/DUO-020.md) ; issues et chaleur validées par le moteur |
 
-Les contrats et revues sont conservés pour rendre les échecs et les corrections vérifiables. Les worktrees et les journaux du duo restent hors du dépôt principal. Aucun commit ni push effectué pendant ces lots.
-
-24 octobre 2026 — Implémentation dynamique autorisée par l'utilisateur, optimisation des temps différée. DUO-011/R1 : guide et quinze briefs intégrés après [revue](reviews/DUO-011.md). DUO-012/R1 : pilote Python du banc intégré après [revue](reviews/DUO-012.md) et corrections Codex. Les premières exécutions n'ont pas été intégrées (protocole incorrect pour 011, aucune livraison pour 012). Runtime, contrats, validation, persistance et intégration native traités par Codex ; qualification réelle en cours.
-
-24 octobre 2026 — DUO-013 : relecture ciblée des consignes après les premiers rejets réels. Un create, un view et un grep conformes ; [synthèse critique](reviews/DUO-013.md) intégrée, note brute conservée hors dépôt car plusieurs constats dépassaient les extraits fournis. Aucun résultat d'inférence attribué à cette relecture.
-
-24 octobre 2026 — Clôture de la passe d'implémentation dynamique : pipeline expérimental intégré et build publié, trois CTest et navigation réussis. **Qualification réelle non acquise : aucun lieu en deux passes accepté**, malgré les essais 8B et l'essai 14B séparé. Le défaut reste hybride. Images directes, échecs, limites et point de reprise conservés dans le [bilan](../GENERATION_DYNAMIQUE_DECORS_BILAN.md). Le plan complet n'est pas déclaré terminé. Aucun calcul laissé actif, aucun commit ni push.
-
-24 octobre 2026 — Exploration artistique 01 : « La chambre du ciel », image et prompt déposés dans `documentation/concept-art/`. Génération raster par Codex avec l'outil intégré image_gen, hors lots de développement Copilot/DeepSeek. PNG vérifié en 1774 × 887 (2:1), revue visuelle effectuée ; transposition en boîtes/plans envisagée, textures à simplifier, aucun rendu moteur validé. Les quatre autres concepts attendent la discussion avec l'utilisateur.
-
-24 octobre 2026 — Exploration artistique 02–05 : après approbation du premier concept, quatre images supplémentaires générées avec image_gen et déposées dans `documentation/concept-art/`, avec prompts exacts et notes de transposition. Série complète de cinq PNG vérifiés en 1774 × 887, revue visuelle effectuée. Volumes prévus en boîtes/plans, rotations disponibles via `box rot(...)` ; détails de matière et de sol à simplifier. Aucune délégation DeepSeek ni scène moteur produite pour ce lot artistique.
-
-24 octobre 2026 — Exploration artistique 06–10 : lecture de `IN_THE_WALLS_OF_ERYX.md`, puis cinq concepts inspirés du cristal lointain, des six issues, des plantes à mirages, des torches nocturnes et de la sortie toute proche. Images créées avec image_gen, prompts exacts et libertés d'adaptation documentés dans `documentation/concept-art/`. Dix PNG de la série décodés et vérifiés en 1774 × 887 ; revue visuelle des cinq nouveaux concepts effectuée. Géométrie envisagée en boîtes/plans et prefabs cristallins existants ; aucun mur invisible rendu comme du verre. Aucun rendu moteur ni livraison DeepSeek revendiqué. Ajouts indexés préexistants préservés.
-
-25 octobre 2026 — Exploration artistique 11–12 : à la demande de l'utilisateur, deux vues des parois d'Eryx presque transparentes, avec une épaisseur cible de 25 cm et une dispersion chromatique localisée. [Le dédale à contre-jour](../concept-art/11-le-dedale-a-contre-jour.png) et [Les vingt-cinq centimètres du vide](../concept-art/12-les-vingt-cinq-centimetres-du-vide.png), accompagnés de fiches `.txt` et des prompts exacts. Génération par Codex avec l'outil intégré image_gen, hors lots Copilot/DeepSeek. Deux PNG décodés et vérifiés en 1774 × 887 ; revue visuelle effectuée. Les arêtes colorées restent plus présentes que la discrétion visée ; les 25 cm sont une intention du prompt, pas une mesure certifiée. Cette variante optique ne remplace pas les concepts 01–10 et ne constitue pas une implémentation moteur. Modifications locales préexistantes préservées.
-
-
-25 octobre 2026 — **DUO-020 validé** : DeepSeek a livré le validateur pur de propositions littéraires, thermiques et topologiques, avec ses tests ; outils et chemins relus, aucun écart constaté. Codex a borné taille/profondeur JSON et intégré la restauration : issues cardinales improvisées sous contraintes géométriques, chaleur évaluée dans le même appel narratif, couplage BODY/échantillonnage, reprise des fiches en attente et contrat de scène 3. Sept CTest, 72 tests Python et auto-test de navigation passent. [Revue](reviews/DUO-020.md), [bilan et état de la recette réelle](../BILAN_ISSUES_ET_TEMPERATURE.md). Pas de commit/push ; modifications indexées préexistantes préservées.
-
-
-25 octobre 2026 — **DUO-021 validé** : catalogue et commandes d’inventaire livrés par DeepSeek, relus et ajustés par Codex. Consultation et examen des trois outils dans les six langues, possessions fournies au narrateur, refus sans faux effet et traces avant/après. 8 CTest, 72 tests Python et auto-test de navigation réussis ; 42 commandes dans six sessions avec modèle inexistant, puis recette SDL `i`, sans inférence. Build publié. [Revue](reviews/DUO-021.md), [bilan](../BILAN_INVENTAIRE.md). Lots 1–2 de la roadmap livrés ; manipulations physiques et panneau graphique restent des extensions. Pas de commit/push.
-
-
-25 octobre 2026 — **DUO-022 validé** : tests de langue livrés par DeepSeek, revue des outils et chemins sans écart ; qualification de namespace corrigée par Codex. HUD à initiales et traductions compilées, choix initial transmis à chaque narration, garde multilingue, secours et réparation des descriptions mémorisées sans nouvelle géométrie. 9 CTest, 72 tests Python, auto-test de navigation ; 19 tours réels dont sept en italien, puis six recettes SDL sans inférence. [Revue](reviews/DUO-022.md), [bilan](../BILAN_LANGUES.md). Build publié, aucun commit/push par Codex.
-
-
-25 octobre 2026 — **DUO-023 intégré après revue** : températures centrées dans la partie gauche dégagée, boussole rentrée et relevée ; issues ouvertes lumineuses avec cadre de trois pixels, fermées atténuées avec trait d'un pixel. Contribution DeepSeek relue et intégrée sélectivement ; poursuite après un échec d'edit et grep trop large consignés dans la [revue](reviews/DUO-023.md). Build publié, deux captures SDL FR/EN vérifiées, aucun appel LLM pour le HUD. Aucun commit/push.
-
-
-25 octobre 2026 — Ajustement utilisateur du HUD après DUO-023, réalisé par Codex : voies fermées en additif, puis couleur augmentée de 10 % (61/84/26), trait fin conservé. Build republié et capture SDL française vérifiée ; voir la [revue mise à jour](reviews/DUO-023.md).
+Les étapes antérieures et leur progression détaillée sont conservées dans
+l'[archive de recherche](../HISTORIQUE_RECHERCHE.md) et dans Git. Les contrats et
+revues restent des traces datées, pas des instructions de lancement actuelles.
+Aucun commit ni push effectué par Codex.

@@ -522,7 +522,6 @@ static bool RepairTurnResultJson(
         raw_response_text;
 
     LlmGenerationConfig repair_config = config.generation_config;
-    repair_config.short_call = true;
     repair_config.purpose = "repair";
     repair_config.use_json_grammar = false;
 
@@ -941,7 +940,6 @@ static bool LocalizePlayerFacingText(
         ". Empty values must remain empty:\n" + source.dump();
 
     LlmGenerationConfig localization_config = config.generation_config;
-    localization_config.short_call = true;
     localization_config.purpose = "localization";
     localization_config.temperature = 0.0f;
     localization_config.use_json_grammar = false;
@@ -2265,7 +2263,6 @@ static void AskLlmForThermalUpdate(
     messages.back().content = prompt;
 
     LlmGenerationConfig thermal_config = config.generation_config;
-    thermal_config.short_call = true;
     thermal_config.purpose = "thermal";
     thermal_config.timeout_ms=std::min(thermal_config.timeout_ms,15000);
     thermal_config.use_json_grammar = false;
@@ -2802,10 +2799,14 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         carried.push_back({{"id",id},{"name",InventoryItemName(id,state.language)},
             {"description",InventoryItemDescription(id,state.language)},{"known_tool",IsKnownInventoryItem(id)}});
     }
+    // A completed traversal is an observation request at the destination, not
+    // another attempt to execute the same direction against its exit map.
+    const bool completed_move = result->updated_place_id != result->initial_place_id;
     const std::string prompt=json({{"language",GameLanguageEnglishName(state.language)},{"language_code",GameLanguageToString(state.language)},
         {"world","Eryx: Venusian quarry, human explorer inside a protective suit. Material, embodied strangeness; no invented supernatural events."},
         {"facts",json::parse(facts,nullptr,false)},{"current_title",*title},{"base_description",*summary},
-        {"player_command",command},{"engine_outcome",outcome},{"history",memory},{"notebook",notebook},
+        {"player_command",completed_move ? "Describe my arrival at the destination after the successful movement." : command},
+        {"completed_movement",completed_move},{"engine_outcome",outcome},{"history",memory},{"notebook",notebook},
         {"carried_items",carried},{"inventory_rule","This is the complete authoritative inventory. Known initial tools were carried from the start, not found here. No tool is consumed, acquired, lost, deposited or used by narration. Unknown legacy IDs confer no inferred ability. Mention possessions only when relevant; do not repeat an inventory menu."},
         {"temperature_external_c",state.hard_state.external_temperature_c},{"temperature_body_c",state.hard_state.body_temperature_c},
         {"exit_proposal",{{"may_improvise",propose_exits},{"fixed",constraints.fixed},
@@ -2818,7 +2819,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     LlmGenerationConfig cfg=config.generation_config;cfg.purpose=card?"scene_fiction_card_v2":"scene_fiction_turn_v2";
     cfg.seed=(cfg.seed+65537u*static_cast<unsigned int>(state.hard_state.turn_number))&0x7fffffffu;
     cfg.n_predict=card?1280:896;cfg.timeout_ms=std::min(cfg.timeout_ms,30000);
-    cfg.use_json_grammar=true;cfg.grammar_path.clear();
+    cfg.use_json_grammar=true;
     cfg.json_schema=R"({"type":"object","properties":{"title":{"type":"string"},"summary":{"type":"string"},"narration":{"type":"string"},"thermal":{"type":"object","properties":{"external_temperature_c":{"type":"integer"},"body_temperature_c":{"type":"number"},"reason":{"type":"string"}},"required":["external_temperature_c","body_temperature_c","reason"],"additionalProperties":false},"exits":{"type":"object","properties":{"north":{"type":"boolean"},"east":{"type":"boolean"},"south":{"type":"boolean"},"west":{"type":"boolean"}},"required":["north","east","south","west"],"additionalProperties":false}},"required":["title","summary","narration","thermal","exits"],"additionalProperties":false})";
     // Mirror mechanical bounds in decoding; the independent validator remains authoritative.
     auto schema=json::parse(cfg.json_schema);
@@ -2841,6 +2842,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         "ENGINE OUTCOME is binding for movement, manipulation and inventory. You also propose thermal evolution and allowed exits under the supplied constraints. Never invent another accomplished action, acquired item or measurement. "
         "Geometry and established routes are immutable. Choose unknown exits only when exit_proposal.may_improvise is true. NEVER say the path back disappears, closes, fades, shifts or becomes only a memory, even metaphorically. "
         "Narrate perception in the PRESENT, not an imagined prior state. Arrival and revisit happen at a stationary viewpoint after the move. "
+        "The exit map describes the NEXT departures from the destination, not the movement just completed. If ENGINE OUTCOME says the engine moved, that move succeeded: never narrate it as blocked or refused. "
         "No bodily contact, taking, touching, walking or turning unless explicitly in engine_outcome. Do not turn technical volume names into objects, a passage, a machine or a portal. "
         "Describe shapes, spaces, distance, light and bodily perception precisely. Metaphor is welcome when not presented as a physical change. "
         "Write as an embodied explorer, never as a rendering manual: no numbered volumes, geometry jargon or systematic temperature report. "
@@ -3465,8 +3467,6 @@ static bool RunHeadlessTurnFromStateImpl(
                     {"forward_direction",CardinalDirectionToString(traversal_direction)},{"accepted_exits",exits},
                     {"proposal_pending",room.metadata_fallback_used}}).dump();
                 room.scene_plan_hash=SceneTextHash(room.scene_design_json);
-                room.scene_model_filename=config.generation_config.ollama_model;
-                room.scene_profile="ollama/"+config.generation_config.ollama_model;
                 room.scene_prompt_version="local-topology-v2/"+
                     SceneTextHash(LocalSceneSystemPrompt()+BuildLocalSceneProgramPrompt(context.brief,scene_config.landmark)+LocalSceneRepairPrefix());
                 result->dynamic_scene_design_json=room.scene_design_json;

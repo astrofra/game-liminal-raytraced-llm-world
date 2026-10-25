@@ -1,7 +1,7 @@
 build/
 build_verify/
-build_ministral_v070/
-build_ministral_baseline/
+build_native/
+build_*/
 build_distant_light/
 build_settings.local.json
 output/*.pgm

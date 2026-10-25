@@ -12,18 +12,14 @@ import time
 
 from scene_benchmark_protocol import extract_final_response, parse_generation_metrics, sha256_file
 from scene_benchmark_quality import audit_camera
-from model_profiles import load_profiles, resolve_model_path
+from model_profiles import DEFAULT_PROFILE, load_profiles, resolve_model_path
 
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_RENDERER = REPO_ROOT / "build" / "Release" / "liminal_cornell_renderer.exe"
 DEFAULT_LLAMA_CLI = REPO_ROOT / "build" / "bin" / "Release" / "llama-cli.exe"
 DEFAULT_MODEL = resolve_model_path()
-MODEL_PROFILES = {
-    "ministral": DEFAULT_MODEL,
-    "gemma-e4b": REPO_ROOT / "models" / "gemma-4-e4b" / "gemma-4-E4B-it-Q4_K_M.gguf",
-}
-MODEL_PROFILES.update({name: resolve_model_path(name) for name in load_profiles()["profiles"]})
+MODEL_PROFILES = {name: resolve_model_path(name) for name in load_profiles()["profiles"]}
 DEFAULT_CASES = REPO_ROOT / "scripts" / "scene_generation_benchmark_cases.json"
 
 DEFAULT_WIDTH = 800
@@ -54,7 +50,7 @@ CAMERA_GUIDANCE = (
 
 def apply_profile_defaults(options):
     manifest = load_profiles()
-    name = manifest["default_profile"] if options.profile == "ministral" else options.profile
+    name = options.profile
     profile = manifest["profiles"].get(name, {})
     defaults = {"temperature": profile.get("temperature", DEFAULT_TEMPERATURE),
                 "top_k": profile.get("top_k", 40), "top_p": profile.get("top_p", .95),
@@ -600,7 +596,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run a reproducible local benchmark for direct .scene generation.")
     parser.add_argument("--renderer", type=pathlib.Path, default=DEFAULT_RENDERER)
     parser.add_argument("--llama-cli", type=pathlib.Path, default=DEFAULT_LLAMA_CLI)
-    parser.add_argument("--profile", choices=sorted(MODEL_PROFILES), default="ministral")
+    parser.add_argument("--profile", choices=sorted(MODEL_PROFILES), default=DEFAULT_PROFILE)
     parser.add_argument("--model", type=pathlib.Path, help="Override the selected profile's GGUF path")
     parser.add_argument("--cases", type=pathlib.Path, default=DEFAULT_CASES)
     parser.add_argument("--output-root", type=pathlib.Path, help="New directory; existing non-empty directories are refused")

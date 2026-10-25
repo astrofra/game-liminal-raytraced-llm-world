@@ -379,6 +379,6 @@ Pour la premiere batterie de tests exterieurs autour de la carriere, du plateau 
 
 ## Exemple complet
 
-Voir [../assets/scenes/liminal_service_corridor.scene](/C:/works/projects/game-liminal-raytraced-llm-world/assets/scenes/liminal_service_corridor.scene:1).
+Voir [../assets/scenes/liminal_service_corridor.scene](../assets/scenes/liminal_service_corridor.scene).
 
 Pour la prochaine phase de travail, voir aussi [SPATIAL_VALIDATION_PLAN.md](./SPATIAL_VALIDATION_PLAN.md).

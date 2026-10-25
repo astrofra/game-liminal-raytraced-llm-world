@@ -29,8 +29,6 @@ static void PrintUsage()
     printf("Usage:\n");
     printf("  liminal_cornell_renderer [options]\n\n");
     printf("Options:\n");
-    printf("  --llm-backend <native|ollama> Diagnostic backend override (default: ollama)\n");
-    printf("  --ollama-model <name>    Local Ollama model (default: gemma4:e4b)\n");
     printf("  --scene-generation-mode <hybrid|dynamic|local> Direct discovery east from the start and generated rooms\n");
     printf("  --generate-dynamic-scene <brief.txt> Generate, audit and render a new scene\n");
     printf("  --audit-scene-view <file> Audit actual geometry and render; writes <scene-artifacts>.audit.json\n");
@@ -54,8 +52,8 @@ static void PrintUsage()
     printf("  --location <id>          Starting location (quarry_threshold); legacy diagnostic fixtures: gate, server_aisles, roof_watch\n");
     printf("  --compile-location <id>  Compile a canonical spatial state and render it\n");
     printf("  --audit-scene-text <path> Load a .scene as text in memory, validate it, then render it\n");
-    printf("  --run-turn               Run one real headless turn through Ministral and render the resulting place\n");
-    printf("  --run-session            Run a multi-turn headless session through Ministral and render the last place\n");
+    printf("  --run-turn               Run one real headless turn through Gemma and render the resulting place\n");
+    printf("  --run-session            Run a multi-turn headless session through Gemma and render the last place\n");
     printf("  --sdl                    Launch the SDL3 interactive frontend with streaming LLM output\n");
     printf("  --view-animation-fps <f> Animated viewport playback rate (default: 6)\n");
     printf("  --animated-view-fail-frame <n> Force animation image 1..7 to fail for diagnostics\n");
@@ -72,14 +70,14 @@ static void PrintUsage()
     printf("  --sdl-smoke-test-ms <n> Auto-select a language and close SDL cleanly after n milliseconds\n");
     printf("  --sdl-smoke-command <text> Inject text and Return during the timed SDL smoke test\n");
     printf("  --write-initial-state <json> Export canonical initial state without inference\n");
-    printf("  --llm-profile <name>     ministral-8b-q4, ministral-8b-q5, ministral-8b-reasoning-q4\n");
-    printf("  --llm-reasoning-budget <n> Thought token limit; final budget remains --llm-predict\n");
+    printf("  --llm-profile <name>     gemma-4-e4b-q4\n");
     printf("  --llm-context <n>        Fixed context limit (default 8192)\n");
     printf("  --llm-gpu-layers <n>     Offloaded model layers; 0 isolates CPU qualification\n");
     printf("  --llm-timeout-ms <n>     Per-call deadline including model load\n");
     printf("  --llm-seed <n>           Sampling seed\n");
-    printf("  --llm-legacy-template    Qualification only: simplified template path\n");
     printf("  --llm-probe <json>       Isolated diagnostic completion (role/content array)\n");
+    printf("  --llm-probe-repeat <n>   Diagnostic repeated independent calls (1-100)\n");
+    printf("  --llm-probe-schema <json> Diagnostic JSON Schema constraint\n");
     printf("  --llm-probe-output <json> Save probe channels and diagnostics\n");
     printf("  --llm-cancel-after <n>   Probe cancellation after n final chunks\n");
     printf("  --model <path>           GGUF model path for --run-turn\n");
@@ -338,6 +336,7 @@ static void PrintTurnSummary(const liminal::HeadlessTurnResult& turn_result, boo
 
 int main(int argc, char** argv)
 {
+    struct RuntimeShutdown { ~RuntimeShutdown() { liminal::ShutdownLlmRuntime(); } } runtime_shutdown;
 #if defined(_WIN32)
     int wide_count = 0;
     LPWSTR* wide_args = CommandLineToArgvW(GetCommandLineW(), &wide_count);
@@ -367,6 +366,8 @@ int main(int argc, char** argv)
     const char* initial_state_output = nullptr;
     const char* llm_probe_path = nullptr;
     const char* llm_probe_output = nullptr;
+    const char* llm_probe_schema = nullptr;
+    int llm_probe_repeat = 1;
     int llm_cancel_after = -1;
     int llm_cancel_after_checks = -1;
     bool llm_cancel_during_load = false;
@@ -403,9 +404,7 @@ int main(int argc, char** argv)
     liminal::LocationId selected_location = liminal::kLocationQuarryThreshold;
     liminal::CardinalDirection generated_room_direction = liminal::kDirectionNorth;
     liminal::HeadlessTurnConfig headless_turn_config;
-    headless_turn_config.generation_config.use_ollama=true;
     headless_turn_config.local_scenes=true;
-    bool backend_explicit=false, scene_mode_explicit=false, native_model_requested=false;
     const char* dynamic_brief_path = nullptr;
     std::string scene_artifacts = "dynamic-scene";
     bool scene_artifacts_requested = false;
@@ -414,14 +413,6 @@ int main(int argc, char** argv)
     std::vector<std::string> session_commands;
 
     for (int index = 1; index < argc; ++index) {
-        if (strcmp(argv[index], "--llm-backend") == 0 && index+1<argc) {
-            const std::string backend=argv[++index];
-            if(backend!="native"&&backend!="ollama")return 1;
-            backend_explicit=true;headless_turn_config.generation_config.use_ollama=backend=="ollama";continue;
-        }
-        if (strcmp(argv[index], "--ollama-model") == 0 && index+1<argc) {
-            headless_turn_config.generation_config.ollama_model=argv[++index];continue;
-        }
         if (strcmp(argv[index], "--audit-scene-view") == 0 && index+1<argc) {
             audit_scene_view_path=argv[++index];continue;
         }
@@ -432,7 +423,7 @@ int main(int argc, char** argv)
             const std::string mode=argv[++index];
             if(mode!="dynamic" && mode!="hybrid" && mode!="local")return 1;
             headless_turn_config.dynamic_scenes=mode=="dynamic";
-            scene_mode_explicit=true;headless_turn_config.local_scenes=mode=="local";continue;
+            headless_turn_config.local_scenes=mode=="local";continue;
         }
         if (strcmp(argv[index], "--generate-dynamic-scene") == 0 && index+1<argc) {
             dynamic_brief_path=argv[++index];continue;
@@ -642,18 +633,19 @@ int main(int argc, char** argv)
         }
         if (strcmp(argv[index], "--llm-profile") == 0 && index + 1 < argc) {
             std::string error;
-            native_model_requested=true;
             if (!liminal::ConfigureLlmProfile(argv[++index], &headless_turn_config.generation_config, &error)) {
                 fprintf(stderr, "%s\n", error.c_str()); return 1;
             }
             continue;
         }
-        if (strcmp(argv[index], "--llm-legacy-template") == 0) {
-            headless_turn_config.generation_config.use_jinja = false; continue;
-        }
         if (strcmp(argv[index], "--write-initial-state") == 0 && index + 1 < argc) { initial_state_output = argv[++index]; continue; }
         if (strcmp(argv[index], "--llm-cancel-during-load") == 0) { llm_cancel_during_load = true; continue; }
         if (strcmp(argv[index], "--llm-probe") == 0 && index + 1 < argc) { llm_probe_path = argv[++index]; continue; }
+        if (strcmp(argv[index], "--llm-probe-repeat") == 0 && index + 1 < argc) {
+            if (!ReadInt(argv[++index], &llm_probe_repeat) || llm_probe_repeat < 1 || llm_probe_repeat > 100) return 1;
+            continue;
+        }
+        if (strcmp(argv[index], "--llm-probe-schema") == 0 && index + 1 < argc) { llm_probe_schema=argv[++index]; continue; }
         if (strcmp(argv[index], "--llm-probe-output") == 0 && index + 1 < argc) { llm_probe_output = argv[++index]; continue; }
         if (strcmp(argv[index], "--llm-cancel-after") == 0 && index + 1 < argc) {
             if (!ReadInt(argv[++index], &llm_cancel_after)) return 1; continue;
@@ -665,9 +657,6 @@ int main(int argc, char** argv)
             int seed = 0; if (!ReadInt(argv[++index], &seed) || seed < 0) return 1;
             llm_seed_explicit = true;
             headless_turn_config.generation_config.seed = static_cast<unsigned int>(seed); continue;
-        }
-        if (strcmp(argv[index], "--llm-reasoning-budget") == 0 && index + 1 < argc) {
-            if (!ReadInt(argv[++index], &headless_turn_config.generation_config.reasoning_budget)) return 1; continue;
         }
         if (strcmp(argv[index], "--llm-context") == 0 && index + 1 < argc) {
             if (!ReadInt(argv[++index], &headless_turn_config.generation_config.n_ctx)) return 1; continue;
@@ -681,8 +670,9 @@ int main(int argc, char** argv)
             continue;
         }
         if (strcmp(argv[index], "--model") == 0 && index + 1 < argc) {
-            native_model_requested=true;
             headless_turn_config.generation_config.model_path = argv[++index];
+            headless_turn_config.generation_config.profile_name = "custom";
+            headless_turn_config.generation_config.model_sha256.clear();
             continue;
         }
         if (strcmp(argv[index], "--llm-temperature") == 0 && index + 1 < argc) {
@@ -777,15 +767,6 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    if(native_model_requested&&!backend_explicit)headless_turn_config.generation_config.use_ollama=false;
-    if(!headless_turn_config.generation_config.use_ollama&&!scene_mode_explicit)headless_turn_config.local_scenes=false;
-    if(headless_turn_config.generation_config.use_ollama) {
-        headless_turn_config.generation_config.profile_name="ollama/"+headless_turn_config.generation_config.ollama_model;
-        headless_turn_config.generation_config.model_path.clear();
-    }
-    if(headless_turn_config.local_scenes&&!headless_turn_config.generation_config.use_ollama) {
-        fprintf(stderr,"--scene-generation-mode local requires --llm-backend ollama\n");return 1;
-    }
     liminal::Scene scene;
     liminal::SessionState pending_saved_session;
     bool have_pending_save=false;
@@ -898,6 +879,13 @@ int main(int argc, char** argv)
                 !item.contains("content") || !item["content"].is_string()) return 1;
             messages.push_back({item["role"].get<std::string>(), item["content"].get<std::string>()});
         }
+        if (llm_probe_schema) {
+            if (!ReadFileText(llm_probe_schema, &headless_turn_config.generation_config.json_schema)) return 1;
+            headless_turn_config.generation_config.use_json_grammar = true;
+        }
+        auto probe_outputs = nlohmann::json::array();
+        bool all_ok = true;
+        for (int repetition=0; repetition<llm_probe_repeat; ++repetition) {
         liminal::LlmGenerationResult result;
         struct ProbeStream {
             int remaining; int checks; bool during_load; liminal::LlmGenerationResult* result;
@@ -914,7 +902,7 @@ int main(int argc, char** argv)
                     if (probe->checks > 0) --probe->checks;
                 }
                 probe->final = accumulated;
-                if (probe->final.find("[THINK]") != std::string::npos || probe->final.find("[/THINK]") != std::string::npos) probe->leaked = true;
+                if (probe->final.find("<|channel>") != std::string::npos || probe->final.find("<channel|>") != std::string::npos) probe->leaked = true;
                 if (probe->remaining == 0) return false;
                 if (probe->remaining > 0 && delta[0]) --probe->remaining;
                 return true;
@@ -924,9 +912,17 @@ int main(int argc, char** argv)
             {"error",result.error_message},{"stream_final",stream.final},{"stream_leaked_marker",stream.leaked},
             {"reasoning_tokens",result.reasoning_tokens},{"final_tokens",result.final_tokens},
             {"wall_time_ms",result.wall_time_ms},{"offloaded_layers",result.offloaded_layers}};
+        output["model_reused"] = result.model_reused;
+        output["load_time_ms"] = result.load_time_ms;
+        output["prompt_time_ms"] = result.prompt_time_ms;
+        output["generation_time_ms"] = result.generation_time_ms;
+        probe_outputs.push_back(output);
+        all_ok = all_ok && ok;
+        }
+        const auto output = llm_probe_repeat==1 ? probe_outputs[0] : probe_outputs;
         if (llm_probe_output && !WriteFileText(llm_probe_output, output.dump(2))) return 1;
         printf("%s\n", output.dump(2).c_str());
-        return ok ? 0 : 2;
+        return all_ok ? 0 : 2;
     }
     if (print_llama_info_only) {
         liminal::PrintLlmRuntimeInfo(stdout);

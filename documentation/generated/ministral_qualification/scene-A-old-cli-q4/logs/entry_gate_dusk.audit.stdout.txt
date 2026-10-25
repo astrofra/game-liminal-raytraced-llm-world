@@ -1,7 +1,0 @@
-Loaded scene Entry Gate
-Loaded 774 triangles, 65 materials, 84 emissive triangles
-Load time: 1.41 ms
-Rendering 800x400, spp=8, diffuse=3, glass=9, emissive=84, camera_spot=off, openmp=on, threads=16
-  lines 400 / 400
-Render time: 631.16 ms
-Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\ministral_qualification\scene-A-old-cli-q4\images\entry_gate_dusk.png

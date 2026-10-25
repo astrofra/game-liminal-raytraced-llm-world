@@ -11,7 +11,7 @@ Les dix images référencées ci-dessous sont des **images conceptuelles produit
 
 Ces images ne sont pas non plus des niveaux à sélectionner, ni des scènes préfabriquées prêtes à charger. Ce sont des représentations conceptuelles de maquettes architecturales, destinées à fixer une intention perceptive et un principe de composition. La transposition vers une scène réelle reste un travail de composition séparé.
 
-Le présent atlas synthétise les fiches écrites et distingue leurs intentions des limites observées dans les images. L'exécutant a travaillé à partir des textes ; Codex a revu l'annexe à partir de ces fiches et des images examinées lors de leur création. Le [plan de génération dynamique](../GENERATION_DYNAMIQUE_DECORS_PLAN.md) précise comment transmettre ces principes à Ministral et qualifier leurs effets dans le jeu.
+Le présent atlas synthétise les fiches écrites et distingue leurs intentions des limites observées dans les images. L'exécutant a travaillé à partir des textes ; Codex a revu l'annexe à partir de ces fiches et des images examinées lors de leur création. Le [document historique archivé](../HISTORIQUE_RECHERCHE.md) précise comment transmettre ces principes à le LLM et qualifier leurs effets dans le jeu.
 
 ## Comment lire cet atlas
 

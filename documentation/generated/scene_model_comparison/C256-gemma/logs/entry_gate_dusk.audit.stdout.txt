@@ -1,7 +1,0 @@
-Loaded scene Entry Gate Threshold Courtyard
-Loaded 358 triangles, 30 materials, 48 emissive triangles
-Load time: 1.26 ms
-Rendering 800x400, spp=8, diffuse=3, glass=9, emissive=48, camera_spot=off, openmp=on, threads=16
-  lines 400 / 400
-Render time: 422.65 ms
-Wrote C:\works\projects\game-liminal-raytraced-llm-world\documentation\generated\scene_model_comparison\C256-gemma\images\entry_gate_dusk.png

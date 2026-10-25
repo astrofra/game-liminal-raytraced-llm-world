@@ -1,4 +1,4 @@
-"""Versioned Ministral model profiles: loading, validation and path resolution.
+"""Versioned game model profiles: loading, validation and path resolution.
 
 The module uses the standard library only and performs no network access, neither
 at import time nor when its functions are called.
@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MANIFEST_PATH = PROJECT_ROOT / "scripts" / "ministral_models.json"
+MANIFEST_PATH = PROJECT_ROOT / "scripts" / "models.json"
 SCHEMA_VERSION = 1
 
 _REVISION_RE = re.compile(r"\A[0-9a-fA-F]{40}\Z")
@@ -136,7 +136,7 @@ def _validate_profile(name: str, profile: Any) -> None:
 def load_profiles(path: str | Path | None = None) -> dict[str, Any]:
     """Load and validate the manifest, returning its full contents.
 
-    ``path`` defaults to ``scripts/ministral_models.json``; a relative path is
+    ``path`` defaults to ``scripts/models.json``; a relative path is
     resolved against :data:`PROJECT_ROOT`.
     """
     manifest_path = Path(path) if path is not None else MANIFEST_PATH

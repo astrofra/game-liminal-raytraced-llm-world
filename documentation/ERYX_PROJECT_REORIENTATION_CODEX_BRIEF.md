@@ -27,7 +27,7 @@ The current project grew out of a strong technical and artistic premise:
 
 That premise remains valid and should remain central.
 
-The current implementation already has several strong elements: local Ministral inference through `llama.cpp`, a native C++ runtime, a deliberately simple grayscale CPU raytracer, a player-facing parser interface, an authoritative state outside the model, an intermediate spatial state, a deterministic compilation path from spatial state to renderable scene, intentionally weak global topology, room generation and caching, and a visual language based on simple geometry, low information density, and visible technical limits.
+The current implementation already has several strong elements: local Gemma inference through `llama.cpp`, a native C++ runtime, a deliberately simple grayscale CPU raytracer, a player-facing parser interface, an authoritative state outside the model, an intermediate spatial state, a deterministic compilation path from spatial state to renderable scene, intentionally weak global topology, room generation and caching, and a visual language based on simple geometry, low information density, and visible technical limits.
 
 The problem is not the technical architecture. The problem is the **narrative and research anchoring**.
 
@@ -171,7 +171,7 @@ render
 
 Keep this architecture.
 
-This initial brief established the deterministic compilation path. Later scene-generation work is documented in [GENERATION_DYNAMIQUE_DECORS_PLAN.md](./GENERATION_DYNAMIQUE_DECORS_PLAN.md) and `TECHNICAL_STATE.md`; the narrative consolidation does not revise those technical decisions.
+This initial brief established the deterministic compilation path. Later scene-generation work is documented in [document historique archivé](HISTORIQUE_RECHERCHE.md) and `TECHNICAL_STATE.md`; the narrative consolidation does not revise those technical decisions.
 
 Instead, reinterpret the spatial layer so it can express an invisible and mutable labyrinth.
 

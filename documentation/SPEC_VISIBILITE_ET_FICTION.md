@@ -1,6 +1,6 @@
 # Visibilité, réparations locales et fiction — spécification
 
-25 octobre 2026. Spécification d'implémentation du [diagnostic](DIAGNOSTIC_FICTION_ET_FIABILITE_SCENES.md), ajustée aux décisions du joueur. Ce document décrit la cible ; les résultats observés sont consignés dans le [bilan du livrable](BILAN_FICTION_ET_FIABILITE_SCENES.md).
+25 octobre 2026. Spécification d'implémentation du [document historique archivé](HISTORIQUE_RECHERCHE.md), ajustée aux décisions du joueur. Ce document décrit la cible ; les résultats observés sont consignés dans le [document historique archivé](HISTORIQUE_RECHERCHE.md).
 
 ## 1. Contrat de visibilité
 

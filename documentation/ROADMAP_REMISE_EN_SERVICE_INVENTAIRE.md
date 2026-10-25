@@ -1,6 +1,6 @@
 # Remettre l’inventaire en service avec les trois objets de départ
 
-25 octobre 2026 — **lots 1 et 2 implémentés et testés** en duo Codex / DeepSeek. Voir le [bilan de livraison](BILAN_INVENTAIRE.md). Les lots 3 et 4 restent des extensions prévues. Le texte ci-dessous conserve le plan et ses critères.
+25 octobre 2026 — **lots 1 et 2 implémentés et testés** en duo Codex / DeepSeek. Voir le [document historique archivé](HISTORIQUE_RECHERCHE.md). Les lots 3 et 4 restent des extensions prévues. Le texte ci-dessous conserve le plan et ses critères.
 
 ## Référence concrète : l’inventaire d’Athanor 2
 
@@ -71,7 +71,7 @@ Exemple attendu au démarrage :
 
 > Vous transportez une tablette cartographique, une craie de délimitation et des pinces à échantillons.
 
-**Critère de livraison :** cette liste reste exacte après une découverte, un retour et une lecture diagnostique d’état ; l’opération fonctionne même si Ollama est indisponible. Aucun appel LLM ni changement de BODY, des issues ou de la scène.
+**Critère de livraison :** cette liste reste exacte après une découverte, un retour et une lecture diagnostique d’état ; l’opération fonctionne même si le modèle est indisponible. Aucun appel LLM ni changement de BODY, des issues ou de la scène.
 
 ## Lot 2 — Les trois objets existent dans la fiction
 
@@ -158,12 +158,12 @@ Retirer les chemins devenus inutilisés après vérification de leurs appelants.
 | Annulation d’une manipulation | Aucun effet partiel sur possession, repère ou état thermique. |
 | Réponse LLM annonçant une acquisition non autorisée | Texte rejeté ou remplacé ; état inchangé. |
 
-Les lots 1 et 2 constituent le **premier livrable attendu**. Les tests automatisés doivent vérifier les données et les appels réellement effectués ; une recette SDL vérifie ensuite l’affichage et les archives. Une courte session avec Gemma contrôle la cohérence littéraire, quand Ollama sera disponible. Les lots 3 et 4 ajoutent leurs propres recettes d’effets et de rendu avant activation.
+Les lots 1 et 2 constituent le **premier livrable attendu**. Les tests automatisés doivent vérifier les données et les appels réellement effectués ; une recette SDL vérifie ensuite l’affichage et les archives. Une courte session avec Gemma contrôle la cohérence littéraire, avec le runtime natif. Les lots 3 et 4 ajoutent leurs propres recettes d’effets et de rendu avant activation.
 
 Publier le build de développement pour que le lanceur habituel donne accès au livrable, sans nouveau mode à sélectionner. Documenter séparément ce qui fonctionne et ce qui reste prévu. Le bilan distingue les recettes exécutées pour les lots 1–2 des critères encore à satisfaire pour les extensions.
 
 ## Références
 
-- [Diagnostic fiction et fiabilité](DIAGNOSTIC_FICTION_ET_FIABILITE_SCENES.md) : effets validés avant narration, absence de fausses acquisitions.
-- [Issues et boucle thermique](BILAN_ISSUES_ET_TEMPERATURE.md) : état autoritatif, appel narratif commun, couplage BODY et annulation.
+- [document historique archivé](HISTORIQUE_RECHERCHE.md) : effets validés avant narration, absence de fausses acquisitions.
+- [document historique archivé](HISTORIQUE_RECHERCHE.md) : état autoritatif, appel narratif commun, couplage BODY et annulation.
 - [Nouvelle partie et archives de recherche](SINGLE_START_RESEARCH.md) : persistance pendant la partie, aucune réinjection au lancement suivant.

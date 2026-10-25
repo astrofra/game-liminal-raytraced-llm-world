@@ -6,14 +6,14 @@ import sys
 from pathlib import Path
 
 
-REPO_ID = "ggml-org/gemma-4-E4B-it-GGUF"
-REVISION = "51db8454ac67b58ed848e54d4111be2ad16ba4bf"
-FILENAME = "gemma-4-E4B-it-Q4_K_M.gguf"
-EXPECTED_SIZE = 5_335_289_824
-EXPECTED_SHA256 = (
-    "90ce98129eb3e8cc57e62433d500c97c"
-    "624b1e3af1fcc85dd3b55ad7e0313e9f"
-)
+from model_profiles import get_profile
+
+_PROFILE = get_profile()
+REPO_ID = _PROFILE["repo_id"]
+REVISION = _PROFILE["revision"]
+FILENAME = _PROFILE["filename"]
+EXPECTED_SIZE = _PROFILE["size_bytes"]
+EXPECTED_SHA256 = _PROFILE["sha256"]
 PIP_INSTALL_COMMAND = "python -m pip install --upgrade huggingface_hub"
 
 

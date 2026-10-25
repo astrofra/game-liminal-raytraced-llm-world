@@ -13,22 +13,15 @@ struct LlmPromptMessage {
 };
 
 struct LlmGenerationConfig {
-    bool use_ollama = false;
-    std::string ollama_model = "gemma4:e4b";
-    int ollama_port = 11434; // Loopback only; alternate port supports isolated protocol tests.
     std::string model_path;
-    std::string grammar_path;
+    std::string model_sha256;
     std::string json_schema; // Optional schema for constrained final JSON; no effect on ordinary calls.
     int n_ctx;
     int n_batch;
     int n_ubatch;
-    int reasoning_budget;
     int timeout_ms;
     int top_k;
     float top_p;
-    bool reasoning;
-    bool use_jinja;
-    bool short_call;
     std::string profile_name;
     std::string purpose;
     int n_threads;
@@ -55,6 +48,7 @@ struct LlmGenerationResult {
     int final_tokens = 0;
     int offloaded_layers = -1;
     int total_layers = -1;
+    bool model_reused = false;
     double load_time_ms = 0.0;
     double prompt_time_ms = 0.0;
     double generation_time_ms = 0.0;

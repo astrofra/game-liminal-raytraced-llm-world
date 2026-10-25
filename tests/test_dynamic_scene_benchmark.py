@@ -25,7 +25,7 @@ class BenchmarkTests(unittest.TestCase):
     def run_case(self, fake):
         record = {}
         with patch.object(bench.subprocess, "run", side_effect=fake):
-            bench.execute(self.root, ROOT / "fake executable.exe", self.case, "two-pass", 77, "ministral-8b-q4", record)
+            bench.execute(self.root, ROOT / "fake executable.exe", self.case, "two-pass", 77, "gemma-4-e4b-q4", record)
         return record
 
     def test_missing_metrics_is_failure(self):

@@ -1,6 +1,6 @@
 # Pilote des décors dynamiques
 
-Ces images proviennent du vrai raytracer et des essais natifs Ministral. Aucun concept art raster n'est utilisé comme rendu de substitution. La qualification est en cours ; voir le [bilan](../../GENERATION_DYNAMIQUE_DECORS_BILAN.md).
+Ces images proviennent du vrai raytracer et des essais natifs Ministral. Aucun concept art raster n'est utilisé comme rendu de substitution. La qualification est en cours ; voir le [rapport historique archivé](../../HISTORIQUE_RECHERCHE.md).
 
 ## Terrasse : génération directe et hybride
 

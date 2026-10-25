@@ -60,7 +60,7 @@ Les concepts originaux font **1774 × 887** ; les rendus « qualité » font **9
 
 ## 2. Conditions de l’essai
 
-Les quatre fichiers sont des **fixtures de calibration**. Ils ne sont pas ajoutés à la route jouable, ne remplacent pas les salles du jeu et n’ont pas été produits par Ministral. Ils ne constituent pas un catalogue de niveaux pour le futur système dynamique.
+Les quatre fichiers sont des **fixtures de calibration**. Ils ne sont pas ajoutés à la route jouable, ne remplacent pas les salles du jeu et n’ont pas été produits par le LLM. Ils ne constituent pas un catalogue de niveaux pour le futur système dynamique.
 
 - Géométrie : `box`, `box rot(...)`, `plane` et un `prefab_crystal_cluster` pour 09.
 - Matériaux : uniquement `gray`, palette sémantique existante, `emit` et verre du prefab.
@@ -128,10 +128,10 @@ Les dimensions, intensités et positions ont aussi changé entre ces essais. La 
 
 ## 4. Conséquence pour le système dynamique
 
-Ces résultats renforcent le besoin d’un **plan spatial**, d’un contrôle de caméra et d’un aperçu de rendu dans le [plan d’implémentation Ministral](../../GENERATION_DYNAMIQUE_DECORS_PLAN.md). Une bonne liste d’objets ne suffit pas à produire une bonne image.
+Ces résultats renforcent le besoin d’un **plan spatial**, d’un contrôle de caméra et d’un aperçu de rendu dans le [document historique archivé](../../HISTORIQUE_RECHERCHE.md). Une bonne liste d’objets ne suffit pas à produire une bonne image.
 
 1. Commencer DYN-01/DYN-02 avec le langage existant, en donnant au modèle des règles de composition, d’échelle, de matière et d’orientation des sources.
-2. Conserver ces quatre scènes comme références humaines du banc : comparer une scène inventée par Ministral à une qualité atteignable avec le moteur, en plus des concepts.
+2. Conserver ces quatre scènes comme références humaines du banc : comparer une scène inventée par le LLM à une qualité atteignable avec le moteur, en plus des concepts.
 3. Prioriser cadrage et visibilité des masses ; contrôler les noms sémantiques et le nombre de triangles émissifs.
 4. Mesurer qualité et durée à un budget compatible avec le jeu. Une image lente de calibration n’établit pas la viabilité de la boucle interactive.
 5. Ouvrir ensuite des lots séparés pour les propriétés explicitement absentes : palettes contrôlées, matériaux sobres plus riches, puis amélioration de convergence. Ne pas mélanger leur évaluation avec celle du raisonnement du modèle.

@@ -56,7 +56,7 @@ def compiler_environment(msvc_root=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--build-dir", type=Path, default=ROOT / "build_ministral_v070")
+    parser.add_argument("--build-dir", type=Path, default=ROOT / "build_native")
     parser.add_argument("--llama-dir", type=Path, default=ROOT / "vendor/llama.cpp")
     parser.add_argument("--msvc-root", type=Path)
     parser.add_argument("--cuda-arch", default="native")
@@ -86,7 +86,7 @@ def main():
     print(subprocess.list2cmdline(command), flush=True)
     subprocess.run(command, env=env, cwd=ROOT, check=True)
     if not args.configure_only:
-        targets = ["liminal_cornell_renderer", "liminal_llm_channels_test", "liminal_distant_light_test", "liminal_dynamic_scene_test", "liminal_ollama_test", "liminal_scene_normalization_test", "liminal_scene_visibility_test", "liminal_place_proposal_test", "liminal_inventory_test", "liminal_narrative_language_test"]
+        targets = ["liminal_cornell_renderer", "liminal_llm_channels_test", "liminal_distant_light_test", "liminal_dynamic_scene_test", "liminal_scene_normalization_test", "liminal_scene_visibility_test", "liminal_place_proposal_test", "liminal_inventory_test", "liminal_narrative_language_test"]
         if args.with_cli:
             targets.append("llama-cli")
         subprocess.run(["cmake", "--build", str(build), "--config", "Release", "--parallel", str(args.parallel),
@@ -96,7 +96,7 @@ def main():
             artifacts.append(build / "bin/Release/llama-cli.exe")
         provenance = {
             "llama_cpp_commit": (args.llama_dir / "VENDORED_COMMIT.txt").read_text().strip(),
-            "model_manifest_sha256": hashlib.sha256((ROOT / "scripts/ministral_models.json").read_bytes()).hexdigest(),
+            "model_manifest_sha256": hashlib.sha256((ROOT / "scripts/models.json").read_bytes()).hexdigest(),
             "compiler": str(compiler), "cuda_arch": args.cuda_arch,
             "artifacts": {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in artifacts},
         }

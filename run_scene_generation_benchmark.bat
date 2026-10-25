@@ -56,7 +56,7 @@ echo.
 echo === Run Scene Generation Benchmark ===
 echo Renderer: "%RENDERER_PATH%"
 echo LLM: "%LLAMA_CLI%"
-echo Profiles: ministral ^(Q4 default^), ministral-8b-q5, ministral-8b-reasoning-q4, gemma-e4b.
+echo Profile: gemma-4-e4b-q4.
 echo Script: "%SCRIPT_PATH%"
 echo.
 

@@ -1,6 +1,6 @@
 # Images calculées — scènes locales Eryx
 
-Ces images proviennent du raytracer du jeu, avec leurs programmes `.scene` conservés. Le [bilan](../../LOCAL_SCENE_ROADMAP_RESULTS.md) décrit les conditions, mesures, limites et étapes du duo.
+Ces images proviennent du raytracer du jeu, avec leurs programmes `.scene` conservés. Le [rapport historique archivé](../../HISTORIQUE_RECHERCHE.md) décrit les conditions, mesures, limites et étapes du duo.
 
 - [Nouveau seuil unique](single-start/start.png), inspiré du concept 12, et [fonctionnement actuel des archives](../../SINGLE_START_RESEARCH.md).
 - Deux parties neuves : [première découverte A](single-start/play-01.png), [première découverte B](single-start/play-02.png). Les scènes, descriptions et graines sont conservées dans le même dossier.

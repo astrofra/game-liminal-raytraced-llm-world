@@ -86,16 +86,16 @@ class ProfileDefaultsTests(unittest.TestCase):
         benchmark.apply_profile_defaults(options)
         return options
 
-    def test_reasoning_profile_enables_its_sampling_defaults(self):
-        options = self.options('ministral-8b-reasoning-q4')
-        self.assertEqual((options.reasoning, options.reasoning_budget, options.temperature), ('on', 512, .7))
+    def test_gemma_profile_defaults(self):
+        options = self.options('gemma-4-e4b-q4')
+        self.assertEqual((options.reasoning, options.reasoning_budget, options.temperature), ('off', 0, 0))
 
     def test_explicit_zero_temperature_and_reasoning_off_are_preserved(self):
-        options = self.options('ministral-8b-reasoning-q4', temperature=0, reasoning='off', top_k=1)
+        options = self.options('gemma-4-e4b-q4', temperature=0, reasoning='off', top_k=1)
         self.assertEqual((options.temperature, options.reasoning_budget, options.top_k), (0, 0, 1))
 
-    def test_historical_profiles_keep_non_reasoning_defaults(self):
-        for profile in ('ministral', 'gemma-e4b', 'ministral-8b-q5'):
+    def test_profile_has_no_reasoning(self):
+        for profile in ('gemma-4-e4b-q4',):
             options = self.options(profile)
             self.assertEqual((options.reasoning, options.reasoning_budget, options.temperature), ('off', 0, 0))
 

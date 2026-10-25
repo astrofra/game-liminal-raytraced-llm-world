@@ -2,11 +2,11 @@
 
 25 octobre 2026. Diagnostic historique du mode local, corrigé après rappel du contrat artistique par le joueur.
 
-**Mise en œuvre :** la restauration est décrite dans le [bilan issues et température](BILAN_ISSUES_ET_TEMPERATURE.md). Les sections suivantes conservent le diagnostic qui a motivé les corrections ; les mentions « actuel » désignent cette version antérieure.
+**Mise en œuvre :** la restauration est décrite dans le [document historique archivé](HISTORIQUE_RECHERCHE.md). Les sections suivantes conservent le diagnostic qui a motivé les corrections ; les mentions « actuel » désignent cette version antérieure.
 
 **Le contrat défini confie au LLM la narration, les propositions d’issues ouvertes ou fermées et l’évaluation thermique. La température corporelle influence ensuite l’échantillonnage du modèle narratif. Le moteur valide et applique les décisions ; il ne doit pas remplacer cette improvisation par un parcours prédéfini ou une hausse thermique automatique.**
 
-Ce contrat est explicite dans les [décisions thermiques](DECISIONS.md#L441), la [boucle artistique de STORY](STORY.md#L127) et le [prompt de création des lieux](../src/turn_contract.cpp#L555). Ce dernier demande au LLM de décider les quatre directions et les températures après l’arrivée. L’étude initiale proposait à tort de remplacer ces choix par des règles déterministes : cette recommandation est retirée.
+Ce contrat est explicite dans les [document historique archivé](HISTORIQUE_RECHERCHE.md), la [boucle artistique de STORY](STORY.md#L127) et le [prompt de création des lieux](../src/turn_contract.cpp#L555). Ce dernier demande au LLM de décider les quatre directions et les températures après l’arrivée. L’étude initiale proposait à tort de remplacer ces choix par des règles déterministes : cette recommandation est retirée.
 
 ## 1. Pourquoi uniquement EST et OUEST ?
 

@@ -82,16 +82,17 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Stage and build the Windows installer for Within the Latent Walls. "
-            "The AI model is never included in the installer."
+            "The verified Gemma model is included for offline installation."
         )
     )
-    parser.add_argument("--version", default="2.2.0", help="Installer application version.")
+    parser.add_argument("--version", default="3.0.0", help="Installer application version.")
     parser.add_argument("--skip-build", action="store_true", help="Reuse the current Release executable.")
     parser.add_argument(
         "--skip-source-archive",
         action="store_true",
         help="Do not create the GPL corresponding-source ZIP beside the installer.",
     )
+    parser.add_argument("--portable-only", action="store_true", help="Stage the complete offline folder without compiling Setup.")
     parser.add_argument("--iscc", type=Path, help="Explicit path to Inno Setup's ISCC.exe.")
     parser.add_argument(
         "--no-bootstrap-inno",
@@ -285,11 +286,14 @@ def copy_distribution_payload(version: str) -> None:
     provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
     if provenance.get("artifacts", {}).get(SOURCE_EXE.name) != sha256_file(SOURCE_EXE):
         raise RuntimeError("Release executable differs from its recorded build")
-    if provenance.get("model_manifest_sha256") != sha256_file(PROJECT_ROOT / "scripts/ministral_models.json"):
+    if provenance.get("model_manifest_sha256") != sha256_file(PROJECT_ROOT / "scripts/models.json"):
         raise RuntimeError("Model manifest differs from the native build; rebuild before packaging")
     expected_commit = (PROJECT_ROOT / "vendor/llama.cpp/VENDORED_COMMIT.txt").read_text().strip()
     if provenance.get("llama_cpp_commit") != expected_commit:
         raise RuntimeError("Native build and packaged vendor revision differ")
+    model_source = PROJECT_ROOT / MODEL_RELATIVE_PATH
+    if not model_source.is_file() or model_source.stat().st_size != MODEL_SIZE or sha256_file(model_source) != MODEL_SHA256:
+        raise RuntimeError("The pinned Gemma model is missing or invalid; run download_gemma.bat before packaging")
     reset_directory(STAGE_DIR)
     DIST_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -303,9 +307,7 @@ def copy_distribution_payload(version: str) -> None:
     shutil.copy2(PACKAGING_DIR / "INSTALLATION_README.txt", STAGE_DIR / "INSTALLATION_README.txt")
     (STAGE_DIR / "output").mkdir()
     (STAGE_DIR / Path(MODEL_RELATIVE_PATH).parent).mkdir(parents=True)
-    grammar = Path("vendor/llama.cpp/grammars/json.gbnf")
-    (STAGE_DIR / grammar.parent).mkdir(parents=True)
-    shutil.copy2(PROJECT_ROOT / grammar, STAGE_DIR / grammar)
+    shutil.copy2(model_source, STAGE_DIR / MODEL_RELATIVE_PATH)
 
     license_dir = STAGE_DIR / "licenses" / "third-party"
     license_dir.mkdir(parents=True)
@@ -314,6 +316,7 @@ def copy_distribution_payload(version: str) -> None:
         raise RuntimeError("CUDA_PATH is required to package the CUDA redistribution notices.")
     cuda_root = Path(cuda_path_value)
     third_party_licenses = [
+        (PACKAGING_DIR / "Gemma-LICENSE.txt", "Gemma-LICENSE.txt"),
         (PROJECT_ROOT / "vendor" / "llama.cpp" / "LICENSE", "llama.cpp-LICENSE.txt"),
         (BUILD_DIR / "_deps" / "sdl3-src" / "LICENSE.txt", "SDL3-LICENSE.txt"),
         (BUILD_DIR / "_deps" / "sdl3_ttf-src" / "LICENSE.txt", "SDL3_ttf-LICENSE.txt"),
@@ -349,8 +352,8 @@ def copy_distribution_payload(version: str) -> None:
     runtime_records = copy_runtime_dependencies(SOURCE_EXE, staged_exe)
 
     gguf_files = list(STAGE_DIR.rglob("*.gguf"))
-    if gguf_files:
-        raise RuntimeError(f"The staged payload must not contain model weights: {gguf_files}")
+    if gguf_files != [STAGE_DIR / MODEL_RELATIVE_PATH]:
+        raise RuntimeError(f"Unexpected model payload: {gguf_files}")
 
     payload_files: list[dict[str, object]] = []
     for path in sorted(STAGE_DIR.rglob("*")):
@@ -367,7 +370,7 @@ def copy_distribution_payload(version: str) -> None:
         "application": "Within the Latent Walls / Entre les Murs Latents",
         "version": version,
         "executable": STAGED_EXE_NAME,
-        "model_embedded": False,
+        "model_embedded": True,
         "llama_cpp_commit": (PROJECT_ROOT / "vendor/llama.cpp/VENDORED_COMMIT.txt").read_text().strip(),
         "model": {
             "profile": MODEL_PROFILE_NAME,
@@ -377,7 +380,7 @@ def copy_distribution_payload(version: str) -> None:
             "relative_path": MODEL_RELATIVE_PATH,
             "bytes": MODEL_SIZE,
             "sha256": MODEL_SHA256,
-            "downloaded_during_installation": True,
+            "downloaded_during_installation": False,
         },
         "runtime_dependencies": runtime_records,
         "payload_files": payload_files,
@@ -393,7 +396,7 @@ def copy_distribution_payload(version: str) -> None:
 def smoke_test_staged_executable() -> None:
     executable = STAGE_DIR / STAGED_EXE_NAME
     print("Running staged executable smoke test...")
-    result = subprocess.run([str(executable), "--llama-info"], cwd=STAGE_DIR,
+    result = subprocess.run([str(executable), "--llama-info"], cwd=INSTALLER_ROOT,
                             capture_output=True, text=True, check=True)
     print(result.stdout, end="")
     expected_commit = (PROJECT_ROOT / "vendor/llama.cpp/VENDORED_COMMIT.txt").read_text().strip()
@@ -492,22 +495,14 @@ def build_inno_installer(version: str, iscc: Path) -> Path:
             f"/DStageDir={STAGE_DIR}",
             f"/DDistDir={DIST_DIR}",
             f"/DAppVersion={version}",
-            f"/DModelDir={str(Path(MODEL_RELATIVE_PATH).parent)}",
-            f"/DModelName={MODEL_FILENAME}",
-            f"/DModelUrl=https://huggingface.co/{MODEL_REPOSITORY}/resolve/{MODEL_REVISION}/{MODEL_FILENAME}?download=true",
-            f"/DModelHash={MODEL_SHA256}",
-            f"/DModelSize={MODEL_SIZE}",
             str(INNO_SCRIPT),
         ]
     )
     if not expected_output.is_file():
         raise RuntimeError(f"Inno Setup did not create the expected installer: {expected_output}")
-    # The external 5.20 GB GGUF must never be compiled into the setup executable.
-    if expected_output.stat().st_size >= 1_000_000_000:
-        raise RuntimeError(
-            f"Installer is unexpectedly large ({expected_output.stat().st_size:,} bytes); "
-            "the external model may have been embedded."
-        )
+    slices = list(DIST_DIR.glob(f"Within-the-Latent-Walls-Setup-{version}-*.bin"))
+    if not slices or sum(path.stat().st_size for path in slices) < MODEL_SIZE:
+        raise RuntimeError("Offline installer data volumes are incomplete")
     return expected_output
 
 
@@ -520,7 +515,7 @@ def iter_source_files() -> list[tuple[Path, Path]]:
         PROJECT_ROOT / "README.md",
     ]
     root_files.extend(PROJECT_ROOT.glob("*.bat"))
-    root_files.extend(PROJECT_ROOT.glob("*.py"))
+    # Personal commit automation is not required to build or run the game.
     for source in root_files:
         if source.is_file():
             pairs.append((source, source.relative_to(PROJECT_ROOT)))
@@ -586,6 +581,12 @@ def main() -> int:
     copy_distribution_payload(args.version)
     smoke_test_staged_executable()
 
+    if args.portable_only:
+        if not args.skip_source_archive:
+            build_source_archive(args.version)
+        print(f"Complete offline portable folder: {STAGE_DIR}")
+        return 0
+
     iscc = find_iscc(args.iscc)
     if not iscc:
         if args.no_bootstrap_inno:
@@ -594,14 +595,14 @@ def main() -> int:
     print(f"Inno Setup compiler: {iscc}")
 
     installer = build_inno_installer(args.version, iscc)
-    outputs = [installer]
+    outputs = [installer, *sorted(DIST_DIR.glob(f"Within-the-Latent-Walls-Setup-{args.version}-*.bin"))]
     if not args.skip_source_archive:
         outputs.append(build_source_archive(args.version))
 
     print("\nDistribution artifacts:")
     for output in outputs:
         print(f"  {output} ({output.stat().st_size:,} bytes, SHA-256 {sha256_file(output)})")
-    print("\nThe model is external and will be downloaded by the installer.")
+    print("\nGemma is included. Keep Setup.exe and every .bin volume together; installation needs no network.")
     return 0
 
 

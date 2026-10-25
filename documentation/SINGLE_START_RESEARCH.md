@@ -1,16 +1,18 @@
 # Un seul départ, une nouvelle exploration à chaque partie
 
-Évolution du 25 octobre : voir le [premier livrable fiction et fiabilité](BILAN_FICTION_ET_FIABILITE_SCENES.md) pour les descriptions restaurées, le carnet, les trois compositions au maximum et les nouvelles traces profondeur/ID.
+Évolution du 25 octobre : voir le [document historique archivé](HISTORIQUE_RECHERCHE.md) pour les descriptions restaurées, le carnet, les trois compositions au maximum et les nouvelles traces profondeur/ID.
 
-Évolution suivante : les [issues et températures sont proposées par le LLM](BILAN_ISSUES_ET_TEMPERATURE.md), puis validées par le moteur.
+Évolution suivante : les [document historique archivé](HISTORIQUE_RECHERCHE.md), puis validées par le moteur.
 
 25 octobre 2026 — évolution demandée après la première tranche de la roadmap.
 
 ## Jouer
 
+Le paquet complet contient le GGUF et fonctionne hors ligne, sans service externe. Le [bilan natif](BILAN_RUNTIME_AUTONOME.md) décrit la qualification actuelle.
+
 Lancer `play_within_the_latent_walls.bat`. Le jeu commence au **seuil de la carrière**, seul lieu Eryx prédéfini. Son décor natif s'inspire du [concept 12, variante raytracer](concept-art/12-les-vingt-cinq-centimetres-du-vide-raytracer-v2.png) : dalle de verre de 25 cm, parois monumentales à gauche, sol ocre et horizon dégagé à droite. Le [rendu moteur](benchmarks/eryx-local/single-start/start.png) montre la transposition. Les texels procéduraux et la variation de rugosité du concept ne sont pas implémentés par ce lot ; les matériaux diffus restent simples.
 
-Au seuil, **est** découvre un lieu généré directement par Gemma/Ollama. Ensuite, les issues indiquées permettent de découvrir un voisin ou de revenir vers un lieu connu ; leur direction dépend des propositions acceptées du LLM. La génération intervient à la demande, jamais au chargement d'une archive. La graine initiale change à chaque lancement ; les découvertes et nouvelles tentatives ont des graines distinctes. Les briefs varient entre cinq relations architecturales, sans géométrie prédéfinie.
+Au seuil, **est** découvre un lieu généré directement par Gemma via llama.cpp intégré. Ensuite, les issues indiquées permettent de découvrir un voisin ou de revenir vers un lieu connu ; leur direction dépend des propositions acceptées du LLM. La génération intervient à la demande, jamais au chargement d'une archive. La graine initiale change à chaque lancement ; les découvertes et nouvelles tentatives ont des graines distinctes. Les briefs varient entre cinq relations architecturales, sans géométrie prédéfinie.
 
 Dans une même partie, les lieux acceptés restent en mémoire et les revisites conservent leur géométrie. À la fermeture, cette mémoire ne devient pas l'entrée de la partie suivante. SDL refuse `--load-state`. La lecture d'un état reste disponible uniquement dans les outils headless de diagnostic.
 
@@ -18,7 +20,7 @@ La navigation reste textuelle. Après au maximum trois compositions, un échec c
 
 ## Inventaire
 
-`i` ou `inventaire` affiche les possessions ; `examiner la tablette`, `examiner la craie`, `examiner les pinces` décrit les trois outils. Les commandes et réponses sont disponibles dans les six langues : voir le [guide et bilan inventaire](BILAN_INVENTAIRE.md). Ces consultations ne demandent aucune inférence et ne changent pas BODY. Les outils restent portés ; le dépôt et le ramassage dans le décor ne sont pas encore disponibles.
+`i` ou `inventaire` affiche les possessions ; `examiner la tablette`, `examiner la craie`, `examiner les pinces` décrit les trois outils. Les commandes et réponses sont disponibles dans les six langues : voir le [document historique archivé](HISTORIQUE_RECHERCHE.md). Ces consultations ne demandent aucune inférence et ne changent pas BODY. Les outils restent portés ; le dépôt et le ramassage dans le décor ne sont pas encore disponibles.
 
 ## Archives automatiques de recherche
 
@@ -59,9 +61,9 @@ Le nouveau `glass_box` réutilise le matériau diélectrique existant. C'est un 
 
 ## Réalisation
 
-DeepSeek a livré la composition initiale du seuil dans le lot [DUO-016](duo/reviews/DUO-016.md). Codex a revu la scène, corrigé le cadrage, posé les fragments dans le sol, ajouté le volume de verre, supprimé l'ancien parcours et implémenté l'exploration et l'archivage. Les mesures de la [première tranche](LOCAL_SCENE_ROADMAP_RESULTS.md) restent historiques : elles ne constituent pas une qualification des nouvelles graines aléatoires ou de toutes les découvertes successives.
+DeepSeek a livré la composition initiale du seuil dans le lot [DUO-016](duo/reviews/DUO-016.md). Codex a revu la scène, corrigé le cadrage, posé les fragments dans le sol, ajouté le volume de verre, supprimé l'ancien parcours et implémenté l'exploration et l'archivage. Les mesures de la [rapport historique archivé](HISTORIQUE_RECHERCHE.md) restent historiques : elles ne constituent pas une qualification des nouvelles graines aléatoires ou de toutes les découvertes successives.
 
-## Recette observée
+## Recette historique avant migration native
 
 - Quatre CTest réussis : protocole, rendu, génération, navigation, archives distinctes et intégrité des états ; 72 tests Python de scène réussis, auto-test de navigation réussi.
 - Deux lancements SDL indépendants, graines `32388405` et `19736041` : un lieu généré différent à chaque fois, archives closes distinctes, descriptions et prompts non vides. Les `.scene` archivés sont identiques aux programmes présents dans l'état validé. [Partie 1](benchmarks/eryx-local/single-start/play-01.png), [partie 2](benchmarks/eryx-local/single-start/play-02.png), [mesures minimales](benchmarks/eryx-local/single-start/examples.json).

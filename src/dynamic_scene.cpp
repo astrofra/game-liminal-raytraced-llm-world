@@ -101,7 +101,7 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
             {"success",success},{"cancelled",gate.cancelled},{"timeout",gate.expired},
             {"repairs",result->repairs},{"calls",calls},{"seed",model.seed},{"profile",model.profile_name},{"temperature",model.temperature},
             {"model_path",model.model_path},
-            {"backend",model.use_ollama?"ollama":"llama.cpp"},{"ollama_model",model.use_ollama?model.ollama_model:""},
+            {"backend","llama.cpp"},{"model_sha256",model.model_sha256},
             {"removed_code_wrappers",removed_wrappers},
             {"program_patch_repairs",patch_repairs},
             {"audit_ms",audit_ms},{"preview_ms",preview_ms},
@@ -119,7 +119,7 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
         cfg.seed=(model.seed+104729u*static_cast<unsigned int>(result->repairs))&0x7fffffffu;
         if(config.fixed_frame&&result->repairs<2)cfg.seed=model.seed;
         cfg.n_predict=plan?config.plan_tokens:config.fixed_frame?std::min(config.program_tokens,2048):config.program_tokens;
-        cfg.use_json_grammar=plan;cfg.json_schema=plan?SceneDesignSchema():"";cfg.grammar_path.clear();
+        cfg.use_json_grammar=plan;cfg.json_schema=plan?SceneDesignSchema():"";
         cfg.timeout_ms=static_cast<int>(std::max<int64_t>(1,std::chrono::duration_cast<std::chrono::milliseconds>(gate.deadline-Clock::now()).count()));
         cfg.purpose=plan?"scene_design_v1":"scene_program_v1";
         bool patch_repair=false;

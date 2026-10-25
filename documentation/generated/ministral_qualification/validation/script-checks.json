@@ -1,6 +1,0 @@
-{
-  "python_unittest_count": 57,
-  "python_unittest_exit_code": 0,
-  "application_git_diff_check_exit_code": 0,
-  "git_diff_check_exclusion": "vendor/llama.cpp is copied verbatim from upstream"
-}

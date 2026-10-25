@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import download_ministral as download
+import download_gemma as download
 import model_profiles as profiles
 
 
@@ -40,22 +40,23 @@ class ProfilesTest(unittest.TestCase):
             def fetch(**kwargs):
                 self.assertEqual(kwargs["revision"], profile["revision"])
                 self.assertEqual(kwargs["repo_id"], profile["repo_id"])
-                self.assertEqual(kwargs["local_dir"], str(path.parent))
+                self.assertEqual(kwargs["local_dir"], path.parent)
                 path.write_bytes(data)
                 return str(path)
-            with patch.object(download, "get_profile", return_value=profile), patch.object(
-                download, "_import_hf_hub_download", return_value=fetch
-            ):
-                self.assertEqual(download.main(["--output-dir", folder]), 0)
-            path.write_bytes(b"GGUF" + b"x" * (len(data) - 4))
-            with self.assertRaisesRegex(RuntimeError, "SHA-256 mismatch"):
-                download.verify_model_file(path, profile)
+            with patch.multiple(download, FILENAME=path.name, EXPECTED_SIZE=len(data), EXPECTED_SHA256=profile["sha256"]), patch.object(
+                download, "import_hf_hub_download", return_value=fetch
+            ), patch("sys.argv", ["download_gemma", "--output-dir", folder]):
+                self.assertEqual(download.main(), 0)
+                path.write_bytes(b"GGUF" + b"x" * (len(data) - 4))
+                with self.assertRaisesRegex(RuntimeError, "SHA-256 mismatch"):
+                    download.validate_gguf(path)
 
     def test_verify_only_never_imports_network_library(self):
         with tempfile.TemporaryDirectory() as folder:
-            with patch.object(download, "_import_hf_hub_download", side_effect=AssertionError("network")):
+            with patch.object(download, "import_hf_hub_download", side_effect=AssertionError("network")):
                 with self.assertRaises(FileNotFoundError):
-                    download.main(["--verify-only", "--output-dir", folder])
+                    with patch("sys.argv", ["download_gemma", "--verify-only", "--output-dir", folder]):
+                        download.main()
 
 
 if __name__ == "__main__":

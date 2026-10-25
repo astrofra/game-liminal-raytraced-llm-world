@@ -1,3 +1,4 @@
+#include "resource_paths.h"
 #include "narrative_language.h"
 #include "sdl_frontend.h"
 
@@ -422,27 +423,7 @@ static bool OpenFontWithFallbacks(const char* asset_path, float point_size, TTF_
         return false;
     }
 
-    if (TryOpenFontCandidate(asset_path, point_size, font)) {
-        return true;
-    }
-
-    const char* base_path = SDL_GetBasePath();
-    if (base_path) {
-        const std::string base(base_path);
-
-        const std::string candidates[] = {
-            base + asset_path,
-            base + "../" + asset_path,
-            base + "../../" + asset_path,
-        };
-        for (size_t index = 0; index < sizeof(candidates) / sizeof(candidates[0]); ++index) {
-            if (TryOpenFontCandidate(candidates[index].c_str(), point_size, font)) {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return TryOpenFontCandidate(ResourcePath(asset_path).c_str(), point_size, font);
 }
 
 static bool LoadUiFonts(UiFonts* fonts, char* error_buffer, size_t error_buffer_size)
@@ -1518,8 +1499,25 @@ static void FinalizeWorkerFailure(WorkerSharedState* shared_state, const char* m
     shared_state->error_ready = true;
     shared_state->activity = kWorkerActivityFailed;
     shared_state->status_text = UiText(shared_state->language,"Turn failed.","Échec du tour.","Turen mislyktes.","Turen mislykkedes.","Zug fehlgeschlagen.","Turno non riuscito.");
-    shared_state->error_text = shared_state->stop_requested.load()?TurnCancelledText(shared_state->language):
-        (message ? message : "Unknown error.");
+    if (message) fprintf(stderr, "Turn failed: %s\n", message);
+    const std::string detail = message ? message : "";
+    const bool model_error = detail.find("Model file not found") != std::string::npos ||
+        detail.find("Model SHA-256") != std::string::npos || detail.find("Failed to load") != std::string::npos;
+    shared_state->error_text = shared_state->stop_requested.load() ? TurnCancelledText(shared_state->language) :
+        model_error ? UiText(shared_state->language,
+            "The local model is missing or unreadable. Check the complete game package.",
+            "Le modèle local manque ou est illisible. Vérifiez le paquet complet du jeu.",
+            "Den lokale modellen mangler eller kan ikke leses. Kontroller hele spillpakken.",
+            "Den lokale model mangler eller kan ikke læses. Kontrollér hele spilpakken.",
+            "Das lokale Modell fehlt oder ist nicht lesbar. Prüfe das vollständige Spielpaket.",
+            "Il modello locale manca o non è leggibile. Verifica il pacchetto completo del gioco.") :
+        UiText(shared_state->language,
+            "This turn could not be completed. You remain here.",
+            "Ce tour n’a pas pu aboutir. Vous restez ici.",
+            "Denne turen kunne ikke fullføres. Du blir her.",
+            "Denne tur kunne ikke gennemføres. Du bliver her.",
+            "Dieser Zug konnte nicht abgeschlossen werden. Du bleibst hier.",
+            "Questo turno non è stato completato. Rimani qui.");
 }
 
 static PeripheralPostProcessConfig PostProcessConfigForAnimationImage(
