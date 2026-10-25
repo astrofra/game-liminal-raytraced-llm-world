@@ -22,6 +22,8 @@ Le contexte du jeu se fonde sur trois sources complémentaires :
 
 ## Point d'entrée
 
+- [`BILAN_LANGUES.md`](./BILAN_LANGUES.md) : choix de langue conservé, HUD traduit à l'avance avec initiales cardinales et recettes Gemma dans les six langues.
+
 - [`BILAN_INVENTAIRE.md`](./BILAN_INVENTAIRE.md) : inventaire des trois outils restauré dans les six langues, commandes et recettes sans LLM.
 
 - [`DIAGNOSTIC_FICTION_ET_FIABILITE_SCENES.md`](./DIAGNOSTIC_FICTION_ET_FIABILITE_SCENES.md) : diagnostic en duo de la régression narrative, comparaison des sources de `main`, faux rejet de visibilité reproduit, tolérance syntaxique et recommandations de correction.

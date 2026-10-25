@@ -31,6 +31,7 @@ set(LIMINAL_SOURCES
     src/turn_contract.cpp
     src/place_proposal.cpp
     src/inventory.cpp
+    src/narrative_language.cpp
     src/turn_runner.cpp
     src/view_post_process.cpp)
 
@@ -69,7 +70,7 @@ add_test(NAME distant_light COMMAND liminal_distant_light_test)
 
 add_executable(liminal_dynamic_scene_test tests/dynamic_scene_test.cpp
     src/scene_design.cpp src/scene_validation.cpp src/scene_normalization.cpp src/dynamic_scene.cpp src/scene.cpp src/renderer.cpp
-    src/game_state.cpp src/place_proposal.cpp src/inventory.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp src/ollama_runtime.cpp
+    src/game_state.cpp src/place_proposal.cpp src/inventory.cpp src/narrative_language.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp src/ollama_runtime.cpp
     src/research_archive.cpp
     "${MODEL_HEADER}" "${SCENE_GUIDE_HEADER}")
 target_include_directories(liminal_dynamic_scene_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor"
@@ -242,3 +243,10 @@ if(MSVC)
     target_compile_options(liminal_inventory_test PRIVATE /utf-8)
 endif()
 add_test(NAME inventory COMMAND liminal_inventory_test)
+
+add_executable(liminal_narrative_language_test tests/narrative_language_test.cpp src/narrative_language.cpp)
+target_include_directories(liminal_narrative_language_test PRIVATE src)
+if(MSVC)
+    target_compile_options(liminal_narrative_language_test PRIVATE /utf-8)
+endif()
+add_test(NAME narrative_language COMMAND liminal_narrative_language_test)

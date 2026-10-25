@@ -6,6 +6,10 @@ Le [bilan vérifié](BILAN_FICTION_ET_FIABILITE_SCENES.md) décrit le runtime pu
 
 Derniere mise a jour : 2026-10-25
 
+## Langue choisie au démarrage
+
+Les libellés du HUD restent des traductions compilées, sélectionnées par `SessionState.language` : boussole à initiales, températures et états de l'interface. Le narrateur reçoit une consigne système propre à cette langue à chaque tour. Les dérives manifestes sont refusées au profit d'un secours traduit, sans appel supplémentaire ni recomposition. [Bilan langues](BILAN_LANGUES.md) : tests des six langues, sept tours italiens et douze tours multilingues avec Gemma réel, après libération d'Ollama.
+
 ## Inventaire restauré
 
 Les lots 1–2 de la [roadmap inventaire](ROADMAP_REMISE_EN_SERVICE_INVENTAIRE.md) sont livrés : liste et examen des trois outils dans les six langues, commandes traitées directement par le moteur sans LLM ni évolution thermique, possessions transmises au narrateur et archivées avant/après. Le [bilan](BILAN_INVENTAIRE.md) détaille les recettes. Dépôt, prélèvement et marques physiques restent des extensions.

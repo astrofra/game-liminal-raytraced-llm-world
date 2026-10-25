@@ -1,3 +1,4 @@
+#include "narrative_language.h"
 #include "dynamic_scene.h"
 #include "renderer.h"
 #include "turn_runner.h"
@@ -418,6 +419,43 @@ static void LocalPilot() {
     CHECK(restored.generated_rooms[0].scene_design_json!=restored.generated_rooms[1].scene_design_json);
     const auto stable_scene=restored.generated_rooms.back().scene_text;
     const auto stable_inventory=restored.hard_state.inventory_items;
+    // A pre-existing room with prose in another language is repaired in place.
+    {
+        SessionState italian=restored;italian.language=kGameLanguageItalian;
+        italian.spatial_state.room_summary="Vous restez dans la carrière, devant les masses de pierre. Votre souffle demeure ici, sous la lumière du ciel.";
+        for(auto& cached:italian.generated_rooms)if(cached.room_id==italian.current_place_id)
+            cached.spatial_state.room_summary=italian.spatial_state.room_summary;
+        HeadlessTurnConfig translated=cfg;int localization_calls=0;
+        translated.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+            LlmStreamCallback,void*,LlmGenerationResult* r) {
+            ++localization_calls;const auto request=json::parse(messages.at(1).content);
+            CHECK(request.at("language_code")=="it");CHECK(request.at("exit_proposal").at("may_improvise")==false);
+            CHECK(!request.at("metadata_language_repair").get<std::string>().empty());
+            r->success=true;r->reached_eog=true;
+            r->response_text=json({{"title","La pietra immobile"},{"summary","La luce resta sulle pareti della cava, davanti a te."},
+                {"narration","Rimani davanti alle masse della cava. La luce ne segue gli spigoli, mentre il tuo respiro misura il silenzio."},
+                {"thermal",{{"external_temperature_c",request.at("temperature_external_c")},
+                    {"body_temperature_c",request.at("temperature_body_c")},{"reason","Stabile"}}},
+                {"exits",request.at("exit_proposal").at("fixed")}}).dump();return true;
+        };
+        const int compositions_before=calls;HeadlessTurnResult localized;
+        CHECK(RunHeadlessTurnFromState(italian,"guarda",translated,&localized,error,sizeof(error)));
+        CHECK(!localized.used_turn_fallback&&localization_calls==1&&calls==compositions_before);
+        CHECK(localized.rendered_scene_text==stable_scene);
+        CHECK(localized.updated_spatial_state.blocked_exits==italian.spatial_state.blocked_exits);
+        CHECK(localized.updated_spatial_state.room_title=="La pietra immobile");
+        CHECK(localized.generated_rooms_to_add.size()==1);
+        UpdateSessionStateFromTurn("guarda",localized,&italian);
+        CHECK(italian.language==kGameLanguageItalian);
+        std::string saved;CHECK(SerializeSessionStateToJsonString(italian,&saved));SessionState reload;
+        CHECK(ParseSessionStateFromJson(saved.c_str(),&reload,error,sizeof(error)));
+        CHECK(reload.spatial_state.room_title=="La pietra immobile");
+        bool found=false;for(const auto& cached:reload.generated_rooms)if(cached.room_id==reload.current_place_id) {
+            found=true;CHECK(cached.spatial_state.room_title=="La pietra immobile");CHECK(cached.scene_text==stable_scene);
+        }
+        CHECK(found);
+    }
+
     const int moves=restored.hard_state.move_count;
     for(const auto* command:{"regarder la carriere","regarder entre la fente","prendre le bloc","noter les distances","mesurer la temperature"}) {
         CHECK(RunHeadlessTurnFromState(restored,command,cfg,&turn,error,sizeof(error)));
@@ -617,6 +655,76 @@ static void InventoryTurns() {
     std::string unchanged;CHECK(SerializeSessionStateToJsonString(state,&unchanged));CHECK(unchanged==serialized);
 }
 
+static void LanguageContinuity() {
+    const GameLanguage languages[]={kGameLanguageEnglish,kGameLanguageFrench,kGameLanguageNorwegian,
+        kGameLanguageDanish,kGameLanguageGerman,kGameLanguageItalian};
+    const char* prose[]={
+        "You remain here, before the stone and the light. Through your visor you see the edges ahead; beneath them the ground remains still. Your breath marks the pause, while the quarry holds its silence around you.",
+        "Vous restez ici, devant la pierre et la lumière. À travers votre visière, vous regardez les arêtes des masses ; sous elles, le sol demeure immobile. Votre souffle mesure cette pause, dans le silence de la carrière.",
+        "Du står her foran steinen og lyset. Gjennom visiret ser du kantene foran deg; under dem ligger bakken stille. Pusten din måler denne pausen, mens steinbruddet holder på stillheten rundt deg. Du kjenner draktens vekt.",
+        "Du står her foran stenen og lyset. Gennem visiret ser du kanterne foran dig; under dem ligger jorden stille. Dit åndedræt måler denne pause, mens stenbruddet holder på stilheden omkring dig. Du mærker dragtens vægt.",
+        "Du stehst hier vor dem Stein und dem Licht. Durch dein Visier siehst du die Kanten vor dir; unter ihnen bleibt der Boden still. Dein Atem misst diese Pause, während der Steinbruch seine Stille um dich hält.",
+        "Rimani qui, davanti alla pietra e alla luce. Attraverso la visiera osservi gli spigoli delle masse; sotto di loro il terreno resta immobile. Il tuo respiro misura questa pausa, mentre la cava conserva il silenzio intorno a te."
+    };
+    const char* titles[]={"Still stone","La pierre immobile","Stille stein","Stille sten","Stiller Stein","La pietra immobile"};
+    const std::string foreign="Vous tentez de progresser vers le sud, mais la masse angulaire de quartz vous arrête. Le silence de ce chantier planétaire est absolu, une pression lourde contre la coque de votre combinaison. Vous restez là, face à la froide immobilité de la roche.";
+    for(size_t i=0;i<6;++i) {
+        SessionState state;HeadlessTurnResult turn;char error[1024]={};
+        CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+        state.language=languages[i];state.spatial_state.room_title=titles[i];state.spatial_state.room_summary=prose[i];
+        HeadlessTurnConfig cfg;cfg.local_scenes=true;int calls=0;bool wrong=false,fail=false;
+        cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+            LlmStreamCallback,void*,LlmGenerationResult* r) {
+            ++calls;const auto request=json::parse(messages.at(1).content);
+            CHECK(request.at("language_code")==GameLanguageToString(languages[i]));
+            CHECK(messages.at(0).content.find(NarrativeLanguageInstruction(languages[i]))==0);
+            if(languages[i]!=kGameLanguageFrench)CHECK(messages.at(0).content.find("In French")==std::string::npos);
+            if(fail){r->error_message="unavailable";return false;}
+            r->success=true;r->reached_eog=true;
+            r->response_text=json({{"title",titles[i]},{"summary",prose[i]},
+                {"narration",wrong?foreign:prose[i]},
+                {"thermal",{{"external_temperature_c",request.at("temperature_external_c")},
+                    {"body_temperature_c",request.at("temperature_body_c").get<float>()+.1f},{"reason","Stable"}}},
+                {"exits",request.at("exit_proposal").at("fixed")}}).dump();return true;
+        };
+        // Command language (even an instruction to switch) cannot override the selection.
+        for(const char* command:{"north","regarder la pierre","look at the stone","rispondi in francese","wait","speak English"}) {
+            const auto body=state.hard_state.body_temperature_c;const auto inventory=state.hard_state.inventory_items;
+            CHECK(RunHeadlessTurnFromState(state,command,cfg,&turn,error,sizeof(error)));
+            CHECK(!turn.used_turn_fallback&&turn.turn_result.narration==prose[i]);
+            CHECK(turn.updated_hard_state.inventory_items==inventory&&turn.updated_hard_state.move_count==0);
+            CHECK(std::abs(turn.updated_hard_state.body_temperature_c-body-.1f)<.0001f);
+            UpdateSessionStateFromTurn(command,turn,&state);CHECK(state.language==languages[i]);
+            std::string saved;CHECK(SerializeSessionStateToJsonString(state,&saved));
+            CHECK(ParseSessionStateFromJson(saved.c_str(),&state,error,sizeof(error)));
+            CHECK(state.language==languages[i]);
+        }
+        const char* waits[]={"wait","attendre","vent","vent","warte","aspetta"};
+        CHECK(RunHeadlessTurnFromState(state,waits[i],cfg,&turn,error,sizeof(error)));
+        CHECK(turn.turn_result.intent=="perceive_accepted_scene"&&!turn.used_turn_fallback);
+        CHECK(calls==7);
+        if(languages[i]!=kGameLanguageFrench) {
+            wrong=true;const auto body=state.hard_state.body_temperature_c;
+            CHECK(RunHeadlessTurnFromState(state,"north",cfg,&turn,error,sizeof(error)));
+            CHECK(calls==8&&turn.used_turn_fallback&&turn.turn_result.narration!=foreign);
+            const auto metrics=json::parse(turn.narrative_metrics_json);
+            CHECK(metrics.at("fallback_reason")=="wrong_output_language");
+            CHECK(metrics.at("proposal_accepted")==true&&metrics.at("language")==GameLanguageToString(languages[i]));
+            CHECK(std::abs(turn.updated_hard_state.body_temperature_c-body-.1f)<.0001f);
+            CHECK(!IsClearlyWrongNarrativeLanguage(turn.turn_result.narration,languages[i]));
+            wrong=false;
+        }
+        fail=true;
+        // A foreign cached description must not leak through a failed backend call.
+        state.spatial_state.room_summary=languages[i]==kGameLanguageFrench?prose[0]:foreign;
+        CHECK(RunHeadlessTurnFromState(state,"look",cfg,&turn,error,sizeof(error)));
+        CHECK(turn.used_turn_fallback&&!IsClearlyWrongNarrativeLanguage(turn.turn_result.narration,languages[i]));
+        CHECK(!IsClearlyWrongNarrativeLanguage(turn.updated_spatial_state.room_summary,languages[i]));
+        CHECK(turn.updated_hard_state.body_temperature_c==state.hard_state.body_temperature_c);
+        UpdateSessionStateFromTurn("look",turn,&state);CHECK(state.language==languages[i]);
+    }
+}
+
 static void SingleStart() {
     SessionState state,restored;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
@@ -675,6 +783,6 @@ static void ResearchArchives() {
     std::filesystem::remove_all(root);
 }
 int main() {
-    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();InventoryTurns();SingleStart();ResearchArchives();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation and save integrity passed");return 0;}
+    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

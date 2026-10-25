@@ -83,3 +83,6 @@ Les traces existantes conservent réponse brute, scène, images et état. Les m�
 Un premier essai réel a composé la scène avec Gemma en 4,52 s d’inférence, après 102,35 s d’attente/chargement signalés par Ollama. Les deux appels narratifs ont expiré à 30 s, pendant la concurrence avec une autre tâche `ministral-3:14b`. La scène a été conservée en attente de proposition, BODY est resté à 37 °C et seul le retour est ouvert. Cet essai ne valide ni la qualité narrative ni la latence normale. L’utilisateur a demandé de laisser l’autre tâche continuer, puis a annoncé qu’il signalerait sa fin : la recette Gemma complète attend ce signal.
 
 Preuves locales : `C:/works/duo-runs/game-liminal-raytraced-llm-world/topology-thermal-validation/`. Les mesures de précédents livrables restent historiques et ne qualifient pas ce nouveau couplage.
+
+
+Complément du 25 octobre, après accord explicite de reprise d'Ollama : la [recette linguistique](BILAN_LANGUES.md) a exécuté une partie italienne de sept tours (deux lieux créés, refus, retour, inventaire), puis douze tours dans les six langues avec Gemma. La température italienne finit à 37,3 °C ; la session fournit désormais une mesure sans la concurrence précédente. Cette campagne ne remplace pas les tests exhaustifs de topologie et ne certifie pas toute la qualité littéraire.

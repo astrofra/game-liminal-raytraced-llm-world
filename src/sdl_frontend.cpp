@@ -1,3 +1,4 @@
+#include "narrative_language.h"
 #include "sdl_frontend.h"
 
 #include <algorithm>
@@ -246,7 +247,7 @@ static const char* StreamPhaseStatus(HeadlessTurnStreamPhase phase, GameLanguage
         case kHeadlessTurnStreamScenePreview:
             return UiText(language,"Preparing the view...","Préparation de la vue...","Forbereder utsikten...","Forbereder udsigten...","Ansicht wird vorbereitet...","Preparazione della vista...");
         default:
-            return "Streaming...";
+            return UiText(language,"Thinking...","Réflexion...","Tenker...","Tænker...","Überlegt...","Riflessione...");
     }
 }
 
@@ -865,28 +866,10 @@ static std::string ExpandInfocomShortcutCommand(const std::string& command, Game
     return command;
 }
 
-static bool LooksPredominantlyEnglishForUi(const std::string& text)
-{
-    const std::string lower = " " + ToLowerAsciiCopy(CollapseAsciiWhitespace(text)) + " ";
-    const char* markers[] = {
-        " the ", " you ", " your ", " and ", " with ", " into ", " from ", " this ", " that ",
-        " its ", " is ", " are ", " across ", " beyond ", " through ", " remains ", " stands ",
-        " fractured ", " quarry ", " survey ", " north ", " east ", " south ", " west ",
-        " shelter ", " room ", " field ", " cut ", " trench ",
-    };
-    int score = 0;
-    for (size_t index = 0; index < sizeof(markers) / sizeof(markers[0]); ++index) {
-        if (lower.find(markers[index]) != std::string::npos) {
-            ++score;
-        }
-    }
-    return score >= 2 || lower.compare(0, 5, " the ") == 0 || lower.compare(0, 5, " you ") == 0;
-}
-
 static std::string DescribeCurrentPlaceLabelForUi(const SessionState& session_state)
 {
     const std::string label = DescribeCurrentPlaceLabel(session_state);
-    if (session_state.language != kGameLanguageEnglish && LooksPredominantlyEnglishForUi(label)) {
+    if (IsClearlyWrongNarrativeLanguage(label,session_state.language)) {
         return UiText(
             session_state.language, "Survey Sector", "Secteur de prospection", "Prospekteringssektor",
             "Prospekteringssektor", "Prospektionssektor", "Settore di prospezione");
@@ -1202,25 +1185,25 @@ static void DrawExitCompass(
         renderer,
         fonts.regular,
         north_rect,
-        "N",
+        LocalizedDirectionShortcut(kDirectionNorth,session_state.language),
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionNorth));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         east_rect,
-        UiText(session_state.language, "E", "E", "Ø", "Ø", "O", "E"),
+        LocalizedDirectionShortcut(kDirectionEast,session_state.language),
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionEast));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         south_rect,
-        "S",
+        LocalizedDirectionShortcut(kDirectionSouth,session_state.language),
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionSouth));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         west_rect,
-        UiText(session_state.language, "W", "O", "V", "V", "W", "O"),
+        LocalizedDirectionShortcut(kDirectionWest,session_state.language),
         !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest));
 }
 
@@ -1526,7 +1509,7 @@ static void FinalizeWorkerFailure(WorkerSharedState* shared_state, const char* m
     shared_state->result_ready = false;
     shared_state->error_ready = true;
     shared_state->activity = kWorkerActivityFailed;
-    shared_state->status_text = "Turn failed.";
+    shared_state->status_text = UiText(shared_state->language,"Turn failed.","Échec du tour.","Turen mislyktes.","Turen mislykkedes.","Zug fehlgeschlagen.","Turno non riuscito.");
     shared_state->error_text = shared_state->stop_requested.load()?TurnCancelledText(shared_state->language):
         (message ? message : "Unknown error.");
 }
@@ -1641,7 +1624,7 @@ static void RunTurnWorker(
         shared_state->result_ready = true;
         shared_state->error_ready = false;
         shared_state->activity = kWorkerActivityComplete;
-        shared_state->status_text = "Turn complete.";
+        shared_state->status_text = UiText(shared_state->language,"Turn complete.","Tour terminé.","Turen er ferdig.","Turen er færdig.","Zug abgeschlossen.","Turno completato.");
         std::swap(shared_state->session_state, updated_session_state);
         std::swap(shared_state->turn_result, turn_result);
         shared_state->pixels.swap(pixels);
@@ -1899,7 +1882,7 @@ static void BuildTranscriptLines(
         MarkWrappedLinesAsCommand(lines, start_line);
         if (!record.narration.empty()) {
             const std::string narration =
-                session_state.language != kGameLanguageEnglish && LooksPredominantlyEnglishForUi(record.narration)
+                IsClearlyWrongNarrativeLanguage(record.narration,session_state.language)
                 ? UiText(
                     session_state.language,
                     "This turn remains archived in its original language.",
@@ -2288,9 +2271,9 @@ bool RunSdlFrontend(
     bool smoke_test_text_pushed = false;
     bool smoke_test_return_pushed = false;
     if (config.automated_smoke_test_duration_ms > 0) {
-        current_session_state.language = kGameLanguageEnglish;
+        current_session_state.language = config.automated_smoke_test_language;
         language_selected = true;
-        persistent_hint = "Automated animated-view smoke test.";
+        persistent_hint = ReadyHint(current_session_state.language);
     }
 
     while (running) {
@@ -2471,7 +2454,8 @@ bool RunSdlFrontend(
                     worker_shared_state.result_ready = false;
                     worker_shared_state.error_ready = false;
                     worker_shared_state.activity = kWorkerActivityLlm;
-                    worker_shared_state.status_text = "Preparing turn...";
+                    worker_shared_state.language = current_session_state.language;
+                    worker_shared_state.status_text = StreamPhaseStatus(kHeadlessTurnStreamPrimaryResponse,current_session_state.language);
                     worker_shared_state.error_text.clear();
                 }
                 worker_shared_state.stop_requested.store(false);

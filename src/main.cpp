@@ -68,7 +68,8 @@ static void PrintUsage()
     printf("  --view-dispersion <f>   Maximum peripheral RGB shift in source pixels (default: 6)\n");
     printf("  --view-grain <f>        Post-optical RGB grain amplitude (default: 7)\n");
     printf("  --view-post-process-debug Log post-process cost and affected pixel count\n");
-    printf("  --sdl-smoke-test-ms <n> Auto-select English and close SDL cleanly after n milliseconds\n");
+    printf("  --sdl-smoke-language <code> Diagnostic startup language: en/fr/no/da/de/it (default en)\n");
+    printf("  --sdl-smoke-test-ms <n> Auto-select a language and close SDL cleanly after n milliseconds\n");
     printf("  --sdl-smoke-command <text> Inject text and Return during the timed SDL smoke test\n");
     printf("  --write-initial-state <json> Export canonical initial state without inference\n");
     printf("  --llm-profile <name>     ministral-8b-q4, ministral-8b-q5, ministral-8b-reasoning-q4\n");
@@ -386,6 +387,8 @@ int main(int argc, char** argv)
     int animated_view_fail_frame = -1;
     bool animated_view_debug = false;
     liminal::PeripheralPostProcessConfig view_post_process_config;
+    liminal::GameLanguage sdl_smoke_test_language = liminal::kGameLanguageEnglish;
+    bool sdl_smoke_language_requested = false;
     int sdl_smoke_test_duration_ms = 0;
     const char* sdl_smoke_test_command = 0;
     bool prefer_candidate_scene = false;
@@ -626,6 +629,13 @@ int main(int argc, char** argv)
             }
             continue;
         }
+        if (strcmp(argv[index], "--sdl-smoke-language") == 0 && index + 1 < argc) {
+            sdl_smoke_language_requested = true;
+            if (!liminal::ParseGameLanguage(argv[++index], &sdl_smoke_test_language)) {
+                fprintf(stderr, "Unknown SDL smoke-test language.\n"); return 1;
+            }
+            continue;
+        }
         if (strcmp(argv[index], "--sdl-smoke-command") == 0 && index + 1 < argc) {
             sdl_smoke_test_command = argv[++index];
             continue;
@@ -786,8 +796,8 @@ int main(int argc, char** argv)
         fprintf(stderr, "Choose either --run-turn, --run-session or --sdl.\n");
         return 1;
     }
-    if (sdl_smoke_test_command && sdl_smoke_test_duration_ms <= 0) {
-        fprintf(stderr, "--sdl-smoke-command requires --sdl-smoke-test-ms.\n");
+    if ((sdl_smoke_test_command || sdl_smoke_language_requested) && sdl_smoke_test_duration_ms <= 0) {
+        fprintf(stderr, "--sdl-smoke-command/language require --sdl-smoke-test-ms.\n");
         return 1;
     }
 
@@ -1012,6 +1022,7 @@ int main(int argc, char** argv)
         sdl_config.animated_view_config.debug_logging = animated_view_debug;
         sdl_config.post_process_config = view_post_process_config;
         sdl_config.automated_smoke_test_duration_ms = sdl_smoke_test_duration_ms;
+        sdl_config.automated_smoke_test_language = sdl_smoke_test_language;
         if (sdl_smoke_test_command) {
             sdl_config.automated_smoke_test_command = sdl_smoke_test_command;
         }

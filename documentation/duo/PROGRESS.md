@@ -50,3 +50,6 @@ Les contrats et revues sont conservés pour rendre les échecs et les correction
 
 
 25 octobre 2026 — **DUO-021 validé** : catalogue et commandes d’inventaire livrés par DeepSeek, relus et ajustés par Codex. Consultation et examen des trois outils dans les six langues, possessions fournies au narrateur, refus sans faux effet et traces avant/après. 8 CTest, 72 tests Python et auto-test de navigation réussis ; 42 commandes dans six sessions avec modèle inexistant, puis recette SDL `i`, sans inférence. Build publié. [Revue](reviews/DUO-021.md), [bilan](../BILAN_INVENTAIRE.md). Lots 1–2 de la roadmap livrés ; manipulations physiques et panneau graphique restent des extensions. Pas de commit/push.
+
+
+25 octobre 2026 — **DUO-022 validé** : tests de langue livrés par DeepSeek, revue des outils et chemins sans écart ; qualification de namespace corrigée par Codex. HUD à initiales et traductions compilées, choix initial transmis à chaque narration, garde multilingue, secours et réparation des descriptions mémorisées sans nouvelle géométrie. 9 CTest, 72 tests Python, auto-test de navigation ; 19 tours réels dont sept en italien, puis six recettes SDL sans inférence. [Revue](reviews/DUO-022.md), [bilan](../BILAN_LANGUES.md). Build publié, aucun commit/push par Codex.

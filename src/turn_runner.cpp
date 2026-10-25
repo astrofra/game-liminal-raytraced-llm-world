@@ -9,6 +9,7 @@
 #include "turn_contract.h"
 #include "place_proposal.h"
 #include "inventory.h"
+#include "narrative_language.h"
 #include "nlohmann/json.hpp"
 
 namespace liminal {
@@ -2744,6 +2745,17 @@ static PlaceProposalConstraints NewPlaceConstraints(const Scene& scene,const std
     return constraints;
 }
 
+// A local fallback must never inherit the language of cached/model prose.
+static std::string SceneLanguageFallback(GameLanguage language) {
+    return PlayerText(language,
+        "You remain before the quarry's silent masses. Light marks their edges; behind the visor, your breath measures the pause.",
+        "Vous demeurez face aux masses silencieuses de la carrière. La lumière marque leurs arêtes ; derrière la visière, votre souffle mesure cette pause.",
+        "Du står foran steinbruddets stille masser. Lyset tegner kantene; bak visiret måler pusten din denne pausen.",
+        "Du står foran stenbruddets stille masser. Lyset tegner kanterne; bag visiret måler dit åndedræt denne pause.",
+        "Du stehst vor den stillen Massen des Steinbruchs. Das Licht zeichnet ihre Kanten; hinter dem Visier misst dein Atem diese Pause.",
+        "Rimani davanti alle masse silenziose della cava. La luce ne segna gli spigoli; dietro la visiera, il tuo respiro misura questa pausa.");
+}
+
 static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& config,
                           const std::string& facts,const std::string& command,const std::string& outcome,
                           bool arrival,HeadlessTurnResult* result,std::string* title,std::string* summary,std::string* narration,
@@ -2765,7 +2777,14 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         constraints.fixed[direction]=std::find(blocked.begin(),blocked.end(),direction)==blocked.end();
     }
     const bool propose_exits=discovery_constraints||pending;
+    const bool foreign_metadata=IsClearlyWrongNarrativeLanguage(*summary,state.language)||
+        IsClearlyWrongNarrativeLanguage(*title,state.language);
     const bool card=arrival||pending;
+    if(foreign_metadata) {
+        *title=PlayerText(state.language,"Quarry","Carrière","Steinbrudd","Stenbrud","Steinbruch","Cava");
+        *summary=SceneLanguageFallback(state.language);
+    }
+    if(IsClearlyWrongNarrativeLanguage(*narration,state.language))*narration=SceneLanguageFallback(state.language);
     json memory=json::array();
     // Recent global continuity plus older encounters at this very place.
     for(size_t i=0;i<state.history.size();++i) {
@@ -2783,7 +2802,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         carried.push_back({{"id",id},{"name",InventoryItemName(id,state.language)},
             {"description",InventoryItemDescription(id,state.language)},{"known_tool",IsKnownInventoryItem(id)}});
     }
-    const std::string prompt=json({{"language",GameLanguageEnglishName(state.language)},
+    const std::string prompt=json({{"language",GameLanguageEnglishName(state.language)},{"language_code",GameLanguageToString(state.language)},
         {"world","Eryx: Venusian quarry, human explorer inside a protective suit. Material, embodied strangeness; no invented supernatural events."},
         {"facts",json::parse(facts,nullptr,false)},{"current_title",*title},{"base_description",*summary},
         {"player_command",command},{"engine_outcome",outcome},{"history",memory},{"notebook",notebook},
@@ -2793,8 +2812,9 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             {"geometrically_possible",constraints.possible},{"view_to_compass",constraints.relative_directions},
             {"rule","Choose each north/east/south/west true=open or false=closed. Preserve fixed values. Only geometrically_possible may open. A clear approach permits but does NOT require an opening. Invent meaningful branches or a dead end consistent with this place; no east/west template. An opening means an unknown neighbour can be discovered, not an already visited room."}}},
         {"thermal_rule","Evaluate this action's exposure, effort and protection: body may rise, stay or fall, never automatic. Propose external_temperature_c integer [300,520], change at most 20; body_temperature_c number [34,43], change at most 0.4 from given values; reason briefly justifies your assessment. Waiting is exposure. Real inference time has no physical effect. Match narration to your proposed values without reciting a technical report."},
+        {"metadata_language_repair",foreign_metadata?"Give this place a title and a short summary in the selected language using its accepted geometry; do not change the place or routes. Do not copy the generic fallback title.":""},
         {"task",card?"Invent a specific short literary title without compass directions, a 25-45 word revisit summary, and a 60-100 word arrival narration. Contrast this actual composition with the previous place: choose its most distinctive visible proportions and placement. Never reuse a previous arrival.":
-            "Respond to the actual intent and details of the command in 20-60 words, longer only if needed. Keep title and summary unchanged. Recall relevant prior encounters, avoid repeating a menu."}}).dump();
+            "Respond to the actual intent and details of the command in 20-60 words, longer only if needed. Keep title and summary unchanged only if already in the selected language; otherwise translate them without changing their meaning. Recall relevant prior encounters, avoid repeating a menu."}}).dump();
     LlmGenerationConfig cfg=config.generation_config;cfg.purpose=card?"scene_fiction_card_v2":"scene_fiction_turn_v2";
     cfg.seed=(cfg.seed+65537u*static_cast<unsigned int>(state.hard_state.turn_number))&0x7fffffffu;
     cfg.n_predict=card?1280:896;cfg.timeout_ms=std::min(cfg.timeout_ms,30000);
@@ -2816,7 +2836,8 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     thermal_schema["body_temperature_c"]["maximum"]=std::min(43.f,state.hard_state.body_temperature_c+.4f);
     cfg.json_schema=schema.dump();
     std::vector<LlmPromptMessage> messages={{"system",
-        "Write literary interactive fiction in the requested language, second person. In French ALWAYS use vous, never tu. Return only the requested JSON. "
+        NarrativeLanguageInstruction(state.language)+
+        "Write literary interactive fiction, second person. Return only the requested JSON. "
         "ENGINE OUTCOME is binding for movement, manipulation and inventory. You also propose thermal evolution and allowed exits under the supplied constraints. Never invent another accomplished action, acquired item or measurement. "
         "Geometry and established routes are immutable. Choose unknown exits only when exit_proposal.may_improvise is true. NEVER say the path back disappears, closes, fades, shifts or becomes only a memory, even metaphorically. "
         "Narrate perception in the PRESENT, not an imagined prior state. Arrival and revisit happen at a stationary viewpoint after the move. "
@@ -2858,7 +2879,10 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             const auto response=json::parse(generation.response_text);
             const auto text=response["narration"].get<std::string>();
             const auto whole=json({{"title",proposal.title},{"summary",proposal.summary},{"narration",proposal.narration}}).dump();
-            if(text.size()<(card?180u:35u)||text.size()>2600||whole.find("volume_")!=std::string::npos||whole.find("portal")!=std::string::npos||std::regex_search(whole,std::regex("volume[s]? [0-9]+")))
+            if(IsClearlyWrongNarrativeLanguage(proposal.narration,state.language)||
+               IsClearlyWrongNarrativeLanguage(proposal.summary,state.language)||
+               IsClearlyWrongNarrativeLanguage(proposal.title,state.language))reason="wrong_output_language";
+            else if(text.size()<(card?180u:35u)||text.size()>2600||whole.find("volume_")!=std::string::npos||whole.find("portal")!=std::string::npos||std::regex_search(whole,std::regex("volume[s]? [0-9]+")))
                 reason="short_oversized_or_internal_identifier";
             else if(std::regex_search(NormalizeInventoryText(proposal.narration),std::regex(
                 R"((vous (ramassez|empoignez|saisissez|jetez|deposez|recevez|rangez)|vous (avez|venez de) (ramasse|pris|recupere|trouve|perdu)|you (pick up|acquire|discard|drop|receive)|you have (picked up|acquired|lost)|sie (nehmen|werfen|erhalten)|du (tar opp|plukker opp|samler op)|voi (raccogliete|prendete)|aggiungete all inventario))")))reason="unvalidated_inventory_effect";
@@ -2869,7 +2893,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
                 if(card)for(const auto& h:state.history)if(h.narration==text)duplicate=true;
                 if(duplicate)reason="repeated_arrival";
                 else *narration=ConstrainNarrationText(text,card?1800:1100,card?10:7);
-                if(card&&reason.empty()){*title=ConstrainNarrationText(response["title"].get<std::string>(),96,1);
+                if((card||foreign_metadata)&&reason.empty()){*title=ConstrainNarrationText(response["title"].get<std::string>(),96,1);
                     *summary=ConstrainNarrationText(response["summary"].get<std::string>(),800,5);}
             }
         }
@@ -2877,9 +2901,10 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     if(pending&&proposal_accepted) {
         GeneratedRoom resolved=*pending_room;
         resolved.spatial_state=result->updated_spatial_state;
-        if(reason.empty()){resolved.spatial_state.room_title=*title;resolved.spatial_state.room_summary=*summary;}
+        if(reason.empty()||foreign_metadata){resolved.spatial_state.room_title=*title;resolved.spatial_state.room_summary=*summary;}
         resolved.metadata_fallback_used=false;
         if(reason.empty())resolved.arrival_narration=*narration;
+        else if(foreign_metadata)resolved.arrival_narration=*summary;
         auto provenance=json::parse(resolved.scene_design_json);
         provenance["accepted_exits"]=proposal.exits;provenance["proposal_pending"]=false;
         resolved.scene_design_json=provenance.dump();resolved.scene_plan_hash=SceneTextHash(resolved.scene_design_json);
@@ -2887,8 +2912,19 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         result->dynamic_scene_design_json=resolved.scene_design_json;
         result->updated_spatial_state=resolved.spatial_state;
     }
+    if(foreign_metadata) {
+        result->updated_spatial_state.room_title=*title;
+        result->updated_spatial_state.room_summary=*summary;
+        if(pending_room&&!(pending&&proposal_accepted)) {
+            GeneratedRoom localized=*pending_room;
+            localized.spatial_state.room_title=*title;
+            localized.spatial_state.room_summary=*summary;
+            localized.arrival_narration=reason.empty()?*narration:*summary;
+            result->generated_rooms_to_add.push_back(localized);
+        }
+    }
     result->narrative_metrics_json=json({{"purpose",cfg.purpose},{"success",reason.empty()},
-        {"fallback_reason",reason},{"proposal_accepted",proposal_accepted},{"sampling_temperature",cfg.temperature},
+        {"fallback_reason",reason},{"language",GameLanguageToString(state.language)},{"proposal_accepted",proposal_accepted},{"sampling_temperature",cfg.temperature},
         {"body_before_c",state.hard_state.body_temperature_c},{"body_after_c",result->updated_hard_state.body_temperature_c},
         {"external_after_c",result->updated_hard_state.external_temperature_c},{"thermal_reason",proposal_accepted?proposal.thermal_reason:""},
         {"accepted_exits",proposal_accepted?json(proposal.exits):json(nullptr)},{"constraints",{{"fixed",constraints.fixed},{"possible",constraints.possible}}},
@@ -2923,7 +2959,7 @@ static std::string SceneActionOutcome(const SessionState& state,const std::strin
     result->turn_result.intent="perceive_accepted_scene";
     if(starts({"look","l","regarder","regarde","observer","observe","examiner","examine","inspecter","inspect","x",
         "ecouter","écouter","écoute","ecoute","listen","attendre","attends","wait","comparer","compare","rappeler","rappelle","remember",
-        "orienter","orientation","guarda","osserva","schauen","untersuche","se"}))
+        "orienter","orientation","guarda","osserva","aspetta","attendi","attendere","vent","vente","warten","warte","schauen","untersuche","se"}))
         return "Perception/reflection only at the current fixed viewpoint. Address the requested detail using accepted geometry and memory. "
             "If an alleged object/gap is absent or unverifiable, say so naturally. No manipulation or displacement. Evaluate thermal exposure during perception or waiting; no other resource change.";
     result->turn_result.intent="unavailable_scene_action";
@@ -3379,13 +3415,10 @@ static bool RunHeadlessTurnFromStateImpl(
             room.spatial_state.location_id=kLocationUnknown;room.spatial_state.canonical_fixture.clear();
             room.spatial_state.room_title=generated.design.title;room.spatial_state.room_summary=generated.design.intent;
             if(local_direct) {
-                const bool french=initial_session_state.language==kGameLanguageFrench;
-                room.spatial_state.room_title=(french?"Carrière — lieu ":"Quarry — place ")+std::to_string(initial_session_state.next_generated_room_index);
-                generated.design.arrival=french?
-                    "Devant vous, les volumes de la carrière découpent le ciel. Vous vous arrêtez pour en reconnaître les distances. Derrière vous, le chemin du retour demeure ouvert.":
-                    "The quarry masses divide the sky ahead. You pause to distinguish their distances. Behind you, the way back remains open.";
-                generated.design.arrival+=(french?" Le lieu rassemble ":" The place contains ")+
-                    std::to_string(generated.audit.geometry_directives-1)+(french?" masses opaques.":" opaque masses.");
+                room.spatial_state.room_title=std::string(PlayerText(initial_session_state.language,
+                    "Quarry — place ","Carrière — lieu ","Steinbrudd — sted ","Stenbrud — sted ","Steinbruch — Ort ","Cava — luogo "))+
+                    std::to_string(initial_session_state.next_generated_room_index);
+                generated.design.arrival=SceneLanguageFallback(initial_session_state.language);
                 room.spatial_state.room_summary=generated.design.arrival;
                 room.narrative_facts_json=SceneFacts(generated.scene_text);
                 // Publish the geometry only after the whole turn's final cancellation poll.
