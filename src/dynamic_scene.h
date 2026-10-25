@@ -31,6 +31,14 @@ struct DynamicSceneResult {
     std::string plan_json, scene_text, scene_hash, error, metrics_json;
     int repairs = 0, calls = 0;
     std::vector<unsigned char> preview_pixels;
+    struct Attempt {
+        std::string raw, normalized, final_program, error;
+        unsigned int seed = 0;
+        std::vector<std::string> normalizations, removed_objects;
+        std::vector<std::string> repair_programs;
+        SceneAuditReport before, after;
+    };
+    std::vector<Attempt> attempts;
 };
 
 bool GenerateDynamicScene(const SceneDesignContext& context, const LlmGenerationConfig& model,

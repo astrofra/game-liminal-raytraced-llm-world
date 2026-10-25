@@ -23,6 +23,7 @@ set(LIMINAL_SOURCES
     src/research_archive.cpp
     src/scene_design.cpp
     src/scene_validation.cpp
+    src/scene_normalization.cpp
     src/dynamic_scene.cpp
     src/scene.cpp
     src/scene_compiler.cpp
@@ -65,7 +66,7 @@ endif()
 add_test(NAME distant_light COMMAND liminal_distant_light_test)
 
 add_executable(liminal_dynamic_scene_test tests/dynamic_scene_test.cpp
-    src/scene_design.cpp src/scene_validation.cpp src/dynamic_scene.cpp src/scene.cpp src/renderer.cpp
+    src/scene_design.cpp src/scene_validation.cpp src/scene_normalization.cpp src/dynamic_scene.cpp src/scene.cpp src/renderer.cpp
     src/game_state.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp src/ollama_runtime.cpp
     src/research_archive.cpp
     "${MODEL_HEADER}" "${SCENE_GUIDE_HEADER}")
@@ -216,3 +217,15 @@ if(MSVC)
 else()
     target_compile_options(liminal_cornell_renderer PRIVATE -Wall -Wextra -Wpedantic)
 endif()
+
+add_executable(liminal_scene_normalization_test tests/scene_normalization_test.cpp src/scene_normalization.cpp)
+target_include_directories(liminal_scene_normalization_test PRIVATE src)
+add_test(NAME scene_normalization COMMAND liminal_scene_normalization_test)
+
+add_executable(liminal_scene_visibility_test tests/scene_visibility_test.cpp
+    src/scene_validation.cpp src/scene_design.cpp src/scene.cpp src/renderer.cpp "${SCENE_GUIDE_HEADER}")
+target_include_directories(liminal_scene_visibility_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash" "${CMAKE_CURRENT_BINARY_DIR}/generated")
+if(MSVC)
+    target_compile_options(liminal_scene_visibility_test PRIVATE /utf-8)
+endif()
+add_test(NAME scene_visibility COMMAND liminal_scene_visibility_test)

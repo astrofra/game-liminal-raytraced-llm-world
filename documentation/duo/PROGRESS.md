@@ -4,6 +4,10 @@ Mise à jour : 25 octobre 2026. Coordinateur : Codex. Exécutant : DeepSeek via 
 
 | ID | Statut | Preuve | Suite |
 |---|---|---|---|
+| Fiction et fiabilité — premier livrable | Publié et vérifié | [Bilan](../BILAN_FICTION_ET_FIABILITE_SCENES.md) : 6 CTest, 72 tests Python, parcours français, archives SDL et annulation, 8/8 compositions initiales sur le corpus final | Qualité littéraire à poursuivre ; gain réel du troisième appel non établi ; aucun commit ni push |
+| DUO-019 | Tests intégrés et validés ; écarts de protocole consignés | [Revue](reviews/DUO-019.md) | Sept cas de visibilité réussis |
+| DUO-018 | Intégré après corrections et tests | [Revue](reviews/DUO-018.md) | Normaliseur natif actif, validation stricte conservée |
+| DUO-017 | Diagnostic documentaire intégré après revue critique | [Revue](reviews/DUO-017.md), [diagnostic et recommandations](../DIAGNOSTIC_FICTION_ET_FIABILITE_SCENES.md) ; écrasement narratif observé et faux rejet de visibilité reproduit | Aucun changement produit ; propositions de narration, normalisation syntaxique et troisième appel borné à mettre en œuvre dans des lots distincts |
 | DUO-016 | Composition intégrée et rendue après revue et corrections Codex | [Revue](reviews/DUO-016.md), [nouveau départ et archives](../SINGLE_START_RESEARCH.md) | Livré, aucun commit ni push |
 | Départ unique et recherche | Intégré, build publié et recette réussie | [Preuves](../SINGLE_START_RESEARCH.md) : deux parties SDL indépendantes et distinctes, parcours de deux découvertes avec retour, annulation archivée sans déplacement ; 4 CTest et 72 tests Python réussis | Qualité artistique à poursuivre ; archives automatiques hors dépôt, aucune reprise SDL |
 | DUO-015 | Intégré après revue et corrections Codex | [Revue](reviews/DUO-015.md) : cinq briefs Eryx, rapport comparatif et sept tests réussis | Livrables utilisés dans la campagne commune Gemma/Ministral |

@@ -6,6 +6,7 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
+#include <regex>
 
 namespace liminal {
 namespace {
@@ -313,6 +314,8 @@ std::string SerializeSceneAudit(const SceneAuditReport& r) {
     json diagnostics=json::array();for(const auto& d:r.diagnostics)diagnostics.push_back({{"code",d.code},{"object_id",d.object_id},{"detail",d.detail}});
     return json({{"accepted",r.accepted},{"bounds_derived",r.bounds_derived},{"diagnostics",diagnostics},{"triangles",r.triangles},{"materials",r.materials},
         {"geometry_directives",r.geometry_directives},{"focal_coverage",r.focal_coverage},{"near_coverage",r.near_coverage},
+        {"visibility_width",256},{"visibility_height",128},{"object_names",r.object_names},
+        {"landmark_projected_pixels",r.landmark_projected_pixels},{"landmark_occluded_pixels",r.landmark_occluded_pixels},
         {"sky_coverage",r.sky_coverage},{"mean_luminance",r.mean_luminance},{"luminance_deviation",r.luminance_deviation}}).dump();
 }
 
@@ -437,6 +440,7 @@ bool ValidateLocalSceneContract(const std::string& program,std::string* error) {
     auto lines=[](const std::string& text) {
         std::vector<std::string> result;std::istringstream input(text);std::string line;
         while(std::getline(input,line)) {
+            const auto comment=line.find('#');if(comment!=std::string::npos)line.resize(comment);
             const auto first=line.find_first_not_of(" \t\r");if(first==std::string::npos)continue;
             result.push_back(line.substr(first,line.find_last_not_of(" \t\r")-first+1));
         }
@@ -444,7 +448,35 @@ bool ValidateLocalSceneContract(const std::string& program,std::string* error) {
     };
     const auto expected=lines(json::parse(kLocalSceneContractJson).at("header").get<std::string>());
     const auto actual=lines(program);
-    if(actual.size()<expected.size()||!std::equal(expected.begin(),expected.end(),actual.begin())) {
+    auto same_header_line=[](const std::string& a,const std::string& b) {
+        auto canonical=[](const std::string& line) {
+            const std::regex property(R"(([a-z_]+)\(([^()]*)\))");
+            std::map<std::string,std::vector<float>> values;
+            auto begin=std::sregex_iterator(line.begin(),line.end(),property),end=std::sregex_iterator();
+            size_t cursor=0;std::string prefix;
+            for(auto it=begin;it!=end;++it) {
+                const size_t position=static_cast<size_t>(it->position());
+                if(cursor==0)prefix=line.substr(0,position);
+                else if(line.substr(cursor,position-cursor).find_first_not_of(" \t\r")!=std::string::npos)return line;
+                const std::string key=(*it)[1];if(values.count(key))return line;
+                std::istringstream input((*it)[2]);std::string token;std::vector<float> numbers;
+                while(std::getline(input,token,',')) {
+                    char* tail=nullptr;float value=strtof(token.c_str(),&tail);
+                    if(tail==token.c_str()||!std::isfinite(value))return line;
+                    while(*tail==' '||*tail=='\t'||*tail=='\r')++tail;
+                    if(*tail)return line;numbers.push_back(value);
+                }
+                values[key]=numbers;cursor=position+it->length();
+            }
+            if(!cursor)prefix=line;
+            else if(line.substr(cursor).find_first_not_of(" \t\r")!=std::string::npos)return line;
+            bool quoted=false;std::string compact;
+            for(char c:prefix){if(c=='"')quoted=!quoted;if(quoted||c!=' '&&c!='\t'&&c!='\r')compact+=c;}
+            return json({{"directive",compact},{"properties",values}}).dump();
+        };
+        return canonical(a)==canonical(b);
+    };
+    if(actual.size()<expected.size()||!std::equal(expected.begin(),expected.end(),actual.begin(),same_header_line)) {
         *error="Fixed header changed or missing; copy it exactly, without Markdown";return false;
     }
     const size_t boxes=actual.size()-expected.size();

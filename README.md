@@ -10,6 +10,8 @@ The active artistic direction follows a four-stage lineage from Lovecraft and Ke
 
 The game now has one authored starting place: the quarry threshold, inspired by concept 12. Every place beyond it is generated on discovery by local Gemma/Ollama. Places remain stable during a game; each launch starts a new exploration. Automatic write-only research archives retain descriptions, scene programs, images and turn results. See the [current play and research guide](documentation/SINGLE_START_RESEARCH.md).
 
+The [fiction and scene reliability delivery](documentation/BILAN_FICTION_ET_FIABILITE_SCENES.md) adds grounded narration, a notebook, fixed 256×128 depth/object-ID validation, conservative syntax recovery and at most three local composition calls.
+
 Current state:
 
 - normal launch: SDL at the quarry threshold, using local Ollama `gemma4:e4b`; east discovers the next place, west returns; a new game and generation seed at every launch

@@ -46,6 +46,7 @@ static void Geometry() {
     std::string windows_program;
     for(const char c:std::string(program)){if(c=='\n')windows_program+='\r';windows_program+=c;}
     CHECK(AuditDynamicScene(windows_program,ctx,nullptr,&scene,&audit));
+    CHECK(AuditDynamicScene(Replace(program,"arch_left","arch_Left"),ctx,nullptr,&scene,&audit));
     {
     SceneViewConstraints view;view.landmark="marker";view.near_distance=3;view.max_near_coverage=.9f;
     CHECK(AuditDynamicScene(program,ctx,nullptr,&scene,&audit,&view));
@@ -323,15 +324,55 @@ static void LocalPilot() {
         "box \"slab_d\" pos(8,2,20) size(2,4,4) gray(0.5)\n";
     std::string problem;
     CHECK(ValidateLocalSceneContract(local,&problem));
+    CHECK(ValidateLocalSceneContract(Replace(local,"camera eye(0,1.7,-10) target(0,2,8) up(0,1,0) fov(55)",
+        "camera  fov(55.0) up(0,1,0) target(0,2,8) eye(0,1.7,-10)"),&problem));
     CHECK(!ValidateLocalSceneContract(Replace(local,"eye(0,1.7,-10)","eye(0,1.7,-9)"),&problem));
     SceneDesignContext context;Scene scene;SceneAuditReport report;SceneViewConstraints view;
     view.landmark="portal";view.require_return_clearance=true;
     CHECK(AuditDynamicScene(local,context,nullptr,&scene,&report,&view));
     CHECK(!AuditDynamicScene(local+"box \"behind\" pos(0,1,-11) size(2,2,0.5) gray(0.5)\n",context,nullptr,&scene,&report,&view));
     CHECK(report.diagnostics[0].code=="return_clearance_blocked");
+    // Remove a genuine opaque occluder locally, but never its supported child.
+    const auto obstructed=local+"box \"screen\" pos(0,4,3) size(20,8,0.2) gray(0.5)\n";
+    CHECK(!AuditDynamicScene(obstructed,context,nullptr,&scene,&report,&view));
+    std::string repaired,removed;
+    CHECK(RemoveLocalOccluder(obstructed,"portal",report,&repaired,&removed));
+    CHECK(removed=="screen"&&repaired==local);
+    const auto supported=obstructed+"box \"top\" pos(0,8.5,3) size(1,1,0.2) gray(0.5)\n";
+    CHECK(!AuditDynamicScene(supported,context,nullptr,&scene,&report,&view));
+    CHECK(!RemoveLocalOccluder(supported,"portal",report,&repaired,&removed));
+    DynamicSceneConfig repair_config;repair_config.fixed_frame=true;repair_config.landmark="portal";
+    int compositions=0;
+    repair_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult* r) {
+        ++compositions;r->success=true;r->reached_eog=true;r->response_text=obstructed;return true;
+    };
+    DynamicSceneResult candidate;LlmGenerationConfig model;
+    CHECK(GenerateDynamicScene(context,model,repair_config,nullptr,nullptr,&candidate));
+    CHECK(compositions==1&&candidate.scene_text==local&&candidate.attempts.size()==1);
+    CHECK(candidate.attempts[0].removed_objects==std::vector<std::string>{"screen"});
+    std::vector<unsigned int> seeds;
+    repair_config.completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& m,LlmStreamCallback,void*,LlmGenerationResult* r) {
+        seeds.push_back(c.seed);r->success=true;r->reached_eog=true;r->response_text=seeds.size()==3?local:"broken";
+        if(seeds.size()==3)CHECK(m.size()==2); // Recompose, don't replay the previous candidate.
+        return true;
+    };
+    CHECK(GenerateDynamicScene(context,model,repair_config,nullptr,nullptr,&candidate));
+    CHECK(seeds.size()==3&&seeds[0]==seeds[1]&&seeds[2]!=seeds[0]&&candidate.attempts.size()==3);
+    seeds.clear();repair_config.max_repairs=1;
+    CHECK(!GenerateDynamicScene(context,model,repair_config,nullptr,nullptr,&candidate));CHECK(seeds.size()==2);
     SessionState state;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+    state.language=kGameLanguageFrench;
     HeadlessTurnConfig cfg;cfg.local_scenes=true; // Composition seam; no real inference in this test.
+    int narratives=0;
+    cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+        LlmStreamCallback,void*,LlmGenerationResult* r) {
+        ++narratives;CHECK(messages[0].content.find("ENGINE OUTCOME")!=std::string::npos);
+        CHECK(messages[1].content.find("portal")==std::string::npos);
+        r->success=true;r->reached_eog=true;
+        r->response_text=R"({"title":"Les masses et le ciel","summary":"Le passage s'inscrit entre deux masses sombres.","narration":"Les blocs découpent une bande de ciel. Vous êtes au milieu des masses, votre regard suit la distance qui les sépare. La lumière s’attarde sur leurs arêtes, tandis que le sol prend devant vous la teinte sourde des masses environnantes."})";
+        return true;
+    };
     int calls=0;bool bad=true,truncated=false;
     cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback cb,void* data,LlmGenerationResult* r) {
@@ -341,16 +382,17 @@ static void LocalPilot() {
     };
     std::string before,after;CHECK(SerializeSessionStateToJsonString(state,&before));HeadlessTurnResult turn;
     CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));
-    CHECK(calls==2&&turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());
+    CHECK(calls==3&&turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());
     UpdateSessionStateFromTurn("east",turn,&state);CHECK(SerializeSessionStateToJsonString(state,&after));CHECK(before==after);
     bad=false;truncated=true;calls=0;
-    CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==2);
+    CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==3);
     truncated=false;calls=0;
     cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char*,void*){return false;};
     CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==0);
     CHECK(turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());cfg.stream_callback=nullptr;
     CHECK(RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==1);
     CHECK(turn.generated_room_scene_source=="local_direct_v1");
+    CHECK(turn.generated_rooms_to_add[0].spatial_state.room_title=="Les masses et le ciel");
     UpdateSessionStateFromTurn("east",turn,&state);CHECK(state.generated_rooms.back().scene_contract_version==2);
     CHECK(SerializeSessionStateToJsonString(state,&after));SessionState restored;
     CHECK(ParseSessionStateFromJson(after.c_str(),&restored,error,sizeof(error)));
@@ -365,17 +407,34 @@ static void LocalPilot() {
     CHECK(restored.generated_rooms.size()==2&&restored.room_links.size()==4);
     CHECK(restored.generated_rooms[0].scene_seed!=restored.generated_rooms[1].scene_seed);
     CHECK(restored.generated_rooms[0].scene_design_json!=restored.generated_rooms[1].scene_design_json);
+    const auto stable_scene=restored.generated_rooms.back().scene_text;
+    const auto stable_inventory=restored.hard_state.inventory_items;
+    const int moves=restored.hard_state.move_count;
+    for(const auto* command:{"regarder la carriere","regarder entre la fente","prendre le bloc","noter les distances","mesurer la temperature"}) {
+        CHECK(RunHeadlessTurnFromState(restored,command,cfg,&turn,error,sizeof(error)));
+        CHECK(!turn.turn_result.narration.empty());
+        CHECK(turn.rendered_scene_text==stable_scene);
+        CHECK(turn.updated_hard_state.move_count==moves&&turn.updated_hard_state.inventory_items==stable_inventory);
+        UpdateSessionStateFromTurn(command,turn,&restored);
+    }
+    CHECK(restored.field_notes.size()==2&&narratives>=8);
     CHECK(SerializeSessionStateToJsonString(restored,&before));
+    SessionState saved_notes;CHECK(ParseSessionStateFromJson(before.c_str(),&saved_notes,error,sizeof(error)));
+    CHECK(saved_notes.field_notes==restored.field_notes);
+    // A narrative failure preserves the accepted scene and commits no invented effect.
+    cfg.narrative_completion=[](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult*){return false;};
+    CHECK(RunHeadlessTurnFromState(restored,"prendre le bloc",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.used_turn_fallback&&turn.rendered_scene_text==stable_scene&&turn.updated_hard_state.inventory_items==stable_inventory);
     bad=true;
     CHECK(!RunHeadlessTurnFromState(restored,"east",cfg,&turn,error,sizeof(error)));
-    CHECK(calls==4&&turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());
+    CHECK(calls==5&&turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());
     UpdateSessionStateFromTurn("east",turn,&restored);
     std::string failed;CHECK(SerializeSessionStateToJsonString(restored,&failed));CHECK(failed==before);
     CHECK(RunHeadlessTurnFromState(restored,"west",cfg,&turn,error,sizeof(error)));
     UpdateSessionStateFromTurn("west",turn,&restored);
     CHECK(RunHeadlessTurnFromState(restored,"west",cfg,&turn,error,sizeof(error)));
     UpdateSessionStateFromTurn("west",turn,&restored);
-    CHECK(restored.current_place_id=="canonical:quarry_threshold"&&calls==4);
+    CHECK(restored.current_place_id=="canonical:quarry_threshold"&&calls==5);
     auto tampered=json::parse(after);tampered["generated_rooms"].back()["scene_text"]="changed";
     CHECK(!ParseSessionStateFromJson(tampered.dump().c_str(),&restored,error,sizeof(error)));
 }

@@ -1,5 +1,6 @@
 #include "dynamic_scene.h"
 #include "renderer.h"
+#include "scene_normalization.h"
 #include "nlohmann/json.hpp"
 #include <algorithm>
 #include <chrono>
@@ -52,22 +53,6 @@ bool ApplyProgramPatch(const std::string& previous,const std::string& patch,std:
         *output=std::move(result);return true;
     } catch(const std::exception& e) {*error=std::string("program_patch_rejected: ")+e.what();return false;}
 }
-// Accept a single transport wrapper, never search prose for an embedded program.
-// Geometry inside the wrapper is preserved byte-for-byte and still fully audited.
-bool UnwrapSceneBlock(std::string* text) {
-    const auto begin=text->find_first_not_of(" \t\r\n");
-    const auto end=text->find_last_not_of(" \t\r\n");
-    if(begin==std::string::npos||text->compare(begin,3,"```")!=0)return false;
-    const auto line=text->find('\n',begin);
-    if(line==std::string::npos)return false;
-    auto label=text->substr(begin,line-begin);
-    if(!label.empty()&&label.back()=='\r')label.pop_back();
-    if(label!="```"&&label!="```scene"&&label!="```.scene")return false;
-    if(end<line+4||text->compare(end-2,3,"```")!=0)return false;
-    const auto close=end-2;
-    if((*text)[close-1]!='\n'||text->find("```",line+1)!=close)return false;
-    *text=text->substr(line+1,close-line-1);return true;
-}
 struct Gate {
     DynamicSceneProgress progress;
     void* user;
@@ -94,10 +79,11 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
     if(!result) return false;
     *result=DynamicSceneResult();
     const auto start=Clock::now();
-    Gate gate{progress,user,start+std::chrono::milliseconds(std::max(1,config.total_timeout_ms))};
+    Gate gate{progress,user,start+std::chrono::milliseconds(std::clamp(config.total_timeout_ms,1,config.fixed_frame?120000:900000))};
     json calls=json::array(),audits=json::array();
     int removed_wrappers=0,patch_repairs=0;
     int last_program_tokens=0;
+    bool retryable_generation=true;
     double audit_ms=0,preview_ms=0;
     auto record_audit=[&](const char* stage) {
         const auto report=json::parse(SerializeSceneAudit(result->audit));
@@ -125,15 +111,15 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
     };
     auto generate=[&](bool plan,const std::string& prompt,const std::string& previous,
                       const std::string& diagnosis,std::string* text) {
-        gate.last_final.clear();
+        gate.last_final.clear();retryable_generation=true;
         if(!gate.Stage(diagnosis.empty()?(plan?DynamicScenePhase::Design:DynamicScenePhase::Program):DynamicScenePhase::Repair))return false;
         LlmGenerationConfig cfg=model;
         if(!plan&&!config.direct)cfg.temperature=std::min(cfg.temperature,.2f);
         if(config.fixed_frame)cfg.temperature=.2f;
         // Repeated diagnostics must not replay an identical seeded completion.
         cfg.seed=(model.seed+104729u*static_cast<unsigned int>(result->repairs))&0x7fffffffu;
-        if(config.fixed_frame)cfg.seed=model.seed;
-        cfg.n_predict=plan?config.plan_tokens:config.program_tokens;
+        if(config.fixed_frame&&result->repairs<2)cfg.seed=model.seed;
+        cfg.n_predict=plan?config.plan_tokens:config.fixed_frame?std::min(config.program_tokens,2048):config.program_tokens;
         cfg.use_json_grammar=plan;cfg.json_schema=plan?SceneDesignSchema():"";cfg.grammar_path.clear();
         cfg.timeout_ms=static_cast<int>(std::max<int64_t>(1,std::chrono::duration_cast<std::chrono::milliseconds>(gate.deadline-Clock::now()).count()));
         cfg.purpose=plan?"scene_design_v1":"scene_program_v1";
@@ -144,9 +130,11 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
             {"user",prompt+"\nCreate the place described by the engine context. Return the complete requested artifact now."}};
         if(config.fixed_frame) {
             messages={{"system",LocalSceneSystemPrompt()},{"user",prompt}};
-            if(!diagnosis.empty()) {
+            if(!diagnosis.empty()&&result->repairs<2) {
                 messages.push_back({"assistant",previous});
                 messages.push_back({"user",LocalSceneRepairPrefix()+diagnosis});
+            } else if(result->repairs>=2) {
+                messages.back().content+="\nRecompose a new arrangement. Previous failure to avoid: "+diagnosis.substr(0,2400);
             }
         }
         if(!diagnosis.empty()&&!config.fixed_frame) {
@@ -183,7 +171,7 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
         const std::string generated_text=*text;
         if(patch_repair)*text=previous; // A truncated/failed patch cannot replace the candidate.
         if(!gate.Poll())return false;
-        if(!ok){result->error=generation.error_message.empty()?"LLM generation failed":generation.error_message;
+        if(!ok){retryable_generation=generation.stop_reason=="token_limit";result->error=generation.error_message.empty()?"LLM generation failed":generation.error_message;
             if(patch_repair)result->error+="\nUnchanged scene diagnostics: "+diagnosis;return false;}
         if(!generation.reached_eog){result->error="incomplete_output: generation must end with EOS, not a token limit";
             if(patch_repair)result->error+="\nUnchanged scene diagnostics: "+diagnosis;return false;}
@@ -195,7 +183,7 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
         }
         return true;
     };
-    const int repair_limit=std::clamp(config.max_repairs,0,config.fixed_frame?1:2);
+    const int repair_limit=std::clamp(config.max_repairs,0,2);
     if(!config.direct&&!config.fixed_frame) {
         std::string prior,diagnosis;
         for(;;) {
@@ -218,7 +206,16 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
     for(;;) {
         bool ok=generate(false,config.fixed_frame?BuildLocalSceneProgramPrompt(context.brief,config.landmark):
             BuildSceneProgramPrompt(context,design),prior,diagnosis,&result->scene_text);
-        if(ok&&UnwrapSceneBlock(&result->scene_text))++removed_wrappers;
+        DynamicSceneResult::Attempt attempt;
+        attempt.raw=result->scene_text;
+        attempt.seed=calls.empty()?model.seed:calls.back().at("seed").get<unsigned int>();
+        if(ok) {
+            const auto normalized=NormalizeSceneSyntax(result->scene_text);
+            result->scene_text=normalized.text;attempt.normalizations=normalized.changes;
+            if(attempt.raw.find("```")!=std::string::npos&&attempt.raw!=normalized.text)++removed_wrappers;
+        }
+        attempt.normalized=result->scene_text;
+        result->audit=SceneAuditReport();
         if(ok&&config.fixed_frame)ok=ValidateLocalSceneContract(result->scene_text,&result->error);
         if(ok && gate.Stage(DynamicScenePhase::Audit)) {
             const auto audit_start=Clock::now();
@@ -227,6 +224,21 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
             ok=AuditDynamicScene(result->scene_text,context,design,&result->scene,&result->audit,config.fixed_frame?&view:nullptr);
             audit_ms+=std::chrono::duration<double,std::milli>(Clock::now()-audit_start).count();
             record_audit("geometry");
+            attempt.before=result->audit;
+            if(!ok&&config.fixed_frame) {
+                const std::string original=result->scene_text;
+                const SceneAuditReport original_audit=result->audit;
+                for(int edit=0;edit<2&&!ok&&gate.Poll();++edit) {
+                    std::string repaired,removed;
+                    if(!RemoveLocalOccluder(result->scene_text,config.landmark,result->audit,&repaired,&removed))break;
+                    if(!ValidateLocalSceneContract(repaired,&result->error))break;
+                    result->scene_text=repaired;attempt.removed_objects.push_back(removed);
+                    attempt.repair_programs.push_back(repaired);
+                    ok=AuditDynamicScene(repaired,context,design,&result->scene,&result->audit,&view);
+                    record_audit("local_removal");
+                }
+                if(!ok) {result->scene_text=original;result->audit=original_audit;}
+            }
             if(!ok)result->error=SerializeSceneAudit(result->audit);
         } else ok=false;
         if(ok && gate.Stage(DynamicScenePhase::Preview)) {
@@ -240,9 +252,11 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
             record_audit("preview");
             if(!ok)result->error=SerializeSceneAudit(result->audit);
         } else ok=false;
+        attempt.final_program=result->scene_text;attempt.after=result->audit;attempt.error=ok?"":result->error;
+        result->attempts.push_back(std::move(attempt));
         if(!gate.Poll())return finish(false);
         if(ok) { result->scene_hash=SceneTextHash(result->scene_text);result->error.clear();return finish(true); }
-        if(result->repairs>=repair_limit)return finish(false);
+        if(!retryable_generation||result->repairs>=repair_limit)return finish(false);
         prior=result->scene_text;diagnosis=result->error;++result->repairs;
     }
 }

@@ -1,5 +1,7 @@
 # Within the Latent Walls / Entre les Murs Latents — Documentation
 
+Le [premier livrable fiction et fiabilité](BILAN_FICTION_ET_FIABILITE_SCENES.md) rétablit les descriptions, ajoute la passe profondeur/ID 256 × 128 et documente les recettes. Sa [spécification](SPEC_VISIBILITE_ET_FICTION.md) fixe les limites des réparations.
+
 Dernière mise à jour : 2026-10-25
 
 Ce dossier sert de mémoire de travail artistique, scientifique et technique du projet.
@@ -20,6 +22,7 @@ Le contexte du jeu se fonde sur trois sources complémentaires :
 
 ## Point d'entrée
 
+- [`DIAGNOSTIC_FICTION_ET_FIABILITE_SCENES.md`](./DIAGNOSTIC_FICTION_ET_FIABILITE_SCENES.md) : diagnostic en duo de la régression narrative, comparaison des sources de `main`, faux rejet de visibilité reproduit, tolérance syntaxique et recommandations de correction.
 - [`SINGLE_START_RESEARCH.md`](./SINGLE_START_RESEARCH.md) : fonctionnement actuel, un seul lieu de départ, nouvelle exploration à chaque lancement et archives de recherche automatiques.
 - [`LOCAL_SCENE_ROADMAP_RESULTS.md`](./LOCAL_SCENE_ROADMAP_RESULTS.md) : lancement actuel Gemma/Ollama, première branche directe jouable, comparaison mesurée, images conservées et limites.
 - [`roadmap-scenes-3d-llm-local.md`](./roadmap-scenes-3d-llm-local.md) : feuille de route appliquée et état de ses jalons.

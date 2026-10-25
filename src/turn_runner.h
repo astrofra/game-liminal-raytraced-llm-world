@@ -32,6 +32,7 @@ struct HeadlessTurnConfig {
     bool dynamic_scenes = false;
     bool local_scenes = false; // Generate persistent places along the eastward exploration route.
     DynamicSceneConfig dynamic_scene_config;
+    SceneCompletion narrative_completion; // Optional deterministic seam for fiction tests.
     bool request_candidate_scene;
     bool prefer_candidate_scene;
     HeadlessTurnStreamCallback stream_callback;
@@ -59,6 +60,8 @@ struct HeadlessTurnResult {
     std::string raw_scene_audit_response_text;
     std::string dynamic_scene_design_json;
     std::string dynamic_scene_metrics_json;
+    std::vector<DynamicSceneResult::Attempt> scene_attempts;
+    std::string narrative_metrics_json;
     std::string thermal_prompt_text;
     std::string thermal_response_text;
     std::string rendered_scene_text;

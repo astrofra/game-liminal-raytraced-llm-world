@@ -1,0 +1,103 @@
+{
+  "commands": [
+    {
+      "clarification": "",
+      "intent": "move_east_generated_room",
+      "location_id": "unknown",
+      "location_label": "Le murmure des blocs figés",
+      "narration": "Le silence ici est une pression, une masse lourde contre la coque de votre scaphandre. Vous avancez, le sol sous vous une étendue de roche grise, dont les facettes découpent l'horizon comme des lames gigantesques. Les masses opaques se dressent, des blocs sculptés par une force lente et implacable, leur immobilité défie la perspective. L'air, filtré, conserve la chaleur suffocante de ce monde lointain, une présence constante, palpable, qui vous rappelle la distance entre vous et la terre que vous connaissez.",
+      "player_command": "east",
+      "turn_number": 1
+    },
+    {
+      "clarification": "",
+      "intent": "perceive_accepted_scene",
+      "location_id": "unknown",
+      "location_label": "Le murmure des blocs figés",
+      "narration": "Le regard balaie les parois, révélant la masse minérale sous une lumière tamisée. Les alignements des blocs, d'une densité écrasante, suggèrent une stratification ancienne. Vous percevez une accumulation de formes anguleuses, chaque volume témoignant du travail de l'extraction. Le sol sous vous est une étendue de roche brute, sa surface irrégulière.",
+      "player_command": "regarder la carriere",
+      "turn_number": 2
+    },
+    {
+      "clarification": "",
+      "intent": "perceive_accepted_scene",
+      "location_id": "unknown",
+      "location_label": "Le murmure des blocs figés",
+      "narration": "Vous vous arrêtez devant une des masses rocheuses qui bordent l'espace, tentant de discerner ce qui se trouve entre ses limites. La lumière diffuse peine à pénétrer l'intervalle, ne révélant qu'une obscurité dense, une absence de forme définie au-delà de la paroi minérale. Vous ne percevez rien d'autre que la continuité de la pierre.",
+      "player_command": "regarder entre la fente",
+      "turn_number": 3
+    },
+    {
+      "clarification": "",
+      "intent": "unavailable_scene_action",
+      "location_id": "unknown",
+      "location_label": "Le murmure des blocs figés",
+      "narration": "Vous tendez la main vers le bloc, mais votre perception enregistre une absence de point d'accroche définissable, une masse informe au milieu de la géométrie imposante. Le geste demeure suspendu dans l'air, sans que rien ne se déplace de l'alignement minéral figé. Vous restez face à l'accumulation de formes opaques.",
+      "player_command": "prendre le bloc",
+      "turn_number": 4
+    },
+    {
+      "clarification": "",
+      "intent": "record_field_note",
+      "location_id": "unknown",
+      "location_label": "Le murmure des blocs figés",
+      "narration": "Vous consignez dans votre carnet : noter la forme des masses",
+      "player_command": "noter la forme des masses",
+      "turn_number": 5
+    },
+    {
+      "clarification": "",
+      "intent": "read_suit_temperature",
+      "location_id": "unknown",
+      "location_label": "Le murmure des blocs figés",
+      "narration": "EXT 464 °C ; BODY 37.000000 °C.",
+      "player_command": "mesurer la temperature",
+      "turn_number": 6
+    },
+    {
+      "clarification": "",
+      "intent": "move_east_generated_room",
+      "location_id": "unknown",
+      "location_label": "Les Lignes Brisées de l'Abîme Minéral",
+      "narration": "La Carrière des Silences Sculptés. Vous avancez, le sol sous vos bottes résonne d'une aridité minérale. Devant vous, les parois abruptes des masses opaques montent en une géométrie brute, un théâtre de blocs immenses sous un ciel étonnamment peu présent. La lumière, filtrée et crue, sculpte les arêtes vives des volumes. Vous êtes au cœur de cette fragmentation, l'air lourd d'une poussière silencieuse.",
+      "player_command": "east",
+      "turn_number": 7
+    },
+    {
+      "clarification": "",
+      "intent": "move_west_known_room",
+      "location_id": "unknown",
+      "location_label": "Le murmure des blocs figés",
+      "narration": "Vous revenez à l'endroit où vous étiez, au cœur de la densité visuelle. Les parois brutales persistent, et la lumière diffuse révèle toujours les alignements des masses rocheuses. Le chemin vous ramène à cette section, le silence minéral résonnant autour de vous.",
+      "player_command": "west",
+      "turn_number": 8
+    },
+    {
+      "clarification": "",
+      "intent": "read_field_notes",
+      "location_id": "unknown",
+      "location_label": "Le murmure des blocs figés",
+      "narration": "Le murmure des blocs figés: noter la forme des masses\nLe murmure des blocs figés: EXT 464 C; BODY 37.000000 C\n",
+      "player_command": "lire le carnet",
+      "turn_number": 9
+    }
+  ],
+  "field_notes": [
+    "Le murmure des blocs figés: noter la forme des masses",
+    "Le murmure des blocs figés: EXT 464 C; BODY 37.000000 C"
+  ],
+  "rooms": [
+    {
+      "title": "Le murmure des blocs figés",
+      "summary": "Vous arrivez dans une nouvelle section de la carrière. L'espace est encore dominé par la géométrie brute des parois, mais la lumière, bien que diffuse, révèle de subtils changements dans l'alignement des masses. Le chemin que vous empruntez semble s'enfoncer davantage dans le cœur de cette extraction minérale, vous confrontant à une densité visuelle accrue.",
+      "arrival": "Le silence ici est une pression, une masse lourde contre la coque de votre scaphandre. Vous avancez, le sol sous vous une étendue de roche grise, dont les facettes découpent l'horizon comme des lames gigantesques. Les masses opaques se dressent, des blocs sculptés par une force lente et implacable, leur immobilité défie la perspective. L'air, filtré, conserve la chaleur suffocante de ce monde lointain, une présence constante, palpable, qui vous rappelle la distance entre vous et la terre que vous connaissez.",
+      "scene_sha256": "e261b00633e938534b0e2448cf24a6f9c4dad6c299a76b83f5527e52350987ab"
+    },
+    {
+      "title": "Les Lignes Brisées de l'Abîme Minéral",
+      "summary": "Vous revenez à cette étendue de pierre coupée, observant les neuf masses sombres qui définissent l'horizon. Le chemin vers l'ouest vous ramène à ce point de vue initial, là où les volumes semblent encore plus menaçants dans leur immobilité. La densité de la matière est palpable, une masse compacte contrastant avec le vide du ciel.",
+      "arrival": "La Carrière des Silences Sculptés. Vous avancez, le sol sous vos bottes résonne d'une aridité minérale. Devant vous, les parois abruptes des masses opaques montent en une géométrie brute, un théâtre de blocs immenses sous un ciel étonnamment peu présent. La lumière, filtrée et crue, sculpte les arêtes vives des volumes. Vous êtes au cœur de cette fragmentation, l'air lourd d'une poussière silencieuse.",
+      "scene_sha256": "ce9e2a5f621783e96186d24d8a7a96fbc43355d8e901287de434e092e589f107"
+    }
+  ]
+}

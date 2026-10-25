@@ -282,6 +282,8 @@ struct GeneratedRoom {
     SpatialState spatial_state;
     std::string scene_text;
     std::string scene_source;
+    std::string arrival_narration;
+    std::string narrative_facts_json;
     int scene_contract_version = 0; // Zero identifies legacy scenes, retained without regeneration.
     std::string scene_design_json;
     std::string scene_hash;
@@ -337,6 +339,7 @@ struct SessionState {
     std::vector<GeneratedRoom> generated_rooms;
     std::vector<RoomLink> room_links;
     std::vector<InvisibleBarrier> invisible_barriers;
+    std::vector<std::string> field_notes; // Player-requested notes, confined to this game.
 
     SessionState()
         : language(kGameLanguageEnglish)

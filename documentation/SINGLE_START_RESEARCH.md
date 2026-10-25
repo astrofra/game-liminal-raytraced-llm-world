@@ -1,5 +1,7 @@
 # Un seul départ, une nouvelle exploration à chaque partie
 
+Évolution du 25 octobre : voir le [premier livrable fiction et fiabilité](BILAN_FICTION_ET_FIABILITE_SCENES.md) pour les descriptions restaurées, le carnet, les trois compositions au maximum et les nouvelles traces profondeur/ID.
+
 25 octobre 2026 — évolution demandée après la première tranche de la roadmap.
 
 ## Jouer

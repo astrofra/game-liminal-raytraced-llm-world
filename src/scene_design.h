@@ -4,6 +4,7 @@
 #include "scene.h"
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace liminal {
 
@@ -48,6 +49,12 @@ struct SceneAuditReport {
     size_t triangles = 0, materials = 0, geometry_directives = 0;
     double focal_coverage = 0.0, near_coverage = 0.0, sky_coverage = 0.0;
     double mean_luminance = 0.0, luminance_deviation = 0.0;
+    // Fixed opaque visibility pass. ID 0 is background; names are directive IDs,
+    // independent of the number of materials produced by a prefab.
+    std::vector<std::string> object_names;
+    std::vector<uint16_t> object_ids;
+    std::vector<float> depth;
+    int landmark_projected_pixels = 0, landmark_occluded_pixels = 0;
 };
 
 std::string SceneDesignSchema();
@@ -79,5 +86,7 @@ bool AuditDynamicScene(const std::string& program, const SceneDesignContext& con
                        const SceneViewConstraints* view = nullptr);
 bool AuditDynamicPreview(const std::vector<unsigned char>& pixels, const std::string& lighting_mode,
                          SceneAuditReport* report);
+bool RemoveLocalOccluder(const std::string& program, const std::string& landmark,
+                         const SceneAuditReport& report, std::string* repaired, std::string* removed);
 } // namespace liminal
 #endif

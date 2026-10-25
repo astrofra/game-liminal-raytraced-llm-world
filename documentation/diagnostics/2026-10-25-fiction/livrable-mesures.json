@@ -1,0 +1,174 @@
+{
+  "date": "2026-10-25",
+  "ctest_passed": 6,
+  "python_tests_passed": 72,
+  "navigation_self_test": true,
+  "thin_landmark_audit": {
+    "accepted": true,
+    "bounds_derived": false,
+    "diagnostics": [],
+    "triangles": 122,
+    "materials": 11,
+    "geometry_directives": 11,
+    "focal_coverage": 0.001953125,
+    "near_coverage": 0.0,
+    "visibility_width": 256,
+    "visibility_height": 128,
+    "object_names": [
+      "",
+      "desert_floor",
+      "slab_left_tall",
+      "slab_center_low",
+      "slab_right_oblique",
+      "portal",
+      "remnant_1",
+      "remnant_2",
+      "quarry_cut_left",
+      "quarry_cut_right",
+      "support_left",
+      "support_right"
+    ],
+    "landmark_projected_pixels": 104,
+    "landmark_occluded_pixels": 40,
+    "sky_coverage": 0.468841552734375,
+    "mean_luminance": 0.0,
+    "luminance_deviation": 0.0
+  },
+  "retry_comparison": [
+    {
+      "case": 0,
+      "seed": 99491150,
+      "limit": 2,
+      "exit": 0,
+      "success": true,
+      "calls": 1,
+      "elapsed_ms": 4374.8394,
+      "error": "",
+      "candidate_hashes": [
+        "6a4f7a4b21d5f665d05362a1c760b9a8146fbc898be1548168551423b64aa771"
+      ]
+    },
+    {
+      "case": 0,
+      "seed": 99491150,
+      "limit": 3,
+      "exit": 0,
+      "success": true,
+      "calls": 1,
+      "elapsed_ms": 3997.5866,
+      "error": "",
+      "candidate_hashes": [
+        "6a4f7a4b21d5f665d05362a1c760b9a8146fbc898be1548168551423b64aa771"
+      ]
+    },
+    {
+      "case": 1,
+      "seed": 99595879,
+      "limit": 2,
+      "exit": 0,
+      "success": true,
+      "calls": 1,
+      "elapsed_ms": 3888.3515,
+      "error": "",
+      "candidate_hashes": [
+        "aa3544606022a4ef95c5751aaa0ea585d74c495ebfb98d0e345adb6cac1fa0bc"
+      ]
+    },
+    {
+      "case": 1,
+      "seed": 99595879,
+      "limit": 3,
+      "exit": 0,
+      "success": true,
+      "calls": 1,
+      "elapsed_ms": 3923.4123,
+      "error": "",
+      "candidate_hashes": [
+        "aa3544606022a4ef95c5751aaa0ea585d74c495ebfb98d0e345adb6cac1fa0bc"
+      ]
+    },
+    {
+      "case": 2,
+      "seed": 99813256,
+      "limit": 2,
+      "exit": 0,
+      "success": true,
+      "calls": 1,
+      "elapsed_ms": 4157.0598,
+      "error": "",
+      "candidate_hashes": [
+        "157e89549000f32e8944580608769ebf08913ae3a08ef967dad9cf453c7640d0"
+      ]
+    },
+    {
+      "case": 2,
+      "seed": 99813256,
+      "limit": 3,
+      "exit": 0,
+      "success": true,
+      "calls": 1,
+      "elapsed_ms": 4124.962,
+      "error": "",
+      "candidate_hashes": [
+        "157e89549000f32e8944580608769ebf08913ae3a08ef967dad9cf453c7640d0"
+      ]
+    },
+    {
+      "case": 3,
+      "seed": 99917985,
+      "limit": 2,
+      "exit": 0,
+      "success": true,
+      "calls": 1,
+      "elapsed_ms": 3898.4721,
+      "error": "",
+      "candidate_hashes": [
+        "8713ae1d86505fdb448919bd5bede2514b54b1526774948d035baf86bfc2725f"
+      ]
+    },
+    {
+      "case": 3,
+      "seed": 99917985,
+      "limit": 3,
+      "exit": 0,
+      "success": true,
+      "calls": 1,
+      "elapsed_ms": 3902.3463,
+      "error": "",
+      "candidate_hashes": [
+        "8713ae1d86505fdb448919bd5bede2514b54b1526774948d035baf86bfc2725f"
+      ]
+    }
+  ],
+  "retry_pairs": [
+    {
+      "case": 0,
+      "same_first_candidates": true,
+      "success_difference": false,
+      "gain_attributable_to_third": false,
+      "additional_ms": -377.25279999999975
+    },
+    {
+      "case": 1,
+      "same_first_candidates": true,
+      "success_difference": false,
+      "gain_attributable_to_third": false,
+      "additional_ms": 35.060799999999745
+    },
+    {
+      "case": 2,
+      "same_first_candidates": true,
+      "success_difference": false,
+      "gain_attributable_to_third": false,
+      "additional_ms": -32.09779999999955
+    },
+    {
+      "case": 3,
+      "same_first_candidates": true,
+      "success_difference": false,
+      "gain_attributable_to_third": false,
+      "additional_ms": 3.874200000000201
+    }
+  ],
+  "executable_sha256": "dd5755dbf0260c3731bc6a8566a82480346e8797bc76429d1bb5b584b9554c9a"
+}

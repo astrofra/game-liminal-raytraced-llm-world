@@ -1,5 +1,9 @@
 # Technical State — Within the Latent Walls / Entre les Murs Latents
 
+## Livrable du 25 octobre — fiction et fiabilité
+
+Le [bilan vérifié](BILAN_FICTION_ET_FIABILITE_SCENES.md) décrit le runtime publié : visibilité fixe 256 × 128 avec profondeur et ID, normalisation syntaxique conservatrice, suppression locale bornée des occultants et maximum trois compositions locales. La fiche narrative et les réponses libres sont séparées des effets autoritatifs ; carnet et températures sont restitués depuis l’état réel. Les archives gardent tous les candidats et les bitmaps avant/après. La qualité littéraire reste à affiner. La narration utilise une température de 0,65 ; le mode local compose à 0,2.
+
 Derniere mise a jour : 2026-10-25
 
 ## Resume

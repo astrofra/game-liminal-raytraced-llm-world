@@ -38,6 +38,7 @@ static void PrintUsage()
     printf("  --scene-method <two-pass|direct|hybrid|local> Benchmark method (default: two-pass)\n");
     printf("  --scene-entry <north|east|south|west> Arrival side in benchmark\n");
     printf("  --scene-artifacts <prefix> Write .design.json, .scene and .metrics.json\n");
+    printf("  --scene-max-calls <1..3> Diagnostic composition limit (default: 3)\n");
     printf("  --scene-timeout-ms <n> Total composition safety deadline (default: 900000)\n");
     printf("  --scene <path>           Scene file to render (.scene or .obj)\n");
     printf("  --obj <path>             Legacy alias for --scene\n");
@@ -449,6 +450,10 @@ int main(int argc, char** argv)
         if (strcmp(argv[index], "--scene-artifacts") == 0 && index+1<argc) {
             scene_artifacts=argv[++index];scene_artifacts_requested=true;continue;
         }
+        if (strcmp(argv[index], "--scene-max-calls") == 0 && index+1<argc) {
+            const int calls=atoi(argv[++index]);if(calls<1||calls>3)return 1;
+            headless_turn_config.dynamic_scene_config.max_repairs=calls-1;continue;
+        }
         if (strcmp(argv[index], "--scene-timeout-ms") == 0 && index+1<argc) {
             if(!ReadInt(argv[++index],&headless_turn_config.dynamic_scene_config.total_timeout_ms) ||
                headless_turn_config.dynamic_scene_config.total_timeout_ms<=0)return 1;
@@ -847,6 +852,13 @@ int main(int argc, char** argv)
         if(!WriteFileText((scene_artifacts+".metrics.json").c_str(),generated.metrics_json) ||
            !WriteFileText((scene_artifacts+".design.json").c_str(),generated.plan_json) ||
            !WriteFileText((scene_artifacts+".scene").c_str(),generated.scene_text))return 1;
+        for(size_t i=0;i<generated.attempts.size();++i) {
+            const auto& a=generated.attempts[i];const auto stem=scene_artifacts+".attempt-"+std::to_string(i+1);
+            if(!WriteFileText((stem+".raw.txt").c_str(),a.raw)||!WriteFileText((stem+".scene").c_str(),a.final_program)||
+               !WriteFileText((stem+".json").c_str(),nlohmann::json({{"seed",a.seed},{"normalizations",a.normalizations},
+                   {"normalized",a.normalized},{"removed_objects",a.removed_objects},{"repair_programs",a.repair_programs},
+                   {"audit",nlohmann::json::parse(liminal::SerializeSceneAudit(a.after))},{"error",a.error}}).dump(2)))return 1;
+        }
         if(!ok){fprintf(stderr,"Scene generation rejected: %s\n",generated.error.c_str());return 1;}
         const auto render_start=std::chrono::steady_clock::now();
         const bool rendered=liminal::RenderSceneToImage(generated.scene,config,output_path);

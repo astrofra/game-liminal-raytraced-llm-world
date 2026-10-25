@@ -262,6 +262,8 @@ static json MakeGeneratedRoomsJson(const std::vector<GeneratedRoom>& rooms)
         item["spatial_state"] = MakeSpatialStateJson(rooms[index].spatial_state);
         item["scene_text"] = rooms[index].scene_text;
         item["scene_source"] = rooms[index].scene_source;
+        item["arrival_narration"] = rooms[index].arrival_narration;
+        item["narrative_facts"] = rooms[index].narrative_facts_json;
         const auto& room=rooms[index];
         if(room.scene_contract_version) {
             item["scene_generation"]={{"contract_version",room.scene_contract_version},{"format_version",1},
@@ -435,6 +437,8 @@ static void ParseGeneratedRoomsNode(const json& node, std::vector<GeneratedRoom>
         }
         room.scene_text = ReadStringNode(node[index], "scene_text");
         room.scene_source = ReadStringNode(node[index], "scene_source");
+        room.arrival_narration = ReadStringNode(node[index], "arrival_narration");
+        room.narrative_facts_json = ReadStringNode(node[index], "narrative_facts");
         if(node[index].contains("scene_generation")) {
             const auto& g=node[index].at("scene_generation");
             room.scene_contract_version=g.at("contract_version").get<int>();
@@ -1405,6 +1409,7 @@ bool SerializeSessionStateToJsonString(const SessionState& state, std::string* j
     root["spatial_state"] = MakeSpatialStateJson(state.spatial_state);
     root["history"] = MakeSessionHistoryJson(state.history);
     root["origin_place_id"] = state.origin_place_id;
+    root["field_notes"] = state.field_notes;
     root["current_place_id"] = state.current_place_id;
     root["next_generated_room_index"] = state.next_generated_room_index;
     root["generated_rooms"] = MakeGeneratedRoomsJson(state.generated_rooms);
@@ -1468,6 +1473,7 @@ bool ParseSessionStateFromJson(
             ParseHistoryNode(root["history"], &state->history);
         }
         state->origin_place_id = ReadStringNode(root, "origin_place_id");
+        state->field_notes = root.value("field_notes",std::vector<std::string>());
         state->current_place_id = ReadStringNode(root, "current_place_id");
         state->next_generated_room_index = ReadIntNode(root, "next_generated_room_index", state->next_generated_room_index);
         if (root.contains("generated_rooms")) {

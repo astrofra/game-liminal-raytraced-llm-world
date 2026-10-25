@@ -1,0 +1,79 @@
+{
+  "head": "cf5a4d3aedbd320a2aeb4b90725d3373be7dd18c",
+  "main": "ac4641e3be86affe127f5944a828808f24bf2998",
+  "worktree_files": {
+    "src\\turn_runner.cpp": "247168df8492b8585acfa454a399461c2d76847ccd28a55d29fa5381196e778d",
+    "src\\dynamic_scene.cpp": "2b26cc5dfd32b60d2ae0db327dd7c4b61f859518306b1b3f5c634119b85cde17",
+    "src\\scene_validation.cpp": "d43cbcd95239af79c3be1535ff00ddf821175c289550d9e1c3bfed7a46450679",
+    "src\\turn_contract.cpp": "d55d2f4d815bd33ea462fed4e2e16e8344e147faa42db7cc580b83d6b4fa2309",
+    "src\\research_archive.cpp": "8ca9e06d968d432adaf2164b51aceaef2a3ae85e0e11e07a707b23c1b2f06f89",
+    "assets\\scene_generation\\local_v1.json": "8d3f7f6491387f2c593105e2554696a779528379806aee868c0f9e35092f7ac1"
+  },
+  "binary_sha256": "eb712579960a35bb40bba131783ea568b0593d1045346430f90ddb704789dc5d",
+  "run_name": "run-20261025T100021Z-1112192279",
+  "discovery_requests": [
+    {
+      "turn": 1,
+      "accepted": true,
+      "elapsed_ms": 12508.549,
+      "calls": 1,
+      "repairs": 0,
+      "seed": 98951667,
+      "error": ""
+    },
+    {
+      "turn": 3,
+      "accepted": true,
+      "elapsed_ms": 6571.7194,
+      "calls": 1,
+      "repairs": 0,
+      "seed": 99169044,
+      "error": ""
+    },
+    {
+      "turn": 6,
+      "accepted": false,
+      "elapsed_ms": 10037.0972,
+      "calls": 2,
+      "repairs": 1,
+      "seed": 99491150,
+      "error": "{\"accepted\":false,\"bounds_derived\":false,\"diagnostics\":[{\"code\":\"landmark_not_visible\",\"object_id\":\"portal\",\"detail\":\"Named solid must cover at least 3 of 2048 view probes; observed=0. desert_floor blocks 2/12 rays towards the landmark's surface. Raise or move the landmark outside that solid and clear its sightline.\"}],\"triangles\":122,\"materials\":11,\"geometry_directives\":11,\"focal_coverage\":0.0,\"near_coverage\":0.0,\"sky_coverage\":0.138671875,\"mean_luminance\":0.0,\"luminance_deviation\":0.0}"
+    },
+    {
+      "turn": 7,
+      "accepted": false,
+      "elapsed_ms": 7709.0985,
+      "calls": 2,
+      "repairs": 1,
+      "seed": 99595879,
+      "error": "{\"accepted\":false,\"bounds_derived\":false,\"diagnostics\":[{\"code\":\"landmark_not_visible\",\"object_id\":\"portal\",\"detail\":\"Named solid must cover at least 3 of 2048 view probes; observed=0. shelter_base_right blocks 4/12 rays towards the landmark's surface. Raise or move the landmark outside that solid and clear its sightline.\"}],\"triangles\":122,\"materials\":11,\"geometry_directives\":11,\"focal_coverage\":0.0,\"near_coverage\":0.0,\"sky_coverage\":0.1796875,\"mean_luminance\":0.0,\"luminance_deviation\":0.0}"
+    },
+    {
+      "turn": 8,
+      "accepted": true,
+      "elapsed_ms": 3958.6731,
+      "calls": 1,
+      "repairs": 0,
+      "seed": 99700608,
+      "error": ""
+    },
+    {
+      "turn": 9,
+      "accepted": false,
+      "elapsed_ms": 9215.2624,
+      "calls": 2,
+      "repairs": 1,
+      "seed": 99813256,
+      "error": "{\"accepted\":false,\"bounds_derived\":false,\"diagnostics\":[{\"code\":\"landmark_not_visible\",\"object_id\":\"portal\",\"detail\":\"Named solid must cover at least 3 of 2048 view probes; observed=0. slab_center_low blocks 4/12 rays towards the landmark's surface. Raise or move the landmark outside that solid and clear its sightline.\"}],\"triangles\":122,\"materials\":11,\"geometry_directives\":11,\"focal_coverage\":0.0,\"near_coverage\":0.0,\"sky_coverage\":0.4619140625,\"mean_luminance\":0.0,\"luminance_deviation\":0.0}"
+    },
+    {
+      "turn": 10,
+      "accepted": false,
+      "elapsed_ms": 8153.0218,
+      "calls": 2,
+      "repairs": 1,
+      "seed": 99917985,
+      "error": "{\"accepted\":false,\"bounds_derived\":false,\"diagnostics\":[{\"code\":\"landmark_not_visible\",\"object_id\":\"portal\",\"detail\":\"Named solid must cover at least 3 of 2048 view probes; observed=0. slab_center_low blocks 6/12 rays towards the landmark's surface. Raise or move the landmark outside that solid and clear its sightline.\"}],\"triangles\":122,\"materials\":11,\"geometry_directives\":11,\"focal_coverage\":0.0,\"near_coverage\":0.0,\"sky_coverage\":0.48486328125,\"mean_luminance\":0.0,\"luminance_deviation\":0.0}"
+    }
+  ]
+}

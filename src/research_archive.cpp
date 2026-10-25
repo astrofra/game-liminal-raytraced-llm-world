@@ -144,10 +144,38 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
         {"from",turn.initial_place_id},{"to",turn.updated_place_id},{"description",turn.turn_result.narration},
         {"generated_room",turn.generated_room_created},{"prompt",turn.prompt_text},
         {"raw_response",turn.raw_response_text},{"repair_response",turn.repair_response_text},
+        {"narrative_metrics",turn.narrative_metrics_json},
         {"scene_provenance",turn.dynamic_scene_design_json},{"scene_metrics",turn.dynamic_scene_metrics_json},
         {"thermal_prompt",turn.thermal_prompt_text},{"thermal_response",turn.thermal_response_text}}).dump(2)+"\n");
     if(!turn.rendered_scene_text.empty())Write(stem+".scene",turn.rendered_scene_text);
     if(!turn.raw_scene_audit_response_text.empty())Write(stem+".candidate.scene",turn.raw_scene_audit_response_text);
+    for(size_t i=0;i<turn.scene_attempts.size();++i) {
+        const auto& attempt=turn.scene_attempts[i];const auto prefix=stem+"-attempt-"+std::to_string(i+1);
+        Write(prefix+".raw.txt",attempt.raw);Write(prefix+".normalized.scene",attempt.normalized);
+        Write(prefix+".scene",attempt.final_program);
+        Write(prefix+".json",json({{"seed",attempt.seed},{"normalizations",attempt.normalizations},
+            {"removed_objects",attempt.removed_objects},{"error",attempt.error},
+            {"local_repair_committed",!attempt.removed_objects.empty()&&attempt.normalized!=attempt.final_program},
+            {"local_repair_programs",attempt.repair_programs},
+            {"raw_sha256",SceneTextHash(attempt.raw)},{"final_sha256",SceneTextHash(attempt.final_program)},
+            {"before",json::parse(SerializeSceneAudit(attempt.before))},
+            {"after",json::parse(SerializeSceneAudit(attempt.after))}}).dump(2));
+        auto bitmap=[&](const SceneAuditReport& report,const std::string& suffix) {
+            if(report.object_ids.size()!=256*128)return;
+            std::string ids="P5\n256 128\n65535\n",depth="P5\n256 128\n65535\n";
+            for(size_t pixel=0;pixel<report.object_ids.size();++pixel) {
+                const auto id=report.object_ids[pixel];ids+=static_cast<char>(id>>8);ids+=static_cast<char>(id&255);
+                // Research preview in millimetres, 65535 denotes background; floats retained below.
+                const auto d=static_cast<uint16_t>(std::isfinite(report.depth[pixel])?
+                    std::min(65534.0f,report.depth[pixel]*1000.0f):65535.0f);
+                depth+=static_cast<char>(d>>8);depth+=static_cast<char>(d&255);
+            }
+            Write(prefix+suffix+".ids.pgm",ids);Write(prefix+suffix+".depth-mm.pgm",depth);
+            Write(prefix+suffix+".depth.json",json({{"width",256},{"height",128},{"metres",report.depth},
+                {"background","null (infinite depth)"},{"object_names",report.object_names}}).dump());
+        };
+        bitmap(attempt.before,"-before");bitmap(attempt.after,"-after");
+    }
     Write("events.jsonl",json({{"event","result"},{"utc",UtcTime()},{"index",command_index_},
         {"status",status},{"error",error}}).dump()+"\n",true);
     Write("transcript.txt","> "+command_+"\n["+status+"] "+(error.empty()?turn.turn_result.narration:error)+"\n\n",true);

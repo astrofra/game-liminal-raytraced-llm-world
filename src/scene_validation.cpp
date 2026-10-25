@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <map>
+#include <limits>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -100,7 +101,7 @@ bool ParseProgram(const std::string& text,std::vector<Directive>* output,SceneAu
         "prefab_rock_low","prefab_rock_wide","prefab_rock_tall","prefab_rock_spire"};
     const std::regex line_pattern(R"rx(^\s*([a-z_]+)(?:\s+"([^"\r\n]*)")?\s*(.*)$)rx");
     const std::regex property_pattern(R"rx(^\s*([a-z_]+)\(([^()]*)\)\s*)rx");
-    const std::regex name_pattern("[a-z][a-z0-9_]{0,63}");
+    const std::regex name_pattern("[A-Za-z][A-Za-z0-9_]{0,63}");
     std::istringstream input(text);std::string line;std::set<std::string> names,singletons;
     size_t prefab_count=0;
     while(std::getline(input,line)) {
@@ -290,50 +291,66 @@ bool AuditDynamicScene(const std::string& program,const SceneDesignContext& cont
         }
     }
     const float scale=tanf(camera.vertical_fov_degrees*kPi/360.0f);
-    int focal=0,sky=0,near=0;const int width=64,height=32;
-    std::map<std::string,int> visible_groups, near_objects;
-    int landmark_hits=0;
+    constexpr int width=256,height=128;
+    int focal=0,sky=0,near=0,landmark_hits=0;
+    std::map<std::string,int> near_objects,blockers;
+    r->object_names.push_back("");
+    for(const auto& d:directives)if(d.type!="room"&&!d.name.empty())r->object_names.push_back(d.name);
+    std::vector<uint16_t> material_ids(scene.materials.size(),0);
+    for(size_t m=0;m<scene.materials.size();++m) {
+        size_t longest=0;
+        for(size_t id=1;id<r->object_names.size();++id)
+            if(Prefix(scene.materials[m].name,r->object_names[id])&&r->object_names[id].size()>longest) {
+                material_ids[m]=static_cast<uint16_t>(id);longest=r->object_names[id].size();
+            }
+    }
+    const std::string focal_name=limits.landmark.empty()?(design?design->focal_object_id:""):limits.landmark;
+    std::vector<const Triangle*> target_triangles;
+    for(const auto& t:scene.triangles) {
+        const auto& name=r->object_names[material_ids[t.material_index]];
+        const auto* group=Group(design,name);
+        if(name==focal_name||(group&&group->id==focal_name))target_triangles.push_back(&t);
+    }
+    if(!focal_name.empty()&&target_triangles.empty())Error(r,"missing_landmark",focal_name,"Required object is absent");
+    r->object_ids.assign(width*height,0);
+    r->depth.assign(width*height,std::numeric_limits<float>::infinity());
     for(int y=0;y<height;++y)for(int x=0;x<width;++x) {
+        const int pixel=y*width+x;
         Ray ray;ray.origin=camera.eye;
         ray.direction=Normalize(f+right*((2*(x+.5f)/width-1)*limits.aspect*scale)+up*((1-2*(y+.5f)/height)*scale));
-        Hit hit;
-        if(!ProbeSceneRay(scene,ray,kHuge,&hit)){++sky;continue;}
-        const std::string& hit_name=scene.materials[scene.triangles[hit.triangle_index].material_index].name;
-        if(hit.t<limits.near_distance){++near;++near_objects[hit_name];}
-        if(!limits.landmark.empty()&&hit_name==limits.landmark)++landmark_hits;
-        if(const auto* group=Group(design,hit_name)) {
-            ++visible_groups[group->id];
+        float target_depth=kHuge;
+        for(const auto* t:target_triangles) {float d;if(RayTriangle(ray.origin,ray.direction,*t,&d))target_depth=std::min(target_depth,d);}
+        if(target_depth<kHuge)++r->landmark_projected_pixels;
+        // Straight visibility through dielectric interfaces, not a refraction simulation.
+        Hit hit;float travelled=0;bool opaque=false;
+        for(size_t step=0;step<=scene.triangles.size();++step) {
+            hit=Hit();
+            if(!ProbeSceneRay(scene,ray,kHuge,&hit))break;
+            const auto& triangle=scene.triangles[hit.triangle_index];
+            if(scene.materials[triangle.material_index].model==kMaterialModelDiffuse) {opaque=true;break;}
+            const float advance=hit.t+.0001f;travelled+=advance;ray.origin+=ray.direction*advance;
+        }
+        if(!opaque){++sky;continue;}
+        const float distance=travelled+hit.t;
+        const auto id=material_ids[scene.triangles[hit.triangle_index].material_index];
+        const auto& name=r->object_names[id];
+        r->object_ids[pixel]=id;r->depth[pixel]=distance;
+        if(distance<limits.near_distance){++near;++near_objects[name];}
+        if(name==limits.landmark)++landmark_hits;
+        if(const auto* group=Group(design,name)) {
             if(group->id==design->focal_object_id)++focal;
         }
+        if(target_depth<kHuge&&distance+.01f<target_depth) {++r->landmark_occluded_pixels;++blockers[name];}
     }
-    r->focal_coverage=static_cast<double>(focal)/(width*height);
-    if(!limits.landmark.empty())r->focal_coverage=static_cast<double>(landmark_hits)/(width*height);
+    r->focal_coverage=static_cast<double>(limits.landmark.empty()?focal:landmark_hits)/(width*height);
     r->sky_coverage=static_cast<double>(sky)/(width*height);r->near_coverage=static_cast<double>(near)/(width*height);
-    if(design&&focal<3)Error(r,"focal_object_occluded",design->focal_object_id,"Focal group must cover at least 3 of 2048 view probes");
-    if(design)for(const auto& binding:design->interaction_bindings)if(!visible_groups[binding.mass_id])
-        Error(r,"interactive_object_occluded",binding.object_id,"Bound group is not visible from accepted camera");
-    if(!limits.landmark.empty()&&landmark_hits<3) {
-        std::map<std::string,int> blockers;
-        int target_samples=0;
-        for(const auto& triangle:scene.triangles) {
-            if(scene.materials[triangle.material_index].name!=limits.landmark)continue;
-            ++target_samples;
-            const Vec3 target=(triangle.v0+triangle.v1+triangle.v2)/3.0f;
-            Ray ray;ray.origin=camera.eye;ray.direction=Normalize(target-camera.eye);Hit hit;
-            if(ProbeSceneRay(scene,ray,Length(target-camera.eye)+.01f,&hit)) {
-                const std::string& name=scene.materials[scene.triangles[hit.triangle_index].material_index].name;
-                if(name!=limits.landmark)++blockers[name];
-            }
-        }
-        std::string detail="Named solid must cover at least 3 of 2048 view probes; observed="+std::to_string(landmark_hits)+". ";
-        if(!target_samples)detail+="No solid with this exact name exists.";
-        else if(!blockers.empty()) {
-            std::string blocker;int count=0;
-            for(const auto& item:blockers)if(item.second>count){blocker=item.first;count=item.second;}
-            detail+=blocker+" blocks "+std::to_string(count)+"/"+std::to_string(target_samples)+
-                " rays towards the landmark's surface. Raise or move the landmark outside that solid and clear its sightline.";
-        } else detail+="Surface sightlines are clear; move the landmark inside the fixed camera frame or enlarge it.";
-        Error(r,"landmark_not_visible",limits.landmark,detail);
+    // No rejection based solely on missing samples of a thin object. Same fixed grid
+    // for target projection and opaque depth; no adaptive or centroid probes.
+    if(r->landmark_projected_pixels>=8&&r->landmark_occluded_pixels>.95*r->landmark_projected_pixels) {
+        std::string blocker;int count=0;
+        for(const auto& item:blockers)if(item.second>count){blocker=item.first;count=item.second;}
+        Error(r,design?"focal_object_occluded":"landmark_not_visible",blocker,blocker+" blocks "+std::to_string(r->landmark_occluded_pixels)+
+            "/"+std::to_string(r->landmark_projected_pixels)+" projected pixels of "+focal_name);
     }
     if(r->near_coverage>limits.max_near_coverage) {
         std::string blocker;int count=0;
@@ -344,6 +361,43 @@ bool AuditDynamicScene(const std::string& program,const SceneDesignContext& cont
     }
     if(r->sky_coverage>.995)Error(r,"empty_view","","Almost all view probes miss geometry");
     r->accepted=r->diagnostics.empty();if(r->accepted)*output=std::move(scene);return r->accepted;
+}
+
+bool RemoveLocalOccluder(const std::string& program,const std::string& landmark,
+                         const SceneAuditReport& report,std::string* repaired,std::string* removed) {
+    if(report.diagnostics.empty())return false;
+    std::string blocker;
+    for(const auto& d:report.diagnostics) {
+        if(d.code!="landmark_not_visible"&&d.code!="foreground_occlusion")return false;
+        if(blocker.empty())blocker=d.object_id;
+    }
+    if(blocker.empty()||blocker==landmark)return false;
+    SceneAuditReport parsed;std::vector<Directive> directives;
+    if(!ParseProgram(program,&directives,&parsed))return false;
+    const Directive* candidate=nullptr;int boxes=0;
+    for(const auto& d:directives) {
+        if(d.type=="box")++boxes;
+        if(d.name==blocker)candidate=&d;
+        // Conservative support analysis only for axis-aligned local boxes.
+        if(d.p.count("rot"))for(float angle:d.p.at("rot"))if(angle!=0)return false;
+    }
+    if(!candidate||candidate->type!="box"||boxes<=8)return false;
+    const auto& p=candidate->p.at("pos");const auto& s=candidate->p.at("size");
+    const float top=p[1]+s[1]*.5f;
+    for(const auto& d:directives)if(d.type=="box"&&d.name!=blocker) {
+        const auto& q=d.p.at("pos");const auto& z=d.p.at("size");
+        if(fabsf(q[0]-p[0])<(z[0]+s[0])*.5f+.01f&&fabsf(q[2]-p[2])<(z[2]+s[2])*.5f+.01f&&
+           fabsf(q[1]-z[1]*.5f-top)<.25f)return false;
+    }
+    std::istringstream input(program);std::string line,result;
+    const std::regex named_box("^\\s*box\\s+\""+blocker+"\"\\s");
+    bool erased=false;
+    while(std::getline(input,line)) {
+        if(std::regex_search(line,named_box)){erased=true;continue;}
+        result+=line+"\n";
+    }
+    if(!erased)return false;
+    *repaired=std::move(result);*removed=blocker;return true;
 }
 
 bool AuditDynamicPreview(const std::vector<unsigned char>& pixels,const std::string& lighting_mode,SceneAuditReport* r) {
