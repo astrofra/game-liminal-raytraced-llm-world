@@ -4,6 +4,8 @@ Le [premier livrable fiction et fiabilité](BILAN_FICTION_ET_FIABILITE_SCENES.md
 
 Dernière mise à jour : 2026-10-25
 
+L'[étude du retour à llama.cpp autonome](ETUDE_RETOUR_LLAMA_CPP_AUTONOME.md) prépare le retrait d'Ollama et des profils Ministral du produit, avec Gemma livré dans le paquet. Deux sondes natives réussissent, dont une composition de scène ; la migration du jeu reste à implémenter.
+
 Ce dossier sert de mémoire de travail artistique, scientifique et technique du projet.
 
 *Within the Latent Walls* / *Entre les Murs Latents* est une œuvre interactive fondée sur la lignée d'Eryx : un monde d'extraction vénusien localement cohérent, traversé par un labyrinthe invisible dont le LLM peut proposer des mutations topologiques contrôlées.

@@ -6,6 +6,10 @@ Le [bilan vérifié](BILAN_FICTION_ET_FIABILITE_SCENES.md) décrit le runtime pu
 
 Derniere mise a jour : 2026-10-25
 
+## Cible confirmée : jeu autonome avec llama.cpp
+
+L'utilisateur demande de supprimer la dépendance du jeu à Ollama et les références actives à Ministral. L'[étude du retour natif](ETUDE_RETOUR_LLAMA_CPP_AUTONOME.md) prévoit Gemma GGUF embarqué, inférence dans le processus et distribution hors ligne. Deux sondes CPU réussissent avec le vendor actuel, dont une scène locale acceptée dès le premier appel. **Le runtime publié n'est pas encore migré** : résidence des poids, canaux, démarrage, nettoyage et packaging restent à réaliser ; aucune performance GPU n'est qualifiée par ces sondes.
+
 ## Langue choisie au démarrage
 
 Les libellés du HUD restent des traductions compilées, sélectionnées par `SessionState.language` : boussole à initiales, températures et états de l'interface. Le narrateur reçoit une consigne système propre à cette langue à chaque tour. Les dérives manifestes sont refusées au profit d'un secours traduit, sans appel supplémentaire ni recomposition. [Bilan langues](BILAN_LANGUES.md) : tests des six langues, sept tours italiens et douze tours multilingues avec Gemma réel, après libération d'Ollama.

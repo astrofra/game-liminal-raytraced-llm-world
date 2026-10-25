@@ -4,6 +4,7 @@ Mise à jour : 25 octobre 2026. Coordinateur : Codex. Exécutant : DeepSeek via 
 
 | ID | Statut | Preuve | Suite |
 |---|---|---|---|
+| DUO-024 — Retour natif autonome | Étude intégrée après revue et corrections ; migration à réaliser | [Revue](reviews/DUO-024.md), [étude et plan](../ETUDE_RETOUR_LLAMA_CPP_AUTONOME.md), [audit de distribution](AUDIT_DISTRIBUTION_AUTONOME.md) ; SHA Gemma vérifié, texte et scène acceptée via llama.cpp CPU | Poids résidents, canaux Gemma, raccord du jeu actuel, suppression Ollama/Ministral, paquet hors ligne ; performances GPU à qualifier |
 | Fiction et fiabilité — premier livrable | Publié et vérifié | [Bilan](../BILAN_FICTION_ET_FIABILITE_SCENES.md) : 6 CTest, 72 tests Python, parcours français, archives SDL et annulation, 8/8 compositions initiales sur le corpus final | Qualité littéraire à poursuivre ; gain réel du troisième appel non établi ; aucun commit ni push |
 | DUO-019 | Tests intégrés et validés ; écarts de protocole consignés | [Revue](reviews/DUO-019.md) | Sept cas de visibilité réussis |
 | DUO-018 | Intégré après corrections et tests | [Revue](reviews/DUO-018.md) | Normaliseur natif actif, validation stricte conservée |
