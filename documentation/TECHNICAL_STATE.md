@@ -10,6 +10,8 @@ Derniere mise a jour : 2026-10-25
 
 Les libellés du HUD restent des traductions compilées, sélectionnées par `SessionState.language` : boussole à initiales, températures et états de l'interface. Le narrateur reçoit une consigne système propre à cette langue à chaque tour. Les dérives manifestes sont refusées au profit d'un secours traduit, sans appel supplémentaire ni recomposition. [Bilan langues](BILAN_LANGUES.md) : tests des six langues, sept tours italiens et douze tours multilingues avec Gemma réel, après libération d'Ollama.
 
+Le [réglage du HUD](duo/reviews/DUO-023.md) centre les températures dans la zone gauche dégagée et rentre la boussole. Les voies ouvertes ont un cadre lumineux de trois pixels logiques ; les voies fermées gardent un trait fin et atténué dans la même teinte, également en additif (RGB 61/84/26 après ajustement de +10 %). Captures françaises et anglaises vérifiées sur le build publié.
+
 ## Inventaire restauré
 
 Les lots 1–2 de la [roadmap inventaire](ROADMAP_REMISE_EN_SERVICE_INVENTAIRE.md) sont livrés : liste et examen des trois outils dans les six langues, commandes traitées directement par le moteur sans LLM ni évolution thermique, possessions transmises au narrateur et archivées avant/après. Le [bilan](BILAN_INVENTAIRE.md) détaille les recettes. Dépôt, prélèvement et marques physiques restent des extensions.

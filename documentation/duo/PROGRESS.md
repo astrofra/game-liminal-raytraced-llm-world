@@ -53,3 +53,9 @@ Les contrats et revues sont conservés pour rendre les échecs et les correction
 
 
 25 octobre 2026 — **DUO-022 validé** : tests de langue livrés par DeepSeek, revue des outils et chemins sans écart ; qualification de namespace corrigée par Codex. HUD à initiales et traductions compilées, choix initial transmis à chaque narration, garde multilingue, secours et réparation des descriptions mémorisées sans nouvelle géométrie. 9 CTest, 72 tests Python, auto-test de navigation ; 19 tours réels dont sept en italien, puis six recettes SDL sans inférence. [Revue](reviews/DUO-022.md), [bilan](../BILAN_LANGUES.md). Build publié, aucun commit/push par Codex.
+
+
+25 octobre 2026 — **DUO-023 intégré après revue** : températures centrées dans la partie gauche dégagée, boussole rentrée et relevée ; issues ouvertes lumineuses avec cadre de trois pixels, fermées atténuées avec trait d'un pixel. Contribution DeepSeek relue et intégrée sélectivement ; poursuite après un échec d'edit et grep trop large consignés dans la [revue](reviews/DUO-023.md). Build publié, deux captures SDL FR/EN vérifiées, aucun appel LLM pour le HUD. Aucun commit/push.
+
+
+25 octobre 2026 — Ajustement utilisateur du HUD après DUO-023, réalisé par Codex : voies fermées en additif, puis couleur augmentée de 10 % (61/84/26), trait fin conservé. Build republié et capture SDL française vérifiée ; voir la [revue mise à jour](reviews/DUO-023.md).

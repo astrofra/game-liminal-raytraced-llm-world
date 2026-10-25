@@ -1120,7 +1120,7 @@ static SDL_Color HudPhosphorColor(bool full_intensity)
 {
     return full_intensity
         ? SDL_Color{184, 254, 80, 255}
-        : SDL_Color{92, 127, 40, 255};
+        : SDL_Color{61, 84, 26, 255};
 }
 
 static void DrawCompassDirectionCell(
@@ -1135,11 +1135,16 @@ static void DrawCompassDirectionCell(
     }
 
     const SDL_Color phosphor = HudPhosphorColor(open);
-    const SDL_FRect outer_rect = {rect.x - 1.0f, rect.y - 1.0f, rect.w + 2.0f, rect.h + 2.0f};
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+    const SDL_BlendMode blend_mode = SDL_BLENDMODE_ADD;
+    SDL_SetRenderDrawBlendMode(renderer, blend_mode);
     SDL_SetRenderDrawColor(renderer, phosphor.r, phosphor.g, phosphor.b, phosphor.a);
-    SDL_RenderRect(renderer, &outer_rect);
     SDL_RenderRect(renderer, &rect);
+    if (open) {
+        const SDL_FRect one_pixel_rect = {rect.x - 1.0f, rect.y - 1.0f, rect.w + 2.0f, rect.h + 2.0f};
+        const SDL_FRect two_pixel_rect = {rect.x - 2.0f, rect.y - 2.0f, rect.w + 4.0f, rect.h + 4.0f};
+        SDL_RenderRect(renderer, &one_pixel_rect);
+        SDL_RenderRect(renderer, &two_pixel_rect);
+    }
 
     if (!font || !label || !label[0]) {
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -1157,7 +1162,7 @@ static void DrawCompassDirectionCell(
         label_height,
         phosphor,
         0,
-        SDL_BLENDMODE_ADD);
+        blend_mode);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 }
 
@@ -1173,8 +1178,10 @@ static void DrawExitCompass(
 
     const float cell_size = 30.0f;
     const float gap = 8.0f;
-    const float anchor_x = scene_rect.x + scene_rect.w - 112.0f;
-    const float anchor_y = scene_rect.y + scene_rect.h - 112.0f;
+    const float compass_size = 3.0f * cell_size + 2.0f * gap;
+    // Leave room for the curved visor edge and the thicker open-exit border.
+    const float anchor_x = scene_rect.x + scene_rect.w - compass_size - 48.0f;
+    const float anchor_y = scene_rect.y + scene_rect.h - compass_size - 32.0f;
 
     const SDL_FRect north_rect = {anchor_x + cell_size + gap, anchor_y, cell_size, cell_size};
     const SDL_FRect west_rect = {anchor_x, anchor_y + cell_size + gap, cell_size, cell_size};
@@ -1278,8 +1285,9 @@ static void DrawThermalHud(
         MeasureTextWidth(fonts.regular, external_buffer),
         MeasureTextWidth(fonts.regular, body_buffer))) + 20.0f;
     const float panel_height = static_cast<float>(label_height) + 12.0f;
-    const float panel_x = scene_rect.x + 14.0f;
-    const float body_y = scene_rect.y + scene_rect.h - panel_height - 14.0f;
+    // Center the aligned pair in the left clear area, away from rim and nose notch.
+    const float panel_x = scene_rect.x + scene_rect.w * 0.22f - panel_width * 0.5f;
+    const float body_y = scene_rect.y + scene_rect.h - panel_height - 32.0f;
     const SDL_FRect external_rect = {panel_x, body_y - panel_height - 8.0f, panel_width, panel_height};
     const SDL_FRect body_rect = {panel_x, body_y, panel_width, panel_height};
     DrawThermalIndicator(renderer, fonts, external_rect, external_buffer);
