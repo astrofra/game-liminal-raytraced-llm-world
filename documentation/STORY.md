@@ -10,6 +10,12 @@ Within this visible infrastructure lies another architecture: a labyrinth whose 
 
 The player is therefore not only exploring territory. They are trying to establish whether space can still be trusted.
 
+## Narrative references
+
+Three local sources guide the fiction: the [concept-art atlas and its ten studies](./concept-art/ATLAS_COMPOSITION.md), the [project images](../img/), and [*In the Walls of Eryx*](./IN_THE_WALLS_OF_ERYX.md). The literary motifs supply the crystal lure, invisible contact, uncertain mapping, bodily exhaustion, and an escape overlooked nearby. The concepts translate them into monumental excavations, sparse survey markers, a shelter beneath a heavy slab, ambiguous lights, and a lateral opening missed by the traveler.
+
+The [quarry threshold](../img/004.png) and [extraction field](../img/006.png) show how an instrumented viewport and sparse masses can sustain that fiction. Their captured transcripts are records of earlier play sessions, not narrative instructions. Human construction remains visible and opaque; the alien labyrinth has no visible walls. Concept images express artistic intentions and do not certify implemented places or mechanics.
+
 ## Fictional situation
 
 The player enters the extraction field with practical objectives: survey a sector, recover or inspect a crystal specimen, reactivate an instrument, locate another prospector, return to a shelter, or mark a safe route. These goals make the world actionable without requiring a fixed retelling of *In the Walls of Eryx*.

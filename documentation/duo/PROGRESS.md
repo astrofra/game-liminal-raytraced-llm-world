@@ -1,6 +1,6 @@
 # Progression — Duo sur Within the Latent Walls
 
-Mise à jour : 24 octobre 2026. Coordinateur : Codex. Exécutant : DeepSeek via Copilot CLI/Ollama.
+Mise à jour : 25 octobre 2026. Coordinateur : Codex. Exécutant : DeepSeek via Copilot CLI/Ollama.
 
 | ID | Statut | Preuve | Suite |
 |---|---|---|---|
@@ -16,6 +16,7 @@ Mise à jour : 24 octobre 2026. Coordinateur : Codex. Exécutant : DeepSeek via 
 | DUO-008 / R1 | Revue terminée, aucun correctif généré intégré | [Revue](reviews/DUO-008.md) : accès externe refusé puis audit d'extraits ; constats vérifiés, contrat des callbacks clarifié | Limites coopératives documentées |
 | DUO-009 | Intégré après revue et corrections éditoriales Codex | [Revue](reviews/DUO-009.md) ; [atlas illustré](../concept-art/ATLAS_COMPOSITION.md), dix fiches et dix images liées | Annexe du plan dynamique disponible |
 | DUO-010 | Audit intégré après vérification et corrections Codex | [Revue](reviews/DUO-010.md) : imprécisions corrigées et comptage hors périmètre consigné ; [comparatif](../concept-art/raytracer-study/README.md) rédigé et calculé par Codex | 11 PNG vérifiés ; soleil intégré, build complet, 2 CTest et 3 auto-tests réussis ; scènes disponibles pour le banc visuel |
+| DUO-014 | Intégré après revue et corrections éditoriales Codex | [Revue](reviews/DUO-014.md) : brief Eryx consolidé, 26 éditions sur un seul fichier ; écart d'énumération en lecture consigné | Sources narratives explicites ; benchmarks et implémentation inchangés |
 | Décors dynamiques | Implémentation native en qualification, mode explicite | [Plan approuvé](../GENERATION_DYNAMIQUE_DECORS_PLAN.md), [guide runtime](../GENERATION_DYNAMIQUE_DECORS_RUNTIME.md), [bilan des essais](../GENERATION_DYNAMIQUE_DECORS_BILAN.md) ; DUO-011/R1 et DUO-012/R1 intégrés après revue | Terminer le pilote réel et sa revue visuelle avant toute promotion du défaut |
 | Migration — benchmark direct | Prototype validé, bascule du jeu non décidée | [Guide et résultats](../SCENE_MODEL_MIGRATION_BENCHMARK.md) : matrice de 10 cas par variante ; correction du prompt Gemma 10/10 syntaxe et caméra, limites visuelles restantes ; 51 tests | Évaluation artistique et corpus Eryx avant intégration native |
 | Roadmap Ministral | Terminée | [Bilan](../MINISTRAL_QUALIFICATION_REPORT.md) : 70 scènes, 611 tours, protocole, builds, installation et retour arrière ; v0.7 intégré | Q4 retenu ; Q5/Reasoning expérimentaux ; limites métier et diffusion publique documentées |

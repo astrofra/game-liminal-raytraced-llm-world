@@ -1,6 +1,6 @@
 # Within the Latent Walls / Entre les Murs Latents — Documentation
 
-Dernière mise à jour : 2026-10-24
+Dernière mise à jour : 2026-10-25
 
 Ce dossier sert de mémoire de travail artistique, scientifique et technique du projet.
 
@@ -8,11 +8,21 @@ Ce dossier sert de mémoire de travail artistique, scientifique et technique du 
 
 La première tranche jouable Eryx est maintenant implémentée : sept lieux canoniques, neuf prefabs de carrière, prompts et états actifs, une barrière invisible typée et un retour non réciproque volontaire. Les anciens objets et fixtures restent disponibles comme compatibilité technique. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) sépare cette tranche réelle des mutations topologiques encore planifiées.
 
+## Sources narratives prioritaires
+
+Le contexte du jeu se fonde sur trois sources complémentaires :
+
+- [`concept-art/`](./concept-art/) et son [atlas de composition](./concept-art/ATLAS_COMPOSITION.md) : masses de carrière, plateaux, abris, cristaux, repères d'arpentage et ambiguïtés de parcours. Les concepts sont des intentions visuelles, pas des niveaux déjà réalisés.
+- [`img/`](../img/) : vues du projet, notamment le [seuil de la carrière](../img/004.png) et le [champ d'extraction](../img/006.png), pour la perception instrumentale, les silhouettes et le rapport texte/image. Les captures témoignent de versions successives ; leurs anciens transcripts ne définissent pas la fiction.
+- [`IN_THE_WALLS_OF_ERYX.md`](./IN_THE_WALLS_OF_ERYX.md) : source littéraire pour la prospection vénusienne, les cristaux, le contact invisible, l'épuisement, les erreurs de cartographie et l'issue manquée.
+
+[`STORY.md`](./STORY.md) articule ces sources en une fiction Eryx. Les fixtures, identifiants de compatibilité et transcriptions de benchmarks documentent l'implémentation ; ils ne sont pas des références narratives.
+
 ## Point d'entrée
 
 - [`STORY.md`](./STORY.md) : direction fictionnelle active, rôle du joueur, labyrinthe invisible et lignée en quatre étapes.
 - [`SPEC.md`](./SPEC.md) : spécification artistique, scientifique et technique active.
-- [`ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md`](./ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md) : brief source de la migration documentaire du 2026-08-09.
+- [`ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md`](./ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md) : brief Eryx du 2026-08-09, cadrage narratif consolidé le 2026-10-25.
 - [`AMBIANCE_MOODBOARD.md`](./AMBIANCE_MOODBOARD.md) : lecture du corpus visuel comme espace incomplet mais opératoire, de la micro-informatique au labyrinthe génératif.
 - [`ERYX_PLAYABLE_SPATIAL_ROADMAP.md`](./ERYX_PLAYABLE_SPATIAL_ROADMAP.md) : traduction opérationnelle des trois moodboards, carte des sept lieux et parcours dramatique en huit actions.
 
@@ -54,7 +64,7 @@ La première tranche jouable Eryx est maintenant implémentée : sept lieux cano
 - [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) : photographie factuelle du dépôt et frontière entre implémentation legacy et cible Eryx.
 - [`KNOWN_ISSUES.md`](./KNOWN_ISSUES.md) : bugs, limites, dettes de migration et risques ouverts.
 - [`DECISIONS.md`](./DECISIONS.md) : décisions techniques et conceptuelles stabilisées.
-- [`PROJECT_JOURNAL.md`](./PROJECT_JOURNAL.md) : historique chronologique, conservé tel quel.
+- [`PROJECT_JOURNAL.md`](./PROJECT_JOURNAL.md) : historique chronologique des travaux ; dates et preuves techniques conservées, consolidation narrative signalée.
 - [`NOTES.md`](./NOTES.md) : recherches et formulations, généalogie Eryx et médiation DMA WinUAE.
 
 ## Documents générés et baselines historiques

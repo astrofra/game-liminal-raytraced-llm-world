@@ -1006,11 +1006,9 @@ Objectif :
 
 Reconsidérer la direction artistique et de recherche du projet sans réécrire son histoire technique ni prétendre que le runtime a déjà migré.
 
-Contexte immédiatement précédent :
+Contexte de recherche (résumé narratif consolidé le 2026-10-25) :
 
-La phase narrative précédente mettait en scène un officier affecté à un centre autonome, dans l'attente d'une cyberattaque indéterminée. Le calcul du centre chauffait et consommait ses ressources, tandis que la température fictionnelle devait influencer la température d'échantillonnage du modèle. Cette boucle reliait infrastructure numérique, écologie, attente institutionnelle, tokens et dérive interprétative.
-
-Ce concept reste une étape légitime. Il a aidé à préciser :
+La réorientation vers Eryx conserve les principes de recherche établis pendant les premières étapes :
 
 - l'inversion de charge entre inférence GPU et image CPU contrainte
 - la visibilité de la latence et de la computation
@@ -1020,7 +1018,7 @@ Ce concept reste une étape légitime. Il a aidé à préciser :
 
 Motif de la réorientation :
 
-La relation du centre à la démoscène restait principalement analogique : contrainte, allocation du calcul et grammaire visuelle héritée. Le motif d'Eryx fournit un ancrage plus direct pour la thèse :
+Le motif d'Eryx relie la contrainte, l'allocation du calcul et la grammaire visuelle héritée à une généalogie directe pour la thèse :
 
 ```text
 Lovecraft et Kenneth J. Sterling, *In the Walls of Eryx*
@@ -1034,8 +1032,8 @@ ASD a déjà transformé le labyrinthe invisible en espace calculé de démo. *W
 Décisions documentaires prises :
 
 - la fiction active devient une zone d'extraction vénusienne et un labyrinthe alien invisible
-- le centre, l'officier et la cyberattaque sont conservés comme phase historique, pas comme fiction active
-- aucun titre final n'est inventé ; la phase narrative précédente reste identifiable dans l'historique
+- les recherches antérieures et leurs preuves techniques sont conservées
+- aucun titre final n'est inventé à cette date
 - le LLM est défini comme interprète et auteur de propositions topologiques contrôlées, pas comme source de vérité globale
 - le hard state et le compilateur déterministe restent autoritatifs
 - les barrières invisibles doivent exister d'abord dans la traversal et la sémantique, pas comme murs visibles ordinaires
@@ -1611,3 +1609,11 @@ Validation :
 - À la demande de l’utilisateur pendant les essais, ajout de `distant_light` : direction mondiale, intensité sans atténuation, couleur, rayon angulaire, ombres et rebonds diffus. Trois variantes diurnes remplacent les panneaux d’appoint et spots caméra par ce soleil. La scène 09 reste nocturne.
 - Tests natifs de parsing, rechargement, direction, distance, occultation, pénombre, énergie, couleur et GI ; quatre PNG de régression sans soleil identiques entre ancien et nouveau renderer. Build complet SDL3/llama.cpp/CUDA réussi, 2/2 CTest et 3/3 auto-tests ; deux contrôles de rendu du runtime complet conformes. Exécutable local mis à jour ; 11 PNG et 62 liens vérifiés. Les résultats détaillés sont consignés dans le comparatif.
 - Fixtures de calibration uniquement : aucun lieu ajouté à la route du jeu, aucune génération par Ministral, aucun changement de modèle, de navigation ou de dépendance vendored. Aucun commit ni push par Codex.
+
+## 2026-10-25 - Consolidation du contexte narratif Eryx
+
+- À la demande de l'utilisateur, retrait des résumés de la fiction antérieure dans le brief, les notes, le journal et les décisions. Les entrées du 2026-08-09 conservent leur date, leurs décisions de recherche et leur historique technique ; leur cadrage narratif est consolidé à cette date.
+- Trois sources prioritaires explicitées dans l'[index](./README.md), le [récit](./STORY.md), le [moodboard](./AMBIANCE_MOODBOARD.md) et le [brief](./ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md) : `concept-art/`, `img/` et `IN_THE_WALLS_OF_ERYX.md`. Concepts, captures historiques et motifs littéraires ont des rôles distincts ; la fiction est celle de la prospection vénusienne et du labyrinthe invisible.
+- DUO-014 : correction du brief déléguée à DeepSeek via Copilot CLI/Ollama, puis revue et intégrée avec corrections Codex. [Revue et contrôles](./duo/reviews/DUO-014.md), dont un écart d'énumération en lecture.
+- Vérifications documentaires : recherche lexicale élargie, liens ajoutés ou révisés résolus, blocs Markdown fermés, 25 sections du brief conservées et `git diff --check` réussi.
+- Benchmarks explicitement exclus par l'utilisateur. Aucun résultat, fichier généré, image, identifiant technique ni code modifié ; aucun build ou benchmark relancé, aucun commit ni push.

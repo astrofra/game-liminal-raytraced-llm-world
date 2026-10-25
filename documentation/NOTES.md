@@ -479,13 +479,13 @@ C’est précisément à cette condition que le dispositif pourra devenir à la 
 
 ### Why the narrative focus changed
 
-The immediately preceding narrative branch placed an officer in an autonomous extraction facility waiting for a massive cyberattack that might not exist. Server heat, water consumption, environmental damage, institutional interpretation, and LLM sampling temperature formed a feedback loop.
+Editorial consolidation, 2026-10-25: this section retains the research rationale of the 2026-08-09 reorientation while using Eryx as its sole narrative frame. Technical history and measured results remain unchanged.
 
-That branch remains intellectually useful. It made computation, latency, heat, ecological cost, and self-amplifying interpretation part of the fiction. It also clarified the inversion at the center of the project: GPU resources were spent on local language inference while the CPU produced a deliberately poor raytraced image.
+The research places computation, latency, incomplete perception, and unstable interpretation at the center of play. Its computational inversion remains: GPU resources support local language inference while the CPU produces a deliberately constrained raytraced image.
 
-Its weakness for the PhD research was structural. The relationship to the demoscene depended mainly on an aesthetic of constraint and on an analogy of resource allocation. The active Eryx direction gives the work a direct historical and personal genealogy while preserving the engine architecture that the earlier phase helped define.
+Eryx gives these principles a direct historical and personal genealogy through the demoscene. The prospector reads instruments, seeks crystals, measures apparently open terrain, encounters invisible resistance, and tries to recover a route. Local visual certainty can coexist with failed global mapping.
 
-The facility, the officer waiting for an attack, cyber-threat interpretation, heat/water feedback, and the direct equation `surface temperature -> LLM temperature` are therefore superseded as the main fiction. They remain documented here and in the chronological journal as a previous conceptual stage.
+The narrative references are the [concept-art studies](./concept-art/ATLAS_COMPOSITION.md), the [project images](../img/), and [the literary source](./IN_THE_WALLS_OF_ERYX.md). They connect bodily vulnerability, extraction infrastructure, and spatial uncertainty without changing the engine architecture.
 
 ### Four-stage genealogy
 
@@ -546,7 +546,7 @@ The labyrinth must not become an ordinary visible maze. Text, traversal, and the
 
 ### Temperature retained only as an optional mechanism
 
-The earlier coupling among environmental, machine, and sampling temperature remains an interesting research mechanism but is no longer the narrative center. If reused, it should serve the Eryx setting through suit stress, oxygen depletion, exposure, proximity to the labyrinth, or loss of spatial confidence.
+At the time of this research note, environmental pressure and sampling variation were considered optional mechanisms for Eryx: suit stress, oxygen depletion, exposure, proximity to the labyrinth, or loss of spatial confidence. The subsequent exterior/body-temperature loop is documented in [STORY.md](./STORY.md) and [TECHNICAL_STATE.md](./TECHNICAL_STATE.md).
 
 Temperature must not be the sole source of topology change. Randomness does not by itself produce a meaningful labyrinth.
 

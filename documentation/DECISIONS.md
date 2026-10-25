@@ -339,7 +339,7 @@ Le LLM pourra proposer des mutations topologiques limitées, mais l'état autori
 
 Raison :
 
-- le récit antérieur établissait une boucle forte entre calcul, chaleur, écologie et interprétation, mais sa relation à la démoscène restait indirecte
+- Eryx relie directement le calcul et l'interprétation à l'expérience du prospecteur : mesurer, traverser, perdre ses repères et tenter de revenir
 - Eryx fournit une lignée historique dans la démoscène à travers ASD
 - *Within the Mesh*, co-créé par l'auteur du projet, rend cette lignée personnelle et antérieure au projet actuel
 - le labyrinthe invisible donne une fonction fictionnelle précise à la cohérence locale et à la dérive globale déjà présentes dans l'architecture
@@ -587,3 +587,9 @@ Raison :
 Consequence :
 
 Le joueur peut quitter l'ossature depuis l'extraction est, le scanner est, le plateau nord, le seuil du labyrinthe sud ou l'abri est. Le retour impossible reste démontrable, mais il ne devient plus une prison. Les fixtures canoniques ont reçu des cadrages et silhouettes différenciés, et l'auto-test de navigation vérifie maintenant que ces cinq directions restent ouvertes, sans lien et sans barrière avant leur première exploration.
+
+## 2026-10-25 - Unifier les références narratives autour d'Eryx
+
+Le contexte narratif se fonde sur les concepts de `documentation/concept-art/`, les vues de `img/` et la source littéraire `IN_THE_WALLS_OF_ERYX.md`. La prospection vénusienne, les cristaux, les abris, l'arpentage et le labyrinthe invisible structurent le récit.
+
+Les résumés de la fiction antérieure sont retirés, y compris dans le cadrage de la réorientation du 2026-08-09. Cette consolidation éditoriale préserve les dates, décisions de recherche, chemins et preuves techniques. Les benchmarks restent intacts à la demande explicite de l'utilisateur. Les captures et résultats historiques n'ont pas valeur de canon narratif.
