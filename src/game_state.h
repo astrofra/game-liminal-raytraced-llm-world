@@ -288,6 +288,15 @@ struct GeneratedRoom {
     SpatialState spatial_state;
     std::string scene_text;
     std::string scene_source;
+    int scene_contract_version = 0; // Zero identifies legacy scenes, retained without regeneration.
+    std::string scene_design_json;
+    std::string scene_hash;
+    std::string scene_plan_hash;
+    std::string scene_profile;
+    std::string scene_model_filename;
+    std::string scene_prompt_version;
+    unsigned int scene_seed = 0;
+    int scene_repairs = 0;
     bool metadata_fallback_used;
     bool scene_fallback_used;
 

@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "cal_terrace_slot",
+      "split": "calibration",
+      "brief": "Enter from the north onto a broad terrace. One long parapet mass dominates the west side while a lower roof block repeats along the east, and a narrow slot between two roof slabs drops daylight across the empty centre. A waist-high datum stone sits left of the axis. Leave the middle open and the walkway along the parapet clear.",
+      "entry_direction": "north",
+      "motif": "asymmetric terrace void under a light slot",
+      "expectations": [
+        "One long parapet mass reads as dominant from the entry.",
+        "The light slot leaves a clearly asymmetric empty centre.",
+        "The low datum stone is visible beside the open walkway."
+      ]
+    },
+    {
+      "id": "cal_night_ring",
+      "split": "calibration",
+      "brief": "Arrive from the east into a night court enclosed by eight rectangular blocks set in a ring, their corners left open at two unequal gaps. The ring is built from boxes only, no curves. A low emissive marker stands off centre, below eye level, and the taller blocks cluster toward the west. Keep the centre empty and let the gaps read as openings.",
+      "entry_direction": "east",
+      "motif": "rectangular block ring with two unequal gaps",
+      "expectations": [
+        "The ring reads as eight separate blocks, not a curve.",
+        "One gap is visibly wider than the other.",
+        "The off-centre marker stays below eye level and visible."
+      ]
+    },
+    {
+      "id": "cal_oblique_steps",
+      "split": "calibration",
+      "brief": "Enter from the south at an oblique angle to a stair of wide rectangular steps that climbs toward a single heavy tower. Two low side masses frame the lower flight, then stop, so the upper steps stand alone. A doorway-sized gap in the tower gives the scale. Keep the sky open above the steps and avoid a symmetrical axis.",
+      "entry_direction": "south",
+      "motif": "oblique stair axis toward a single tower",
+      "expectations": [
+        "The stair reads as one rising mass toward the tower.",
+        "The oblique entry prevents a symmetrical view.",
+        "The tower aperture gives a clear human-scale reference."
+      ]
+    },
+    {
+      "id": "cal_alley_walls",
+      "split": "calibration",
+      "brief": "Arrive from the west into a night alley between two long walls of unequal height. The taller wall runs straight, the lower one breaks twice, and a continuous gap above the lower wall lets sky light fall across the floor. A sunken low marker sits near the second break. Keep the alley narrow but leave one clear lateral opening.",
+      "entry_direction": "west",
+      "motif": "unequal walls under an overhead light band",
+      "expectations": [
+        "Both walls read as solid, independent masses.",
+        "The overhead gap is the only strong light in the alley.",
+        "The lateral opening is visible from the approach."
+      ]
+    },
+    {
+      "id": "cal_fin_rhythm",
+      "split": "calibration",
+      "brief": "Enter from the north past a line of thick vertical fins spaced evenly along a low platform. The fourth fin is pushed out of line and turned slightly, breaking the rhythm without changing the shape. Beyond the fins a broad empty floor leads to a distant low block. Keep the platform edge readable and do not add small clutter.",
+      "entry_direction": "north",
+      "motif": "repeated fins broken by one offset",
+      "expectations": [
+        "The repeated fins read as one family with equal shape.",
+        "The offset fin breaks the rhythm without adding a new element.",
+        "The distant low block remains visible beyond the empty floor."
+      ]
+    },
+    {
+      "id": "cal_plain_datum",
+      "split": "calibration",
+      "brief": "Arrive from the south onto a wide night plain with almost no vertical masses. Two long low banks of blocks frame a shallow depression, and a small emissive block sits in that hollow, clearly below eye level. A single tall slab far left gives the only vertical accent. Keep the horizon open and the foreground nearly empty.",
+      "entry_direction": "south",
+      "motif": "open plain with a low glowing datum",
+      "expectations": [
+        "The night plain stays open with a low horizon.",
+        "The emissive block is clearly below eye level.",
+        "The tall slab is the only vertical accent."
+      ]
+    },
+    {
+      "id": "cal_crossing",
+      "split": "calibration",
+      "brief": "Enter from the east into a junction where two long covered corridors cross. The ceiling breaks into a rectangular opening above the crossing, and the far corridor rises by three shallow steps before turning. One corridor is wider, so the crossing sits off centre. A crate-sized block marks the step edge and stays clear of the route.",
+      "entry_direction": "east",
+      "motif": "crossing corridors under a broken ceiling",
+      "expectations": [
+        "The crossing sits off centre because one corridor is wider.",
+        "The ceiling opening is legible above the junction.",
+        "The step edge is marked without blocking the route."
+      ]
+    },
+    {
+      "id": "cal_oblique_frame",
+      "split": "calibration",
+      "brief": "Enter from the north through an oblique gap between two unequal blocks, so the court beyond appears sideways rather than centred. A single massive block occupies the far corner, and its shadowed face holds a doorway at human scale. Three flat markers cross the empty court on a diagonal. Keep the gap clear and the court mostly bare.",
+      "entry_direction": "north",
+      "motif": "oblique entry frame onto a bare court",
+      "expectations": [
+        "The first view of the court is oblique, not axial.",
+        "The massive corner block dominates the far side.",
+        "Three markers lead the eye across the empty court."
+      ]
+    },
+    {
+      "id": "cal_elevated_edge",
+      "split": "calibration",
+      "brief": "Arrive from the west onto an elevated slab floor that ends at a straight edge with no railing drawn. Below, a grid of low blocks glows faintly, and a small emissive post stands near the edge, below eye level from the approach. A thick wall behind the entry limits the view. Keep the drop legible through geometry alone.",
+      "entry_direction": "west",
+      "motif": "elevated edge above a faint grid",
+      "expectations": [
+        "The edge reads as a real drop through geometry alone.",
+        "The faint grid below is visible from the elevated floor.",
+        "The low emissive post sits below eye level on approach."
+      ]
+    },
+    {
+      "id": "cal_split_court",
+      "split": "calibration",
+      "brief": "Enter from the south into a court split into two levels. A raised walkway of flat slabs runs along the east side, reached by a short flight of box steps, and a lower empty floor spreads west beneath a cantilevered roof block. The roof is carried by two piers, leaving the west side open. A single tall pier anchors the far end.",
+      "entry_direction": "south",
+      "motif": "split-level court with a raised walkway",
+      "expectations": [
+        "The raised walkway is visibly separate from the lower floor.",
+        "The cantilevered roof reads as carried by two piers.",
+        "The west side stays open and empty."
+      ]
+    },
+    {
+      "id": "h01_low_hall",
+      "split": "holdout",
+      "brief": "Arrive from the east into a long low hall where the widest mass lies flat at waist height, and the tall elements are thin posts at its rim. The ceiling opens above the centre in one large irregular rectangle, so the void dominates instead of a tower. A small emissive strip under the table-like mass lights the floor. Keep the aisle along the north side.",
+      "entry_direction": "east",
+      "motif": "horizontal dominant mass under an open ceiling",
+      "expectations": [
+        "The horizontal mass reads as the widest element.",
+        "The ceiling void dominates over any vertical mass.",
+        "The under-strip lights the aisle without a visible fixture."
+      ]
+    },
+    {
+      "id": "h02_rim_pit",
+      "split": "holdout",
+      "brief": "Enter from the north at rim level and look down into a shallow rectangular pit of three broad terraces. A tight cluster of four square pillars stands on the lowest floor, and a narrow ramp of stacked boxes climbs the south face. The east terraces stay empty. Keep the rim uncrowded and the descent visible from the entry.",
+      "entry_direction": "north",
+      "motif": "terraced pit entered from the rim",
+      "expectations": [
+        "The terraces step down visibly from the rim.",
+        "The four pillars cluster tightly on the lowest floor.",
+        "The descent route is readable from the entry."
+      ]
+    },
+    {
+      "id": "h03_mezzanine",
+      "split": "holdout",
+      "brief": "Arrive from the west into a tall night gallery crossed by a mezzanine band that stops short of both side walls. Four square columns rise through the band, and a low emissive trough runs beneath it, below eye level. The far wall steps back twice, so the floor widens toward the north. Keep the upper volume dark and empty.",
+      "entry_direction": "west",
+      "motif": "mezzanine band in a tall night gallery",
+      "expectations": [
+        "The mezzanine band crosses the gallery without touching the side walls.",
+        "The trough is the only low light in the space.",
+        "The stepped far wall widens the floor toward the north."
+      ]
+    },
+    {
+      "id": "h04_zigzag_walls",
+      "split": "holdout",
+      "brief": "Enter from the south along a zigzag of freestanding walls, each lower than the last, so the skyline steps down toward the exit. The gaps between walls never align, and a sunken slot in the final floor holds a single pale emissive plane. A wide empty apron remains to the east. Keep every wall solid and independent.",
+      "entry_direction": "south",
+      "motif": "descending zigzag walls around a sunken light",
+      "expectations": [
+        "The wall skyline descends toward the exit.",
+        "No gap between walls lines up with another.",
+        "The sunken emissive plane is visible from above."
+      ]
+    },
+    {
+      "id": "h05_light_spine",
+      "split": "holdout",
+      "brief": "Arrive from the east between two long halls of equal length but different height, separated by a narrow light spine of open sky. The lower hall opens onto the spine through three wide bays; the taller one stays closed. A single low marker sits in the spine, near its north end. Keep the spine clear and the bays unglazed.",
+      "entry_direction": "east",
+      "motif": "twin halls split by a light spine",
+      "expectations": [
+        "The two halls read as paired masses of different height.",
+        "The light spine separates them along the full length.",
+        "The three bays stay open and unglazed."
+      ]
+    }
+  ]
+}

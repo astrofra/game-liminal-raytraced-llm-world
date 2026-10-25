@@ -28,6 +28,12 @@ static void PrintUsage()
     printf("Usage:\n");
     printf("  liminal_cornell_renderer [options]\n\n");
     printf("Options:\n");
+    printf("  --scene-generation-mode <hybrid|dynamic> Neighbor creation policy (default: hybrid until qualified)\n");
+    printf("  --generate-dynamic-scene <brief.txt> Generate, audit and render a new scene\n");
+    printf("  --scene-method <two-pass|direct|hybrid> Benchmark method (default: two-pass)\n");
+    printf("  --scene-entry <north|east|south|west> Arrival side in benchmark\n");
+    printf("  --scene-artifacts <prefix> Write .design.json, .scene and .metrics.json\n");
+    printf("  --scene-timeout-ms <n> Total composition safety deadline (default: 900000)\n");
     printf("  --scene <path>           Scene file to render (.scene or .obj)\n");
     printf("  --obj <path>             Legacy alias for --scene\n");
     printf("  --output <path>          Output image path (.png or .pgm)\n");
@@ -62,6 +68,7 @@ static void PrintUsage()
     printf("  --llm-profile <name>     ministral-8b-q4, ministral-8b-q5, ministral-8b-reasoning-q4\n");
     printf("  --llm-reasoning-budget <n> Thought token limit; final budget remains --llm-predict\n");
     printf("  --llm-context <n>        Fixed context limit (default 8192)\n");
+    printf("  --llm-gpu-layers <n>     Offloaded model layers; 0 isolates CPU qualification\n");
     printf("  --llm-timeout-ms <n>     Per-call deadline including model load\n");
     printf("  --llm-seed <n>           Sampling seed\n");
     printf("  --llm-legacy-template    Qualification only: simplified template path\n");
@@ -382,9 +389,42 @@ int main(int argc, char** argv)
     liminal::LocationId selected_location = liminal::kLocationQuarryThreshold;
     liminal::CardinalDirection generated_room_direction = liminal::kDirectionNorth;
     liminal::HeadlessTurnConfig headless_turn_config;
+    const char* dynamic_brief_path = nullptr;
+    std::string scene_artifacts = "dynamic-scene";
+    bool scene_artifacts_requested = false;
+    liminal::SceneDesignContext dynamic_context;
+    bool benchmark_hybrid=false;
     std::vector<std::string> session_commands;
 
     for (int index = 1; index < argc; ++index) {
+        if (strcmp(argv[index], "--scene-generation-mode") == 0 && index+1<argc) {
+            const std::string mode=argv[++index];
+            if(mode!="dynamic" && mode!="hybrid")return 1;
+            headless_turn_config.dynamic_scenes=mode=="dynamic";continue;
+        }
+        if (strcmp(argv[index], "--generate-dynamic-scene") == 0 && index+1<argc) {
+            dynamic_brief_path=argv[++index];continue;
+        }
+        if (strcmp(argv[index], "--scene-method") == 0 && index+1<argc) {
+            const std::string mode=argv[++index];
+            if(mode!="two-pass" && mode!="direct" && mode!="hybrid")return 1;
+            benchmark_hybrid=mode=="hybrid";
+            headless_turn_config.dynamic_scene_config.direct=mode=="direct";continue;
+        }
+        if (strcmp(argv[index], "--scene-entry") == 0 && index+1<argc) {
+            dynamic_context.entry_direction=argv[++index];
+            liminal::CardinalDirection dir;
+            if(!liminal::ParseCardinalDirection(dynamic_context.entry_direction.c_str(),&dir))return 1;
+            continue;
+        }
+        if (strcmp(argv[index], "--scene-artifacts") == 0 && index+1<argc) {
+            scene_artifacts=argv[++index];scene_artifacts_requested=true;continue;
+        }
+        if (strcmp(argv[index], "--scene-timeout-ms") == 0 && index+1<argc) {
+            if(!ReadInt(argv[++index],&headless_turn_config.dynamic_scene_config.total_timeout_ms) ||
+               headless_turn_config.dynamic_scene_config.total_timeout_ms<=0)return 1;
+            continue;
+        }
         if ((strcmp(argv[index], "--scene") == 0 || strcmp(argv[index], "--obj") == 0) && index + 1 < argc) {
             scene_path = argv[++index];
             continue;
@@ -589,6 +629,11 @@ int main(int argc, char** argv)
         if (strcmp(argv[index], "--llm-timeout-ms") == 0 && index + 1 < argc) {
             if (!ReadInt(argv[++index], &headless_turn_config.generation_config.timeout_ms)) return 1; continue;
         }
+        if (strcmp(argv[index], "--llm-gpu-layers") == 0 && index + 1 < argc) {
+            if(!ReadInt(argv[++index],&headless_turn_config.generation_config.n_gpu_layers) ||
+               headless_turn_config.generation_config.n_gpu_layers<0 || headless_turn_config.generation_config.n_gpu_layers>999)return 1;
+            continue;
+        }
         if (strcmp(argv[index], "--model") == 0 && index + 1 < argc) {
             headless_turn_config.generation_config.model_path = argv[++index];
             continue;
@@ -683,6 +728,8 @@ int main(int argc, char** argv)
     }
 
     liminal::Scene scene;
+    liminal::SessionState pending_saved_session;
+    bool have_pending_save=false;
     char error_buffer[512];
     memset(error_buffer, 0, sizeof(error_buffer));
 
@@ -709,6 +756,63 @@ int main(int argc, char** argv)
         player_command = session_commands.back().c_str();
     }
 
+    if (dynamic_brief_path) {
+        if(!ReadFileText(dynamic_brief_path,&dynamic_context.brief))return 1;
+        liminal::DynamicSceneResult generated;
+        struct BenchProgress { int phase=-1; std::chrono::steady_clock::time_point last{}; } bench_progress;
+        auto progress=[](liminal::DynamicScenePhase phase,const char* text,const char*,void* opaque) {
+            auto& state=*static_cast<BenchProgress*>(opaque);const auto now=std::chrono::steady_clock::now();
+            if(state.phase!=static_cast<int>(phase) || now-state.last>std::chrono::seconds(30)) {
+                const char* labels[]={"design","program","repair","audit","preview"};
+                fprintf(stderr,"[dynamic-scene] phase=%s final_bytes=%zu\n",labels[static_cast<int>(phase)],text?strlen(text):0);
+                fflush(stderr);state.last=now;state.phase=static_cast<int>(phase);
+            }
+            return true;
+        };
+        bool ok=false;
+        if(benchmark_hybrid) {
+            const auto started=std::chrono::steady_clock::now();
+            liminal::SessionState state;
+            state.current_place_id="generated:room_900000";state.origin_place_id=state.current_place_id;
+            state.next_generated_room_index=900001;state.hard_state.current_location_id=liminal::kLocationUnknown;
+            state.spatial_state.room_title="Benchmark origin";state.spatial_state.room_summary=dynamic_context.brief;
+            state.spatial_state.time_of_day=liminal::kTimeDay;state.spatial_state.visibility_level=liminal::kVisibilityClear;
+            state.spatial_state.desert_state=liminal::kDesertStill;state.spatial_state.interior_density=liminal::kInteriorSparse;
+            liminal::GeneratedRoom origin;origin.room_id=state.current_place_id;origin.spatial_state=state.spatial_state;
+            state.generated_rooms.push_back(origin);
+            liminal::CardinalDirection arrival;liminal::ParseCardinalDirection(dynamic_context.entry_direction.c_str(),&arrival);
+            liminal::HeadlessTurnResult turn;
+            auto hybrid_config=headless_turn_config;hybrid_config.dynamic_scenes=false;
+            ok=liminal::RunHeadlessTurnFromState(state,liminal::CardinalDirectionToString(liminal::OppositeCardinalDirection(arrival)),
+                hybrid_config,&turn,error_buffer,sizeof(error_buffer));
+            generated.scene=turn.rendered_scene;generated.scene_text=turn.rendered_scene_text;
+            if(!ok)generated.error=error_buffer;
+            generated.metrics_json=nlohmann::json({{"version",1},{"method","hybrid"},{"success",ok},
+                {"cancelled",false},{"timeout",false},{"repairs",0},{"seed",headless_turn_config.generation_config.seed},
+                {"profile",headless_turn_config.generation_config.profile_name},
+                {"temperature",turn.effective_llm_temperature},
+                {"elapsed_ms",std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-started).count()},
+                {"calls",nlohmann::json::array()},{"call_count",turn.llm_call_count},
+                {"prompt_tokens",turn.prompt_tokens},{"generated_tokens",turn.generated_tokens},
+                {"wall_ms",turn.llm_wall_time_ms},{"source",turn.generated_room_scene_source},
+                {"fallback",turn.generated_room_metadata_fallback_used||turn.generated_room_scene_fallback_used},
+                {"audit",{{"accepted",ok},{"triangles",generated.scene.triangles.size()},{"materials",generated.scene.materials.size()},
+                    {"diagnostics",nlohmann::json::array()}}},{"error",generated.error}}).dump(2);
+        } else ok=liminal::GenerateDynamicScene(dynamic_context,headless_turn_config.generation_config,
+            headless_turn_config.dynamic_scene_config,progress,&bench_progress,&generated);
+        if(!WriteFileText((scene_artifacts+".metrics.json").c_str(),generated.metrics_json) ||
+           !WriteFileText((scene_artifacts+".design.json").c_str(),generated.plan_json) ||
+           !WriteFileText((scene_artifacts+".scene").c_str(),generated.scene_text))return 1;
+        if(!ok){fprintf(stderr,"Scene generation rejected: %s\n",generated.error.c_str());return 1;}
+        const auto render_start=std::chrono::steady_clock::now();
+        const bool rendered=liminal::RenderSceneToImage(generated.scene,config,output_path);
+        auto metrics=nlohmann::json::parse(generated.metrics_json);
+        metrics["final_render_ms"]=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-render_start).count();
+        metrics["success"]=rendered;
+        if(!rendered)metrics["error"]="Final rendering or PNG writing failed";
+        if(!WriteFileText((scene_artifacts+".metrics.json").c_str(),metrics.dump(2)))return 1;
+        return rendered?0:1;
+    }
     if (initial_state_output) {
         liminal::SessionState initial;
         if (!liminal::InitializeSessionState(selected_location, &initial, error_buffer, sizeof(error_buffer)) ||
@@ -919,15 +1023,19 @@ int main(int argc, char** argv)
 
         headless_turn_config.prefer_candidate_scene = prefer_candidate_scene;
         liminal::HeadlessTurnResult turn_result;
-        if (!liminal::RunHeadlessTurnFromState(session_state, player_command, headless_turn_config, &turn_result, error_buffer, sizeof(error_buffer))) {
+        const bool turn_ready=liminal::RunHeadlessTurnFromState(session_state, player_command, headless_turn_config, &turn_result, error_buffer, sizeof(error_buffer));
+        // Explicit diagnostic export only; rejected artifacts never become a saved room.
+        if(scene_artifacts_requested&&!turn_result.dynamic_scene_metrics_json.empty()) {
+            if(!WriteFileText((scene_artifacts+".metrics.json").c_str(),turn_result.dynamic_scene_metrics_json)||
+               !WriteFileText((scene_artifacts+".design.json").c_str(),turn_result.dynamic_scene_design_json)||
+               !WriteFileText((scene_artifacts+".scene").c_str(),turn_result.raw_scene_audit_response_text))return 1;
+        }
+        if (!turn_ready) {
             fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Headless turn failed.");
             return 1;
         }
         liminal::UpdateSessionStateFromTurn(player_command, turn_result, &session_state);
-        if (save_state_path && !SaveSessionStateToPath(save_state_path, session_state, error_buffer, sizeof(error_buffer))) {
-            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot save session state.");
-            return 1;
-        }
+        pending_saved_session=session_state;have_pending_save=true;
         scene = turn_result.rendered_scene;
 
         printf("Headless turn completed.\n");
@@ -994,10 +1102,7 @@ int main(int argc, char** argv)
             fprintf(stderr, "No session turn was executed.\n");
             return 1;
         }
-        if (save_state_path && !SaveSessionStateToPath(save_state_path, session_state, error_buffer, sizeof(error_buffer))) {
-            fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot save session state.");
-            return 1;
-        }
+        pending_saved_session=session_state;have_pending_save=true;
 
         printf("\nHeadless session completed.\n");
         printf("Turns: %zu\n", session_commands.size());
@@ -1046,6 +1151,10 @@ int main(int argc, char** argv)
         return 1;
     }
     const std::chrono::steady_clock::time_point render_end = std::chrono::steady_clock::now();
+    if(have_pending_save && save_state_path &&
+       !SaveSessionStateToPath(save_state_path,pending_saved_session,error_buffer,sizeof(error_buffer))) {
+        fprintf(stderr,"%s\n",error_buffer);return 1;
+    }
 
     printf(
         "Render time: %.2f ms\n",

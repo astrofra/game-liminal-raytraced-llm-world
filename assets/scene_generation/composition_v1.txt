@@ -1,0 +1,42 @@
+# COMPOSITION GUIDE V1
+
+Design one place for a first-person explorer. Provide geometry only; the engine owns state, navigation and validation.
+
+## Conventions
+- Units are meters, +Y up. A human is about 1.7 m tall; keep the view near 1.6 m.
+- Camera fov is vertical, not horizontal. The frame is wide, about 2:1.
+- box "m01_core" pos(cx,cy,cz) size(w,h,d): pos is the center, size gives full dimensions.
+- rot(rx,ry,rz) is Euler XYZ in degrees, applied X then Y then Z.
+- plane "p01_floor" pos(x,y,z) normal(nx,ny,nz) size(a,b): one finite rectangle. With normal(0,1,0), a spans Z and b spans X.
+- Use planes for floors, ceilings and panels; use boxes for every volume.
+- Material is gray(0..1) and optional emit(v). No color, texture, roughness, transparency, fog, sphere, cylinder or mesh.
+- Prefix each part with its mass id: m01_part, m02_slab, p01_floor. Group parts by mass.
+- The engine tints names containing desert, dune, sand, ridge or outcrop ochre, and cactus green. Avoid accidental triggers: write walkway, not bridge. Avoid led: it changes emissive sampling.
+
+## Composition
+- Build one dominant mass. Give it clearly more volume than any other.
+- Stage three depth bands: a near frame, a built middle, a far opening.
+- Keep one large void as the subject. Leave it empty of props.
+- Choose one focal element and make it visible from the entry side. One only.
+- Let the dominant mass frame the focal element; do not let them compete.
+- Set the entry axis obliquely to the dominant mass so the first view stays asymmetric.
+- Give scale with a human cue: a door, a step, a crate or a low lamp beside a mass.
+- Repeat a motif three times or more; vary spacing, height or angle, not the object type.
+- Break that rhythm once with a deliberate offset.
+- Bind the interactive objects requested by the contract to named masses, never to loose decoration.
+
+## Light
+- Let openings, gaps and ceiling slots carry the light. Aim emissive faces at the void or the walkable side.
+- Prefer a few emissive planes facing useful directions over many bright ones.
+- The sky gives exterior depth and diffuse illumination through openings.
+- Optionally use the distant light: direction(-0.6,-1,0.35), intensity(3.5), color(1,0.88,0.55), angular_radius(0.65). Direction points from the sun toward the scene, in world space; the radius is in degrees. Treat it as a source, never as a visible disk.
+
+## Movement and continuity
+- The engine declares exits and barriers in its own data. Never draw an invisible barrier as a wall, pane, rail, gate or glow.
+- Make the visible path clear; it suggests access but does not grant it.
+- Keep one link to the previous place, such as a repeated height, opening or light level, then change the arrangement.
+
+## Avoid
+- Whole ready-made layouts, named recipes or style catalogues.
+- Promises the renderer does not make: texture, roughness, fog, bloom, extra color or sharp shadow detail.
+- Fixed coordinate sets or JSON structures; the engine contracts define those.

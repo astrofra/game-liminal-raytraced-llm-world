@@ -1,4 +1,5 @@
 #include "game_state.h"
+#include "scene_design.h"
 
 #include <math.h>
 #include <string.h>
@@ -261,6 +262,13 @@ static json MakeGeneratedRoomsJson(const std::vector<GeneratedRoom>& rooms)
         item["spatial_state"] = MakeSpatialStateJson(rooms[index].spatial_state);
         item["scene_text"] = rooms[index].scene_text;
         item["scene_source"] = rooms[index].scene_source;
+        const auto& room=rooms[index];
+        if(room.scene_contract_version) {
+            item["scene_generation"]={{"contract_version",room.scene_contract_version},{"format_version",1},
+                {"design",room.scene_design_json},{"sha256",room.scene_hash},{"plan_sha256",room.scene_plan_hash},
+                {"profile",room.scene_profile},{"model_filename",room.scene_model_filename},{"prompt_version",room.scene_prompt_version},
+                {"seed",room.scene_seed},{"repairs",room.scene_repairs}};
+        }
         item["metadata_fallback_used"] = rooms[index].metadata_fallback_used;
         item["scene_fallback_used"] = rooms[index].scene_fallback_used;
         node.push_back(item);
@@ -427,6 +435,21 @@ static void ParseGeneratedRoomsNode(const json& node, std::vector<GeneratedRoom>
         }
         room.scene_text = ReadStringNode(node[index], "scene_text");
         room.scene_source = ReadStringNode(node[index], "scene_source");
+        if(node[index].contains("scene_generation")) {
+            const auto& g=node[index].at("scene_generation");
+            room.scene_contract_version=g.at("contract_version").get<int>();
+            room.scene_design_json=g.at("design").get<std::string>();
+            room.scene_hash=g.at("sha256").get<std::string>();
+            room.scene_plan_hash=g.at("plan_sha256").get<std::string>();
+            room.scene_profile=g.at("profile").get<std::string>();
+            room.scene_model_filename=g.value("model_filename",std::string());
+            room.scene_prompt_version=g.at("prompt_version").get<std::string>();
+            room.scene_seed=g.at("seed").get<unsigned int>();
+            room.scene_repairs=g.at("repairs").get<int>();
+            if(g.at("format_version").get<int>()!=1 || room.scene_contract_version!=1 || room.scene_hash!=SceneTextHash(room.scene_text) ||
+               room.scene_plan_hash!=SceneTextHash(room.scene_design_json))
+                throw std::runtime_error("Invalid generated scene version or content hash");
+        }
         room.metadata_fallback_used = ReadBoolNode(node[index], "metadata_fallback_used", false);
         room.scene_fallback_used = ReadBoolNode(node[index], "scene_fallback_used", false);
         if (room.scene_source.empty()) {

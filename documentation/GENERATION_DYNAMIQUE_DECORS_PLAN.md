@@ -2,7 +2,7 @@
 
 Date : **2026-10-24**. Projet : *Within the Latent Walls / Entre les Murs Latents*.
 
-**Statut : proposition d’architecture et plan d’implémentation.** Ce document ne décrit pas une fonctionnalité déjà intégrée. Aucun nouveau pipeline d’inférence, entraînement, benchmark de scène ou changement du renderer n’a été exécuté pour ce lot documentaire. Constat technique établi sur le code du commit `bd4306f4131fbf56784ac630a122f989a7298912`.
+**Statut : plan approuvé, implémentation en qualification.** Le constat initial a été établi sur `bd4306f4131fbf56784ac630a122f989a7298912`. La proposition ci-dessous reste la référence de conception ; le [guide runtime](GENERATION_DYNAMIQUE_DECORS_RUNTIME.md) décrit les éléments désormais présents et leurs limites. Les concept arts ne deviennent pas des scènes sélectionnées à l'avance.
 
 ## 1. Objectif et règle de création
 
@@ -117,13 +117,13 @@ La V1 réutilise le processus autoritatif existant pour les propositions de sort
 
 Ministral produit un **plan spatial court et explicite**, exploitable par le moteur et par la seconde passe. Ce plan est un livrable de conception ; il ne dépend pas de l’exposition d’un raisonnement interne.
 
-Nom de travail : `SceneDesignV1`. Ce type n’existe pas encore.
+Contrat implémenté : `SceneDesignV1`, dans `src/scene_design.h`. Le tableau ci-dessous exprime les intentions du plan ; le schéma natif fixe les noms et limites effectivement utilisés.
 
 | Champ proposé | Contenu | Autorité |
 |---|---|---|
 | `design_version` | Version du contrat | Moteur |
 | `intent` | Identité sensible du lieu, en une ou deux phrases | Proposition LLM |
-| `bounds` | Enveloppe locale bornée | LLM, contrôlée |
+| `bounds` | Enveloppe locale bornée, dérivée des masses, passages et caméra proposés (`auto` dans le schéma d'entrée) | Calcul moteur ; positions et formes restent proposées par le LLM |
 | `camera` | Position, cible, verticale, champ vertical | LLM, contrôlée |
 | `masses` | Identifiant, rôle, centre, dimensions, rotation, relations d’appui | LLM, contrôlées |
 | `focal_object_id` | Repère dominant que la caméra doit montrer | LLM, contrôlé |
@@ -256,7 +256,7 @@ Le mode hybride peut rester une option explicite de compatibilité ou de compara
 
 ## 8. Plan d’attaque ordonné
 
-Tous les lots ci-dessous sont **à faire**. Les noms de nouveaux fichiers et d’options sont des propositions, pas des éléments déjà présents. Les échéances seront estimées après le premier pilote ; aucun délai d’inférence n’est promis.
+Les lots ci-dessous constituent le plan approuvé. L'implémentation native et le banc sont décrits dans le [guide runtime](GENERATION_DYNAMIQUE_DECORS_RUNTIME.md) ; la qualification réelle est en cours. Les contrôles et l'intégration précèdent la décision de changer le mode par défaut. Aucun délai d'inférence n'est promis et son optimisation est différée à la demande de l'utilisateur.
 
 | Lot | Travail et livrables | Dépendances | Critère de passage |
 |---|---|---|---|
@@ -286,7 +286,7 @@ Tous les lots ci-dessous sont **à faire**. Les noms de nouveaux fichiers et d�
 | [main.cpp](../src/main.cpp), [CMakeLists.txt](../CMakeLists.txt) | Commandes de banc et mode explicite, sources et tests nouveaux. |
 | [scripts](../scripts/), [packaging](../packaging/) | Corpus, rapports, distribution du guide et des contrats nécessaires au runtime. |
 
-Options de travail possibles : `--scene-generation-mode hybrid|dynamic`, `--dump-scene-design-prompt`, `--scene-design-self-test`. **Elles n’existent pas encore et ne sont pas des commandes à lancer.** Leur interface définitive appartient à DYN-01.
+L'interface retenue est décrite dans le [guide runtime](GENERATION_DYNAMIQUE_DECORS_RUNTIME.md), notamment `--scene-generation-mode hybrid|dynamic` et `--generate-dynamic-scene`. Les idées initiales `--dump-scene-design-prompt` et `--scene-design-self-test` n'ont pas été ajoutées : les tests ciblés passent par CTest.
 
 ## 9. Expérience comparative et recette
 
@@ -347,7 +347,7 @@ Codex conserve la conception des contrats, les interfaces, l’autorité du mond
 
 Chaque délégation suit le [workflow local](./duo/SETUP.md) : contrat exact, nouveau worktree, parents créés, preuve extérieure au dépôt, arrêt sur échec d’outil, revue des écritures et intégration sélective. Le duo de développement ne change pas le modèle exécuté par le jeu.
 
-Les prochaines actions concrètes seront :
+L'ordre de démarrage retenu était :
 
 1. DYN-01 : rédiger le schéma du plan, le contexte de sorties et la table des diagnostics, puis extraire le guide artistique compact.
 2. DYN-02 : faire passer trois briefs inédits par le runtime natif, sans raccord SDL ni remplacement des salles actuelles.

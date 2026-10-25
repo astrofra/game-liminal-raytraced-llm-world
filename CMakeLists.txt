@@ -19,6 +19,9 @@ set(LIMINAL_SOURCES
     src/main.cpp
     src/game_state.cpp
     src/llm_runtime.cpp
+    src/scene_design.cpp
+    src/scene_validation.cpp
+    src/dynamic_scene.cpp
     src/scene.cpp
     src/scene_compiler.cpp
     src/renderer.cpp
@@ -36,7 +39,13 @@ add_custom_command(OUTPUT "${MODEL_HEADER}"
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_model_header.py" "${MODEL_HEADER}"
     DEPENDS scripts/generate_model_header.py scripts/model_profiles.py scripts/ministral_models.json
     VERBATIM)
-add_executable(liminal_cornell_renderer ${LIMINAL_SOURCES} "${MODEL_HEADER}")
+set(SCENE_GUIDE_HEADER "${CMAKE_CURRENT_BINARY_DIR}/generated/scene_composition.generated.h")
+add_custom_command(OUTPUT "${SCENE_GUIDE_HEADER}"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_scene_guide.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/scene_generation/composition_v1.txt" "${SCENE_GUIDE_HEADER}"
+    DEPENDS scripts/embed_scene_guide.py assets/scene_generation/composition_v1.txt
+    VERBATIM)
+add_executable(liminal_cornell_renderer ${LIMINAL_SOURCES} "${MODEL_HEADER}" "${SCENE_GUIDE_HEADER}")
 target_include_directories(liminal_cornell_renderer PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 add_executable(liminal_llm_channels_test tests/llm_channels_test.cpp)
 target_include_directories(liminal_llm_channels_test PRIVATE src)
@@ -50,11 +59,22 @@ if(MSVC)
 endif()
 add_test(NAME distant_light COMMAND liminal_distant_light_test)
 
+add_executable(liminal_dynamic_scene_test tests/dynamic_scene_test.cpp
+    src/scene_design.cpp src/scene_validation.cpp src/dynamic_scene.cpp src/scene.cpp src/renderer.cpp
+    src/game_state.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp
+    "${MODEL_HEADER}" "${SCENE_GUIDE_HEADER}")
+target_include_directories(liminal_dynamic_scene_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor"
+    "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash" "${CMAKE_CURRENT_BINARY_DIR}/generated")
+if(MSVC)
+    target_compile_options(liminal_dynamic_scene_test PRIVATE /W4 /wd4996 /utf-8)
+endif()
+add_test(NAME dynamic_scene COMMAND liminal_dynamic_scene_test)
+
 if(WIN32)
     target_link_libraries(liminal_cornell_renderer PRIVATE shell32)
 endif()
 
-target_include_directories(liminal_cornell_renderer PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor")
+target_include_directories(liminal_cornell_renderer PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash")
 
 if (LIMINAL_ENABLE_OPENMP)
     find_package(OpenMP)

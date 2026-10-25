@@ -15,6 +15,7 @@ struct LlmPromptMessage {
 struct LlmGenerationConfig {
     std::string model_path;
     std::string grammar_path;
+    std::string json_schema; // Optional schema for constrained final JSON; no effect on ordinary calls.
     int n_ctx;
     int n_batch;
     int n_ubatch;

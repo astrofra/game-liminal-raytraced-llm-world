@@ -32,6 +32,7 @@ Current state:
 - software viewport post-processing with a sharp central field, progressive peripheral blur, and low-cost radial RGB dispersion
 - first generated-room graph for improvised cardinal navigation
 - authoritative hard/soft/spatial state with deterministic and hybrid scene compilation
+- experimental `--scene-generation-mode dynamic`: native spatial plan, free `.scene` generation, bounded validation/repair, immutable accepted scenes; real-model qualification has not passed ([French runtime guide](documentation/GENERATION_DYNAMIQUE_DECORS_RUNTIME.md), [observed results](documentation/GENERATION_DYNAMIQUE_DECORS_BILAN.md))
 - seven-place Eryx survey route with deterministic invisible contact and non-reciprocal traversal
 - five authored exploration apertures from the canonical route into persistent generated-room branches
 - model-directed Venus heat loop linking external temperature, suit-buffered body temperature, and LLM sampling temperature

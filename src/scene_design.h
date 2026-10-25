@@ -1,0 +1,67 @@
+#ifndef LIMINAL_SCENE_DESIGN_H
+#define LIMINAL_SCENE_DESIGN_H
+
+#include "scene.h"
+#include <string>
+#include <vector>
+
+namespace liminal {
+
+struct SceneDesignContext {
+    std::string brief;
+    std::string origin;
+    std::string environment; // Read-only engine state and known invisible barriers.
+    std::string language = "English";
+    std::string entry_direction = "south"; // Side through which the player enters.
+    std::vector<std::string> allowed_exits = {"north", "east", "south", "west"};
+    std::vector<std::string> recent_intents;
+};
+
+struct DesignMass {
+    std::string id, role, support;
+    Vec3 center, size, rotation;
+    std::string shape; // Authored assembly/opening description, optional in older plans.
+};
+
+struct DesignBinding { std::string object_id, mass_id; };
+struct DesignPassage { std::string direction; Vec3 center, size; };
+
+struct SceneDesignV1 {
+    int version = 1;
+    std::string title, intent, arrival, focal_object_id, lighting_mode, lighting_intent, continuity;
+    Vec3 bounds_center, bounds_size;
+    float floor_y = 0.0f;
+    Camera camera;
+    std::vector<DesignMass> masses;
+    std::vector<DesignBinding> interaction_bindings;
+    std::vector<DesignPassage> reserved_passages;
+};
+
+struct SceneDiagnostic {
+    std::string code, object_id, detail;
+};
+
+struct SceneAuditReport {
+    bool accepted = false;
+    bool bounds_derived = false;
+    std::vector<SceneDiagnostic> diagnostics;
+    size_t triangles = 0, materials = 0, geometry_directives = 0;
+    double focal_coverage = 0.0, near_coverage = 0.0, sky_coverage = 0.0;
+    double mean_luminance = 0.0, luminance_deviation = 0.0;
+};
+
+std::string SceneDesignSchema();
+std::string SerializeSceneDesign(const SceneDesignV1& design);
+bool ParseSceneDesign(const std::string& text, const SceneDesignContext& context,
+                      SceneDesignV1* design, SceneAuditReport* report);
+std::string SerializeSceneAudit(const SceneAuditReport& report);
+std::string SceneTextHash(const std::string& text);
+std::string SceneCompositionGuide();
+std::string BuildSceneDesignPrompt(const SceneDesignContext& context);
+std::string BuildSceneProgramPrompt(const SceneDesignContext& context, const SceneDesignV1* design);
+bool AuditDynamicScene(const std::string& program, const SceneDesignContext& context,
+                       const SceneDesignV1* design, Scene* scene, SceneAuditReport* report);
+bool AuditDynamicPreview(const std::vector<unsigned char>& pixels, const std::string& lighting_mode,
+                         SceneAuditReport* report);
+} // namespace liminal
+#endif

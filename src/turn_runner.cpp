@@ -2069,42 +2069,45 @@ static bool RefreshGeneratedRoomCache(
         return false;
     }
 
-    GeneratedRoom refreshed_room = *existing_room;
-    refreshed_room.spatial_state = result->updated_spatial_state;
-    refreshed_room.spatial_state.location_id = kLocationUnknown;
-    refreshed_room.spatial_state.canonical_fixture.clear();
-    EnsureActionableVisibleObjects(&refreshed_room.spatial_state);
-
-    Scene refreshed_scene;
-    std::string scene_source;
-    bool scene_fallback_used = false;
-    if (!BuildGeneratedRoomSceneProgram(
-            config,
-            refreshed_room.spatial_state,
-            &refreshed_room.scene_text,
-            &refreshed_scene,
-            &scene_source,
-            &scene_fallback_used,
-            error_buffer,
-            error_buffer_size)) {
+    // Preserve the historical mutation path for legacy rooms. Ordinary visits
+    // reuse their saved program; the new contract requires a separate mutation protocol.
+    const auto& delta=result->turn_result.spatial_delta;
+    const bool visual_change=delta.time_of_day_changed||delta.visibility_changed||delta.desert_state_changed||
+        delta.interior_density_changed||delta.alert_level_changed||delta.anchors_present_changed||delta.visible_objects_changed||
+        delta.spatial_anomalies_changed||delta.scene_constraints_changed;
+    if(!existing_room->scene_contract_version&&visual_change) {
+        GeneratedRoom refreshed_room=*existing_room;
+        refreshed_room.spatial_state=result->updated_spatial_state;
+        refreshed_room.spatial_state.location_id=kLocationUnknown;
+        refreshed_room.spatial_state.canonical_fixture.clear();
+        EnsureActionableVisibleObjects(&refreshed_room.spatial_state);
+        Scene refreshed_scene;
+        if(!BuildGeneratedRoomSceneProgram(config,refreshed_room.spatial_state,&refreshed_room.scene_text,
+            &refreshed_scene,&refreshed_room.scene_source,&refreshed_room.scene_fallback_used,error_buffer,error_buffer_size))return false;
+        result->generated_rooms_to_add.push_back(refreshed_room);
+        result->generated_room_cache_refreshed=true;
+        result->generated_room_scene_fallback_used=refreshed_room.scene_fallback_used;
+        result->generated_room_scene_source=refreshed_room.scene_source;
+        result->raw_scene_audit_response_text=refreshed_room.scene_text;
+        CaptureSceneDebugArtifacts(refreshed_room.spatial_state,&refreshed_room.scene_text,
+            &result->rendered_scene_text,&result->rendered_scene_debug_text);
+        result->rendered_scene=std::move(refreshed_scene);
+        result->used_candidate_scene_for_render=false;
+        return true;
+    }
+    if (existing_room->scene_contract_version &&
+        (existing_room->scene_hash != SceneTextHash(existing_room->scene_text) ||
+         existing_room->scene_plan_hash != SceneTextHash(existing_room->scene_design_json))) {
+        SetError(error_buffer,error_buffer_size,"Invalid generated scene hash: %s",existing_room->room_id.c_str());
         return false;
     }
+    result->updated_spatial_state=existing_room->spatial_state;
+    result->generated_room_scene_source=existing_room->scene_source;
+    CaptureSceneDebugArtifacts(existing_room->spatial_state,&existing_room->scene_text,
+        &result->rendered_scene_text,&result->rendered_scene_debug_text);
+    return AuditSceneCandidateText(existing_room->room_id.c_str(),existing_room->scene_text.c_str(),
+        &result->rendered_scene,error_buffer,error_buffer_size);
 
-    refreshed_room.scene_source = scene_source;
-    refreshed_room.scene_fallback_used = scene_fallback_used;
-    result->generated_rooms_to_add.push_back(refreshed_room);
-    result->generated_room_cache_refreshed = true;
-    result->generated_room_scene_fallback_used = scene_fallback_used;
-    result->generated_room_scene_source = scene_source;
-    result->raw_scene_audit_response_text = refreshed_room.scene_text;
-    CaptureSceneDebugArtifacts(
-        refreshed_room.spatial_state,
-        &refreshed_room.scene_text,
-        &result->rendered_scene_text,
-        &result->rendered_scene_debug_text);
-    result->rendered_scene = refreshed_scene;
-    result->used_candidate_scene_for_render = false;
-    return true;
 }
 
 static const char* DescribeDirection(CardinalDirection direction, GameLanguage language)
@@ -2469,6 +2472,10 @@ static bool LoadSceneForPlace(
         return false;
     }
 
+    if(room->scene_contract_version && (room->scene_contract_version!=1 ||
+       room->scene_hash!=SceneTextHash(room->scene_text) || room->scene_plan_hash!=SceneTextHash(room->scene_design_json))) {
+        SetError(error_buffer,error_buffer_size,"Invalid generated scene provenance: %s",place_id.c_str());return false;
+    }
     return AuditSceneCandidateText(place_id.c_str(), room->scene_text.c_str(), scene, error_buffer, error_buffer_size);
 }
 
@@ -2519,7 +2526,7 @@ static bool ApplyPlaceToState(
     *spatial_state = room->spatial_state;
     spatial_state->location_id = kLocationUnknown;
     spatial_state->canonical_fixture.clear();
-    EnsureActionableVisibleObjects(spatial_state);
+    if(!room->scene_contract_version) EnsureActionableVisibleObjects(spatial_state);
     hard_state->current_location_id = kLocationUnknown;
     if (spatial_state->alert_level > 0) {
         hard_state->alert_level = spatial_state->alert_level;
@@ -2806,7 +2813,7 @@ void UpdateSessionStateFromTurn(
     const HeadlessTurnResult& turn_result,
     SessionState* session_state)
 {
-    if (!session_state) {
+    if (!session_state || !turn_result.accepted) {
         return;
     }
 
@@ -3014,6 +3021,91 @@ static bool RunHeadlessTurnFromStateImpl(
             traversal_direction);
         result->prospective_spatial_state = prospective_spatial_state;
         result->prospective_spatial_state_known = true;
+
+        if(config.dynamic_scenes) {
+            SceneDesignContext context;
+            context.language=GameLanguageEnglishName(initial_session_state.language);
+            context.entry_direction=CardinalDirectionToString(OppositeCardinalDirection(traversal_direction));
+            context.origin=initial_session_state.spatial_state.room_title+": "+initial_session_state.spatial_state.room_summary;
+            json barriers=json::array();
+            for(const auto& barrier:initial_session_state.invisible_barriers)
+                if(barrier.place_id==result->initial_place_id&&barrier.discovered)
+                    barriers.push_back(CardinalDirectionToString(barrier.direction));
+            context.environment=json({{"time_of_day",TimeOfDayToString(prospective_spatial_state.time_of_day)},
+                {"visibility",VisibilityLevelToString(prospective_spatial_state.visibility_level)},
+                {"spatial_entropy",result->initial_hard_state.spatial_entropy},
+                {"external_temperature_c",result->initial_hard_state.external_temperature_c},
+                {"world_x",prospective_spatial_state.world_x},{"world_z",prospective_spatial_state.world_z},
+                {"invisible_barriers_at_origin",barriers}}).dump();
+            context.brief="Invent a previously unseen Venusian exploration place inspired by In the Walls of Eryx. "
+                "Use monumental simple geometry, yellow-green sky, global illumination and a strong architectural void. "
+                "Make this place distinct from recently visited places. Match the engine context without drawing invisible barriers.";
+            for(auto it=initial_session_state.generated_rooms.rbegin();it!=initial_session_state.generated_rooms.rend() && context.recent_intents.size()<4;++it)
+                context.recent_intents.push_back(it->spatial_state.room_summary);
+            auto progress=[](DynamicScenePhase phase,const char* text,const char* delta,void* data) {
+                const auto& c=*static_cast<const HeadlessTurnConfig*>(data);
+                const HeadlessTurnStreamPhase mapped=phase==DynamicScenePhase::Design?kHeadlessTurnStreamSceneDesign:
+                    phase==DynamicScenePhase::Program?kHeadlessTurnStreamSceneProgram:
+                    phase==DynamicScenePhase::Repair?kHeadlessTurnStreamRepairResponse:
+                    phase==DynamicScenePhase::Audit?kHeadlessTurnStreamSceneAudit:kHeadlessTurnStreamScenePreview;
+                return !c.stream_callback || c.stream_callback(mapped,text,delta,c.stream_user_data);
+            };
+            DynamicSceneResult generated;
+            DynamicSceneConfig scene_config=config.dynamic_scene_config;scene_config.direct=false;
+            const bool scene_ready=GenerateDynamicScene(context,body_driven_config.generation_config,scene_config,progress,
+                                     const_cast<HeadlessTurnConfig*>(&config),&generated);
+            result->dynamic_scene_design_json=generated.plan_json;
+            result->dynamic_scene_metrics_json=generated.metrics_json;
+            result->raw_scene_audit_response_text=generated.scene_text;
+            if(!scene_ready) {
+                fprintf(stderr,"[dynamic-scene] rejected: %s\n",generated.error.c_str());
+                SetError(error_buffer,error_buffer_size,"%s",PlayerText(initial_session_state.language,
+                    "This place could not be prepared. You remain here; try again.",
+                    "Ce lieu n'a pas pu être préparé. Vous restez ici ; vous pouvez réessayer.",
+                    "Stedet kunne ikke klargjøres. Du blir her; prøv igjen.",
+                    "Stedet kunne ikke klargøres. Du bliver her; prøv igen.",
+                    "Dieser Ort konnte nicht vorbereitet werden. Du bleibst hier; versuche es erneut.",
+                    "Non è stato possibile preparare il luogo. Rimani qui; puoi riprovare."));
+                return false;
+            }
+            GeneratedRoom room;
+            room.room_id=BuildGeneratedPlaceId(initial_session_state.next_generated_room_index);
+            room.spatial_state=prospective_spatial_state;
+            room.spatial_state.location_id=kLocationUnknown;room.spatial_state.canonical_fixture.clear();
+            room.spatial_state.room_title=generated.design.title;room.spatial_state.room_summary=generated.design.intent;
+            room.spatial_state.location_archetype="dynamic_scene";
+            room.spatial_state.anchors.clear();room.spatial_state.visible_objects.clear();
+            room.spatial_state.scene_constraints.clear();room.spatial_state.spatial_anomalies.clear();
+            for(const auto& binding:generated.design.interaction_bindings)room.spatial_state.visible_objects.push_back(binding.object_id);
+            room.spatial_state.blocked_exits.clear();
+            for(const auto& direction:context.allowed_exits) {
+                bool open=false;for(const auto& passage:generated.design.reserved_passages)if(passage.direction==direction)open=true;
+                if(!open)room.spatial_state.blocked_exits.push_back(direction);
+            }
+            // Lighting is an artistic choice; the plan cannot advance the world clock.
+            room.scene_text=generated.scene_text;room.scene_source="dynamic_v1";
+            room.scene_contract_version=1;room.scene_design_json=generated.plan_json;room.scene_hash=generated.scene_hash;
+            room.scene_plan_hash=SceneTextHash(generated.plan_json);room.scene_profile=config.generation_config.profile_name;
+            const auto& model_path=config.generation_config.model_path;
+            const auto model_separator=model_path.find_last_of("/\\");
+            room.scene_model_filename=model_path.substr(model_separator==std::string::npos?0:model_separator+1);
+            room.scene_seed=config.generation_config.seed;room.scene_repairs=generated.repairs;
+            room.scene_prompt_version="scene-authoring-v8/normalized-design-v1/"+
+                SceneTextHash(BuildSceneDesignPrompt(context)+BuildSceneProgramPrompt(context,&generated.design));
+            result->generated_rooms_to_add.push_back(room);
+            result->generated_room_created=true;result->generated_room_scene_source=room.scene_source;
+            AddRoomLinkUnique(&result->room_links_to_add,result->initial_place_id,traversal_direction,room.room_id);
+            AddRoomLinkUnique(&result->room_links_to_add,room.room_id,OppositeCardinalDirection(traversal_direction),result->initial_place_id);
+            result->updated_place_id=room.room_id;result->updated_hard_state.current_location_id=kLocationUnknown;
+            ++result->updated_hard_state.move_count;++result->updated_hard_state.turn_number;
+            result->updated_spatial_state=room.spatial_state;
+            result->turn_result.intent=std::string("move_")+CardinalDirectionToString(traversal_direction)+"_generated_room";
+            result->turn_result.narration=generated.design.arrival;
+            result->updated_soft_state.rolling_summary=generated.design.arrival;
+            CaptureSceneDebugArtifacts(room.spatial_state,&room.scene_text,&result->rendered_scene_text,&result->rendered_scene_debug_text);
+            result->rendered_scene=std::move(generated.scene);
+            return true;
+        }
 
         const std::string room_prompt = BuildGeneratedRoomPrompt(
             initial_session_state.language,
@@ -3271,6 +3363,22 @@ static bool RunHeadlessTurnFromStateImpl(
         return true;
     }
 
+    const GeneratedRoom* accepted_room=FindGeneratedRoomById(initial_session_state,result->initial_place_id);
+    if(accepted_room && accepted_room->scene_contract_version==1) {
+        const std::string command=ToLowerAsciiCopy(TrimWhitespaceCopy(player_command?player_command:""));
+        const std::vector<std::string> observations={"look","l","look around","regarder","regarde","observer","observe",
+            "se","se deg rundt","se dig omkring","schauen","umsehen","guarda","osserva"};
+        bool observing=std::find(observations.begin(),observations.end(),command)!=observations.end();
+        for(const auto& object:accepted_room->spatial_state.visible_objects)for(const auto* verb:{"examine ","inspect ","x ","examiner ","examine ","untersuche ","undersøk ","undersøg ","esamina "})
+            if(command==std::string(verb)+object)observing=true;
+        if(observing) {
+            result->turn_result.intent="observe_accepted_scene";
+            result->turn_result.narration=accepted_room->spatial_state.room_summary;
+            ++result->updated_hard_state.turn_number;
+            result->updated_soft_state.rolling_summary=result->turn_result.narration;
+            return RefreshGeneratedRoomCache(initial_session_state,config,result,error_buffer,error_buffer_size);
+        }
+    }
     const std::string user_prompt = BuildTurnPrompt(
         initial_session_state.language,
         result->initial_hard_state,
@@ -3388,6 +3496,19 @@ static bool RunHeadlessTurnFromStateImpl(
         return true;
     }
 
+    if(accepted_room && accepted_room->scene_contract_version==1) {
+        // No geometric mutation protocol exists in v1. Preserve every accepted binding and
+        // state field; language-model movement intents were handled authoritatively above.
+        result->turn_result=TurnResult();result->turn_result.intent="unsupported_scene_action";
+        result->turn_result.narration=PlayerText(initial_session_state.language,
+            "Nothing changes here. You can observe the place or choose a direction.",
+            "Rien ne change ici. Vous pouvez observer le lieu ou choisir une direction.",
+            "Ingenting endres her. Du kan se deg rundt eller velge en retning.",
+            "Intet ændrer sig her. Du kan se dig omkring eller vælge en retning.",
+            "Hier verändert sich nichts. Du kannst dich umsehen oder eine Richtung wählen.",
+            "Qui non cambia nulla. Puoi osservare il luogo o scegliere una direzione.");
+        return RefreshGeneratedRoomCache(initial_session_state,config,result,error_buffer,error_buffer_size);
+    }
     ProtectCanonicalTopologyFromNarrativeDelta(initial_session_state, &result->turn_result);
     ApplyTurnResult(result->turn_result, &result->updated_hard_state, &result->updated_soft_state, &result->updated_spatial_state);
     result->updated_place_id = DetermineUpdatedPlaceIdAfterStandardTurn(initial_session_state, result->updated_spatial_state);
@@ -3476,6 +3597,8 @@ bool RunHeadlessTurnFromState(
     char* error_buffer,
     size_t error_buffer_size)
 {
+    // A caller may reuse its last accepted result when cancellation arrives early.
+    if (result) *result = HeadlessTurnResult();
     struct CancellationGate {
         HeadlessTurnStreamCallback callback;
         void* user_data;
@@ -3520,6 +3643,7 @@ bool RunHeadlessTurnFromState(
         SetError(error_buffer, error_buffer_size, "Turn cancelled: %s", "state was not committed");
         return false;
     }
+    if(result) result->accepted=success;
     return success;
 }
 

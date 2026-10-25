@@ -4,6 +4,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <atomic>
+#include <mutex>
 
 #if defined(LIMINAL_ENABLE_OPENMP)
   #include <omp.h>
@@ -1102,7 +1104,8 @@ static bool RenderSceneInternal(
     const Scene& scene,
     const RenderConfig& config,
     bool print_progress,
-    std::vector<unsigned char>* pixels)
+    std::vector<unsigned char>* pixels,
+    const RenderControl* control)
 {
     if (!pixels || config.width <= 0 || config.height <= 0) {
         return false;
@@ -1135,9 +1138,17 @@ static bool RenderSceneInternal(
             openmp_threads);
     }
 
+    std::atomic<bool> cancelled(false);
+    std::mutex control_mutex;
     LIMINAL_OMP_PARALLEL_FOR
     for (int y = 0; y < config.height; ++y) {
+        if (control && control->continue_render) {
+            std::lock_guard<std::mutex> lock(control_mutex);
+            if (!cancelled.load() && !control->continue_render(control->user)) cancelled.store(true);
+        }
+        if (cancelled.load()) continue;
         for (int x = 0; x < config.width; ++x) {
+            if (control && cancelled.load()) break;
             const uint32_t pixel_seed =
                 config.seed ^ (static_cast<uint32_t>(x) * 1973u) ^ (static_cast<uint32_t>(y) * 9277u);
             Rng rng(pixel_seed);
@@ -1163,24 +1174,31 @@ static bool RenderSceneInternal(
         printf("  lines %d / %d\n", config.height, config.height);
     }
 
-    return true;
+    return !cancelled.load();
 }
 
 }  // namespace
 
-bool RenderSceneToPixels(const Scene& scene, const RenderConfig& config, std::vector<unsigned char>* pixels)
+bool ProbeSceneRay(const Scene& scene, const Ray& ray, float max_distance, Hit* hit)
 {
-    return RenderSceneInternal(scene, config, false, pixels);
+    return hit && IntersectScene(scene, ray, max_distance, hit);
 }
 
-bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const char* output_path)
+bool RenderSceneToPixels(const Scene& scene, const RenderConfig& config, std::vector<unsigned char>* pixels,
+                         const RenderControl* control)
+{
+    return RenderSceneInternal(scene, config, false, pixels, control);
+}
+
+bool RenderSceneToImage(const Scene& scene, const RenderConfig& config, const char* output_path,
+                       const RenderControl* control)
 {
     if (!output_path) {
         return false;
     }
 
     std::vector<unsigned char> pixels;
-    if (!RenderSceneInternal(scene, config, true, &pixels)) {
+    if (!RenderSceneInternal(scene, config, true, &pixels, control)) {
         return false;
     }
 

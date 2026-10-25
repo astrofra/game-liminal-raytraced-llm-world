@@ -18,6 +18,7 @@
 #include "llama.h"
 #include "chat.h"
 #include "common.h"
+#include "json-schema-to-grammar.h"
 #endif
 
 namespace liminal {
@@ -441,7 +442,8 @@ bool GenerateChatCompletion(
         if (!sampler) return fail("error", "Failed to create sampler");
         if (config.use_json_grammar && !config.reasoning) {
             std::string grammar;
-            if (!ReadTextFile(config.grammar_path.c_str(), &grammar) || grammar.empty()) return fail("error", "JSON grammar unavailable");
+            if (!config.json_schema.empty()) grammar = json_schema_to_grammar(common_json::parse(config.json_schema));
+            else if (!ReadTextFile(config.grammar_path.c_str(), &grammar) || grammar.empty()) return fail("error", "JSON grammar unavailable");
             auto grammar_sampler = llama_sampler_init_grammar(vocab, grammar.c_str(), "root");
             if (!grammar_sampler) return fail("error", "JSON grammar initialization failed");
             llama_sampler_chain_add(sampler.get(), grammar_sampler);

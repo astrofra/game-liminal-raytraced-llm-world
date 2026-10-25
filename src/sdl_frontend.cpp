@@ -37,6 +37,7 @@ struct WorkerSharedState {
     bool result_ready;
     bool error_ready;
     WorkerActivity activity;
+    GameLanguage language = kGameLanguageEnglish;
     std::string status_text;
     std::string error_text;
     bool terminal_stream_open;
@@ -220,20 +221,29 @@ static const char* StreamPhaseLabel(HeadlessTurnStreamPhase phase)
             return "repair-json";
         case kHeadlessTurnStreamSceneProgram:
             return "scene-program";
+        case kHeadlessTurnStreamSceneDesign: return "scene-design";
+        case kHeadlessTurnStreamSceneAudit: return "scene-audit";
+        case kHeadlessTurnStreamScenePreview: return "scene-preview";
         default:
             return "stream";
     }
 }
 
-static const char* StreamPhaseStatus(HeadlessTurnStreamPhase phase)
+static const char* StreamPhaseStatus(HeadlessTurnStreamPhase phase, GameLanguage language)
 {
     switch (phase) {
         case kHeadlessTurnStreamPrimaryResponse:
-            return "Streaming turn response...";
+            return UiText(language,"Thinking...","Réflexion...","Tenker...","Tænker...","Überlegt...","Riflessione...");
         case kHeadlessTurnStreamRepairResponse:
-            return "Repairing malformed turn JSON...";
+            return UiText(language,"Adjusting the place...","Ajustement du lieu...","Justerer stedet...","Justerer stedet...","Ort wird angepasst...","Adattamento del luogo...");
         case kHeadlessTurnStreamSceneProgram:
-            return "Streaming candidate scene program...";
+            return UiText(language,"Building the place...","Construction du lieu...","Bygger stedet...","Bygger stedet...","Ort wird aufgebaut...","Costruzione del luogo...");
+        case kHeadlessTurnStreamSceneDesign:
+            return UiText(language,"Imagining the place...","Composition du lieu...","Forestiller stedet...","Forestiller stedet...","Ort wird entworfen...","Ideazione del luogo...");
+        case kHeadlessTurnStreamSceneAudit:
+            return UiText(language,"Checking the passages...","Vérification des passages...","Sjekker passasjene...","Kontrollerer passagerne...","Durchgänge werden geprüft...","Verifica dei passaggi...");
+        case kHeadlessTurnStreamScenePreview:
+            return UiText(language,"Preparing the view...","Préparation de la vue...","Forbereder utsikten...","Forbereder udsigten...","Ansicht wird vorbereitet...","Preparazione della vista...");
         default:
             return "Streaming...";
     }
@@ -1492,9 +1502,15 @@ static bool OnHeadlessTurnStream(
 
     std::lock_guard<std::mutex> lock(shared_state->mutex);
     shared_state->activity = kWorkerActivityLlm;
-    shared_state->status_text = StreamPhaseStatus(phase);
+    shared_state->status_text = StreamPhaseStatus(phase,shared_state->language);
     WriteTerminalStreamChunkLocked(shared_state, phase, delta_text);
     return !shared_state->stop_requested.load();
+}
+
+static const char* TurnCancelledText(GameLanguage language)
+{
+    return UiText(language,"Cancelled. You remain here.","Annulé. Vous restez ici.",
+        "Avbrutt. Du blir her.","Annulleret. Du bliver her.","Abgebrochen. Du bleibst hier.","Annullato. Rimani qui.");
 }
 
 static void FinalizeWorkerFailure(WorkerSharedState* shared_state, const char* message)
@@ -1510,7 +1526,8 @@ static void FinalizeWorkerFailure(WorkerSharedState* shared_state, const char* m
     shared_state->error_ready = true;
     shared_state->activity = kWorkerActivityFailed;
     shared_state->status_text = "Turn failed.";
-    shared_state->error_text = message ? message : "Unknown error.";
+    shared_state->error_text = shared_state->stop_requested.load()?TurnCancelledText(shared_state->language):
+        (message ? message : "Unknown error.");
 }
 
 static PeripheralPostProcessConfig PostProcessConfigForAnimationImage(
@@ -1536,16 +1553,15 @@ static void RunTurnWorker(
         return;
     }
 
-    shared_state->stop_requested.store(false);
-
     HeadlessTurnConfig turn_config = config.turn_config;
     turn_config.stream_callback = OnHeadlessTurnStream;
     turn_config.stream_user_data = shared_state;
 
     {
         std::lock_guard<std::mutex> lock(shared_state->mutex);
+        shared_state->language=initial_session_state.language;
         shared_state->activity = kWorkerActivityLlm;
-        shared_state->status_text = "Preparing turn...";
+        shared_state->status_text = StreamPhaseStatus(kHeadlessTurnStreamPrimaryResponse,shared_state->language);
         shared_state->error_text.clear();
     }
 
@@ -1579,15 +1595,15 @@ static void RunTurnWorker(
     {
         std::lock_guard<std::mutex> lock(shared_state->mutex);
         CloseTerminalStreamLocked(shared_state);
-        PrintTurnProvenance(updated_session_state, turn_result);
-        PrintHeadlessTurnDebugTrace(turn_result, stdout);
         shared_state->activity = kWorkerActivityRenderer;
-        shared_state->status_text = "Raytracing scene...";
+        shared_state->status_text = UiText(shared_state->language,"Calculating the view...","Calcul de la vue...",
+            "Beregner utsikten...","Beregner udsigten...","Ansicht wird berechnet...","Calcolo della vista...");
     }
 
     const std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();
     std::vector<unsigned char> pixels;
-    if (!RenderSceneToPixels(turn_result.rendered_scene, config.render_config, &pixels)) {
+    RenderControl control{[](void* state) { return !static_cast<WorkerSharedState*>(state)->stop_requested.load(); },shared_state};
+    if (!RenderSceneToPixels(turn_result.rendered_scene, config.render_config, &pixels,&control)) {
         FinalizeWorkerFailure(shared_state, "Rendering failed.");
         return;
     }
@@ -1611,6 +1627,8 @@ static void RunTurnWorker(
     {
         std::lock_guard<std::mutex> lock(shared_state->mutex);
         CloseTerminalStreamLocked(shared_state);
+        PrintTurnProvenance(updated_session_state, turn_result);
+        PrintHeadlessTurnDebugTrace(turn_result, stdout);
         shared_state->busy = false;
         shared_state->result_ready = true;
         shared_state->error_ready = false;
@@ -1680,7 +1698,13 @@ static void RunAnimationWorker(
         scene_snapshot.camera = CalculateAnimatedCameraPose(pose_a, pose_b, image_index);
         const std::chrono::steady_clock::time_point frame_start = std::chrono::steady_clock::now();
         std::vector<unsigned char> pixels;
-        if (!RenderSceneToPixels(scene_snapshot, render_config, &pixels)) {
+        struct AnimationGate { AnimationWorkerSharedState* state; uint64_t generation; } gate{shared_state,generation_id};
+        RenderControl control{[](void* p) {
+            const auto& g=*static_cast<AnimationGate*>(p);
+            return !g.state->stop_requested.load() && g.state->active_generation_id.load()==g.generation;
+        },&gate};
+        if (!RenderSceneToPixels(scene_snapshot, render_config, &pixels,&control)) {
+            if(shared_state->stop_requested.load() || shared_state->active_generation_id.load()!=generation_id) {cancelled=true;break;}
             failed = true;
             failure_text = "Animated-view raytracing failed.";
             break;
@@ -2362,7 +2386,7 @@ bool RunSdlFrontend(
                 bool busy = false;
                 {
                     std::lock_guard<std::mutex> lock(worker_shared_state.mutex);
-                    busy = worker_shared_state.busy;
+                    busy = worker_shared_state.busy || worker_shared_state.result_ready;
                 }
                 if (busy) {
                     worker_shared_state.stop_requested.store(true);
@@ -2392,7 +2416,7 @@ bool RunSdlFrontend(
                 bool busy = false;
                 {
                     std::lock_guard<std::mutex> lock(worker_shared_state.mutex);
-                    busy = worker_shared_state.busy;
+                    busy = worker_shared_state.busy || worker_shared_state.result_ready;
                 }
                 if (busy) {
                     ui_message = UiText(
@@ -2502,6 +2526,11 @@ bool RunSdlFrontend(
             worker_activity = worker_shared_state.activity;
             worker_status = worker_shared_state.status_text.empty() ? "idle" : worker_shared_state.status_text;
 
+            if(worker_shared_state.result_ready && worker_shared_state.stop_requested.load()) {
+                worker_shared_state.result_ready=false;
+                worker_shared_state.error_ready=true;
+                worker_shared_state.error_text=TurnCancelledText(worker_shared_state.language);
+            }
             if (worker_shared_state.result_ready) {
                 std::swap(completed_session_state, worker_shared_state.session_state);
                 std::swap(completed_turn_result, worker_shared_state.turn_result);
@@ -2737,7 +2766,8 @@ bool RunSdlFrontend(
             worker_busy,
             SDL_GetTicks());
 
-        const std::string display_message = !ui_message.empty() ? ui_message : persistent_hint;
+        const std::string display_message = !ui_message.empty() ? ui_message :
+            (worker_busy && config.turn_config.dynamic_scenes ? worker_status : persistent_hint);
         BuildTranscriptLines(
             current_session_state,
             pending_command,
