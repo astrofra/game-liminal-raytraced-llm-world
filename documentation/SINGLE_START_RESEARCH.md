@@ -1,0 +1,65 @@
+# Un seul départ, une nouvelle exploration à chaque partie
+
+25 octobre 2026 — évolution demandée après la première tranche de la roadmap.
+
+## Jouer
+
+Lancer `play_within_the_latent_walls.bat`. Le jeu commence au **seuil de la carrière**, seul lieu Eryx prédéfini. Son décor natif s'inspire du [concept 12, variante raytracer](concept-art/12-les-vingt-cinq-centimetres-du-vide-raytracer-v2.png) : dalle de verre de 25 cm, parois monumentales à gauche, sol ocre et horizon dégagé à droite. Le [rendu moteur](benchmarks/eryx-local/single-start/start.png) montre la transposition. Les texels procéduraux et la variation de rugosité du concept ne sont pas implémentés par ce lot ; les matériaux diffus restent simples.
+
+**Est** découvre un lieu généré directement par Gemma/Ollama. Continuer à l'est découvre un autre lieu ; **ouest** revient au précédent. La génération intervient à la demande, jamais au chargement d'une archive. La graine initiale change à chaque lancement ; les découvertes et nouvelles tentatives ont des graines distinctes. Les briefs varient entre cinq relations architecturales, sans géométrie prédéfinie.
+
+Dans une même partie, les lieux acceptés restent en mémoire et les revisites conservent leur géométrie. À la fermeture, cette mémoire ne devient pas l'entrée de la partie suivante. SDL refuse `--load-state`. La lecture d'un état reste disponible uniquement dans les outils headless de diagnostic.
+
+La navigation reste textuelle. Une génération peut être rejetée après son unique correction ; le joueur reste alors au lieu précédent et peut réessayer. Les sorties nord/sud sont fermées dans ce parcours, et l'ouest est fermé au départ.
+
+## Archives automatiques de recherche
+
+Sous Windows, chaque partie écrit un dossier unique dans :
+
+```text
+%LOCALAPPDATA%\WithinTheLatentWalls\research\run-<date-UTC>-<identifiant>\
+```
+
+Sur cette machine : `C:/Users/fra/AppData/Local/WithinTheLatentWalls/research/`. Le chemin exact s'affiche aussi dans la console du lanceur. Les archives et journaux restent hors du dépôt. Aucun dossier existant n'est réutilisé pour une nouvelle partie, même avec une graine diagnostique identique.
+
+| Fichier | Contenu |
+|---|---|
+| `README.md` | Index lisible des lieux, descriptions et liens vers les images. |
+| `manifest.json` | Début UTC, backend, modèle, graine initiale, paramètres de rendu et consignes communes. |
+| `places/place-*.txt` | Description du lieu et brief de composition pour les lieux générés. |
+| `places/place-*.scene` | Programme exact du lieu accepté ; le premier lieu est également archivé. |
+| `places/place-*.png` | Première image affichée, post-traitement inclus, sans HUD ; pas les huit images de respiration. |
+| `places/place-*.json` | Identifiant, description, empreinte de scène, modèle, graine et provenance. |
+| `events.jsonl`, `transcript.txt` | Commandes envoyées au moteur, résultats, narration et erreurs. |
+| `turns/turn-*.json` | Réponse, prompt disponible, métriques de composition, provenance et résultat du tour. |
+| `turns/turn-*.scene` | Scène affichable du tour lorsqu'elle existe. |
+| `turns/turn-*.candidate.scene` | Dernier candidat produit, y compris en cas de rejet ; peut être incomplet et n'est pas forcément accepté. |
+| `state.json` | Dernier état validé, pour analyse et diagnostic, jamais chargé par une nouvelle partie SDL. |
+| `closed.json` | Marqueur de fermeture normale ; son absence signale une interruption possible. |
+
+Les écritures se font au démarrage puis après chaque tour, sans attendre la fermeture. Les revisites ne dupliquent pas les images de lieu ; leur narration reste dans la trace des tours. Une annulation n'ajoute pas de lieu validé. Les archives gardent le dernier candidat et les métriques disponibles, pas nécessairement tous les fragments de toutes les corrections. Les raccourcis locaux d'interface ne sont pas des tours moteur.
+
+`--research-dir <dossier>` sert aux recettes pour changer la racine, et crée toujours un nouveau sous-dossier. `--llm-seed` permet une reproduction diagnostique ; le lancement normal n'impose aucune graine.
+
+## Nettoyage et compatibilité
+
+Les six autres fixtures Eryx, leurs identifiants actifs, leurs descriptions, le graphe prédéfini et son retour non réciproque ont été supprimés. Le corpus et le script de qualification exclusivement dédiés à l'ancien parcours de sept lieux ont aussi été retirés ; Git conserve leur historique. Les archétypes procéduraux et les trois fixtures datacenter encore utilisés par les diagnostics restent disponibles.
+
+Une sauvegarde qui référence un lieu supprimé est refusée avec un message explicite, avant normalisation. Elle n'est ni convertie silencieusement ni modifiée. Les anciennes sauvegardes dans `output/` restent sur disque ; le lanceur n'écrit plus de fichier de reprise partagé.
+
+Le nouveau `glass_box` réutilise le matériau diélectrique existant. C'est un volume visible de verre physique, distinct des barrières topologiques invisibles. Les générations locales restent limitées aux boîtes opaques de leur contrat actuel.
+
+## Réalisation
+
+DeepSeek a livré la composition initiale du seuil dans le lot [DUO-016](duo/reviews/DUO-016.md). Codex a revu la scène, corrigé le cadrage, posé les fragments dans le sol, ajouté le volume de verre, supprimé l'ancien parcours et implémenté l'exploration et l'archivage. Les mesures de la [première tranche](LOCAL_SCENE_ROADMAP_RESULTS.md) restent historiques : elles ne constituent pas une qualification des nouvelles graines aléatoires ou de toutes les découvertes successives.
+
+## Recette observée
+
+- Quatre CTest réussis : protocole, rendu, génération, navigation, archives distinctes et intégrité des états ; 72 tests Python de scène réussis, auto-test de navigation réussi.
+- Deux lancements SDL indépendants, graines `32388405` et `19736041` : un lieu généré différent à chaque fois, archives closes distinctes, descriptions et prompts non vides. Les `.scene` archivés sont identiques aux programmes présents dans l'état validé. [Partie 1](benchmarks/eryx-local/single-start/play-01.png), [partie 2](benchmarks/eryx-local/single-start/play-02.png), [mesures minimales](benchmarks/eryx-local/single-start/examples.json).
+- Parcours headless réel `east → east → west → west`, graine 42 : deux lieux générés, quatre liens, retour à `canonical:quarry_threshold` sans recomposition des lieux acceptés.
+- Un essai précédent de trois découvertes a échoué sur le troisième repère, trop peu visible après correction. L'échec est conservé dans les preuves ; il n'est pas compté comme réussite. Les nouvelles tentatives SDL changent de graine pour permettre une autre composition.
+- `--sdl --load-state ...` est refusé explicitement. Les anciens fichiers sont laissés intacts.
+- Fermeture SDL pendant une génération : archive créée dans le dossier Windows par défaut, résultat `not_committed`, zéro lieu généré et zéro déplacement ; état initial intact et marqueur de fermeture écrit.
+
+Preuves privées de cette recette : `C:/works/duo-runs/game-liminal-raytraced-llm-world/single-start/`. Aucun nouvel installeur livré ; l'exécutable de développement utilisé par le lanceur est publié.

@@ -104,6 +104,7 @@ bool ParseProgram(const std::string& text,std::vector<Directive>* output,SceneAu
     std::istringstream input(text);std::string line;std::set<std::string> names,singletons;
     size_t prefab_count=0;
     while(std::getline(input,line)) {
+        if(!line.empty()&&line.back()=='\r')line.pop_back(); // Windows-authored scene files.
         const size_t comment=line.find('#');if(comment!=std::string::npos)line.resize(comment);
         if(line.find_first_not_of(" \t\r")==std::string::npos)continue;
         auto parse_line=[&]() -> bool {
@@ -118,9 +119,9 @@ bool ParseProgram(const std::string& text,std::vector<Directive>* output,SceneAu
             {"curve",{1,true}},{"noise",{1,true}},{"stars",{3,false}},{"seed",{1,false}}};
         else if(d.type=="distant_light")props={{"direction",{3,true}},{"intensity",{1,true}},{"color",{3,false}},{"angular_radius",{1,false}}};
         else if(d.type=="spotlight")props={{"panel",{2,true}},{"offset",{3,true}},{"range",{1,true}},{"cone",{2,true}},{"intensity",{1,true}}};
-        else if(d.type=="box"||d.type=="plane"||prefabs.count(d.type)) {
+        else if(d.type=="box"||d.type=="glass_box"||d.type=="plane"||prefabs.count(d.type)) {
             geometry=true;props={{"pos",{3,true}},{"size",{d.type=="plane"?2:3,true}},{"gray",{1,true}}};
-            if(d.type=="box"){props["rot"]={3,false};props["emit"]={1,false};}
+            if(d.type=="box"||d.type=="glass_box"){props["rot"]={3,false};props["emit"]={1,false};}
             else if(d.type=="plane"){props["normal"]={3,true};props["emit"]={1,false};}
             else {++prefab_count;props["detail"]={1,false};if(d.type=="prefab_gate")props["bars"]={1,false};
                 if(d.type=="prefab_crystal_cluster"||d.type=="prefab_crystal_scanner")props["glow"]={1,false};}
@@ -197,8 +198,15 @@ bool ParseProgram(const std::string& text,std::vector<Directive>* output,SceneAu
 }
 
 bool AuditDynamicScene(const std::string& program,const SceneDesignContext& context,
-                       const SceneDesignV1* design,Scene* output,SceneAuditReport* r) {
+                       const SceneDesignV1* design,Scene* output,SceneAuditReport* r,
+                       const SceneViewConstraints* view) {
     (void)context;*r=SceneAuditReport();std::vector<Directive> directives;
+    const SceneViewConstraints limits = view ? *view : SceneViewConstraints();
+    if(!std::isfinite(limits.aspect)||limits.aspect<=0 ||
+       !std::isfinite(limits.near_distance)||limits.near_distance<=0 ||
+       !std::isfinite(limits.max_near_coverage)||limits.max_near_coverage<0||limits.max_near_coverage>1) {
+        Error(r,"invalid_view_contract","","Invalid aspect or near-view threshold");return false;
+    }
     if(!ParseProgram(program,&directives,r))return false;
     if(design)for(const auto& d:directives)
         if(!d.name.empty()&&d.type!="room"&&!Group(design,d.name))Error(r,"unbound_geometry",d.name,"Use a planned group ID prefix");
@@ -263,27 +271,77 @@ bool AuditDynamicScene(const std::string& program,const SceneDesignContext& cont
     }
     if(!r->diagnostics.empty())return false;
     const Vec3 f=Normalize(forward),right=Normalize(Cross(f,camera.up)),up=Normalize(Cross(right,f));
+    if(limits.require_return_clearance) {
+        const Vec3 center(0,1.25f,-9),size(1.6f,2.0f,6.0f);
+        for(const auto& solid:solids) {
+            bool blocked=InsideSolid(center,solid.second);
+            for(const auto* triangle:solid.second)if(TriangleBox(*triangle,center,size)){blocked=true;break;}
+            if(blocked) {
+                Aabb bounds;
+                for(const auto* t:solid.second){bounds.Expand(t->v0);bounds.Expand(t->v1);bounds.Expand(t->v2);}
+                const Vec3 half=(bounds.max-bounds.min)*.5f;
+                Error(r,"return_clearance_blocked",scene.materials[solid.first].name,
+                    "Keep the approach clear: x[-0.8,0.8], y[0.25,2.25], z[-12,-6]. "
+                    "For the current dimensions and rotation, a sufficient translation places its centre at x < "+
+                    std::to_string(-.85f-half.x)+" or x > "+std::to_string(.85f+half.x)+
+                    ", OR z < "+std::to_string(-12.05f-half.z)+" or z > "+std::to_string(-5.95f+half.z)+
+                    ". Keep other objects unchanged; a centre on the boundary does not clear the full solid.");
+            }
+        }
+    }
     const float scale=tanf(camera.vertical_fov_degrees*kPi/360.0f);
     int focal=0,sky=0,near=0;const int width=64,height=32;
-    std::map<std::string,int> visible_groups;
+    std::map<std::string,int> visible_groups, near_objects;
+    int landmark_hits=0;
     for(int y=0;y<height;++y)for(int x=0;x<width;++x) {
         Ray ray;ray.origin=camera.eye;
-        ray.direction=Normalize(f+right*((2*(x+.5f)/width-1)*2*scale)+up*((1-2*(y+.5f)/height)*scale));
+        ray.direction=Normalize(f+right*((2*(x+.5f)/width-1)*limits.aspect*scale)+up*((1-2*(y+.5f)/height)*scale));
         Hit hit;
         if(!ProbeSceneRay(scene,ray,kHuge,&hit)){++sky;continue;}
-        if(hit.t<.35f)++near;
         const std::string& hit_name=scene.materials[scene.triangles[hit.triangle_index].material_index].name;
+        if(hit.t<limits.near_distance){++near;++near_objects[hit_name];}
+        if(!limits.landmark.empty()&&hit_name==limits.landmark)++landmark_hits;
         if(const auto* group=Group(design,hit_name)) {
             ++visible_groups[group->id];
             if(group->id==design->focal_object_id)++focal;
         }
     }
     r->focal_coverage=static_cast<double>(focal)/(width*height);
+    if(!limits.landmark.empty())r->focal_coverage=static_cast<double>(landmark_hits)/(width*height);
     r->sky_coverage=static_cast<double>(sky)/(width*height);r->near_coverage=static_cast<double>(near)/(width*height);
     if(design&&focal<3)Error(r,"focal_object_occluded",design->focal_object_id,"Focal group must cover at least 3 of 2048 view probes");
     if(design)for(const auto& binding:design->interaction_bindings)if(!visible_groups[binding.mass_id])
         Error(r,"interactive_object_occluded",binding.object_id,"Bound group is not visible from accepted camera");
-    if(r->near_coverage>.7)Error(r,"foreground_occlusion","","More than 70% of view hits within 0.35 m");
+    if(!limits.landmark.empty()&&landmark_hits<3) {
+        std::map<std::string,int> blockers;
+        int target_samples=0;
+        for(const auto& triangle:scene.triangles) {
+            if(scene.materials[triangle.material_index].name!=limits.landmark)continue;
+            ++target_samples;
+            const Vec3 target=(triangle.v0+triangle.v1+triangle.v2)/3.0f;
+            Ray ray;ray.origin=camera.eye;ray.direction=Normalize(target-camera.eye);Hit hit;
+            if(ProbeSceneRay(scene,ray,Length(target-camera.eye)+.01f,&hit)) {
+                const std::string& name=scene.materials[scene.triangles[hit.triangle_index].material_index].name;
+                if(name!=limits.landmark)++blockers[name];
+            }
+        }
+        std::string detail="Named solid must cover at least 3 of 2048 view probes; observed="+std::to_string(landmark_hits)+". ";
+        if(!target_samples)detail+="No solid with this exact name exists.";
+        else if(!blockers.empty()) {
+            std::string blocker;int count=0;
+            for(const auto& item:blockers)if(item.second>count){blocker=item.first;count=item.second;}
+            detail+=blocker+" blocks "+std::to_string(count)+"/"+std::to_string(target_samples)+
+                " rays towards the landmark's surface. Raise or move the landmark outside that solid and clear its sightline.";
+        } else detail+="Surface sightlines are clear; move the landmark inside the fixed camera frame or enlarge it.";
+        Error(r,"landmark_not_visible",limits.landmark,detail);
+    }
+    if(r->near_coverage>limits.max_near_coverage) {
+        std::string blocker;int count=0;
+        for(const auto& item:near_objects)if(item.second>count){blocker=item.first;count=item.second;}
+        Error(r,"foreground_occlusion",blocker,"Near geometry covers "+std::to_string(100*r->near_coverage)+
+            "% of view within "+std::to_string(limits.near_distance)+" m; maximum="+
+            std::to_string(100*limits.max_near_coverage)+"%. Move or resize the foreground while retaining the composition.");
+    }
     if(r->sky_coverage>.995)Error(r,"empty_view","","Almost all view probes miss geometry");
     r->accepted=r->diagnostics.empty();if(r->accepted)*output=std::move(scene);return r->accepted;
 }

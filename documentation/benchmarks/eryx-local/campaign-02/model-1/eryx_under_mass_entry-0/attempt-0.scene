@@ -1,0 +1,29 @@
+room "Eryx local composition"
+camera eye(0,1.7,-10) target(0,2,8) up(0,1,0) fov(55)
+sky zenith(0.12) horizon(0.35) nadir(0.02) band(0.3) curve(1.5) noise(0)
+distant_light direction(-0.6,-1,0.35) intensity(2.5) color(1,0.92,0.72) angular_radius(0)
+spotlight panel(1,1) offset(0,0,0.35) range(40) cone(20,60) intensity(100)
+plane "desert_floor" pos(0,0,10) normal(0,1,0) size(100,100) gray(0.3)
+
+box "quarry_wall_left" pos(-12,10,15) size(10,20,1) gray(0.7)
+box "quarry_wall_right" pos(12,10,15) size(10,20,1) gray(0.7)
+box "quarry_top_left" pos(-12,12,25) size(24,1,1) gray(0.7)
+box "quarry_top_right" pos(12,12,25) size(24,1,1) gray(0.7)
+box "quarry_front" pos(0,12,30) size(24,1,1) gray(0.7)
+box "quarry_back" pos(0,12,5) size(24,1,1) gray(0.7)
+box "quarry_base" pos(0,10,15) size(24,2,15) gray(0.75)
+
+box "portal" pos(0,10,15) size(2,10,2) gray(0.1)
+
+box "lintel_left" pos(-1,10,15) size(1,0.5,2) gray(0.6)
+box "lintel_right" pos(1,10,15) size(1,0.5,2) gray(0.6)
+box "lintel_top" pos(0,10.5,15) size(2,0.5,2) gray(0.6)
+
+box "entry_wall_left" pos(-1,10,15) size(0.5,10,2) gray(0.65)
+box "entry_wall_right" pos(1,10,15) size(0.5,10,2) gray(0.65)
+box "entry_floor" pos(0,10,15) size(2,0.5,2) gray(0.65)
+
+box "quarry_roof_left" pos(-12,14,25) size(1,1,1) gray(0.75)
+box "quarry_roof_right" pos(12,14,25) size(1,1,1) gray(0.75)
+box "quarry_roof_front" pos(0,14,30) size(1,1,1) gray(0.75)
+box "quarry_roof_back" pos(0,14,5) size(1,1,1) gray(0.75)

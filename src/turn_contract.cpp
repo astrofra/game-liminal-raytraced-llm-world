@@ -283,7 +283,7 @@ std::string BuildTurnResultSchemaText()
     text += "  \"clarification\": string,\n";
     text += "  \"hard_state_delta\": {\n";
     text += "    \"location_changed\": boolean,\n";
-    text += "    \"next_location_id\": \"quarry_threshold\" | \"extraction_field\" | \"crystal_cut\" | \"scanner_station\" | \"survey_plateau\" | \"labyrinth_threshold\" | \"prospect_shelter\" | \"unknown\",\n";
+    text += "    \"next_location_id\": \"quarry_threshold\" | \"unknown\",\n";
     text += "    \"move_count_changed\": boolean,\n";
     text += "    \"next_move_count\": integer,\n";
     text += "    \"score_changed\": boolean,\n";
@@ -309,7 +309,7 @@ std::string BuildTurnResultSchemaText()
     text += "  },\n";
     text += "  \"spatial_delta\": {\n";
     text += "    \"location_changed\": boolean,\n";
-    text += "    \"next_location_id\": \"quarry_threshold\" | \"extraction_field\" | \"crystal_cut\" | \"scanner_station\" | \"survey_plateau\" | \"labyrinth_threshold\" | \"prospect_shelter\" | \"unknown\",\n";
+    text += "    \"next_location_id\": \"quarry_threshold\" | \"unknown\",\n";
     text += "    \"time_of_day_changed\": boolean,\n";
     text += "    \"next_time_of_day\": \"day\" | \"dusk\" | \"night\" | \"unknown\",\n";
     text += "    \"visibility_changed\": boolean,\n";
@@ -446,7 +446,7 @@ std::string BuildTurnPrompt(
     std::string text;
     text += "You are the structured turn engine for a local interactive fiction prototype.\n";
     text += "Return concise playable output. Preserve hard-state continuity. Do not write markdown.\n";
-    text += "Stay within the Erycinian crystal-quarry expedition and its seven canonical places unless an unexplored cardinal exit explicitly requires one neighboring place.\n";
+    text += "Stay within the Erycinian crystal-quarry expedition. Only the quarry threshold is predefined; unexplored exits discover persistent generated places. The engine owns navigation.\n";
     if (spatial_state.location_id == kLocationUnknown) {
         text += "The current room may be an improvised generated room. Keep that room stable unless the player explicitly moves.\n";
     }

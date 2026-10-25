@@ -59,8 +59,24 @@ std::string SceneTextHash(const std::string& text);
 std::string SceneCompositionGuide();
 std::string BuildSceneDesignPrompt(const SceneDesignContext& context);
 std::string BuildSceneProgramPrompt(const SceneDesignContext& context, const SceneDesignV1* design);
+std::string LocalSceneSystemPrompt();
+std::string LocalSceneRepairPrefix();
+std::string LocalSceneHeader();
+std::string LocalSceneExplorationBrief(unsigned int discovery_index);
+std::string LocalScenePilotLandmark();
+std::string BuildLocalSceneProgramPrompt(const std::string& brief,const std::string& landmark);
+bool ValidateLocalSceneContract(const std::string& program,std::string* error);
+// Optional view contract for direct benchmarks; defaults preserve the dynamic path.
+struct SceneViewConstraints {
+    std::string landmark;
+    float aspect = 2.0f;
+    float near_distance = .35f;
+    float max_near_coverage = .7f;
+    bool require_return_clearance = false;
+};
 bool AuditDynamicScene(const std::string& program, const SceneDesignContext& context,
-                       const SceneDesignV1* design, Scene* scene, SceneAuditReport* report);
+                       const SceneDesignV1* design, Scene* scene, SceneAuditReport* report,
+                       const SceneViewConstraints* view = nullptr);
 bool AuditDynamicPreview(const std::vector<unsigned char>& pixels, const std::string& lighting_mode,
                          SceneAuditReport* report);
 } // namespace liminal

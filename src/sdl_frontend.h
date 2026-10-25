@@ -22,6 +22,7 @@ struct SdlFrontendConfig {
     int window_height;
     int automated_smoke_test_duration_ms;
     std::string automated_smoke_test_command;
+    std::string research_root;
 
     SdlFrontendConfig()
         : logical_width(1000)

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include <random>
 #include "nlohmann/json.hpp"
 
 #include "animated_view.h"
@@ -28,9 +29,13 @@ static void PrintUsage()
     printf("Usage:\n");
     printf("  liminal_cornell_renderer [options]\n\n");
     printf("Options:\n");
-    printf("  --scene-generation-mode <hybrid|dynamic> Neighbor creation policy (default: hybrid until qualified)\n");
+    printf("  --llm-backend <native|ollama> Diagnostic backend override (default: ollama)\n");
+    printf("  --ollama-model <name>    Local Ollama model (default: gemma4:e4b)\n");
+    printf("  --scene-generation-mode <hybrid|dynamic|local> Direct discovery east from the start and generated rooms\n");
     printf("  --generate-dynamic-scene <brief.txt> Generate, audit and render a new scene\n");
-    printf("  --scene-method <two-pass|direct|hybrid> Benchmark method (default: two-pass)\n");
+    printf("  --audit-scene-view <file> Audit actual geometry and render; writes <scene-artifacts>.audit.json\n");
+    printf("  --view-landmark <name>   Require a visible named solid in --audit-scene-view\n");
+    printf("  --scene-method <two-pass|direct|hybrid|local> Benchmark method (default: two-pass)\n");
     printf("  --scene-entry <north|east|south|west> Arrival side in benchmark\n");
     printf("  --scene-artifacts <prefix> Write .design.json, .scene and .metrics.json\n");
     printf("  --scene-timeout-ms <n> Total composition safety deadline (default: 900000)\n");
@@ -45,7 +50,7 @@ static void PrintUsage()
     printf("  --direct-samples <n>     Direct light samples per hit\n");
     printf("  --seed <n>               Random seed\n");
     printf("  --exposure <f>           Tone mapping exposure\n");
-    printf("  --location <id>          Canonical Eryx location id (quarry_threshold, extraction_field, crystal_cut, scanner_station, survey_plateau, labyrinth_threshold, prospect_shelter)\n");
+    printf("  --location <id>          Starting location (quarry_threshold); legacy diagnostic fixtures: gate, server_aisles, roof_watch\n");
     printf("  --compile-location <id>  Compile a canonical spatial state and render it\n");
     printf("  --audit-scene-text <path> Load a .scene as text in memory, validate it, then render it\n");
     printf("  --run-turn               Run one real headless turn through Ministral and render the resulting place\n");
@@ -55,7 +60,7 @@ static void PrintUsage()
     printf("  --animated-view-fail-frame <n> Force animation image 1..7 to fail for diagnostics\n");
     printf("  --animated-view-debug    Log displayed image, direction, generation and worker state\n");
     printf("  --animated-view-self-test Validate camera endpoints and N=1/2/4/8 ping-pong sequences\n");
-    printf("  --navigation-self-test Validate localized directions, the seven-room route and generated branches\n");
+    printf("  --navigation-self-test Validate localized directions, the single starting place and generated exploration\n");
     printf("  --view-post-process-self-test Validate optical effects and post-optical RGB grain\n");
     printf("  --no-view-post-process  Disable peripheral optics and RGB grain in SDL\n");
     printf("  --view-blur-radius <n>  Peripheral blur radius in source pixels (default: 3)\n");
@@ -84,6 +89,7 @@ static void PrintUsage()
     printf("  --command-file <path>    Read one player command per non-empty line\n");
     printf("  --load-state <path>      Load session state JSON before --run-turn or --run-session\n");
     printf("  --save-state <path>      Save resulting session state JSON after --run-turn or --run-session\n");
+    printf("  --research-dir <path>    Diagnostic archive root override; SDL always creates a fresh run directory\n");
     printf("  --dump-session-state     Print the final session state summary\n");
     printf("  --dump-session-history   Print the final session transcript summary\n");
     printf("  --prefer-candidate-scene Render a valid candidate_scene_text instead of the deterministic compiled scene\n");
@@ -367,9 +373,11 @@ int main(int argc, char** argv)
     bool dump_scene_audit_prompt = false;
     bool compile_canonical_location = false;
     const char* audit_scene_text_path = 0;
+    const char* audit_scene_view_path = nullptr;
+    liminal::SceneViewConstraints scene_view;
     bool run_turn = false;
     bool run_session = false;
-    bool run_sdl = false;
+    bool run_sdl = argc==1;
     bool run_animated_view_self_test = false;
     bool run_navigation_self_test = false;
     bool run_view_post_process_self_test = false;
@@ -386,9 +394,14 @@ int main(int argc, char** argv)
     const char* command_file_path = 0;
     const char* load_state_path = 0;
     const char* save_state_path = 0;
+    const char* research_root = nullptr;
+    bool llm_seed_explicit = false;
     liminal::LocationId selected_location = liminal::kLocationQuarryThreshold;
     liminal::CardinalDirection generated_room_direction = liminal::kDirectionNorth;
     liminal::HeadlessTurnConfig headless_turn_config;
+    headless_turn_config.generation_config.use_ollama=true;
+    headless_turn_config.local_scenes=true;
+    bool backend_explicit=false, scene_mode_explicit=false, native_model_requested=false;
     const char* dynamic_brief_path = nullptr;
     std::string scene_artifacts = "dynamic-scene";
     bool scene_artifacts_requested = false;
@@ -397,19 +410,35 @@ int main(int argc, char** argv)
     std::vector<std::string> session_commands;
 
     for (int index = 1; index < argc; ++index) {
+        if (strcmp(argv[index], "--llm-backend") == 0 && index+1<argc) {
+            const std::string backend=argv[++index];
+            if(backend!="native"&&backend!="ollama")return 1;
+            backend_explicit=true;headless_turn_config.generation_config.use_ollama=backend=="ollama";continue;
+        }
+        if (strcmp(argv[index], "--ollama-model") == 0 && index+1<argc) {
+            headless_turn_config.generation_config.ollama_model=argv[++index];continue;
+        }
+        if (strcmp(argv[index], "--audit-scene-view") == 0 && index+1<argc) {
+            audit_scene_view_path=argv[++index];continue;
+        }
+        if (strcmp(argv[index], "--view-landmark") == 0 && index+1<argc) {
+            scene_view.landmark=argv[++index];continue;
+        }
         if (strcmp(argv[index], "--scene-generation-mode") == 0 && index+1<argc) {
             const std::string mode=argv[++index];
-            if(mode!="dynamic" && mode!="hybrid")return 1;
-            headless_turn_config.dynamic_scenes=mode=="dynamic";continue;
+            if(mode!="dynamic" && mode!="hybrid" && mode!="local")return 1;
+            headless_turn_config.dynamic_scenes=mode=="dynamic";
+            scene_mode_explicit=true;headless_turn_config.local_scenes=mode=="local";continue;
         }
         if (strcmp(argv[index], "--generate-dynamic-scene") == 0 && index+1<argc) {
             dynamic_brief_path=argv[++index];continue;
         }
         if (strcmp(argv[index], "--scene-method") == 0 && index+1<argc) {
             const std::string mode=argv[++index];
-            if(mode!="two-pass" && mode!="direct" && mode!="hybrid")return 1;
+            if(mode!="two-pass" && mode!="direct" && mode!="hybrid" && mode!="local")return 1;
             benchmark_hybrid=mode=="hybrid";
-            headless_turn_config.dynamic_scene_config.direct=mode=="direct";continue;
+            headless_turn_config.dynamic_scene_config.direct=mode=="direct"||mode=="local";
+            headless_turn_config.dynamic_scene_config.fixed_frame=mode=="local";continue;
         }
         if (strcmp(argv[index], "--scene-entry") == 0 && index+1<argc) {
             dynamic_context.entry_direction=argv[++index];
@@ -598,6 +627,7 @@ int main(int argc, char** argv)
         }
         if (strcmp(argv[index], "--llm-profile") == 0 && index + 1 < argc) {
             std::string error;
+            native_model_requested=true;
             if (!liminal::ConfigureLlmProfile(argv[++index], &headless_turn_config.generation_config, &error)) {
                 fprintf(stderr, "%s\n", error.c_str()); return 1;
             }
@@ -618,6 +648,7 @@ int main(int argc, char** argv)
         }
         if (strcmp(argv[index], "--llm-seed") == 0 && index + 1 < argc) {
             int seed = 0; if (!ReadInt(argv[++index], &seed) || seed < 0) return 1;
+            llm_seed_explicit = true;
             headless_turn_config.generation_config.seed = static_cast<unsigned int>(seed); continue;
         }
         if (strcmp(argv[index], "--llm-reasoning-budget") == 0 && index + 1 < argc) {
@@ -635,6 +666,7 @@ int main(int argc, char** argv)
             continue;
         }
         if (strcmp(argv[index], "--model") == 0 && index + 1 < argc) {
+            native_model_requested=true;
             headless_turn_config.generation_config.model_path = argv[++index];
             continue;
         }
@@ -713,6 +745,9 @@ int main(int argc, char** argv)
             save_state_path = argv[++index];
             continue;
         }
+        if (strcmp(argv[index], "--research-dir") == 0 && index + 1 < argc) {
+            research_root = argv[++index];continue;
+        }
         if (strcmp(argv[index], "--llama-info") == 0) {
             print_llama_info_only = true;
             continue;
@@ -727,6 +762,15 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    if(native_model_requested&&!backend_explicit)headless_turn_config.generation_config.use_ollama=false;
+    if(!headless_turn_config.generation_config.use_ollama&&!scene_mode_explicit)headless_turn_config.local_scenes=false;
+    if(headless_turn_config.generation_config.use_ollama) {
+        headless_turn_config.generation_config.profile_name="ollama/"+headless_turn_config.generation_config.ollama_model;
+        headless_turn_config.generation_config.model_path.clear();
+    }
+    if(headless_turn_config.local_scenes&&!headless_turn_config.generation_config.use_ollama) {
+        fprintf(stderr,"--scene-generation-mode local requires --llm-backend ollama\n");return 1;
+    }
     liminal::Scene scene;
     liminal::SessionState pending_saved_session;
     bool have_pending_save=false;
@@ -843,7 +887,7 @@ int main(int argc, char** argv)
                 auto* probe = static_cast<ProbeStream*>(data);
                 ++probe->polls;
                 if (probe->during_load && probe->polls > 1 && probe->result->load_time_ms == 0) return false;
-                if (probe->result->generated_tokens > 0) {
+                if (probe->result->generated_tokens > 0 || (accumulated && *accumulated)) {
                     if (probe->checks == 0) return false;
                     if (probe->checks > 0) --probe->checks;
                 }
@@ -937,17 +981,17 @@ int main(int argc, char** argv)
     if (run_sdl) {
         liminal::SessionState session_state;
         if (load_state_path) {
-            if (!LoadSessionStateFromPath(load_state_path, &session_state, error_buffer, sizeof(error_buffer))) {
-                fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot load session state.");
-                return 1;
-            }
-        } else if (!liminal::InitializeSessionState(selected_location, &session_state, error_buffer, sizeof(error_buffer))) {
+            fprintf(stderr,"Every game starts fresh. --load-state is reserved for headless research diagnostics.\n");return 1;
+        }
+        if (!llm_seed_explicit) headless_turn_config.generation_config.seed = std::random_device{}() & 0x7fffffffu;
+        if (!liminal::InitializeSessionState(selected_location, &session_state, error_buffer, sizeof(error_buffer))) {
             fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "Cannot initialize session state.");
             return 1;
         }
 
 #if defined(LIMINAL_HAVE_SDL3)
         liminal::SdlFrontendConfig sdl_config;
+        if(research_root)sdl_config.research_root=research_root;
         sdl_config.render_config = config;
         sdl_config.turn_config = headless_turn_config;
         sdl_config.turn_config.prefer_candidate_scene = prefer_candidate_scene;
@@ -992,7 +1036,18 @@ int main(int argc, char** argv)
     }
 
     const std::chrono::steady_clock::time_point load_start = std::chrono::steady_clock::now();
-    if (audit_scene_text_path) {
+    if (audit_scene_view_path) {
+        std::string program;
+        if(!ReadFileText(audit_scene_view_path,&program))return 1;
+        // These thresholds belong to the fixed-camera direct benchmark only.
+        scene_view.aspect=static_cast<float>(config.width)/config.height;
+        scene_view.near_distance=3.0f;scene_view.max_near_coverage=.9f;
+        scene_view.require_return_clearance=true;
+        liminal::SceneAuditReport report;
+        const bool accepted=liminal::AuditDynamicScene(program,dynamic_context,nullptr,&scene,&report,&scene_view);
+        if(!WriteFileText((scene_artifacts+".audit.json").c_str(),liminal::SerializeSceneAudit(report)))return 1;
+        if(!accepted){fprintf(stderr,"Scene view rejected; see audit JSON\n");return 1;}
+    } else if (audit_scene_text_path) {
         std::string scene_text;
         if (!ReadFileText(audit_scene_text_path, &scene_text)) {
             fprintf(stderr, "Cannot read scene text file: %s\n", audit_scene_text_path);

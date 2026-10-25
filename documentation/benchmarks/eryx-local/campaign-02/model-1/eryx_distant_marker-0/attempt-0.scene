@@ -1,0 +1,28 @@
+room "Eryx local composition"
+camera eye(0,1.7,-10) target(0,2,8) up(0,1,0) fov(55)
+sky zenith(0.12) horizon(0.35) nadir(0.02) band(0.3) curve(1.5) noise(0)
+distant_light direction(-0.6,-1,0.35) intensity(2.5) color(1,0.92,0.72) angular_radius(0)
+spotlight panel(1,1) offset(0,0,0.35) range(40) cone(20,60) intensity(100)
+plane "desert_floor" pos(0,0,10) normal(0,1,0) size(100,100) gray(0.3)
+
+box "wall_post_1" pos(-12,12,10) size(1.2,10,1.2) gray(0.55)
+box "wall_post_2" pos(-12,14,12) size(1.2,10,1.2) gray(0.55)
+box "wall_post_3" pos(-12,16,14) size(1.2,8,1.2) gray(0.55)
+box "wall_post_4" pos(-12,18,16) size(1.2,6,1.2) gray(0.55)
+box "wall_post_5" pos(-12,20,18) size(1.2,4,1.2) gray(0.55)
+box "wall_lintel_1" pos(-12,12.5,10) size(10,0.8,1.2) gray(0.6)
+box "wall_lintel_2" pos(-12,14.5,12) size(8,0.8,1.2) gray(0.6)
+box "wall_lintel_3" pos(-12,16.5,14) size(6,0.8,1.2) gray(0.6)
+box "wall_lintel_4" pos(-12,18.5,16) size(4,0.8,1.2) gray(0.6)
+
+box "wall_post_6" pos(12,10,10) size(1.2,12,1.2) gray(0.5)
+box "wall_post_7" pos(12,12,12) size(1.2,10,1.2) gray(0.5)
+box "wall_post_8" pos(12,14,14) size(1.2,8,1.2) gray(0.5)
+box "wall_post_9" pos(12,16,16) size(1.2,6,1.2) gray(0.5)
+box "wall_post_10" pos(12,18,18) size(1.2,4,1.2) gray(0.5)
+box "wall_lintel_5" pos(12,10.5,10) size(10,0.8,1.2) gray(0.55)
+box "wall_lintel_6" pos(12,12.5,12) size(8,0.8,1.2) gray(0.55)
+box "wall_lintel_7" pos(12,14.5,14) size(6,0.8,1.2) gray(0.55)
+box "wall_lintel_8" pos(12,16.5,16) size(4,0.8,1.2) gray(0.55)
+
+box "far_marker" pos(0,1.5,30) size(0.8,1.2,0.8) gray(0.75)

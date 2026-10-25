@@ -4,6 +4,10 @@ Mise à jour : 25 octobre 2026. Coordinateur : Codex. Exécutant : DeepSeek via 
 
 | ID | Statut | Preuve | Suite |
 |---|---|---|---|
+| DUO-016 | Composition intégrée et rendue après revue et corrections Codex | [Revue](reviews/DUO-016.md), [nouveau départ et archives](../SINGLE_START_RESEARCH.md) | Livré, aucun commit ni push |
+| Départ unique et recherche | Intégré, build publié et recette réussie | [Preuves](../SINGLE_START_RESEARCH.md) : deux parties SDL indépendantes et distinctes, parcours de deux découvertes avec retour, annulation archivée sans déplacement ; 4 CTest et 72 tests Python réussis | Qualité artistique à poursuivre ; archives automatiques hors dépôt, aucune reprise SDL |
+| DUO-015 | Intégré après revue et corrections Codex | [Revue](reviews/DUO-015.md) : cinq briefs Eryx, rapport comparatif et sept tests réussis | Livrables utilisés dans la campagne commune Gemma/Ministral |
+| Roadmap scènes 3D locales | Première tranche jouable intégrée ; jalons 1–6 exécutés, qualité artistique partielle | [Bilan et images](../LOCAL_SCENE_ROADMAP_RESULTS.md) : comparaison 8/10 contre 4/10, recette native 9/10, correction réelle, persistance et SDL ; 4 CTest + 72 tests Python réussis | Corriger les défauts de support/passerelle puis étendre aux quatre autres sorties ; aucun nouvel installeur livré |
 | Installation Windows | Validé | [Configuration et versions](SETUP.md) ; doctor positif ; 45 tests réussis ; 14 empreintes du kit conformes | Environnement prêt |
 | DUO-001 | Bloqué lors du run, clos sans intégration | [Revue](reviews/DUO-001.md) : HTTP 401, aucune écriture | Connexion Ollama effectuée par l'utilisateur |
 | DUO-001-R1 | Rejeté, clos sans intégration | [Revue](reviews/DUO-001-R1.md) : dossier parent absent, tentative hors contrat | Contrat révisé par Codex après deux tentatives |

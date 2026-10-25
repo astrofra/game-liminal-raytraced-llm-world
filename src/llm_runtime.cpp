@@ -1,5 +1,6 @@
 #include "file_io.h"
 #include "llm_runtime.h"
+#include "ollama_runtime.h"
 #include "llm_channels.h"
 #include "model_profiles.generated.h"
 #include "nlohmann/json.hpp"
@@ -64,6 +65,7 @@ struct GenerationTrace {
         try {
             nlohmann::json data = {
                 {"profile", config.profile_name}, {"model_path", config.model_path}, {"purpose", config.purpose},
+                {"backend",config.use_ollama?"ollama":"llama.cpp"},{"ollama_model",config.use_ollama?config.ollama_model:""},
                 {"temperature", config.temperature}, {"seed", config.seed}, {"n_ctx", config.n_ctx},
                 {"n_batch", config.n_batch}, {"n_ubatch", config.n_ubatch}, {"jinja", config.use_jinja},
                 {"reasoning", config.reasoning}, {"reasoning_budget", config.reasoning_budget}, {"final_budget", config.n_predict},
@@ -71,6 +73,7 @@ struct GenerationTrace {
                 {"prompt_tokens", result->prompt_tokens}, {"generated_tokens", result->generated_tokens},
                 {"reasoning_tokens", result->reasoning_tokens}, {"final_tokens", result->final_tokens},
                 {"load_time_ms", result->load_time_ms}, {"wall_time_ms", result->wall_time_ms},
+                {"prompt_time_ms",result->prompt_time_ms},{"generation_time_ms",result->generation_time_ms},
                 {"inference_time_ms", result->inference_time_ms}, {"stop_reason", result->stop_reason},
                 {"success", result->success}, {"offloaded_layers", result->offloaded_layers},
                 {"total_layers", result->total_layers}, {"error", result->error_message},
@@ -81,6 +84,7 @@ struct GenerationTrace {
     }
 };
 
+#if defined(LIMINAL_HAVE_LLAMA_CPP)
 static bool ReadTextFile(const char* path, std::string* text)
 {
     if (!path || !text) {
@@ -102,7 +106,6 @@ static bool ReadTextFile(const char* path, std::string* text)
     return true;
 }
 
-#if defined(LIMINAL_HAVE_LLAMA_CPP)
 static bool ApplyChatTemplate(
     const llama_model* model,
     const std::vector<LlmPromptMessage>& messages,
@@ -353,7 +356,7 @@ bool GenerateChatCompletion(
     *result = LlmGenerationResult();
     LlmGenerationConfig config = requested;
     // Auxiliary calls use the Instruct checkpoint, never a fictitious reasoning-off mode.
-    if (config.reasoning && config.short_call) {
+    if (!config.use_ollama && config.reasoning && config.short_call) {
         const float modulation = config.temperature - 0.7f;
         ConfigureLlmProfile("ministral-8b-q4", &config, nullptr);
         config.temperature = std::max(0.0f, 0.1f + modulation);
@@ -361,6 +364,7 @@ bool GenerateChatCompletion(
     GenerationTrace trace{result, config};
     trace.callback = stream_callback;
     trace.callback_data = stream_user_data;
+    if(config.use_ollama)return GenerateOllamaCompletion(config,messages,stream_callback,stream_user_data,result);
     const auto fail = [&](const char* reason, const std::string& message) {
         result->stop_reason = reason;
         result->error_message = message;

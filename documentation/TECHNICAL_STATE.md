@@ -1,33 +1,35 @@
 # Technical State — Within the Latent Walls / Entre les Murs Latents
 
-Derniere mise a jour : 2026-10-24
+Derniere mise a jour : 2026-10-25
 
 ## Resume
 
-Le depot contient actuellement un runtime natif C++17 avec renderer a scenes proprietaires, boucle locale `llama.cpp`, et frontend SDL3. La Cornell Box en niveaux de gris reste une scene de reference du sous-systeme de rendu, mais elle n'est plus le centre fonctionnel du depot.
+Le dépôt contient un runtime C++17, un renderer à scènes propriétaires et un frontend SDL3. Le lancement normal utilise désormais **Gemma 4 E4B via Ollama local** ; le backend `llama.cpp` reste disponible pour les diagnostics et les profils Ministral. La Cornell Box demeure une référence de rendu.
 
 Le renderer et l'interface constituent encore une base de prototype plutot qu'un produit final, mais la chaine executable est maintenant suffisamment complete pour des sessions headless et interactives.
 
-Sur le plan architectural, la cible d'inference retenue est maintenant `llama.cpp` avec acceleration CUDA autour de `Ministral 3 8B`.
+Le fonctionnement actuel est décrit dans [un seul départ et archives de recherche](SINGLE_START_RESEARCH.md). Un seul lieu Eryx est prédéfini : `quarry_threshold`, inspiré du concept 12 avec une dalle de verre de 25 cm. Les six autres fixtures, leurs identifiants et leur graphe ont été supprimés. Chaque lancement SDL invente une nouvelle exploration, avec une graine neuve ; l'est découvre un voisin direct Gemma, l'ouest revient au précédent. La géométrie reste stable seulement au sein de la partie. Les archives automatiques conservent descriptions, scènes, images et résultats hors dépôt, sans alimenter le jeu suivant.
+
+La [première campagne locale](LOCAL_SCENE_ROADMAP_RESULTS.md) reste une mesure historique : Gemma 8/10 contre Ministral 8B Q4 4/10 dans le banc commun ; 9/10 sur l'ancienne branche pilote. Elle ne qualifie pas toutes les nouvelles graines aléatoires ni toutes les découvertes successives.
 
 Le depot contient maintenant une premiere boucle reelle `commande -> LLM -> etat -> scene -> rendu`, disponible en mode headless et dans une premiere HMI `SDL3`.
 
-La qualification Ministral du 24 octobre ajoute les profils Q4/Q5/Reasoning issus d'un manifeste commun, les templates Jinja, les canaux privés/finals, les limites et les mesures de tous les appels. Le modèle par défaut reste le Q4 Instruct. La [progression](MINISTRAL_ROADMAP_PROGRESS.md), le [bilan de qualification](MINISTRAL_QUALIFICATION_REPORT.md) et le [guide de construction](MINISTRAL_RUNTIME_GUIDE.md) donnent la décision et les preuves actuelles ; les études antérieures décrivent les hypothèses de départ.
+La qualification Ministral du 24 octobre conserve les profils Q4/Q5/Reasoning issus d'un manifeste commun, les templates Jinja, les canaux privés/finals, les limites et les mesures. Le Q4 Instruct reste le profil du backend natif explicite, pas le défaut du jeu. La [progression](MINISTRAL_ROADMAP_PROGRESS.md), le [bilan de qualification](MINISTRAL_QUALIFICATION_REPORT.md) et le [guide de construction](MINISTRAL_RUNTIME_GUIDE.md) décrivent cette qualification antérieure.
 
 Le vendor est désormais fixé à `v0.7.0`, commit `620d2225cc436ab0b001e3200e590e3b286ef9ab`. La qualification comprend 611 tours natifs exécutés et 70 scènes directes, avec références isolées, répétitions et essai de budget Reasoning. Le Q4 conserve les deux écarts de formulation libre de la référence ; les changements de ressources et la qualité narrative ne sont pas garantis par les seuls scores de navigation. Q5 et Reasoning restent des profils d'expérimentation, avec les limites mesurées dans le bilan.
 
-La distribution interne 2.2.0 est construite et testée : téléchargement réel du modèle, lancement SDL, tour LLM, sauvegarde, compatibilité ancien runtime et désinstallation. Les exécutables des lanceurs sont publiés ; l'installeur et les sources sont dans `output/installer/dist/`. Signature et validation sur Windows vierge restent des étapes de diffusion publique.
+La distribution interne 2.2.0 précédant ce changement avait été construite et testée avec Ministral. Elle ne distribue pas Ollama/Gemma. Le nouvel exécutable de développement est publié, sans nouvel installeur. Les salles directes utilisent un contrat de sauvegarde 2 ; les anciens contrats 1 restent lisibles, mais un ancien exécutable ne sait pas charger une salle de contrat 2.
 
 ## Frontiere entre reorientation et implementation
 
-Le [plan de génération dynamique des décors](./GENERATION_DYNAMIQUE_DECORS_PLAN.md), approuvé pour implémentation, possède désormais une voie native explicite `--scene-generation-mode dynamic` : plan spatial JSON contraint, programme `.scene` libre, contrôles géométriques, deux corrections maximum partagées et aperçu raytracé. Les lieux acceptés sont conservés avec leurs plans, associations et empreintes ; un échec ne publie ni déplacement ni lien. Le [guide runtime](./GENERATION_DYNAMIQUE_DECORS_RUNTIME.md) décrit les commandes et limites. Le défaut reste hybride pendant la qualification visuelle ; aucune supériorité artistique ni cible de latence n'est encore revendiquée. L'optimisation des temps d'inférence est différée à la demande de l'utilisateur.
+Le [plan antérieur de génération dynamique](./GENERATION_DYNAMIQUE_DECORS_PLAN.md) conserve sa voie diagnostique `--scene-generation-mode dynamic` : plan spatial JSON, programme `.scene`, deux corrections maximum et aperçu. Le [guide runtime](./GENERATION_DYNAMIQUE_DECORS_RUNTIME.md) décrit cette variante. Le défaut `local` compose les lieux découverts vers l'est en 8–20 boîtes avec caméra et éclairage fixes. Les limites artistiques restent ouvertes.
 
 Les [essais de reproduction des concepts 01, 02, 03 et 09](./concept-art/raytracer-study/README.md) ajoutent quatre fixtures manuelles de calibration et leurs rendus natifs, puis trois variantes avec soleil. La directive `distant_light` est implémentée : direction mondiale, intensité, couleur, rayon angulaire, occultation et contribution aux rebonds diffus. Elle est optionnelle ; les scènes canoniques et la génération hybride ne l’activent pas automatiquement. Cette étude ne constitue pas une génération de décor par Ministral.
 
 Une premiere tranche Eryx est implementee dans le runtime :
 
-- sept lieux canoniques actifs, de `quarry_threshold` a `prospect_shelter`
-- sept fixtures `.scene` source dans `assets/scenes/eryx_*.scene`
+- un seul lieu Eryx prédéfini : `quarry_threshold`, dalle de verre physique et carrière ouverte
+- une seule fixture Eryx source : `assets/scenes/eryx_quarry_threshold.scene`
 - prompts de tour, generation de salle et audit visuel migres vers la carriere venusienne
 - etat serialise expose comme `spatial_entropy`, `external_temperature_c`, `body_temperature_c`, `suit_state`, `oxygen_state` et `instrument_power_state`
 - HUD thermique `EXT. TEMPERATURE` / `BODY TEMPERATURE`, localisé dans la langue joueur
@@ -36,35 +38,32 @@ Une premiere tranche Eryx est implementee dans le runtime :
 - écran de langue titré `Entre les Murs Latents` en grand, puis `Within the Latent Walls` en plus petit, avec `(c) Resistance 2026` centré en bas
 - masque de visière 2D symétrique et procédural devant le viewport 3D
 - post-process logiciel du viewport : centre optiquement net, flou périphérique progressif, dispersion chromatique radiale de `6 px` et grain RGB ajouté après le flou
-- douze liens diriges constituant une route d'arpentage
-- navigation canonique autoritative : commandes cardinales normalisées en Unicode/ASCII, intentions de mouvement LLM reroutées et anciennes sorties de sauvegarde réparées
+- liens créés atomiquement après acceptation des lieux générés
+- navigation autoritative : commandes cardinales normalisées en Unicode/ASCII, intentions LLM reroutées ; anciens lieux supprimés refusés explicitement en diagnostic
 - type persistant `InvisibleBarrier`, separe de `blocked_exits`
-- contact invisible au nord de `labyrinth_threshold`, avec preuve et statut `discovered`
-- retour non reciproque `prospect_shelter --west--> scanner_station`
-- cinq sorties ouvertes sans lien canonique déclenchent la génération persistante de voisins : `extraction east`, `scanner east`, `plateau north`, `labyrinth south` et `shelter east`
+- aucune barrière invisible ni lien préécrit dans la nouvelle partie ; leur mécanisme reste disponible
+- progression est/ouest ; les lieux sont générés à la découverte et gardés pendant la partie seulement
 - huit archetypes Eryx dans le compilateur hybride et integration des neuf prefabs actifs
 
-La frontiere encore ouverte est la mutation **live** : le LLM ne produit pas encore de proposition topologique separee, et le moteur n'a pas encore de decision `accepted`, `adjusted`, `rejected` ou `deferred` ni d'historique de mutation. La contradiction actuelle est auteurisee et deterministe.
+La frontiere encore ouverte est la mutation **live** : le LLM ne produit pas encore de proposition topologique separee, et le moteur n'a pas encore de decision `accepted`, `adjusted`, `rejected` ou `deferred` ni d'historique de mutation. Le retour contradictoire de l’ancien parcours a été supprimé.
 
 L'entropie spatiale et les deux températures possèdent maintenant des membres C++ distincts. La lecture de l'ancienne clé `datacenter_temperature_c` reste acceptée comme alias de sauvegarde pour `spatial_entropy`. Les noms membres `cooling_state`, `water_state`, `power_state` et `desert_state` restent legacy. Les lieux, prefabs et fixtures antérieurs sont préservés comme baselines historiques.
 
 ## Verrous d'architecture actes
 
-- runtime narratif local : `llama.cpp`
+- runtime local par défaut : Ollama sur loopback, poids résidents ; backend natif `llama.cpp` explicite
 - acceleration principale de developpement : `CUDA`
-- modele cible v1 : `Ministral 3 8B Instruct 2512`
+- modèle du jeu : `gemma4:e4b` ; profils Ministral conservés pour les diagnostics
 - couche multimedia multi-OS : `SDL3`
-- distribution Windows : installeur Inno Setup natif, poids GGUF externe telecharge et verifie pendant l'installation
+- distribution Windows précédente : Inno Setup et GGUF Ministral ; packaging Ollama/Gemma encore à adapter
 
 ## Fonctionnalites presentes
 
-- Tranche canonique Eryx documentee dans `ERYX_PLAYABLE_SPATIAL_ROADMAP.md` : seuil, extraction, coupe cristalline, scanner, plateau, seuil du labyrinthe et abri de Vey.
-- Topologie de traversal Eryx installee sans appel LLM pour garantir un parcours de reference reproductible.
-- Les deltas narratifs ordinaires ne peuvent plus modifier le lieu courant ni `blocked_exits` dans les sept salles canoniques ; toute intention LLM de mouvement repasse par les liens et barrières du moteur.
-- Une barriere invisible est serialisee avec `place_id`, direction, preuve et statut de decouverte ; elle refuse le mouvement sans incrementer `move_count`.
-- Les liens diriges peuvent etre volontairement non reciproques ; le premier retour impossible contourne deux lieux connus tout en conservant l'identite locale du scanner.
-- La route canonique n'est plus un circuit fermé : cinq directions ouvertes et non liées passent dans le pipeline `GeneratedRoom`, créent un lien de retour et réutilisent ensuite la salle mise en cache.
-- Les sept fixtures conservent leurs repères mais utilisent désormais des silhouettes et cadrages plus contrastés : extraction oblique, entaille comprimée, scanner en trois-quarts, plateau grand-angle, datums monumentaux et abri asymétrique.
+- Seuil unique et exploration directe : [guide actuel](SINGLE_START_RESEARCH.md).
+- Publication atomique des lieux et des deux liens après validation ; échec ou annulation sans déplacement.
+- Archives de recherche écrites pendant la partie dans `%LOCALAPPDATA%/WithinTheLatentWalls/research/`, dossier unique par lancement.
+- Reprise entre lancements désactivée dans SDL ; lecture d'états limitée aux diagnostics headless.
+- Verre `glass_box` fermé, matériau diélectrique existant et rotations ; le contrat LLM reste limité aux boîtes opaques.
 - Les archétypes poétiques ou incohérents proposés pour une salle générée sont ramenés au vocabulaire Eryx actif à partir du titre et du résumé avant composition, afin d'éviter la coque générique `roof_exterior`.
 - Les bandes cachees actives sont `survey camp`, `inner quarry`, `quarry seam`, `outer shelf` et `open venus`.
 - Les archetypes hybrides actifs incluent `quarry_threshold`, `extraction_field`, `quarry_cut`, `scanner_station`, `venus_plateau`, `labyrinth_threshold`, `prospecting_shelter` et `industrial_service_zone`.
@@ -180,7 +179,7 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - structs `HardState`, `SoftState`, `SpatialState`, `TurnResult`
   - contrat de tour structure et prompt builder v1
   - prompt d'audit direct pour une sortie `.scene`
-  - compilateur deterministe des sept lieux Eryx et des trois baselines antérieures depuis `SpatialState`
+  - compilation du seul seuil Eryx prédéfini et des trois baselines diagnostiques antérieures depuis `SpatialState`
 - Premier runtime headless `Ministral` branche au moteur :
   - `GenerateChatCompletion()` via `llama.cpp`
   - callback de streaming token par token exploitable par l'HMI
@@ -258,7 +257,7 @@ L'entropie spatiale et les deux températures possèdent maintenant des membres 
   - assembler `documentation/HYBRID_SCENE_GENERATION_BENCHMARK.md`
 - Nouveau chemin de rendu memoire `RenderSceneToPixels()` pour alimenter directement une texture `SDL3`, desormais en buffer RGB.
 - Self-test `--animated-view-self-test` pour les sequences `1/2/4/8`, les endpoints camera, l'absence de derive et le rejet des generations obsoletes.
-- Self-test `--navigation-self-test` pour les alias des six langues, les touches de boussole, le parcours des sept lieux, les cinq branches génératives, la normalisation des archétypes, la réparation des sauvegardes et l'autorité topologique.
+- Self-test `--navigation-self-test` pour les alias des six langues, les touches de boussole, le départ unique sans liens prédéfinis, la normalisation des archétypes et l'autorité topologique.
 - Self-test `--view-post-process-self-test` pour le centre optiquement net, la dispersion périphérique, le grain RGB post-optique équilibré, le bypass et la validation des buffers.
 - Diagnostics `--animated-view-debug`, `--animated-view-fail-frame`, `--view-post-process-debug`, `--view-blur-radius`, `--view-dispersion`, `--view-grain`, `--no-view-post-process`, `--sdl-smoke-test-ms` et `--sdl-smoke-command`.
 - Options CLI de boucle fonctionnelle :
@@ -360,7 +359,7 @@ Exemple avec scene explicite :
 Exemples du noyau fonctionnel :
 
 ```powershell
-.\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location labyrinth_threshold --command "inspect the northern datum"
+.\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location quarry_threshold --command "inspect the northern datum"
 .\build\Release\liminal_cornell_renderer.exe --dump-scene-audit-prompt --location scanner_station
 .\build\Release\liminal_cornell_renderer.exe --compile-location quarry_threshold --output output\compiled_eryx_threshold.png
 .\build\Release\liminal_cornell_renderer.exe --audit-scene-text assets\scenes\eryx_labyrinth_threshold.scene --output output\audited_labyrinth_threshold.png
@@ -370,7 +369,7 @@ Exemples du noyau fonctionnel :
 .\build\Release\liminal_cornell_renderer.exe --sdl --animated-view-debug --view-animation-fps 6
 .\build\Release\liminal_cornell_renderer.exe --view-post-process-self-test
 .\build\Release\liminal_cornell_renderer.exe --sdl --view-post-process-debug --view-blur-radius 3 --view-dispersion 6 --view-grain 7
-.\build\Release\liminal_cornell_renderer.exe --run-session --location quarry_threshold --command north --command north --command east --command north --command east --command north --command east --command west --save-state output\eryx_route.json --output output\eryx_route.png
+.\build\Release\liminal_cornell_renderer.exe --run-session --location quarry_threshold --command east --command east --command west --save-state output\eryx_route.json --output output\eryx_route.png
 .\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\eryx_route.json --command west --save-state output\eryx_route_2.json --output output\eryx_route_2.png
 ```
 
@@ -404,6 +403,8 @@ Exemple de rendu :
 
 ## Parametres par defaut
 
+- lancement : nouvelle partie SDL au seuil de la carrière, Ollama local `gemma4:e4b`, mode `local` pour les découvertes successives vers l’est
+- les mesures de la nouvelle recette utilisent explicitement `8 spp` et un échantillon direct ; les valeurs de rendu générales ci-dessous restent inchangées
 - largeur : `800`
 - hauteur : `400`
 - echantillons par pixel : `16`

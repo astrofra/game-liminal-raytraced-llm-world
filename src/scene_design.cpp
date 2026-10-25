@@ -1,4 +1,5 @@
 #include "scene_design.h"
+#include "local_scene_contract.generated.h"
 #include "scene_composition.generated.h"
 #include "nlohmann/json.hpp"
 #include <cmath>
@@ -413,5 +414,45 @@ std::string BuildSceneProgramPrompt(const SceneDesignContext& c,const SceneDesig
         "Sky contributes actual diffuse light; supplement day scenes with the optional distant_light. "
         "Use few emissive surfaces, avoiding glowing crystal clusters as primary light sources. "
         "All numbers must be finite; geometry and camera coordinates within [-256,256].\n";
+}
+std::string LocalSceneSystemPrompt() {
+    return json::parse(kLocalSceneContractJson).at("system").get<std::string>();
+}
+std::string LocalSceneHeader() {return json::parse(kLocalSceneContractJson).at("header").get<std::string>();}
+std::string LocalSceneRepairPrefix() {return json::parse(kLocalSceneContractJson).at("repair_prefix").get<std::string>();}
+std::string LocalSceneExplorationBrief(unsigned int discovery_index) {
+    const auto briefs=json::parse(kLocalSceneContractJson).at("exploration_briefs");
+    return briefs.at(discovery_index%briefs.size()).get<std::string>();
+}
+std::string LocalScenePilotLandmark() {return json::parse(kLocalSceneContractJson).at("pilot_landmark").get<std::string>();}
+std::string BuildLocalSceneProgramPrompt(const std::string& brief,const std::string& landmark) {
+    std::string prompt=json::parse(kLocalSceneContractJson).at("prompt_template").get<std::string>();
+    const auto marker=prompt.find("{landmark}");
+    if(marker!=std::string::npos)prompt.replace(marker,10,landmark);
+    const auto description=prompt.find("{brief}");
+    if(description!=std::string::npos)prompt.replace(description,7,brief);
+    return prompt;
+}
+bool ValidateLocalSceneContract(const std::string& program,std::string* error) {
+    auto lines=[](const std::string& text) {
+        std::vector<std::string> result;std::istringstream input(text);std::string line;
+        while(std::getline(input,line)) {
+            const auto first=line.find_first_not_of(" \t\r");if(first==std::string::npos)continue;
+            result.push_back(line.substr(first,line.find_last_not_of(" \t\r")-first+1));
+        }
+        return result;
+    };
+    const auto expected=lines(json::parse(kLocalSceneContractJson).at("header").get<std::string>());
+    const auto actual=lines(program);
+    if(actual.size()<expected.size()||!std::equal(expected.begin(),expected.end(),actual.begin())) {
+        *error="Fixed header changed or missing; copy it exactly, without Markdown";return false;
+    }
+    const size_t boxes=actual.size()-expected.size();
+    if(boxes<8||boxes>20){*error="Expected 8..20 boxes after the fixed header";return false;}
+    for(size_t i=expected.size();i<actual.size();++i)
+        if(actual[i].compare(0,5,"box \"")!=0||actual[i].find("emit")!=std::string::npos) {
+            *error="Only named box directives without emit are allowed after the header";return false;
+        }
+    return true; // Remaining syntax, finite values and geometry use the native audit.
 }
 } // namespace liminal

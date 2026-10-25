@@ -1,0 +1,643 @@
+[
+  {
+    "model": "gemma4:e4b",
+    "case_id": "eryx_under_mass_entry",
+    "trial": 0,
+    "accepted": true,
+    "first_pass": true,
+    "total_ms": 5079.453999999714,
+    "render_ms": 594.61,
+    "calls": [
+      {
+        "wall_ms": 4079.738499999621,
+        "done_reason": "stop",
+        "load_ms": 4.3108,
+        "prompt_ms": 385.293,
+        "generation_ms": 3680.689,
+        "server_ms": 4077.4422,
+        "eval_count": 565,
+        "prompt_eval_count": 708,
+        "tokens_per_second": 153.50386843332865
+      }
+    ],
+    "error": null,
+    "scene_sha256": "313f86fdf1b3697e3d7c6d9249615569b59a6819365f2f92bcb2b95f8bdf2d8c",
+    "image_path": "model-0/eryx_under_mass_entry-0/attempt-0.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "gemma4:e4b",
+    "case_id": "eryx_under_mass_entry",
+    "trial": 1,
+    "accepted": true,
+    "first_pass": true,
+    "total_ms": 4124.925400000393,
+    "render_ms": 583.59,
+    "calls": [
+      {
+        "wall_ms": 3452.516399999695,
+        "done_reason": "stop",
+        "load_ms": 4.4282,
+        "prompt_ms": 99.462,
+        "generation_ms": 3322.673,
+        "server_ms": 3432.6326,
+        "eval_count": 528,
+        "prompt_eval_count": 708,
+        "tokens_per_second": 158.90820432826223
+      }
+    ],
+    "error": null,
+    "scene_sha256": "988d1bbb42339db378ff21f785a5e5cba4d7bef3cb50674a9554b5e2ba9a317a",
+    "image_path": "model-0/eryx_under_mass_entry-1/attempt-0.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "gemma4:e4b",
+    "case_id": "eryx_bank_bridge",
+    "trial": 0,
+    "accepted": false,
+    "first_pass": false,
+    "total_ms": 7864.304100000481,
+    "render_ms": null,
+    "calls": [
+      {
+        "wall_ms": 4079.937199999222,
+        "done_reason": "stop",
+        "load_ms": 4.4233,
+        "prompt_ms": 255.557,
+        "generation_ms": 3786.093,
+        "server_ms": 4077.7445,
+        "eval_count": 598,
+        "prompt_eval_count": 710,
+        "tokens_per_second": 157.94646354434505
+      },
+      {
+        "wall_ms": 3584.2501999995875,
+        "done_reason": "stop",
+        "load_ms": 5.2695,
+        "prompt_ms": 83.488,
+        "generation_ms": 3467.131,
+        "server_ms": 3563.4208,
+        "eval_count": 598,
+        "prompt_eval_count": 1419,
+        "tokens_per_second": 172.47689804625207
+      }
+    ],
+    "error": "landmark_not_visible span: Named solid must cover at least 3 of 2048 view probes; observed=0. right_bank_main blocks 12/12 rays towards the landmark's surface. Raise or move the landmark outside that solid and clear its sightline.; Native audit/render rejected (exit 1)",
+    "scene_sha256": null,
+    "image_path": "model-0/eryx_bank_bridge-0/rejected-diagnostic.png",
+    "diagnostic_image_only": true
+  },
+  {
+    "model": "gemma4:e4b",
+    "case_id": "eryx_bank_bridge",
+    "trial": 1,
+    "accepted": false,
+    "first_pass": false,
+    "total_ms": 6788.73990000011,
+    "render_ms": null,
+    "calls": [
+      {
+        "wall_ms": 3474.707700000181,
+        "done_reason": "stop",
+        "load_ms": 4.8789,
+        "prompt_ms": 66.15,
+        "generation_ms": 3340.442,
+        "server_ms": 3452.9018,
+        "eval_count": 522,
+        "prompt_eval_count": 710,
+        "tokens_per_second": 156.26674553846468
+      },
+      {
+        "wall_ms": 3110.7498000001215,
+        "done_reason": "stop",
+        "load_ms": 4.6715,
+        "prompt_ms": 82.663,
+        "generation_ms": 3013.391,
+        "server_ms": 3108.6719,
+        "eval_count": 522,
+        "prompt_eval_count": 1342,
+        "tokens_per_second": 173.22677342568554
+      }
+    ],
+    "error": "landmark_not_visible span: Named solid must cover at least 3 of 2048 view probes; observed=0. left_bank_upper blocks 4/12 rays towards the landmark's surface. Raise or move the landmark outside that solid and clear its sightline.; Native audit/render rejected (exit 1)",
+    "scene_sha256": null,
+    "image_path": "model-0/eryx_bank_bridge-1/rejected-diagnostic.png",
+    "diagnostic_image_only": true
+  },
+  {
+    "model": "gemma4:e4b",
+    "case_id": "eryx_distant_marker",
+    "trial": 0,
+    "accepted": true,
+    "first_pass": false,
+    "total_ms": 7852.0558000000165,
+    "render_ms": 666.28,
+    "calls": [
+      {
+        "wall_ms": 3722.3793000002843,
+        "done_reason": "stop",
+        "load_ms": 4.1366,
+        "prompt_ms": 259.666999,
+        "generation_ms": 3401.201,
+        "server_ms": 3720.0674,
+        "eval_count": 539,
+        "prompt_eval_count": 714,
+        "tokens_per_second": 158.47343335486494
+      },
+      {
+        "wall_ms": 3257.1704000001773,
+        "done_reason": "stop",
+        "load_ms": 4.0665,
+        "prompt_ms": 79.446,
+        "generation_ms": 3164.197,
+        "server_ms": 3253.9641,
+        "eval_count": 539,
+        "prompt_eval_count": 1350,
+        "tokens_per_second": 170.3433762183581
+      }
+    ],
+    "error": null,
+    "scene_sha256": "f968e700f0d84ab818f119cd59d79d4ba2275b4abd3d6178432a6183ca251acb",
+    "image_path": "model-0/eryx_distant_marker-0/attempt-1.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "gemma4:e4b",
+    "case_id": "eryx_distant_marker",
+    "trial": 1,
+    "accepted": true,
+    "first_pass": false,
+    "total_ms": 7318.187900000339,
+    "render_ms": 369.03,
+    "calls": [
+      {
+        "wall_ms": 3534.6362000000227,
+        "done_reason": "stop",
+        "load_ms": 4.1432,
+        "prompt_ms": 72.454,
+        "generation_ms": 3408.479,
+        "server_ms": 3532.454,
+        "eval_count": 537,
+        "prompt_eval_count": 714,
+        "tokens_per_second": 157.54827886573455
+      },
+      {
+        "wall_ms": 3202.5133999995887,
+        "done_reason": "stop",
+        "load_ms": 5.0641,
+        "prompt_ms": 81.295,
+        "generation_ms": 3096.328,
+        "server_ms": 3189.7553,
+        "eval_count": 531,
+        "prompt_eval_count": 1348,
+        "tokens_per_second": 171.4934593492679
+      }
+    ],
+    "error": null,
+    "scene_sha256": "c40e9f51d57ec294d305d7612ef67bdb013617e251f7cb20c1b9a9ea8baa2e12",
+    "image_path": "model-0/eryx_distant_marker-1/attempt-1.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "gemma4:e4b",
+    "case_id": "eryx_blade_oblique_break",
+    "trial": 0,
+    "accepted": true,
+    "first_pass": true,
+    "total_ms": 3799.532099999851,
+    "render_ms": 277.37,
+    "calls": [
+      {
+        "wall_ms": 3425.6655999997747,
+        "done_reason": "stop",
+        "load_ms": 4.1433,
+        "prompt_ms": 260.254,
+        "generation_ms": 3100.175,
+        "server_ms": 3423.3887,
+        "eval_count": 520,
+        "prompt_eval_count": 714,
+        "tokens_per_second": 167.73246671558863
+      }
+    ],
+    "error": null,
+    "scene_sha256": "a9299efa262dcc0742df7fd06c492c6428522edab804cb5ff41185f96fc1f1fb",
+    "image_path": "model-0/eryx_blade_oblique_break-0/attempt-0.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "gemma4:e4b",
+    "case_id": "eryx_blade_oblique_break",
+    "trial": 1,
+    "accepted": true,
+    "first_pass": true,
+    "total_ms": 4231.508000000758,
+    "render_ms": 377.11,
+    "calls": [
+      {
+        "wall_ms": 3745.2407999999195,
+        "done_reason": "stop",
+        "load_ms": 4.4139,
+        "prompt_ms": 64.433,
+        "generation_ms": 3667.557,
+        "server_ms": 3741.9438,
+        "eval_count": 594,
+        "prompt_eval_count": 714,
+        "tokens_per_second": 161.96067300385516
+      }
+    ],
+    "error": null,
+    "scene_sha256": "22e4388e81572f9d9c7ec21d07bf324d898aa0a13046e9742ff8dbdd6070d8e3",
+    "image_path": "model-0/eryx_blade_oblique_break-1/attempt-0.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "gemma4:e4b",
+    "case_id": "eryx_cantilever_terrace",
+    "trial": 0,
+    "accepted": true,
+    "first_pass": true,
+    "total_ms": 4402.192499999728,
+    "render_ms": 474.8,
+    "calls": [
+      {
+        "wall_ms": 3819.7645000000193,
+        "done_reason": "stop",
+        "load_ms": 4.6798,
+        "prompt_ms": 253.488,
+        "generation_ms": 3524.208,
+        "server_ms": 3817.3515,
+        "eval_count": 546,
+        "prompt_eval_count": 712,
+        "tokens_per_second": 154.9284264719903
+      }
+    ],
+    "error": null,
+    "scene_sha256": "e1bebb765f05cf846ba8df025ca634a112283bdf3f98cf98478aedf0ec370d1e",
+    "image_path": "model-0/eryx_cantilever_terrace-0/attempt-0.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "gemma4:e4b",
+    "case_id": "eryx_cantilever_terrace",
+    "trial": 1,
+    "accepted": true,
+    "first_pass": true,
+    "total_ms": 3944.9643999996624,
+    "render_ms": 408.45,
+    "calls": [
+      {
+        "wall_ms": 3434.1905999999653,
+        "done_reason": "stop",
+        "load_ms": 4.1643,
+        "prompt_ms": 64.852999,
+        "generation_ms": 3356.868,
+        "server_ms": 3432.1087,
+        "eval_count": 511,
+        "prompt_eval_count": 712,
+        "tokens_per_second": 152.2252289932163
+      }
+    ],
+    "error": null,
+    "scene_sha256": "a7a894eee61a13c36cc2846a510359ea4adb1be37b856d01960894172ec6a6fd",
+    "image_path": "model-0/eryx_cantilever_terrace-1/attempt-0.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "eryx-ministral8b:q4",
+    "case_id": "eryx_under_mass_entry",
+    "trial": 0,
+    "accepted": true,
+    "first_pass": true,
+    "total_ms": 19309.428900000057,
+    "render_ms": 666.13,
+    "calls": [
+      {
+        "wall_ms": 18542.464199999813,
+        "done_reason": "stop",
+        "load_ms": 3.8769,
+        "prompt_ms": 320.252,
+        "generation_ms": 18165.601,
+        "server_ms": 18527.1616,
+        "eval_count": 803,
+        "prompt_eval_count": 682,
+        "tokens_per_second": 44.20442791845973
+      }
+    ],
+    "error": null,
+    "scene_sha256": "4d28606f0500748c645c978c3468f3354306800367e0408d48367448ce9f75d8",
+    "image_path": "model-1/eryx_under_mass_entry-0/attempt-0.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "eryx-ministral8b:q4",
+    "case_id": "eryx_under_mass_entry",
+    "trial": 1,
+    "accepted": true,
+    "first_pass": true,
+    "total_ms": 16947.875799999565,
+    "render_ms": 774.02,
+    "calls": [
+      {
+        "wall_ms": 16076.426399999946,
+        "done_reason": "stop",
+        "load_ms": 3.6781,
+        "prompt_ms": 23.729,
+        "generation_ms": 15972.061,
+        "server_ms": 16073.8877,
+        "eval_count": 710,
+        "prompt_eval_count": 682,
+        "tokens_per_second": 44.452622613950695
+      }
+    ],
+    "error": null,
+    "scene_sha256": "25f0c501861832c920f79eca8a6a1b5d42dcba92185610259a241cbae5b46783",
+    "image_path": "model-1/eryx_under_mass_entry-1/attempt-0.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "eryx-ministral8b:q4",
+    "case_id": "eryx_bank_bridge",
+    "trial": 0,
+    "accepted": false,
+    "first_pass": false,
+    "total_ms": 33577.797799999644,
+    "render_ms": null,
+    "calls": [
+      {
+        "wall_ms": 21257.10429999981,
+        "done_reason": "stop",
+        "load_ms": 4.1782,
+        "prompt_ms": 310.745,
+        "generation_ms": 20857.409,
+        "server_ms": 21253.5526,
+        "eval_count": 924,
+        "prompt_eval_count": 684,
+        "tokens_per_second": 44.30080457261015
+      },
+      {
+        "wall_ms": 12317.603200000121,
+        "done_reason": "stop",
+        "load_ms": 3.6677,
+        "prompt_ms": 47.569,
+        "generation_ms": 12249.408,
+        "server_ms": 12315.3036,
+        "eval_count": 532,
+        "prompt_eval_count": 1679,
+        "tokens_per_second": 43.43067028218833
+      }
+    ],
+    "error": "Fixed header changed or missing; copy it exactly, without Markdown; Only named box directives without emit are allowed after the header",
+    "scene_sha256": null,
+    "image_path": null,
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "eryx-ministral8b:q4",
+    "case_id": "eryx_bank_bridge",
+    "trial": 1,
+    "accepted": false,
+    "first_pass": false,
+    "total_ms": 38368.926800000736,
+    "render_ms": null,
+    "calls": [
+      {
+        "wall_ms": 25581.081400000585,
+        "done_reason": "stop",
+        "load_ms": 3.8256,
+        "prompt_ms": 23.554,
+        "generation_ms": 25448.151,
+        "server_ms": 25577.6018,
+        "eval_count": 1122,
+        "prompt_eval_count": 684,
+        "tokens_per_second": 44.08964722034226
+      },
+      {
+        "wall_ms": 12783.914999999979,
+        "done_reason": "stop",
+        "load_ms": 3.9468,
+        "prompt_ms": 47.671,
+        "generation_ms": 12695.207,
+        "server_ms": 12762.9467,
+        "eval_count": 548,
+        "prompt_eval_count": 1877,
+        "tokens_per_second": 43.16589717678491
+      }
+    ],
+    "error": "Fixed header changed or missing; copy it exactly, without Markdown; Only named box directives without emit are allowed after the header",
+    "scene_sha256": null,
+    "image_path": null,
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "eryx-ministral8b:q4",
+    "case_id": "eryx_distant_marker",
+    "trial": 0,
+    "accepted": false,
+    "first_pass": false,
+    "total_ms": 48648.267400000805,
+    "render_ms": null,
+    "calls": [
+      {
+        "wall_ms": 21663.02799999994,
+        "done_reason": "stop",
+        "load_ms": 3.6376,
+        "prompt_ms": 312.537,
+        "generation_ms": 21233.033,
+        "server_ms": 21660.0081,
+        "eval_count": 940,
+        "prompt_eval_count": 688,
+        "tokens_per_second": 44.270641881449535
+      },
+      {
+        "wall_ms": 26889.166099999784,
+        "done_reason": "stop",
+        "load_ms": 3.7527,
+        "prompt_ms": 488.819,
+        "generation_ms": 26283.745,
+        "server_ms": 26868.764,
+        "eval_count": 1129,
+        "prompt_eval_count": 1713,
+        "tokens_per_second": 42.954305027689166
+      }
+    ],
+    "error": "Expected 8..20 boxes, observed 25 body lines",
+    "scene_sha256": null,
+    "image_path": "model-1/eryx_distant_marker-0/rejected-diagnostic.png",
+    "diagnostic_image_only": true
+  },
+  {
+    "model": "eryx-ministral8b:q4",
+    "case_id": "eryx_distant_marker",
+    "trial": 1,
+    "accepted": false,
+    "first_pass": false,
+    "total_ms": 42374.08519999917,
+    "render_ms": null,
+    "calls": [
+      {
+        "wall_ms": 27292.51099999965,
+        "done_reason": "stop",
+        "load_ms": 3.4073,
+        "prompt_ms": 23.457,
+        "generation_ms": 27109.0,
+        "server_ms": 27277.0232,
+        "eval_count": 1192,
+        "prompt_eval_count": 688,
+        "tokens_per_second": 43.97063705780368
+      },
+      {
+        "wall_ms": 14970.476799999233,
+        "done_reason": "stop",
+        "load_ms": 3.7088,
+        "prompt_ms": 580.576,
+        "generation_ms": 14272.485,
+        "server_ms": 14968.4057,
+        "eval_count": 615,
+        "prompt_eval_count": 1921,
+        "tokens_per_second": 43.08990340504825
+      }
+    ],
+    "error": "landmark_not_visible far_marker: Named solid must cover at least 3 of 2048 view probes; observed=0. Surface sightlines are clear; move the landmark inside the fixed camera frame or enlarge it.; Native audit/render rejected (exit 1)",
+    "scene_sha256": null,
+    "image_path": "model-1/eryx_distant_marker-1/rejected-diagnostic.png",
+    "diagnostic_image_only": true
+  },
+  {
+    "model": "eryx-ministral8b:q4",
+    "case_id": "eryx_blade_oblique_break",
+    "trial": 0,
+    "accepted": true,
+    "first_pass": false,
+    "total_ms": 33933.18369999997,
+    "render_ms": 263.24,
+    "calls": [
+      {
+        "wall_ms": 21067.59499999953,
+        "done_reason": "stop",
+        "load_ms": 3.4369,
+        "prompt_ms": 312.045,
+        "generation_ms": 20585.691,
+        "server_ms": 21047.5542,
+        "eval_count": 912,
+        "prompt_eval_count": 685,
+        "tokens_per_second": 44.302617774647445
+      },
+      {
+        "wall_ms": 12495.870200000354,
+        "done_reason": "stop",
+        "load_ms": 3.7114,
+        "prompt_ms": 36.528,
+        "generation_ms": 12439.673,
+        "server_ms": 12493.7563,
+        "eval_count": 540,
+        "prompt_eval_count": 1642,
+        "tokens_per_second": 43.409501198303204
+      }
+    ],
+    "error": null,
+    "scene_sha256": "3f44a97c163a61b94c856b7f67f0abdf45d447f48067139889bdc6e47c13bbcf",
+    "image_path": "model-1/eryx_blade_oblique_break-0/attempt-1.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "eryx-ministral8b:q4",
+    "case_id": "eryx_blade_oblique_break",
+    "trial": 1,
+    "accepted": true,
+    "first_pass": true,
+    "total_ms": 19060.567999999876,
+    "render_ms": 344.24,
+    "calls": [
+      {
+        "wall_ms": 18605.689500000153,
+        "done_reason": "stop",
+        "load_ms": 4.2194,
+        "prompt_ms": 23.361,
+        "generation_ms": 18434.23,
+        "server_ms": 18603.1438,
+        "eval_count": 816,
+        "prompt_eval_count": 685,
+        "tokens_per_second": 44.26547786373502
+      }
+    ],
+    "error": null,
+    "scene_sha256": "e55350f278c274438ea1d41016880c9148d11b657cefcec571d0cb8f79a9facd",
+    "image_path": "model-1/eryx_blade_oblique_break-1/attempt-0.png",
+    "diagnostic_image_only": false
+  },
+  {
+    "model": "eryx-ministral8b:q4",
+    "case_id": "eryx_cantilever_terrace",
+    "trial": 0,
+    "accepted": false,
+    "first_pass": false,
+    "total_ms": 27684.037699999863,
+    "render_ms": null,
+    "calls": [
+      {
+        "wall_ms": 13025.151499999993,
+        "done_reason": "stop",
+        "load_ms": 3.6951,
+        "prompt_ms": 310.393,
+        "generation_ms": 12581.167,
+        "server_ms": 13012.5393,
+        "eval_count": 559,
+        "prompt_eval_count": 685,
+        "tokens_per_second": 44.4314903378995
+      },
+      {
+        "wall_ms": 14425.712199999907,
+        "done_reason": "stop",
+        "load_ms": 3.7421,
+        "prompt_ms": 291.246,
+        "generation_ms": 14115.167,
+        "server_ms": 14423.2217,
+        "eval_count": 617,
+        "prompt_eval_count": 1296,
+        "tokens_per_second": 43.71184556300326
+      }
+    ],
+    "error": "landmark_not_visible ledge: Named solid must cover at least 3 of 2048 view probes; observed=2. quarry_wall_back blocks 6/12 rays towards the landmark's surface. Raise or move the landmark outside that solid and clear its sightline.; Native audit/render rejected (exit 1)",
+    "scene_sha256": null,
+    "image_path": "model-1/eryx_cantilever_terrace-0/rejected-diagnostic.png",
+    "diagnostic_image_only": true
+  },
+  {
+    "model": "eryx-ministral8b:q4",
+    "case_id": "eryx_cantilever_terrace",
+    "trial": 1,
+    "accepted": false,
+    "first_pass": false,
+    "total_ms": 31671.166699999958,
+    "render_ms": null,
+    "calls": [
+      {
+        "wall_ms": 14532.334999999875,
+        "done_reason": "stop",
+        "load_ms": 3.5892,
+        "prompt_ms": 24.177,
+        "generation_ms": 14363.729,
+        "server_ms": 14508.3119,
+        "eval_count": 634,
+        "prompt_eval_count": 685,
+        "tokens_per_second": 44.13895583800001
+      },
+      {
+        "wall_ms": 16908.976699999585,
+        "done_reason": "stop",
+        "load_ms": 3.8836,
+        "prompt_ms": 345.16,
+        "generation_ms": 16523.31,
+        "server_ms": 16885.6474,
+        "eval_count": 705,
+        "prompt_eval_count": 1418,
+        "tokens_per_second": 42.66699589852154
+      }
+    ],
+    "error": "landmark_not_visible ledge: Named solid must cover at least 3 of 2048 view probes; observed=2. support_post_2 blocks 1/12 rays towards the landmark's surface. Raise or move the landmark outside that solid and clear its sightline.; Native audit/render rejected (exit 1)",
+    "scene_sha256": null,
+    "image_path": "model-1/eryx_cantilever_terrace-1/rejected-diagnostic.png",
+    "diagnostic_image_only": true
+  }
+]

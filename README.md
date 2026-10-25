@@ -8,10 +8,12 @@
 
 The active artistic direction follows a four-stage lineage from Lovecraft and Kenneth J. Sterling's *In the Walls of Eryx*, through ASD's *Beyond the Walls of Eryx* and Mandarine's *Within the Mesh*, to an interactive generative labyrinth. The intended player explores Venusian extraction infrastructure while an invisible topology can change through LLM proposals validated by an authoritative engine.
 
-The first playable Eryx slice is now present: seven canonical quarry locations, five exits into persistent LLM-generated neighboring rooms, active Eryx prompts and state labels, a typed invisible barrier, and an authored impossible return. Live LLM topology proposals and their validator remain planned. The historical datacenter fixtures remain preserved as technical baselines. See [`documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md`](documentation/ERYX_PLAYABLE_SPATIAL_ROADMAP.md) for the route and [`documentation/TECHNICAL_STATE.md`](documentation/TECHNICAL_STATE.md) for the exact implementation boundary.
+The game now has one authored starting place: the quarry threshold, inspired by concept 12. Every place beyond it is generated on discovery by local Gemma/Ollama. Places remain stable during a game; each launch starts a new exploration. Automatic write-only research archives retain descriptions, scene programs, images and turn results. See the [current play and research guide](documentation/SINGLE_START_RESEARCH.md).
 
 Current state:
 
+- normal launch: SDL at the quarry threshold, using local Ollama `gemma4:e4b`; east discovers the next place, west returns; a new game and generation seed at every launch
+- [local-scene roadmap results and retained images](documentation/LOCAL_SCENE_ROADMAP_RESULTS.md): Gemma selected after a common-backend comparison; 9/10 native pilot discoveries accepted, with visual limitations documented
 - vendored Cornell Box assets
 - vendored `llama.cpp v0.7.0` (`620d2225cc436ab0b001e3200e590e3b286ef9ab`) in `vendor/llama.cpp`
 - native C++17 CLI renderer
@@ -33,15 +35,16 @@ Current state:
 - first generated-room graph for improvised cardinal navigation
 - authoritative hard/soft/spatial state with deterministic and hybrid scene compilation
 - experimental `--scene-generation-mode dynamic`: native spatial plan, free `.scene` generation, bounded validation/repair, immutable accepted scenes; real-model qualification has not passed ([French runtime guide](documentation/GENERATION_DYNAMIQUE_DECORS_RUNTIME.md), [observed results](documentation/GENERATION_DYNAMIQUE_DECORS_BILAN.md))
-- seven-place Eryx survey route with deterministic invisible contact and non-reciprocal traversal
-- five authored exploration apertures from the canonical route into persistent generated-room branches
+- one authored Eryx starting scene with a solid 25 cm glass slab; the obsolete six-location route has been removed
+- generated exploration with authoritative links and immutable revisits within a game
+- automatic research archives outside the repository; never used to initialize a game
 - model-directed Venus heat loop linking external temperature, suit-buffered body temperature, and LLM sampling temperature
 - six-language player interface selected at launch: English (`E`), Français (`F`), Norsk (`N`, Bokmål), Dansk (`D`), Deutsch (`G`), or Italiano (`I`)
-- Unicode-tolerant localized navigation whose canonical exits remain engine-owned and are repaired when older saves are loaded
+- Unicode-tolerant localized navigation whose exits remain engine-owned
 - symmetric procedural suit-visor mask around the 3D viewport
 - green-to-pale-yellow Venus sky with doubled radiance on environment misses
 - legacy datacenter/desert scenes retained as historical baselines
-- pinned, hash-verified Ministral Q4/Q5/Reasoning profiles; Instruct Q4 remains the default
+- pinned, hash-verified Ministral Q4/Q5/Reasoning profiles retained for native-backend diagnostics
 - Jinja chat templates, separate private/final channels, bounded generation and cooperative cancellation
 - first headless `Ministral` turn pipeline wired to the renderer
 - explicit provenance for the reused 2003 raytracer ideas
@@ -72,6 +75,8 @@ play_within_the_latent_walls.bat
 
 ## Windows distribution
 
+The existing 2.2 distribution below predates the Ollama/Gemma default. This tranche publishes the development executable, not a new installer. For the current game, run Ollama locally with `gemma4:e4b` installed; see the [current launch guide](documentation/SINGLE_START_RESEARCH.md).
+
 Build the distributable installer from a Windows development machine with:
 
 ```bat
@@ -97,7 +102,7 @@ cmake -S . -B build_ministral_v070 -DLIMINAL_ENABLE_OPENMP=OFF
 cmake --build build_ministral_v070 --config Release
 ```
 
-Model download helper:
+Model download helper for the explicit native Ministral backend (the current game uses Ollama/Gemma):
 
 ```powershell
 python -m pip install "huggingface_hub<1.0"
@@ -122,11 +127,9 @@ Launch the SDL3 frontend:
 
 ```bat
 play_within_the_latent_walls.bat
-play_within_the_latent_walls.bat --location quarry_threshold
-play_within_the_latent_walls.bat --load-state output\sdl_session_state.json
 ```
 
-These commands launch the Eryx slice under its selected bilingual title.
+Normal launch asks only for the interface language, then starts at the quarry threshold. Type **east** (or **est** in French) to discover a generated room, and continue east to explore further. Research archives are written incrementally to `%LOCALAPPDATA%\WithinTheLatentWalls\research\`, in a unique directory for each game. SDL does not resume a previous game. Ollama must be running on `127.0.0.1:11434`, with `gemma4:e4b` installed.
 
 Animated-view diagnostics:
 
@@ -150,11 +153,7 @@ Inspect the compiled `llama.cpp` runtime wiring:
 .\build\Release\liminal_cornell_renderer.exe --llama-info
 ```
 
-The default run now renders:
-
-- `assets/scenes/liminal_service_corridor.scene`
-- en `800x400` par defaut, en cadrage panorama
-- avec `16 spp` par defaut
+Running without arguments opens a new SDL game at the quarry threshold. Rendering defaults remain `800x400`, panorama, `16 spp`; the published latency comparison uses `8 spp`. Supply `--scene` explicitly for a standalone diagnostic render.
 
 Useful overrides:
 
@@ -162,9 +161,9 @@ Useful overrides:
 .\build\Release\liminal_cornell_renderer.exe --scene assets\scenes\liminal_service_corridor.scene --samples 16 --width 256 --height 256
 .\build\Release\liminal_cornell_renderer.exe --scene assets\cornell\cornell_box.obj --output output\cornell_box_512.png --samples 64 --width 512 --height 512
 .\build\Release\liminal_cornell_renderer.exe --sdl --location quarry_threshold --save-state output\sdl_session_state.json
-.\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location labyrinth_threshold --command "inspect the northern datum"
+.\build\Release\liminal_cornell_renderer.exe --dump-turn-contract --location quarry_threshold --command "inspect the northern datum"
 .\build\Release\liminal_cornell_renderer.exe --compile-location quarry_threshold --output output\compiled_eryx_threshold.png
-.\build\Release\liminal_cornell_renderer.exe --run-session --location quarry_threshold --command north --command north --command east --command north --command east --command north --command east --command west --save-state output\eryx_route.json --output output\eryx_route.png
+.\build\Release\liminal_cornell_renderer.exe --run-session --location quarry_threshold --command east --command east --command west --save-state output\eryx_route.json --output output\eryx_route.png
 .\build\Release\liminal_cornell_renderer.exe --run-turn --load-state output\eryx_route.json --command west --dump-session-history --output output\eryx_route_2.png
 ``` 
 

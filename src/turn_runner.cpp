@@ -1158,7 +1158,7 @@ static void EnsureActionableVisibleObjects(SpatialState* spatial_state)
 
     const std::string combined = BuildSpatialSemanticText(*spatial_state);
     const bool eryx =
-        (spatial_state->location_id >= kLocationQuarryThreshold && spatial_state->location_id <= kLocationProspectShelter) ||
+        spatial_state->location_id == kLocationQuarryThreshold ||
         combined.find("quarry") != std::string::npos ||
         combined.find("prospect") != std::string::npos ||
         combined.find("crystal") != std::string::npos ||
@@ -2472,7 +2472,7 @@ static bool LoadSceneForPlace(
         return false;
     }
 
-    if(room->scene_contract_version && (room->scene_contract_version!=1 ||
+    if(room->scene_contract_version && ((room->scene_contract_version!=1&&room->scene_contract_version!=2) ||
        room->scene_hash!=SceneTextHash(room->scene_text) || room->scene_plan_hash!=SceneTextHash(room->scene_design_json))) {
         SetError(error_buffer,error_buffer_size,"Invalid generated scene provenance: %s",place_id.c_str());return false;
     }
@@ -2552,7 +2552,7 @@ static std::string DetermineUpdatedPlaceIdAfterStandardTurn(
 
 static bool IsEryxLocation(LocationId location_id)
 {
-    return location_id >= kLocationQuarryThreshold && location_id <= kLocationProspectShelter;
+    return location_id == kLocationQuarryThreshold;
 }
 
 static void RestoreAuthoritativeCanonicalTopologyInternal(SessionState* session_state)
@@ -2606,78 +2606,6 @@ static void ProtectCanonicalTopologyFromNarrativeDelta(
     turn_result->spatial_delta.next_location_id = kLocationUnknown;
     turn_result->spatial_delta.blocked_exits_changed = false;
     turn_result->spatial_delta.blocked_exits.clear();
-}
-
-static void ApplyEryxSpatialEntropy(LocationId location_id, HardState* hard_state)
-{
-    if (!hard_state) {
-        return;
-    }
-
-    int minimum_entropy = kDefaultSpatialEntropy;
-    switch (location_id) {
-    case kLocationExtractionField:
-        minimum_entropy = 12;
-        break;
-    case kLocationCrystalCut:
-        minimum_entropy = 18;
-        break;
-    case kLocationScannerStation:
-        minimum_entropy = 26;
-        break;
-    case kLocationSurveyPlateau:
-        minimum_entropy = 34;
-        break;
-    case kLocationLabyrinthThreshold:
-        minimum_entropy = 48;
-        break;
-    case kLocationProspectShelter:
-        minimum_entropy = 55;
-        break;
-    default:
-        break;
-    }
-    if (hard_state->spatial_entropy < minimum_entropy) {
-        hard_state->spatial_entropy = minimum_entropy;
-    }
-}
-
-static void AddAuthoredEryxTopology(SessionState* session_state)
-{
-    if (!session_state) {
-        return;
-    }
-
-    const std::string threshold = BuildCanonicalPlaceId(kLocationQuarryThreshold);
-    const std::string extraction = BuildCanonicalPlaceId(kLocationExtractionField);
-    const std::string crystal = BuildCanonicalPlaceId(kLocationCrystalCut);
-    const std::string scanner = BuildCanonicalPlaceId(kLocationScannerStation);
-    const std::string plateau = BuildCanonicalPlaceId(kLocationSurveyPlateau);
-    const std::string labyrinth = BuildCanonicalPlaceId(kLocationLabyrinthThreshold);
-    const std::string shelter = BuildCanonicalPlaceId(kLocationProspectShelter);
-
-    AddRoomLinkUnique(&session_state->room_links, threshold, kDirectionNorth, extraction);
-    AddRoomLinkUnique(&session_state->room_links, extraction, kDirectionSouth, threshold);
-    AddRoomLinkUnique(&session_state->room_links, extraction, kDirectionNorth, crystal);
-    AddRoomLinkUnique(&session_state->room_links, crystal, kDirectionSouth, extraction);
-    AddRoomLinkUnique(&session_state->room_links, crystal, kDirectionEast, scanner);
-    AddRoomLinkUnique(&session_state->room_links, scanner, kDirectionWest, crystal);
-    AddRoomLinkUnique(&session_state->room_links, scanner, kDirectionNorth, plateau);
-    AddRoomLinkUnique(&session_state->room_links, plateau, kDirectionSouth, scanner);
-    AddRoomLinkUnique(&session_state->room_links, plateau, kDirectionEast, labyrinth);
-    AddRoomLinkUnique(&session_state->room_links, labyrinth, kDirectionWest, plateau);
-    AddRoomLinkUnique(&session_state->room_links, labyrinth, kDirectionEast, shelter);
-
-    // The shelter's west return is intentionally non-reciprocal: it bypasses the
-    // open datum and returns to the locally recognizable scanner station.
-    AddRoomLinkUnique(&session_state->room_links, shelter, kDirectionWest, scanner);
-
-    InvisibleBarrier northern_plane;
-    northern_plane.place_id = labyrinth;
-    northern_plane.direction = kDirectionNorth;
-    northern_plane.evidence =
-        "The contact line runs east-west; the plateau remains reachable to the west and Vey's shelter beacon remains visible to the east.";
-    AddOrUpdateInvisibleBarrier(&session_state->invisible_barriers, northern_plane);
 }
 
 }  // namespace
@@ -2764,10 +2692,6 @@ bool InitializeSessionState(
     }
     EnsureActionableVisibleObjects(&session_state->spatial_state);
     session_state->hard_state.alert_level = session_state->spatial_state.alert_level;
-    if (IsEryxLocation(initial_location_id)) {
-        AddAuthoredEryxTopology(session_state);
-        ApplyEryxSpatialEntropy(initial_location_id, &session_state->hard_state);
-    }
     NormalizeSessionState(session_state);
     return true;
 }
@@ -2992,7 +2916,6 @@ static bool RunHeadlessTurnFromStateImpl(
                     error_buffer_size)) {
                 return false;
             }
-            ApplyEryxSpatialEntropy(result->updated_hard_state.current_location_id, &result->updated_hard_state);
             AskLlmForThermalUpdate(
                 body_driven_config,
                 initial_session_state,
@@ -3022,7 +2945,10 @@ static bool RunHeadlessTurnFromStateImpl(
         result->prospective_spatial_state = prospective_spatial_state;
         result->prospective_spatial_state_known = true;
 
-        if(config.dynamic_scenes) {
+        const bool local_direct=config.local_scenes &&
+            (initial_session_state.hard_state.current_location_id==kLocationQuarryThreshold ||
+             IsGeneratedPlaceId(initial_session_state.current_place_id)) && traversal_direction==kDirectionEast;
+        if(config.dynamic_scenes||local_direct) {
             SceneDesignContext context;
             context.language=GameLanguageEnglishName(initial_session_state.language);
             context.entry_direction=CardinalDirectionToString(OppositeCardinalDirection(traversal_direction));
@@ -3040,6 +2966,10 @@ static bool RunHeadlessTurnFromStateImpl(
             context.brief="Invent a previously unseen Venusian exploration place inspired by In the Walls of Eryx. "
                 "Use monumental simple geometry, yellow-green sky, global illumination and a strong architectural void. "
                 "Make this place distinct from recently visited places. Match the engine context without drawing invisible barriers.";
+            if(local_direct)context.brief=LocalSceneExplorationBrief(
+                static_cast<unsigned int>(initial_session_state.next_generated_room_index-1));
+            if(local_direct)result->prompt_text=LocalSceneSystemPrompt()+"\n"+
+                BuildLocalSceneProgramPrompt(context.brief,LocalScenePilotLandmark());
             for(auto it=initial_session_state.generated_rooms.rbegin();it!=initial_session_state.generated_rooms.rend() && context.recent_intents.size()<4;++it)
                 context.recent_intents.push_back(it->spatial_state.room_summary);
             auto progress=[](DynamicScenePhase phase,const char* text,const char* delta,void* data) {
@@ -3052,7 +2982,16 @@ static bool RunHeadlessTurnFromStateImpl(
             };
             DynamicSceneResult generated;
             DynamicSceneConfig scene_config=config.dynamic_scene_config;scene_config.direct=false;
-            const bool scene_ready=GenerateDynamicScene(context,body_driven_config.generation_config,scene_config,progress,
+            if(local_direct) {
+                scene_config.direct=true;scene_config.fixed_frame=true;
+                scene_config.landmark=LocalScenePilotLandmark();
+                scene_config.program_tokens=2048;scene_config.max_repairs=1;
+                scene_config.total_timeout_ms=std::min(scene_config.total_timeout_ms,120000);
+            }
+            auto scene_generation_config=body_driven_config.generation_config;
+            if(local_direct)scene_generation_config.seed+=
+                7919u*static_cast<unsigned int>(initial_session_state.next_generated_room_index-1);
+            const bool scene_ready=GenerateDynamicScene(context,scene_generation_config,scene_config,progress,
                                      const_cast<HeadlessTurnConfig*>(&config),&generated);
             result->dynamic_scene_design_json=generated.plan_json;
             result->dynamic_scene_metrics_json=generated.metrics_json;
@@ -3073,13 +3012,28 @@ static bool RunHeadlessTurnFromStateImpl(
             room.spatial_state=prospective_spatial_state;
             room.spatial_state.location_id=kLocationUnknown;room.spatial_state.canonical_fixture.clear();
             room.spatial_state.room_title=generated.design.title;room.spatial_state.room_summary=generated.design.intent;
+            if(local_direct) {
+                room.spatial_state.room_title=PlayerText(initial_session_state.language,
+                    "Beyond the quarry blocks","Au-delà des blocs de carrière","Bortenfor steinblokkene",
+                    "Bag stenblokkene","Hinter den Steinblöcken","Oltre i blocchi della cava");
+                generated.design.arrival=PlayerText(initial_session_state.language,
+                    "A marker is visible among the quarry volumes. The way back remains open.",
+                    "Un repère est visible parmi les volumes de la carrière. Le retour reste ouvert.",
+                    "Et merke er synlig mellom blokkene. Veien tilbake er åpen.",
+                    "Et mærke er synligt mellem blokkene. Vejen tilbage er åben.",
+                    "Eine Markierung ist zwischen den Blöcken sichtbar. Der Rückweg bleibt offen.",
+                    "Un riferimento è visibile tra i blocchi. La via del ritorno resta aperta.");
+                room.spatial_state.room_summary=generated.design.arrival;
+            }
             room.spatial_state.location_archetype="dynamic_scene";
             room.spatial_state.anchors.clear();room.spatial_state.visible_objects.clear();
             room.spatial_state.scene_constraints.clear();room.spatial_state.spatial_anomalies.clear();
             for(const auto& binding:generated.design.interaction_bindings)room.spatial_state.visible_objects.push_back(binding.object_id);
+            if(local_direct)room.spatial_state.visible_objects.push_back(scene_config.landmark);
             room.spatial_state.blocked_exits.clear();
             for(const auto& direction:context.allowed_exits) {
                 bool open=false;for(const auto& passage:generated.design.reserved_passages)if(passage.direction==direction)open=true;
+                if(local_direct)open=direction==context.entry_direction||direction=="east";
                 if(!open)room.spatial_state.blocked_exits.push_back(direction);
             }
             // Lighting is an artistic choice; the plan cannot advance the world clock.
@@ -3089,9 +3043,20 @@ static bool RunHeadlessTurnFromStateImpl(
             const auto& model_path=config.generation_config.model_path;
             const auto model_separator=model_path.find_last_of("/\\");
             room.scene_model_filename=model_path.substr(model_separator==std::string::npos?0:model_separator+1);
-            room.scene_seed=config.generation_config.seed;room.scene_repairs=generated.repairs;
+            room.scene_seed=scene_generation_config.seed;room.scene_repairs=generated.repairs;
             room.scene_prompt_version="scene-authoring-v8/normalized-design-v1/"+
                 SceneTextHash(BuildSceneDesignPrompt(context)+BuildSceneProgramPrompt(context,&generated.design));
+            if(local_direct) {
+                room.scene_source="local_direct_v1";room.scene_contract_version=2;
+                room.scene_design_json=json({{"mode","local-fixed-v1"},{"brief",context.brief},
+                    {"landmark",scene_config.landmark},{"return_direction",context.entry_direction}}).dump();
+                room.scene_plan_hash=SceneTextHash(room.scene_design_json);
+                room.scene_model_filename=config.generation_config.ollama_model;
+                room.scene_profile="ollama/"+config.generation_config.ollama_model;
+                room.scene_prompt_version="local-fixed-v1/"+
+                    SceneTextHash(LocalSceneSystemPrompt()+BuildLocalSceneProgramPrompt(context.brief,scene_config.landmark)+LocalSceneRepairPrefix());
+                result->dynamic_scene_design_json=room.scene_design_json;
+            }
             result->generated_rooms_to_add.push_back(room);
             result->generated_room_created=true;result->generated_room_scene_source=room.scene_source;
             AddRoomLinkUnique(&result->room_links_to_add,result->initial_place_id,traversal_direction,room.room_id);
@@ -3364,7 +3329,7 @@ static bool RunHeadlessTurnFromStateImpl(
     }
 
     const GeneratedRoom* accepted_room=FindGeneratedRoomById(initial_session_state,result->initial_place_id);
-    if(accepted_room && accepted_room->scene_contract_version==1) {
+    if(accepted_room && accepted_room->scene_contract_version) {
         const std::string command=ToLowerAsciiCopy(TrimWhitespaceCopy(player_command?player_command:""));
         const std::vector<std::string> observations={"look","l","look around","regarder","regarde","observer","observe",
             "se","se deg rundt","se dig omkring","schauen","umsehen","guarda","osserva"};
@@ -3496,7 +3461,7 @@ static bool RunHeadlessTurnFromStateImpl(
         return true;
     }
 
-    if(accepted_room && accepted_room->scene_contract_version==1) {
+    if(accepted_room && accepted_room->scene_contract_version) {
         // No geometric mutation protocol exists in v1. Preserve every accepted binding and
         // state field; language-model movement intents were handled authoritatively above.
         result->turn_result=TurnResult();result->turn_result.intent="unsupported_scene_action";
@@ -3721,68 +3686,13 @@ bool RunNavigationSelfTest(FILE* output)
     }
     error_buffer[0] = '\0';
 
-    const LocationId route_locations[] = {
-        kLocationQuarryThreshold,
-        kLocationExtractionField,
-        kLocationCrystalCut,
-        kLocationScannerStation,
-        kLocationSurveyPlateau,
-        kLocationLabyrinthThreshold,
-        kLocationProspectShelter,
-    };
-    const CardinalDirection route_directions[] = {
-        kDirectionNorth,
-        kDirectionNorth,
-        kDirectionEast,
-        kDirectionNorth,
-        kDirectionEast,
-        kDirectionEast,
-    };
-    std::string current_place_id = BuildCanonicalPlaceId(route_locations[0]);
-    for (size_t index = 0; index < sizeof(route_directions) / sizeof(route_directions[0]); ++index) {
-        SpatialState canonical_state;
-        std::string linked_place_id;
-        if (!BuildCanonicalSpatialState(route_locations[index], &canonical_state) ||
-            SpatialStateBlocksDirection(canonical_state, route_directions[index]) ||
-            !FindRoomLinkTarget(route_state, current_place_id, route_directions[index], &linked_place_id) ||
-            linked_place_id != BuildCanonicalPlaceId(route_locations[index + 1u])) {
-            if (output) {
-                fprintf(output, "Canonical seven-room route failed at edge %zu.\n", index);
-            }
-            return false;
-        }
-        current_place_id = linked_place_id;
-    }
-
-    struct GeneratedBranchCase {
-        LocationId location;
-        CardinalDirection direction;
-    };
-    const GeneratedBranchCase generated_branch_cases[] = {
-        {kLocationExtractionField, kDirectionEast},
-        {kLocationScannerStation, kDirectionEast},
-        {kLocationSurveyPlateau, kDirectionNorth},
-        {kLocationLabyrinthThreshold, kDirectionSouth},
-        {kLocationProspectShelter, kDirectionEast},
-    };
-    for (size_t index = 0; index < sizeof(generated_branch_cases) / sizeof(generated_branch_cases[0]); ++index) {
-        const GeneratedBranchCase& branch = generated_branch_cases[index];
-        SpatialState canonical_state;
-        const std::string place_id = BuildCanonicalPlaceId(branch.location);
-        std::string linked_place_id;
-        if (!BuildCanonicalSpatialState(branch.location, &canonical_state) ||
-            SpatialStateBlocksDirection(canonical_state, branch.direction) ||
-            FindRoomLinkTarget(route_state, place_id, branch.direction, &linked_place_id) ||
-            FindInvisibleBarrier(route_state, place_id, branch.direction)) {
-            if (output) {
-                fprintf(
-                    output,
-                    "Generated exploration branch failed for %s %s.\n",
-                    LocationIdToString(branch.location),
-                    CardinalDirectionToString(branch.direction));
-            }
-            return false;
-        }
+    SpatialState start_state;
+    if (!BuildCanonicalSpatialState(kLocationQuarryThreshold, &start_state) ||
+        SpatialStateBlocksDirection(start_state, kDirectionEast) ||
+        !SpatialStateBlocksDirection(start_state, kDirectionWest) ||
+        !route_state.room_links.empty() || !route_state.invisible_barriers.empty()) {
+        if (output) fprintf(output, "Single starting location must open east without pre-authored links.\n");
+        return false;
     }
 
     GeneratedRoomDraft archetype_draft;
@@ -3798,10 +3708,10 @@ bool RunNavigationSelfTest(FILE* output)
     }
 
     SessionState corrupted_state;
-    if (!InitializeSessionState(kLocationScannerStation, &corrupted_state, error_buffer, sizeof(error_buffer))) {
+    if (!InitializeSessionState(kLocationQuarryThreshold, &corrupted_state, error_buffer, sizeof(error_buffer))) {
         return false;
     }
-    corrupted_state.hard_state.current_location_id = kLocationCrystalCut;
+    corrupted_state.hard_state.current_location_id = kLocationUnknown;
     corrupted_state.spatial_state.room_title = "Corrupted room";
     corrupted_state.spatial_state.canonical_fixture.clear();
     corrupted_state.spatial_state.blocked_exits.clear();
@@ -3810,13 +3720,13 @@ bool RunNavigationSelfTest(FILE* output)
     corrupted_state.spatial_state.blocked_exits.push_back("west");
     RestoreAuthoritativeCanonicalTopology(&corrupted_state);
 
-    SpatialState scanner_reference;
-    if (!BuildCanonicalSpatialState(kLocationScannerStation, &scanner_reference) ||
-        corrupted_state.hard_state.current_location_id != kLocationScannerStation ||
-        corrupted_state.spatial_state.location_id != kLocationScannerStation ||
-        corrupted_state.spatial_state.room_title != scanner_reference.room_title ||
-        corrupted_state.spatial_state.canonical_fixture != scanner_reference.canonical_fixture ||
-        corrupted_state.spatial_state.blocked_exits != scanner_reference.blocked_exits) {
+    SpatialState start_reference;
+    if (!BuildCanonicalSpatialState(kLocationQuarryThreshold, &start_reference) ||
+        corrupted_state.hard_state.current_location_id != kLocationQuarryThreshold ||
+        corrupted_state.spatial_state.location_id != kLocationQuarryThreshold ||
+        corrupted_state.spatial_state.room_title != start_reference.room_title ||
+        corrupted_state.spatial_state.canonical_fixture != start_reference.canonical_fixture ||
+        corrupted_state.spatial_state.blocked_exits != start_reference.blocked_exits) {
         if (output) {
             fprintf(output, "Canonical topology repair test failed.\n");
         }
@@ -3825,9 +3735,9 @@ bool RunNavigationSelfTest(FILE* output)
 
     TurnResult narrative_turn;
     narrative_turn.hard_state_delta.location_changed = true;
-    narrative_turn.hard_state_delta.next_location_id = kLocationCrystalCut;
+    narrative_turn.hard_state_delta.next_location_id = kLocationUnknown;
     narrative_turn.spatial_delta.location_changed = true;
-    narrative_turn.spatial_delta.next_location_id = kLocationCrystalCut;
+    narrative_turn.spatial_delta.next_location_id = kLocationUnknown;
     narrative_turn.spatial_delta.blocked_exits_changed = true;
     narrative_turn.spatial_delta.blocked_exits.push_back("north");
     ProtectCanonicalTopologyFromNarrativeDelta(corrupted_state, &narrative_turn);
@@ -3853,7 +3763,7 @@ bool RunNavigationSelfTest(FILE* output)
     if (output) {
         fprintf(
             output,
-            "Navigation self-test passed: localized aliases, single-letter compass keys, seven canonical rooms, five generated exploration branches, generated archetype normalization, topology repair, narrative authority and LLM intent routing.\n");
+            "Navigation self-test passed: localized aliases, single-letter compass keys, one canonical start, no pre-authored route, generated archetype normalization, topology repair, narrative authority and LLM intent routing.\n");
     }
     return true;
 }

@@ -17,6 +17,7 @@
 #include "animated_view.h"
 #include "renderer.h"
 #include "scene_compiler.h"
+#include "research_archive.h"
 
 namespace liminal {
 
@@ -1569,6 +1570,13 @@ static void RunTurnWorker(
     memset(error_buffer, 0, sizeof(error_buffer));
 
     HeadlessTurnResult turn_result;
+    auto fail_turn = [&](const char* message) {
+        {
+            std::lock_guard<std::mutex> lock(shared_state->mutex);
+            shared_state->turn_result = turn_result;
+        }
+        FinalizeWorkerFailure(shared_state, message);
+    };
     if (!RunHeadlessTurnFromState(
             initial_session_state,
             player_command.c_str(),
@@ -1577,15 +1585,15 @@ static void RunTurnWorker(
             error_buffer,
             sizeof(error_buffer))) {
         if (shared_state->stop_requested.load()) {
-            FinalizeWorkerFailure(shared_state, "Turn cancelled.");
+            fail_turn("Turn cancelled.");
         } else {
-            FinalizeWorkerFailure(shared_state, error_buffer[0] ? error_buffer : "Headless turn failed.");
+            fail_turn(error_buffer[0] ? error_buffer : "Headless turn failed.");
         }
         return;
     }
 
     if (shared_state->stop_requested.load()) {
-        FinalizeWorkerFailure(shared_state, "Turn cancelled.");
+        fail_turn("Turn cancelled.");
         return;
     }
 
@@ -1604,7 +1612,7 @@ static void RunTurnWorker(
     std::vector<unsigned char> pixels;
     RenderControl control{[](void* state) { return !static_cast<WorkerSharedState*>(state)->stop_requested.load(); },shared_state};
     if (!RenderSceneToPixels(turn_result.rendered_scene, config.render_config, &pixels,&control)) {
-        FinalizeWorkerFailure(shared_state, "Rendering failed.");
+        fail_turn("Rendering failed.");
         return;
     }
     if (!ApplyPeripheralViewPostProcess(
@@ -1613,14 +1621,14 @@ static void RunTurnWorker(
             config.render_config.height,
             PostProcessConfigForAnimationImage(config.post_process_config, target_generation_id, 0),
             0)) {
-        FinalizeWorkerFailure(shared_state, "View post-processing failed.");
+        fail_turn("View post-processing failed.");
         return;
     }
     const double render_duration_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - render_start).count();
 
     if (shared_state->stop_requested.load()) {
-        FinalizeWorkerFailure(shared_state, "Turn cancelled.");
+        fail_turn("Turn cancelled.");
         return;
     }
 
@@ -2091,6 +2099,12 @@ bool RunSdlFrontend(
 {
     SessionState current_session_state = initial_session_state;
     RestoreAuthoritativeCanonicalTopology(&current_session_state);
+    ResearchArchive archive;
+    if (!archive.Start(config.research_root,current_session_state,config.turn_config.generation_config,config.render_config)) {
+        SetError(error_buffer,error_buffer_size,archive.Error().c_str());return false;
+    }
+    bool archive_ok = true;
+    unsigned int command_sequence = 0;
     std::vector<std::string> command_history;
     for (size_t index = 0; index < current_session_state.history.size(); ++index) {
         if (!current_session_state.history[index].player_command.empty()) {
@@ -2124,6 +2138,7 @@ bool RunSdlFrontend(
     }
     const double initial_render_duration_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - initial_render_start).count();
+    archive_ok = archive.Image(current_session_state,rgb_pixels) && archive_ok;
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SetSdlError(error_buffer, error_buffer_size, "SDL_Init failed");
@@ -2443,6 +2458,7 @@ bool RunSdlFrontend(
                 }
 
                 pending_command = command;
+                archive_ok = archive.Command(command) && archive_ok;
                 persistent_hint.clear();
                 input_text.clear();
                 input_cursor = 0;
@@ -2459,9 +2475,11 @@ bool RunSdlFrontend(
                     worker_shared_state.error_text.clear();
                 }
                 worker_shared_state.stop_requested.store(false);
+                SdlFrontendConfig request_config=config;
+                request_config.turn_config.generation_config.seed += 104729u * command_sequence++;
                 worker_thread = std::thread(
                     RunTurnWorker,
-                    config,
+                    request_config,
                     current_session_state,
                     command,
                     next_generation_id + 1u,
@@ -2540,6 +2558,7 @@ bool RunSdlFrontend(
                 turn_result_ready = true;
             } else if (worker_shared_state.error_ready) {
                 failure_text = worker_shared_state.error_text;
+                completed_turn_result = worker_shared_state.turn_result;
                 worker_shared_state.error_ready = false;
                 turn_failed = true;
                 ui_message = current_session_state.language == kGameLanguageEnglish
@@ -2595,6 +2614,8 @@ bool RunSdlFrontend(
                 uploaded_generation_id = active_animated_view.generation_id;
                 uploaded_image_index = 0;
                 turn_completed = true;
+                archive_ok = archive.Turn(current_session_state,last_turn_result,
+                    active_animated_view.images[0].pixels) && archive_ok;
                 ui_message.clear();
                 fprintf(
                     stdout,
@@ -2605,6 +2626,8 @@ bool RunSdlFrontend(
             }
         }
 
+        if (turn_failed && archive.Pending())
+            archive_ok = archive.Failure(failure_text,completed_turn_result) && archive_ok;
         if (!worker_joined && !worker_busy && worker_thread.joinable()) {
             worker_thread.join();
             worker_joined = true;
@@ -2845,6 +2868,9 @@ bool RunSdlFrontend(
     if (final_session_state) {
         *final_session_state = current_session_state;
     }
+    if (archive.Pending())
+        archive_ok = archive.Failure("Closed during turn; not committed.",worker_shared_state.turn_result) && archive_ok;
+    archive_ok = archive.Close(current_session_state) && archive_ok;
 
     SDL_DestroyTexture(scene_texture);
     SDL_StopTextInput(window);
@@ -2853,7 +2879,8 @@ bool RunSdlFrontend(
     SDL_DestroyWindow(window);
     SDL_Quit();
 
-    success = true;
+    success = archive_ok;
+    if (!success) SetError(error_buffer,error_buffer_size,archive.Error().c_str());
     return success;
 }
 

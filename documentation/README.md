@@ -6,7 +6,7 @@ Ce dossier sert de mémoire de travail artistique, scientifique et technique du 
 
 *Within the Latent Walls* / *Entre les Murs Latents* est une œuvre interactive fondée sur la lignée d'Eryx : un monde d'extraction vénusien localement cohérent, traversé par un labyrinthe invisible dont le LLM peut proposer des mutations topologiques contrôlées.
 
-La première tranche jouable Eryx est maintenant implémentée : sept lieux canoniques, neuf prefabs de carrière, prompts et états actifs, une barrière invisible typée et un retour non réciproque volontaire. Les anciens objets et fixtures restent disponibles comme compatibilité technique. [`TECHNICAL_STATE.md`](./TECHNICAL_STATE.md) sépare cette tranche réelle des mutations topologiques encore planifiées.
+Le jeu commence désormais dans un seul lieu Eryx prédéfini, puis génère les découvertes pendant la partie. Chaque lancement repart de zéro ; les descriptions, scènes et images sont archivées pour la recherche, sans être réinjectées. Le [guide actuel](SINGLE_START_RESEARCH.md) détaille ce fonctionnement ; les bilans des anciens parcours restent des traces historiques.
 
 ## Sources narratives prioritaires
 
@@ -20,11 +20,14 @@ Le contexte du jeu se fonde sur trois sources complémentaires :
 
 ## Point d'entrée
 
+- [`SINGLE_START_RESEARCH.md`](./SINGLE_START_RESEARCH.md) : fonctionnement actuel, un seul lieu de départ, nouvelle exploration à chaque lancement et archives de recherche automatiques.
+- [`LOCAL_SCENE_ROADMAP_RESULTS.md`](./LOCAL_SCENE_ROADMAP_RESULTS.md) : lancement actuel Gemma/Ollama, première branche directe jouable, comparaison mesurée, images conservées et limites.
+- [`roadmap-scenes-3d-llm-local.md`](./roadmap-scenes-3d-llm-local.md) : feuille de route appliquée et état de ses jalons.
 - [`STORY.md`](./STORY.md) : direction fictionnelle active, rôle du joueur, labyrinthe invisible et lignée en quatre étapes.
 - [`SPEC.md`](./SPEC.md) : spécification artistique, scientifique et technique active.
 - [`ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md`](./ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md) : brief Eryx du 2026-08-09, cadrage narratif consolidé le 2026-10-25.
 - [`AMBIANCE_MOODBOARD.md`](./AMBIANCE_MOODBOARD.md) : lecture du corpus visuel comme espace incomplet mais opératoire, de la micro-informatique au labyrinthe génératif.
-- [`ERYX_PLAYABLE_SPATIAL_ROADMAP.md`](./ERYX_PLAYABLE_SPATIAL_ROADMAP.md) : traduction opérationnelle des trois moodboards, carte des sept lieux et parcours dramatique en huit actions.
+- [`ERYX_PLAYABLE_SPATIAL_ROADMAP.md`](./ERYX_PLAYABLE_SPATIAL_ROADMAP.md) : historique du parcours prédéfini de sept lieux, remplacé par le départ unique et l'exploration générée.
 
 ## Source littéraire
 

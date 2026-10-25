@@ -111,10 +111,11 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
         if(gate.cancelled) result->error="Scene generation cancelled";
         else if(gate.expired) result->error="Scene generation exceeded the total timeout";
         if(!success) { result->scene=Scene();result->preview_pixels.clear(); }
-        result->metrics_json=json({{"version",1},{"method",config.direct?"direct":"two-pass"},
+        result->metrics_json=json({{"version",1},{"method",config.fixed_frame?"local-fixed-v1":config.direct?"direct":"two-pass"},
             {"success",success},{"cancelled",gate.cancelled},{"timeout",gate.expired},
             {"repairs",result->repairs},{"calls",calls},{"seed",model.seed},{"profile",model.profile_name},{"temperature",model.temperature},
             {"model_path",model.model_path},
+            {"backend",model.use_ollama?"ollama":"llama.cpp"},{"ollama_model",model.use_ollama?model.ollama_model:""},
             {"removed_code_wrappers",removed_wrappers},
             {"program_patch_repairs",patch_repairs},
             {"audit_ms",audit_ms},{"preview_ms",preview_ms},
@@ -128,8 +129,10 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
         if(!gate.Stage(diagnosis.empty()?(plan?DynamicScenePhase::Design:DynamicScenePhase::Program):DynamicScenePhase::Repair))return false;
         LlmGenerationConfig cfg=model;
         if(!plan&&!config.direct)cfg.temperature=std::min(cfg.temperature,.2f);
+        if(config.fixed_frame)cfg.temperature=.2f;
         // Repeated diagnostics must not replay an identical seeded completion.
         cfg.seed=(model.seed+104729u*static_cast<unsigned int>(result->repairs))&0x7fffffffu;
+        if(config.fixed_frame)cfg.seed=model.seed;
         cfg.n_predict=plan?config.plan_tokens:config.program_tokens;
         cfg.use_json_grammar=plan;cfg.json_schema=plan?SceneDesignSchema():"";cfg.grammar_path.clear();
         cfg.timeout_ms=static_cast<int>(std::max<int64_t>(1,std::chrono::duration_cast<std::chrono::milliseconds>(gate.deadline-Clock::now()).count()));
@@ -139,7 +142,14 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
             {"system",plan?"You design coherent 3D places. Return only the requested SceneDesignV1 JSON. Follow the coordinate arithmetic and physical support rules exactly.":
                 "You write executable 3D scene programs. Return only .scene directives, one complete directive per line. Follow the coordinate conventions and accepted spatial plan exactly. Do not include Markdown or explanations."},
             {"user",prompt+"\nCreate the place described by the engine context. Return the complete requested artifact now."}};
-        if(!diagnosis.empty()) {
+        if(config.fixed_frame) {
+            messages={{"system",LocalSceneSystemPrompt()},{"user",prompt}};
+            if(!diagnosis.empty()) {
+                messages.push_back({"assistant",previous});
+                messages.push_back({"user",LocalSceneRepairPrefix()+diagnosis});
+            }
+        }
+        if(!diagnosis.empty()&&!config.fixed_frame) {
             const std::string repair="\nValidation rejected the previous attempt. Return a corrected COMPLETE replacement, preserving the accepted plan and requested composition. Fix these diagnostics:\n"+diagnosis.substr(0,plan?5000:2400);
             // Short failed programs fit alongside their replacement at the measured
             // size plus margin. Longer ones are reconstructed from plan/diagnostics.
@@ -185,8 +195,8 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
         }
         return true;
     };
-    const int repair_limit=std::clamp(config.max_repairs,0,2);
-    if(!config.direct) {
+    const int repair_limit=std::clamp(config.max_repairs,0,config.fixed_frame?1:2);
+    if(!config.direct&&!config.fixed_frame) {
         std::string prior,diagnosis;
         for(;;) {
             bool ok=generate(true,BuildSceneDesignPrompt(context),prior,diagnosis,&result->plan_json);
@@ -202,15 +212,19 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
             prior=result->plan_json;diagnosis=result->error;++result->repairs;
         }
     }
-    const SceneDesignV1* design=config.direct?nullptr:&result->design;
+    const SceneDesignV1* design=(config.direct||config.fixed_frame)?nullptr:&result->design;
     result->audit=SceneAuditReport();
     std::string prior,diagnosis;
     for(;;) {
-        bool ok=generate(false,BuildSceneProgramPrompt(context,design),prior,diagnosis,&result->scene_text);
+        bool ok=generate(false,config.fixed_frame?BuildLocalSceneProgramPrompt(context.brief,config.landmark):
+            BuildSceneProgramPrompt(context,design),prior,diagnosis,&result->scene_text);
         if(ok&&UnwrapSceneBlock(&result->scene_text))++removed_wrappers;
+        if(ok&&config.fixed_frame)ok=ValidateLocalSceneContract(result->scene_text,&result->error);
         if(ok && gate.Stage(DynamicScenePhase::Audit)) {
             const auto audit_start=Clock::now();
-            ok=AuditDynamicScene(result->scene_text,context,design,&result->scene,&result->audit);
+            SceneViewConstraints view;view.landmark=config.landmark;view.near_distance=3;view.max_near_coverage=.9f;
+            view.require_return_clearance=true;
+            ok=AuditDynamicScene(result->scene_text,context,design,&result->scene,&result->audit,config.fixed_frame?&view:nullptr);
             audit_ms+=std::chrono::duration<double,std::milli>(Clock::now()-audit_start).count();
             record_audit("geometry");
             if(!ok)result->error=SerializeSceneAudit(result->audit);

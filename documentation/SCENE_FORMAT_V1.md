@@ -1,6 +1,16 @@
 # Scene Format V1
 
-Dernière mise à jour : 2026-10-24
+Dernière mise à jour : 2026-10-25
+
+## Dalle de verre du seuil unique
+
+`glass_box` a la même géométrie fermée et les mêmes dimensions complètes que `box`, avec le matériau diélectrique déjà utilisé par les cristaux. Position au centre, rotations Euler en degrés, douze triangles et une épaisseur réelle :
+
+```text
+glass_box "threshold_pane" pos(-0.76,2,-2.34) size(7,4,0.25) rot(0,38,0) gray(0.66)
+```
+
+La syntaxe et l'audit géométrique prennent cette directive en charge. Le contrat de génération locale reste limité à `box` : l'ajout sert au lieu de départ auteurisé. Cette dalle visible n'installe aucune barrière topologique invisible. Aucun nouveau modèle de rugosité ou texture procédurale n'est ajouté.
 
 ## Statut
 

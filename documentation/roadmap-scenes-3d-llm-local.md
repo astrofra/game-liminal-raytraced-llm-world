@@ -3,7 +3,20 @@
 Projet : **Within the Latent Walls / Entre les Murs Latents**  
 Branche examinée : `ministral-reasoning`, commit `263d3a6`  
 Date : **25 octobre 2026**  
-Statut : **plan proposé, étapes non exécutées**.
+Statut au 25 octobre : **première tranche intégrée, jalons 1–6 exécutés ; qualification artistique partielle**. Le corps ci-dessous conserve le plan initial. Voir le [bilan mesuré et les images](LOCAL_SCENE_ROADMAP_RESULTS.md).
+
+**Décision utilisateur ultérieure, appliquée :** un seul lieu de départ prédéfini, nouvelles découvertes générées pendant la partie, nouvelle exploration à chaque lancement. Les scènes restent stables pendant une partie et sont archivées pour la recherche, sans reprise par le jeu suivant. Cette décision remplace la reprise entre lancements prévue au jalon 5 et l'élargissement aux cinq branches fixes. Voir [le fonctionnement actuel](SINGLE_START_RESEARCH.md).
+
+| Jalon | Résultat observé |
+|---|---|
+| 1. Comparer | Cinq briefs × deux graines : Gemma 8/10, Ministral 8B Q4 4/10 acceptés techniquement, images archivées. |
+| 2. Composer | Cadre partagé Python/C++, 8–20 boîtes libres ; diversité visible, supports et passerelles encore inégaux. |
+| 3. Corriger | Masquage détecté et une correction réelle réussie sur fixture contrôlée ; échecs antérieurs conservés. |
+| 4. Inférer | Ollama/Gemma retenu ; résidence observée entre appels, annulation et délai testés. |
+| 5. Jouer | Branche `extraction_field → east`, publication atomique, sauvegarde contrat 2, revisite et rechargement sans recomposition. |
+| 6. Recette | 9/10 découvertes natives ; médiane 4,324 s et p95 4,835 s à 8 spp. SDL testé en succès et annulation, 4 CTest et 72 tests Python réussis. |
+
+Les seuils techniques de la branche pilote sont atteints. La qualité artistique n'est pas certifiée par ces scores ; l'élargissement aux autres branches reste à réaliser après correction des limites visibles.
 
 ## Objectif
 
@@ -168,4 +181,4 @@ Après réussite de la première branche :
 - [Qualification Ministral](https://github.com/astrofra/game-liminal-raytraced-llm-world/blob/ministral-reasoning/documentation/MINISTRAL_QUALIFICATION_REPORT.md)
 - [API Ollama : maintien en mémoire et métriques](https://docs.ollama.com/api/generate)
 
-Cette roadmap accompagne les plans existants. Elle privilégie une preuve fonctionnelle courte avant l’extension du système ; elle ne revendique aucune nouvelle mesure ni modification du dépôt.
+Cette roadmap privilégie une preuve fonctionnelle courte avant l'extension du système. Les mesures et modifications réalisées depuis sa rédaction sont décrites dans le [bilan d'application](LOCAL_SCENE_ROADMAP_RESULTS.md).

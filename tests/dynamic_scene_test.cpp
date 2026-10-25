@@ -1,6 +1,9 @@
 #include "dynamic_scene.h"
 #include "renderer.h"
 #include "turn_runner.h"
+#include "research_archive.h"
+#include <filesystem>
+#include <fstream>
 #include "nlohmann/json.hpp"
 #include <cstdio>
 #include <stdexcept>
@@ -40,6 +43,32 @@ static std::string Replace(std::string text,const std::string& from,const std::s
 static void Geometry() {
     CHECK(SceneTextHash("abc")=="ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
     SceneDesignContext ctx;SceneDesignV1 d=Design(),parsed;Scene scene;SceneAuditReport audit;
+    std::string windows_program;
+    for(const char c:std::string(program)){if(c=='\n')windows_program+='\r';windows_program+=c;}
+    CHECK(AuditDynamicScene(windows_program,ctx,nullptr,&scene,&audit));
+    {
+    SceneViewConstraints view;view.landmark="marker";view.near_distance=3;view.max_near_coverage=.9f;
+    CHECK(AuditDynamicScene(program,ctx,nullptr,&scene,&audit,&view));
+    CHECK(audit.focal_coverage>0);
+    auto hidden=std::string(program)+"box \"screen\" pos(0,2,3) size(12,4,0.5) rot(0,12,0) gray(0.5)\n";
+    CHECK(!AuditDynamicScene(hidden,ctx,nullptr,&scene,&audit,&view));
+    CHECK(audit.diagnostics[0].code=="landmark_not_visible");
+    CHECK(audit.diagnostics[0].detail.find("screen blocks")!=std::string::npos);
+    auto occluded=std::string(program)+"box \"cooling_block_4\" pos(0,2,-5) size(12,8,0.3) gray(0.5)\n";
+    CHECK(!AuditDynamicScene(occluded,ctx,nullptr,&scene,&audit,&view));
+    bool named_blocker=false;
+    for(const auto& diagnostic:audit.diagnostics)
+        if(diagnostic.code=="foreground_occlusion"&&diagnostic.object_id=="cooling_block_4")named_blocker=true;
+    CHECK(named_blocker);
+    auto inside=std::string(program)+"box \"tilted\" pos(0,1.6,-6) size(1,3,1) rot(20,35,10) gray(0.5)\n";
+    CHECK(!AuditDynamicScene(inside,ctx,nullptr,&scene,&audit,&view));
+    CHECK(audit.diagnostics[0].code=="camera_inside_mass");
+    view.landmark="absent";
+    CHECK(!AuditDynamicScene(program,ctx,nullptr,&scene,&audit,&view));
+    view.landmark="marker";view.aspect=0;
+    CHECK(!AuditDynamicScene(program,ctx,nullptr,&scene,&audit,&view));
+    CHECK(audit.diagnostics[0].code=="invalid_view_contract");
+    }
     CHECK(ParseSceneDesign(SerializeSceneDesign(d),ctx,&parsed,&audit));
     auto described=d;described.masses[1].shape="Two posts and a beam; empty center opening";
     CHECK(ParseSceneDesign(SerializeSceneDesign(described),ctx,&parsed,&audit));
@@ -203,7 +232,7 @@ static void Pipeline() {
     CHECK(!GenerateDynamicScene(ctx,model,cfg,nullptr,nullptr,&r));CHECK(calls==4&&r.repairs==2);
 }
 static void PersistenceAndNavigation() {
-    SessionState state;char error[1024]={};CHECK(InitializeSessionState(kLocationSurveyPlateau,&state,error,sizeof(error)));
+    SessionState state;char error[1024]={};CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     // Isolated branch fixture: generated places do not inherit canonical links.
     state.current_place_id="generated:room_900000";state.origin_place_id=state.current_place_id;
     state.hard_state.current_location_id=kLocationUnknown;state.spatial_state=SpatialState();
@@ -272,8 +301,7 @@ static void CanonicalBranches() {
     cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult* r) {
         r->success=true;r->reached_eog=true;r->response_text=c.use_json_grammar?SerializeSceneDesign(design):program;return true;
     };
-    const std::pair<LocationId,const char*> branches[]={{kLocationExtractionField,"east"},{kLocationScannerStation,"east"},
-        {kLocationSurveyPlateau,"north"},{kLocationLabyrinthThreshold,"south"},{kLocationProspectShelter,"east"}};
+    const std::pair<LocationId,const char*> branches[]={{kLocationQuarryThreshold,"east"}};
     for(const auto& branch:branches) {
         SessionState state;char error[1024]={};HeadlessTurnResult turn;
         CHECK(InitializeSessionState(branch.first,&state,error,sizeof(error)));
@@ -283,7 +311,132 @@ static void CanonicalBranches() {
         CHECK(turn.room_links_to_add.size()==2&&turn.rendered_scene_text==program);
     }
 }
+static void LocalPilot() {
+    const std::string local=LocalSceneHeader()+
+        "box \"portal\" pos(0,1,8) size(1,2,1) gray(0.4)\n"
+        "box \"left\" pos(-4,3,10) size(2,6,6) gray(0.5)\n"
+        "box \"right\" pos(4,3,10) size(2,6,6) gray(0.5)\n"
+        "box \"lintel\" pos(0,6.5,10) size(10,1,6) gray(0.5)\n"
+        "box \"slab_a\" pos(-7,1,15) size(2,2,4) gray(0.5)\n"
+        "box \"slab_b\" pos(7,1,15) size(2,2,4) gray(0.5)\n"
+        "box \"slab_c\" pos(-8,2,20) size(2,4,4) gray(0.5)\n"
+        "box \"slab_d\" pos(8,2,20) size(2,4,4) gray(0.5)\n";
+    std::string problem;
+    CHECK(ValidateLocalSceneContract(local,&problem));
+    CHECK(!ValidateLocalSceneContract(Replace(local,"eye(0,1.7,-10)","eye(0,1.7,-9)"),&problem));
+    SceneDesignContext context;Scene scene;SceneAuditReport report;SceneViewConstraints view;
+    view.landmark="portal";view.require_return_clearance=true;
+    CHECK(AuditDynamicScene(local,context,nullptr,&scene,&report,&view));
+    CHECK(!AuditDynamicScene(local+"box \"behind\" pos(0,1,-11) size(2,2,0.5) gray(0.5)\n",context,nullptr,&scene,&report,&view));
+    CHECK(report.diagnostics[0].code=="return_clearance_blocked");
+    SessionState state;char error[1024]={};
+    CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+    HeadlessTurnConfig cfg;cfg.local_scenes=true; // Composition seam; no real inference in this test.
+    int calls=0;bool bad=true,truncated=false;
+    cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
+        LlmStreamCallback cb,void* data,LlmGenerationResult* r) {
+        ++calls;CHECK(c.n_predict==2048);CHECK(messages[0].content==LocalSceneSystemPrompt());
+        if(cb&&!cb("","",data))return false;
+        r->success=true;r->reached_eog=!truncated;r->response_text=bad?"broken":local;return true;
+    };
+    std::string before,after;CHECK(SerializeSessionStateToJsonString(state,&before));HeadlessTurnResult turn;
+    CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));
+    CHECK(calls==2&&turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());
+    UpdateSessionStateFromTurn("east",turn,&state);CHECK(SerializeSessionStateToJsonString(state,&after));CHECK(before==after);
+    bad=false;truncated=true;calls=0;
+    CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==2);
+    truncated=false;calls=0;
+    cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char*,void*){return false;};
+    CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==0);
+    CHECK(turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());cfg.stream_callback=nullptr;
+    CHECK(RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==1);
+    CHECK(turn.generated_room_scene_source=="local_direct_v1");
+    UpdateSessionStateFromTurn("east",turn,&state);CHECK(state.generated_rooms.back().scene_contract_version==2);
+    CHECK(SerializeSessionStateToJsonString(state,&after));SessionState restored;
+    CHECK(ParseSessionStateFromJson(after.c_str(),&restored,error,sizeof(error)));
+    CHECK(RunHeadlessTurnFromState(restored,"look",cfg,&turn,error,sizeof(error)));CHECK(calls==1);
+    CHECK(turn.rendered_scene_text==local&&!turn.generated_room_cache_refreshed);
+    CHECK(RunHeadlessTurnFromState(restored,"west",cfg,&turn,error,sizeof(error)));UpdateSessionStateFromTurn("west",turn,&restored);
+    CHECK(RunHeadlessTurnFromState(restored,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==1&&turn.rendered_scene_text==local);
+    UpdateSessionStateFromTurn("east",turn,&restored);
+    CHECK(RunHeadlessTurnFromState(restored,"east",cfg,&turn,error,sizeof(error)));
+    CHECK(calls==2&&turn.generated_room_created);
+    UpdateSessionStateFromTurn("east",turn,&restored);
+    CHECK(restored.generated_rooms.size()==2&&restored.room_links.size()==4);
+    CHECK(restored.generated_rooms[0].scene_seed!=restored.generated_rooms[1].scene_seed);
+    CHECK(restored.generated_rooms[0].scene_design_json!=restored.generated_rooms[1].scene_design_json);
+    CHECK(SerializeSessionStateToJsonString(restored,&before));
+    bad=true;
+    CHECK(!RunHeadlessTurnFromState(restored,"east",cfg,&turn,error,sizeof(error)));
+    CHECK(calls==4&&turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());
+    UpdateSessionStateFromTurn("east",turn,&restored);
+    std::string failed;CHECK(SerializeSessionStateToJsonString(restored,&failed));CHECK(failed==before);
+    CHECK(RunHeadlessTurnFromState(restored,"west",cfg,&turn,error,sizeof(error)));
+    UpdateSessionStateFromTurn("west",turn,&restored);
+    CHECK(RunHeadlessTurnFromState(restored,"west",cfg,&turn,error,sizeof(error)));
+    UpdateSessionStateFromTurn("west",turn,&restored);
+    CHECK(restored.current_place_id=="canonical:quarry_threshold"&&calls==4);
+    auto tampered=json::parse(after);tampered["generated_rooms"].back()["scene_text"]="changed";
+    CHECK(!ParseSessionStateFromJson(tampered.dump().c_str(),&restored,error,sizeof(error)));
+}
+static void SingleStart() {
+    SessionState state,restored;char error[1024]={};
+    CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+    CHECK(state.generated_rooms.empty()&&state.room_links.empty()&&state.invisible_barriers.empty());
+    CHECK(state.spatial_state.blocked_exits==std::vector<std::string>({"north","south","west"}));
+    std::string saved;CHECK(SerializeSessionStateToJsonString(state,&saved));
+    for(const char* removed:{"extraction_field","crystal_cut","scanner_station","survey_plateau","labyrinth_threshold","prospect_shelter"}) {
+        LocationId id=kLocationUnknown;CHECK(!ParseLocationId(removed,&id));
+        auto old=json::parse(saved);old["hard_state"]["current_location_id"]=removed;
+        CHECK(!ParseSessionStateFromJson(old.dump().c_str(),&restored,error,sizeof(error)));
+        CHECK(std::string(error).find("removed location")!=std::string::npos);
+        old=json::parse(saved);old["origin_place_id"]=std::string("canonical:")+removed;
+        CHECK(!ParseSessionStateFromJson(old.dump().c_str(),&restored,error,sizeof(error)));
+    }
+    CHECK(ParseSessionStateFromJson(saved.c_str(),&restored,error,sizeof(error)));
+    Scene scene;
+    CHECK(LoadSceneFromPath("assets/scenes/eryx_quarry_threshold.scene",&scene,error,sizeof(error)));
+    int glass_triangles=0;
+    for(const auto& triangle:scene.triangles)
+        if(scene.materials[triangle.material_index].model==kMaterialModelDielectricGlass)++glass_triangles;
+    CHECK(glass_triangles==12); // A closed cuboid, not a non-refracting plane.
+    SceneDesignContext context;SceneAuditReport audit;
+    const auto glass=Replace(program,"box \"arch_left\"","glass_box \"arch_left\"");
+    CHECK(AuditDynamicScene(glass,context,nullptr,&scene,&audit));
+    CHECK(!AuditDynamicScene(glass+"glass_box \"camera_cage\" pos(0,1.6,-6) size(1,1,1) gray(0.6)\n",context,nullptr,&scene,&audit));
+    CHECK(audit.diagnostics[0].code=="camera_inside_mass");
+}
+static void ResearchArchives() {
+    const auto root=std::filesystem::temp_directory_path()/
+        ("liminal-archive-test-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    SessionState initial;char error[1024]={};
+    CHECK(InitializeSessionState(kLocationQuarryThreshold,&initial,error,sizeof(error)));
+    LlmGenerationConfig model;RenderConfig render;render.width=render.height=1;
+    ResearchArchive first,second;
+    CHECK(first.Start(root.u8string(),initial,model,render));
+    CHECK(first.Image(initial,{80,90,100}));
+    CHECK(first.Command("east"));CHECK(first.Pending());
+    HeadlessTurnResult failure;failure.raw_scene_audit_response_text="unfinished scene";
+    CHECK(first.Failure("cancelled",failure));CHECK(!first.Pending());
+    CHECK(first.Close(initial));
+    CHECK(second.Start(root.u8string(),initial,model,render));CHECK(first.Path()!=second.Path());
+    CHECK(second.Image(initial,{80,90,100}));CHECK(second.Close(initial));
+    for(const auto* archive:{&first,&second}) {
+        const auto dir=std::filesystem::u8path(archive->Path());
+        CHECK(std::filesystem::exists(dir/"places/place-00000.scene"));
+        CHECK(std::filesystem::exists(dir/"places/place-00000.txt"));
+        CHECK(std::filesystem::file_size(dir/"places/place-00000.png")>20);
+        std::ifstream saved(dir/"state.json");json state; saved>>state;
+        CHECK(state["generated_rooms"].empty());
+        CHECK(state["current_place_id"]=="canonical:quarry_threshold");
+    }
+    CHECK(std::filesystem::exists(std::filesystem::u8path(first.Path())/"turns/turn-00001.candidate.scene"));
+    CHECK(!std::filesystem::exists(std::filesystem::u8path(second.Path())/"turns/turn-00001.json"));
+    // Only our uniquely created temporary test directory is removed.
+    CHECK(std::filesystem::equivalent(root.parent_path(),std::filesystem::temp_directory_path()));
+    std::filesystem::remove_all(root);
+}
 int main() {
-    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();std::puts("Dynamic scenes: geometry, repairs, cancellation, atomic navigation and save integrity passed");return 0;}
+    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();SingleStart();ResearchArchives();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

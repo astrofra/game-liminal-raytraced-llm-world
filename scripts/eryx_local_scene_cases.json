@@ -1,0 +1,57 @@
+[
+  {
+    "id": "eryx_under_mass_entry",
+    "title": "Entrée basse sous masse colossale",
+    "brief": "A colossal abandoned extraction block fills most of the view, yet its base opens through one small entry at human scale. Beyond that entry the interior must read as a genuine empty void, not a painted face: the mass spans overhead while the opening remains narrow and deep. Keep the surrounding site bare and monumental. Place one box named \"portal\" inside the visible opening so it reads as a fixed datum against the dark emptiness.",
+    "landmark": "portal",
+    "expectations": [
+      "L'entrée paraît étroite à l'échelle humaine sous la masse qui la surplombe.",
+      "L'ouverture donne sur un volume intérieur vide et profond, non sur une façade pleine.",
+      "La boîte nommée portal reste visible dans l'ouverture comme repère fixe."
+    ]
+  },
+  {
+    "id": "eryx_bank_bridge",
+    "title": "Passerelle entre deux berges",
+    "brief": "Two broad raised banks face each other across a broad depression, and a single narrow walkway spans the gap between them. The banks should feel massive and roughly level, while the crossing stays visibly thin and exposed, with empty space on both sides and below. Leave out railings and cables; the structural relation alone must carry the scene. Put one box named \"span\" on the walkway as the fixed landmark, choosing its exact placement yourself.",
+    "landmark": "span",
+    "expectations": [
+      "Les deux berges se lisent comme des masses distinctes et massives.",
+      "La passerelle est nettement plus fine que les berges et laisse du vide de chaque côté.",
+      "La boîte nommée span est visible sur la passerelle sans masquer le vide."
+    ]
+  },
+  {
+    "id": "eryx_distant_marker",
+    "title": "Repère lointain entre parois inégales",
+    "brief": "A distant landmark must stay visible down a long channel formed by two tall walls of clearly unequal height and irregular rhythm. The walls press close enough to frame the view but never meet, and their tops break at different levels. The landmark sits far away at the end of that channel, small in the frame yet unmistakable. Place one box named \"far_marker\" as that remote marker, and keep the foreground empty so the sightline survives.",
+    "landmark": "far_marker",
+    "expectations": [
+      "Les deux parois encadrent une ligne de vue continue vers le fond.",
+      "Leurs hauteurs et leurs ruptures supérieures sont visiblement inégales.",
+      "La boîte nommée far_marker reste petite mais identifiable au fond du couloir."
+    ]
+  },
+  {
+    "id": "eryx_blade_oblique_break",
+    "title": "Rythme de lames rompu en oblique",
+    "brief": "A run of evenly spaced vertical blades establishes a strong rhythm along one side of an abandoned platform. One blade breaks that order: it is turned on an oblique angle and pushed out of line, without becoming a different object or gaining ornament. The eye should catch the break immediately while the remaining blades still read as one family. Place one box named \"wedge\" as the oblique blade, sized and positioned freely, and leave the rest of the platform bare.",
+    "landmark": "wedge",
+    "expectations": [
+      "Les lames régulières se lisent comme une famille de formes identiques.",
+      "Une seule lame est décalée et tournée en oblique, sans ajout d'ornement.",
+      "La boîte nommée wedge est visible comme la lame qui rompt le rythme."
+    ]
+  },
+  {
+    "id": "eryx_cantilever_terrace",
+    "title": "Terrasse ouverte sous porte-à-faux",
+    "brief": "An open terrace should feel broad and mostly empty, with a single heavy mass projecting over one edge without touching the floor beneath its tip. The cantilever is anchored at the back: clear air under its tip, a deep body above, and firm contact with a rear support. Keep the rest of the terrace free of clutter so the overhang dominates the silhouette. Place one box named \"ledge\" beneath the projecting tip as the landmark, positioned freely.",
+    "landmark": "ledge",
+    "expectations": [
+      "La terrasse reste largement ouverte et dégagée autour de la masse.",
+      "Le porte-à-faux est lisible par l'air libre sous sa pointe.",
+      "La boîte nommée ledge est visible sous la pointe sans combler le vide."
+    ]
+  }
+]

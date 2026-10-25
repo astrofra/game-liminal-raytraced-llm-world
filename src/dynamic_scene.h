@@ -18,6 +18,8 @@ struct DynamicSceneConfig {
     int max_repairs = 2;
     int total_timeout_ms = 900000; // Safety bound, not an acceptance target for latency.
     bool direct = false; // Benchmark baseline only; the game's dynamic mode uses a plan.
+    bool fixed_frame = false; // Local roadmap pilot: shared benchmark contract, no plan pass.
+    std::string landmark = "datum";
     SceneCompletion completion; // Optional test seam; empty selects the real native runtime.
 };
 

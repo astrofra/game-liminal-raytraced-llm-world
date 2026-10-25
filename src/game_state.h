@@ -11,12 +11,6 @@ namespace liminal {
 enum LocationId {
     kLocationUnknown = 0,
     kLocationQuarryThreshold,
-    kLocationExtractionField,
-    kLocationCrystalCut,
-    kLocationScannerStation,
-    kLocationSurveyPlateau,
-    kLocationLabyrinthThreshold,
-    kLocationProspectShelter,
     // Historical datacenter fixtures retained as technical baselines.
     kLocationGate,
     kLocationServerAisles,

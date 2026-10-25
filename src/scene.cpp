@@ -631,9 +631,12 @@ static void AddBoxPrimitive(
     const Vec3& size,
     const Vec3& rotation_degrees,
     float gray_value,
-    float emission_value)
+    float emission_value,
+    bool use_glass = false)
 {
-    const int material_index = AddPrimitiveMaterial(scene, name, gray_value, emission_value);
+    const int material_index = use_glass
+        ? AddGlassPrimitiveMaterial(scene, name, gray_value, emission_value)
+        : AddPrimitiveMaterial(scene, name, gray_value, emission_value);
     const Vec3 half_size = size * 0.5f;
 
     Vec3 corners[8];
@@ -2529,7 +2532,7 @@ static bool ParseSceneV1Directive(
         return true;
     }
 
-    if (StartsWith(line, "box ")) {
+    if (StartsWith(line, "box ") || StartsWith(line, "glass_box ")) {
         std::string name;
         Vec3 position;
         Vec3 size;
@@ -2557,7 +2560,7 @@ static bool ParseSceneV1Directive(
 
         ExtractVec3Property(line, "rot(", &rotation);
         ExtractFloatProperty(line, "emit(", &emission_value);
-        AddBoxPrimitive(scene, name, position, size, rotation, gray_value, emission_value);
+        AddBoxPrimitive(scene, name, position, size, rotation, gray_value, emission_value, StartsWith(line, "glass_box "));
         return true;
     }
 

@@ -19,6 +19,8 @@ set(LIMINAL_SOURCES
     src/main.cpp
     src/game_state.cpp
     src/llm_runtime.cpp
+    src/ollama_runtime.cpp
+    src/research_archive.cpp
     src/scene_design.cpp
     src/scene_validation.cpp
     src/dynamic_scene.cpp
@@ -34,6 +36,9 @@ if (LIMINAL_ENABLE_SDL3_FRONTEND)
 endif()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS assets/scene_generation/local_v1.json)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/assets/scene_generation/local_v1.json" LIMINAL_LOCAL_SCENE_CONTRACT)
+configure_file(src/local_scene_contract.generated.h.in generated/local_scene_contract.generated.h @ONLY)
 set(MODEL_HEADER "${CMAKE_CURRENT_BINARY_DIR}/generated/model_profiles.generated.h")
 add_custom_command(OUTPUT "${MODEL_HEADER}"
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_model_header.py" "${MODEL_HEADER}"
@@ -61,7 +66,8 @@ add_test(NAME distant_light COMMAND liminal_distant_light_test)
 
 add_executable(liminal_dynamic_scene_test tests/dynamic_scene_test.cpp
     src/scene_design.cpp src/scene_validation.cpp src/dynamic_scene.cpp src/scene.cpp src/renderer.cpp
-    src/game_state.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp
+    src/game_state.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp src/ollama_runtime.cpp
+    src/research_archive.cpp
     "${MODEL_HEADER}" "${SCENE_GUIDE_HEADER}")
 target_include_directories(liminal_dynamic_scene_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor"
     "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash" "${CMAKE_CURRENT_BINARY_DIR}/generated")
@@ -69,9 +75,20 @@ if(MSVC)
     target_compile_options(liminal_dynamic_scene_test PRIVATE /W4 /wd4996 /utf-8)
 endif()
 add_test(NAME dynamic_scene COMMAND liminal_dynamic_scene_test)
+set_tests_properties(dynamic_scene PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+
+add_executable(liminal_ollama_test tests/ollama_runtime_test.cpp src/ollama_runtime.cpp src/llm_runtime.cpp "${MODEL_HEADER}")
+target_include_directories(liminal_ollama_test PRIVATE src "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${CMAKE_CURRENT_BINARY_DIR}/generated")
+if(MSVC)
+    target_compile_options(liminal_ollama_test PRIVATE /W4 /wd4996 /utf-8)
+endif()
+add_test(NAME ollama_protocol COMMAND liminal_ollama_test)
 
 if(WIN32)
     target_link_libraries(liminal_cornell_renderer PRIVATE shell32)
+    target_link_libraries(liminal_cornell_renderer PRIVATE ws2_32 crypt32)
+    target_link_libraries(liminal_dynamic_scene_test PRIVATE ws2_32 crypt32)
+    target_link_libraries(liminal_ollama_test PRIVATE ws2_32 crypt32)
 endif()
 
 target_include_directories(liminal_cornell_renderer PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash")
@@ -176,6 +193,23 @@ endif()
 target_compile_definitions(
     liminal_cornell_renderer
     PRIVATE LIMINAL_LLAMA_VENDORED_COMMIT="${LIMINAL_LLAMA_VENDORED_COMMIT}")
+
+# Reuse the existing vendored HTTP library. Minimal builds still support the
+# local backend without compiling the llama.cpp inference engine.
+if(TARGET cpp-httplib)
+    set(LIMINAL_HTTP_TARGET cpp-httplib)
+else()
+    find_package(Threads REQUIRED)
+    add_library(liminal_http STATIC "${LIMINAL_LLAMA_CPP_DIR}/vendor/cpp-httplib/httplib.cpp")
+    target_link_libraries(liminal_http PRIVATE Threads::Threads)
+    if(WIN32)
+        target_link_libraries(liminal_http PUBLIC ws2_32 crypt32)
+    endif()
+    set(LIMINAL_HTTP_TARGET liminal_http)
+endif()
+foreach(app liminal_cornell_renderer liminal_dynamic_scene_test liminal_ollama_test)
+    target_link_libraries(${app} PRIVATE ${LIMINAL_HTTP_TARGET})
+endforeach()
 
 if(MSVC)
     target_compile_options(liminal_cornell_renderer PRIVATE /W4 /wd4996 /utf-8)
