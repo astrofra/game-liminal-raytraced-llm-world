@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace liminal {
 
@@ -13,6 +14,9 @@ struct LlmPromptMessage {
 };
 
 struct LlmGenerationConfig {
+    int continuity_memory_tokens = 1024;
+    // Deterministic tokenizer seam for tests. Production uses the resident model/template.
+    std::function<bool(const std::vector<LlmPromptMessage>&, int*, std::string*)> prompt_token_counter;
     std::string model_path;
     std::string model_sha256;
     std::string json_schema; // Optional schema for constrained final JSON; no effect on ordinary calls.
@@ -109,6 +113,10 @@ bool GenerateChatCompletion(
     LlmStreamCallback stream_callback,
     void* stream_user_data,
     LlmGenerationResult* result);
+// Loads/verifies the same model if needed; templates/tokenizes without decoding or an LLM call.
+bool CountChatPromptTokens(const LlmGenerationConfig& config,
+    const std::vector<LlmPromptMessage>& messages, LlmStreamCallback callback, void* user,
+    int* tokens, std::string* error);
 bool GenerateChatCompletion(
     const LlmGenerationConfig& config,
     const std::vector<LlmPromptMessage>& messages,

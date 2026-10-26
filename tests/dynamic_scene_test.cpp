@@ -5,6 +5,7 @@
 #include "research_archive.h"
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include "nlohmann/json.hpp"
 #include <cstdio>
 #include <stdexcept>
@@ -13,6 +14,19 @@
 using namespace liminal;
 using json=nlohmann::json;
 #define CHECK(c) do { if(!(c)) throw std::runtime_error(std::string("Check failed at ")+std::to_string(__LINE__)+": "+#c); } while(false)
+
+// A deterministic fake tokenizer; real Gemma counts are qualified separately.
+static bool FakePromptCount(const std::vector<LlmPromptMessage>& messages,int* count,std::string*) {
+    size_t bytes=0;for(const auto& m:messages)bytes+=m.content.size()+16;
+    *count=static_cast<int>((bytes+3)/4);return true;
+}
+static json GeometryContinuity(const std::vector<LlmPromptMessage>& messages) {
+    const std::string marker="CONTINUITY_V1:\n";
+    const auto pos=messages.at(1).content.find(marker);CHECK(pos!=std::string::npos);
+    // A recomposition suffix may follow the JSON object.
+    const auto tail=messages.at(1).content.substr(pos+marker.size());
+    std::istringstream stream(tail);json context;stream>>context;return context;
+}
 
 static const char* program=R"SCENE(room "Open arch"
 camera eye(0,1.6,-6) target(0,1,5) up(0,1,0) fov(50)
@@ -244,7 +258,7 @@ static void PersistenceAndNavigation() {
     GeneratedRoom original;original.room_id=state.current_place_id;original.spatial_state=state.spatial_state;original.scene_text=program;
     state.generated_rooms.push_back(original);
     std::string before;CHECK(SerializeSessionStateToJsonString(state,&before));
-    HeadlessTurnConfig cfg;cfg.dynamic_scenes=true;cfg.request_candidate_scene=false;int calls=0;
+    HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.dynamic_scenes=true;cfg.request_candidate_scene=false;int calls=0;
     cfg.dynamic_scene_config.completion=Completion(&calls,10);
     HeadlessTurnResult turn;CHECK(!RunHeadlessTurnFromState(state,"north",cfg,&turn,error,sizeof(error)));
     std::string unchanged;CHECK(SerializeSessionStateToJsonString(state,&unchanged));CHECK(before==unchanged);
@@ -299,7 +313,7 @@ static void CanonicalBranches() {
     design.lighting_mode="night"; // An artistic label must not override engine time.
     design.reserved_passages.push_back({"east",Vec3(8,1.2f,0),Vec3(2,2.2f,2)});
     design.reserved_passages.push_back({"west",Vec3(-8,1.2f,0),Vec3(2,2.2f,2)});
-    HeadlessTurnConfig cfg;cfg.dynamic_scenes=true;cfg.request_candidate_scene=false;
+    HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.dynamic_scenes=true;cfg.request_candidate_scene=false;
     cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult* r) {
         r->success=true;r->reached_eog=true;r->response_text=c.use_json_grammar?SerializeSceneDesign(design):program;return true;
     };
@@ -313,8 +327,8 @@ static void CanonicalBranches() {
         CHECK(turn.room_links_to_add.size()==2&&turn.rendered_scene_text==program);
     }
 }
-static void LocalPilot() {
-    const std::string local=LocalSceneHeader()+
+static std::string LocalFixture() {
+    return LocalSceneHeader()+
         "box \"portal\" pos(0,1,8) size(1,2,1) gray(0.4)\n"
         "box \"left\" pos(-4,3,10) size(2,6,6) gray(0.5)\n"
         "box \"right\" pos(4,3,10) size(2,6,6) gray(0.5)\n"
@@ -323,6 +337,9 @@ static void LocalPilot() {
         "box \"slab_b\" pos(7,1,15) size(2,2,4) gray(0.5)\n"
         "box \"slab_c\" pos(-8,2,20) size(2,4,4) gray(0.5)\n"
         "box \"slab_d\" pos(8,2,20) size(2,4,4) gray(0.5)\n";
+}
+static void LocalPilot() {
+    const auto local=LocalFixture();
     std::string problem;
     CHECK(ValidateLocalSceneContract(local,&problem));
     CHECK(ValidateLocalSceneContract(Replace(local,"camera eye(0,1.7,-10) target(0,2,8) up(0,1,0) fov(55)",
@@ -364,7 +381,7 @@ static void LocalPilot() {
     SessionState state;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     state.language=kGameLanguageFrench;
-    HeadlessTurnConfig cfg;cfg.local_scenes=true; // Composition seam; no real inference in this test.
+    HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true; // Composition seam; no real inference in this test.
     int narratives=0;
     cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* r) {
@@ -416,7 +433,9 @@ static void LocalPilot() {
     UpdateSessionStateFromTurn("east",turn,&restored);
     CHECK(restored.generated_rooms.size()==2&&restored.room_links.size()==4);
     CHECK(restored.generated_rooms[0].scene_seed!=restored.generated_rooms[1].scene_seed);
-    CHECK(restored.generated_rooms[0].scene_design_json!=restored.generated_rooms[1].scene_design_json);
+    CHECK(json::parse(restored.generated_rooms[0].scene_design_json)["brief"]==
+          json::parse(restored.generated_rooms[1].scene_design_json)["brief"]);
+    CHECK(restored.generated_rooms[0].scene_prompt_version!=restored.generated_rooms[1].scene_prompt_version);
     const auto stable_scene=restored.generated_rooms.back().scene_text;
     const auto stable_inventory=restored.hard_state.inventory_items;
     // A pre-existing room with prose in another language is repaired in place.
@@ -588,8 +607,119 @@ static void LocalPilot() {
     const auto approaches=LocalSceneClearApproaches(scene);
     CHECK(approaches.size()==3&&std::find(approaches.begin(),approaches.end(),"left")==approaches.end());
 }
+static void ContinuityJourney() {
+    SessionState state;HeadlessTurnResult turn;char error[1024]={};
+    CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+    state.language=kGameLanguageFrench;
+    HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    int scene_calls=0,narrative_calls=0;bool reject_first=true;
+    json last_geometry;std::string expected_origin,expected_command;
+    std::vector<std::string> geometry_prompts;
+    cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+        LlmStreamCallback,void*,LlmGenerationResult* result) {
+        ++scene_calls;last_geometry=GeometryContinuity(messages);geometry_prompts.push_back(messages[1].content);
+        CHECK(last_geometry.at("origin").at("id")==expected_origin);
+        CHECK(last_geometry.at("transition").at("command")==expected_command);
+        CHECK(!last_geometry.at("origin").at("description").get<std::string>().empty());
+        CHECK(last_geometry.at("origin").at("accepted_geometry").contains("visible_geometry"));
+        CHECK(messages[1].content.find("colossal abandoned extraction block")==std::string::npos);
+        CHECK(messages[1].content.find("stepped quarry court")==std::string::npos);
+        CHECK(messages[1].content.find("internal ID, not a door")!=std::string::npos);
+        if(scene_calls==2)CHECK(messages.size()==4); // Repair retains the same origin and event data.
+        result->success=true;result->reached_eog=true;
+        result->response_text=reject_first?"broken":LocalFixture()+
+            "box \"screen\" pos(0,4,3) size(20,8,0.2) gray(0.5)\n";
+        reject_first=false;return true;
+    };
+    cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+        LlmStreamCallback,void*,LlmGenerationResult* result) {
+        ++narrative_calls;const auto request=json::parse(messages[1].content);
+        CHECK(request.at("continuity").at("origin").at("id")==expected_origin);
+        if(request.at("exit_proposal").at("may_improvise")==true) {
+            CHECK(request.at("continuity").at("origin")==last_geometry.at("origin"));
+            CHECK(request.at("continuity").at("recent_events")==last_geometry.at("recent_events"));
+            CHECK(request.at("facts").contains("visible_geometry"));
+            for(const auto& mass:request.at("facts").at("visible_geometry"))
+                CHECK(mass.at("dimensions_metres")!=json::array({20,8,.2})); // Removed screen is absent.
+        }
+        json exits={{"north",true},{"east",true},{"south",true},{"west",true}};
+        for(auto it=request["exit_proposal"]["fixed"].begin();it!=request["exit_proposal"]["fixed"].end();++it)exits[it.key()]=it.value();
+        result->success=true;result->reached_eog=true;
+        result->response_text=json({{"title","Les masses "+std::to_string(narrative_calls)},
+            {"summary","Vous retrouvez la lumière sur les masses de pierre. Les intervalles restent visibles. "+std::to_string(narrative_calls)},
+            {"narration","Vous distinguez les masses de pierre sous le ciel. Leurs arêtes dessinent une perspective silencieuse, tandis que votre regard parcourt les intervalles. La lumière souligne leur hauteur et votre souffle accompagne cette observation attentive. "+std::to_string(narrative_calls)},
+            {"exits",exits},{"thermal",{{"external_temperature_c",request.at("temperature_external_c")},
+            {"body_temperature_c",request.at("temperature_body_c")},{"reason","Protection stable."}}}}).dump();return true;
+    };
+    auto act=[&](const char* command) {
+        expected_origin=state.current_place_id;expected_command=command;
+        CHECK(RunHeadlessTurnFromState(state,command,cfg,&turn,error,sizeof(error)));
+        UpdateSessionStateFromTurn(command,turn,&state);
+    };
+    act("prendre le bloc");CHECK(state.history.back().engine_outcome.find("No movement or object manipulation")!=std::string::npos);
+    act("east");CHECK(scene_calls==2&&narrative_calls==1); // One repair, no planning call.
+    CHECK(last_geometry.at("recent_events").size()==1);
+    CHECK(last_geometry["recent_events"][0]["outcome"].get<std::string>().find("No movement or object manipulation")!=std::string::npos);
+    CHECK(geometry_prompts[0]==geometry_prompts[1]);
+    const auto a=state.current_place_id,description_a=state.spatial_state.room_summary;
+    const auto geometry_a=state.generated_rooms.back().scene_text;
+    CHECK(geometry_a==LocalFixture());
+    act("north");const auto b=state.current_place_id;
+    act("south");CHECK(state.current_place_id==a&&scene_calls==3);
+    CHECK(state.spatial_state.room_summary==description_a&&turn.rendered_scene_text==geometry_a);
+    // A -> B -> A -> new C: origin is A although B was the last room created.
+    act("east");CHECK(scene_calls==4&&narrative_calls==4);
+    CHECK(last_geometry["origin"]["id"]==a&&last_geometry["origin"]["description"]==description_a);
+    CHECK(last_geometry["recent_events"].back()["place_id"]==a);
+    CHECK(state.generated_rooms.size()==3&&state.reference_descriptions.count(a)&&state.reference_descriptions.count(b));
+    const auto metrics=json::parse(turn.dynamic_scene_metrics_json);
+    CHECK(metrics["calls"][0]["messages"][1]["content"]==geometry_prompts.back());
+    CHECK(metrics["calls"][0]["continuity_selection"]["success"]==true);
+    // Only technical IDs/seeds vary with discovery index. Prompts stay the same.
+    auto altered=state;altered.next_generated_room_index+=100;
+    expected_origin=state.current_place_id;expected_command="east";
+    cfg.narrative_completion={};
+    // Stop after capturing composition so this comparison has no narrative side effects.
+    cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& m,
+        LlmStreamCallback,void*,LlmGenerationResult* r) {geometry_prompts.push_back(m[1].content);r->stop_reason="cancelled";return false;};
+    CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));
+    CHECK(!RunHeadlessTurnFromState(altered,"east",cfg,&turn,error,sizeof(error)));
+    CHECK(geometry_prompts[geometry_prompts.size()-1]==geometry_prompts[geometry_prompts.size()-2]);
+    auto contrasting=state;
+    contrasting.history.back().place_description="Vous retrouvez une étendue claire. La lumière souligne la profondeur.";
+    CHECK(!RunHeadlessTurnFromState(contrasting,"east",cfg,&turn,error,sizeof(error)));
+    CHECK(geometry_prompts.back()!=geometry_prompts[geometry_prompts.size()-2]);
+    CHECK(geometry_prompts.back().find("une étendue claire")!=std::string::npos);
+    // An oversized history is selected for inference without deleting saved events or places.
+    auto long_history=state;
+    for(int i=0;i<30;++i) {
+        auto event=state.history.back();event.player_command="observer "+std::to_string(i);
+        event.place_description="Une lumière pâle éclaire la pierre. ";
+        for(int sentence=0;sentence<40;++sentence)event.place_description+="Les masses demeurent sous le ciel étoilé. ";
+        long_history.history.push_back(event);
+    }
+    std::string long_before,long_after;CHECK(SerializeSessionStateToJsonString(long_history,&long_before));
+    CHECK(!RunHeadlessTurnFromState(long_history,"east",cfg,&turn,error,sizeof(error)));
+    auto selection=json::parse(turn.dynamic_scene_metrics_json)["calls"][0]["continuity_selection"];
+    CHECK(selection["success"]==true&&selection["omitted_events"].get<int>()>0);
+    CHECK(selection["memory_tokens"].get<int>()<=1024);
+    CHECK(SerializeSessionStateToJsonString(long_history,&long_after));CHECK(long_before==long_after);
+    const auto calls_before=geometry_prompts.size();cfg.generation_config.n_ctx=128;
+    CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));
+    CHECK(geometry_prompts.size()==calls_before); // No backend request with insufficient mandatory context.
+    CHECK(json::parse(turn.dynamic_scene_metrics_json)["error"].get<std::string>().find("context_limit")!=std::string::npos);
+    cfg.generation_config.n_ctx=8192;
+    // Neither rejected candidate entered the published state or research snapshot.
+    std::string before,after;CHECK(SerializeSessionStateToJsonString(state,&before));
+    UpdateSessionStateFromTurn("east",turn,&state);CHECK(SerializeSessionStateToJsonString(state,&after));CHECK(before==after);
+    SessionState reloaded;CHECK(ParseSessionStateFromJson(before.c_str(),&reloaded,error,sizeof(error)));
+    CHECK(reloaded.reference_descriptions==state.reference_descriptions);
+    CHECK(reloaded.history.back().engine_outcome==state.history.back().engine_outcome);
+    CHECK(reloaded.generated_rooms[0].scene_text==geometry_a);
+}
+
 static void InventoryTurns() {
-    SessionState state;char error[1024]={};HeadlessTurnResult turn;HeadlessTurnConfig cfg;
+    SessionState state;char error[1024]={};HeadlessTurnResult turn;HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     state.language=kGameLanguageFrench;cfg.local_scenes=true;
     int narrative_calls=0,scene_calls=0;
@@ -672,7 +802,7 @@ static void LanguageContinuity() {
         SessionState state;HeadlessTurnResult turn;char error[1024]={};
         CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
         state.language=languages[i];state.spatial_state.room_title=titles[i];state.spatial_state.room_summary=prose[i];
-        HeadlessTurnConfig cfg;cfg.local_scenes=true;int calls=0;bool wrong=false,fail=false;
+        HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true;int calls=0;bool wrong=false,fail=false;
         cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
             LlmStreamCallback,void*,LlmGenerationResult* r) {
             ++calls;const auto request=json::parse(messages.at(1).content);
@@ -783,6 +913,6 @@ static void ResearchArchives() {
     std::filesystem::remove_all(root);
 }
 int main() {
-    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation and save integrity passed");return 0;}
+    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

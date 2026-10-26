@@ -1,12 +1,13 @@
 # Documentation — Within the Latent Walls
 
-État au 25 octobre 2026. Le jeu utilise Gemma dans llama.cpp intégré, avec
+État au 26 octobre 2026. Le jeu utilise Gemma dans llama.cpp intégré, avec
 un paquet autonome. Les archives de recherche ne servent jamais à reprendre une partie.
 
 ## Jouer, construire et distribuer
 
 - [État technique actuel](TECHNICAL_STATE.md)
 - [Partie, génération et archives](SINGLE_START_RESEARCH.md)
+- [Continuité des scènes : implémentation et recette](CONTINUITE_SCENES.md)
 - [Runtime autonome : livraison et preuves](BILAN_RUNTIME_AUTONOME.md)
 - [Distribution Windows hors ligne](WINDOWS_DISTRIBUTION.md)
 - [Conservation des étapes antérieures](HISTORIQUE_RECHERCHE.md)

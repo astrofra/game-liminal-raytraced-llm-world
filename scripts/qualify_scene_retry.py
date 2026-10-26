@@ -21,11 +21,11 @@ def main():
     if output.is_relative_to(ROOT) or output.exists():
         parser.error("--output must be a new directory outside the repository")
     output.mkdir(parents=True)
-    contract = json.loads((ROOT / "assets/scene_generation/local_v1.json").read_text(encoding="utf-8"))
+    historical = json.loads((ROOT / "tests/data/legacy_local_briefs.json").read_text(encoding="utf-8"))
     rows = []
     for index, seed in enumerate((99491150, 99595879, 99813256, 99917985)):
         brief = output / f"brief-{index}.txt"
-        brief.write_text(contract["exploration_briefs"][2 if index < 2 else 3], encoding="utf-8")
+        brief.write_text(historical["exploration_briefs"][2 if index < 2 else 3], encoding="utf-8")
         for limit in (2, 3):
             prefix = output / f"case-{index}-calls-{limit}"
             with prefix.with_suffix(".log").open("wb") as log:

@@ -89,6 +89,7 @@ def main():
         targets = ["liminal_cornell_renderer", "liminal_llm_channels_test", "liminal_distant_light_test", "liminal_dynamic_scene_test", "liminal_scene_normalization_test", "liminal_scene_visibility_test", "liminal_place_proposal_test", "liminal_inventory_test", "liminal_narrative_language_test"]
         if args.with_cli:
             targets.append("llama-cli")
+        targets.append("liminal_continuity_test")
         subprocess.run(["cmake", "--build", str(build), "--config", "Release", "--parallel", str(args.parallel),
                         "--target", *targets], env=env, cwd=ROOT, check=True)
         artifacts = [build / "Release/liminal_cornell_renderer.exe"]

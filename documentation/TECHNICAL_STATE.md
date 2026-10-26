@@ -35,6 +35,22 @@ réelles des limites de qualification restantes.
 - Nouvelle graine et exploration à chaque lancement ; aucun chargement d'archive dans SDL.
 - Archives de recherche automatiques : descriptions, `.scene`, images, essais rejetés, profondeur/ID, prompts, métriques et états.
 
+La [continuité scénique](CONTINUITE_SCENES.md) est désormais explicite : le même
+instantané du lieu quitté, de son décor accepté et des événements publiés alimente
+la composition locale, ses corrections et la narration. Le catalogue cyclique de
+cinq briefs est retiré du runtime ; `portal` reste un identifiant de visibilité,
+sans imposer une porte. Aucun appel de planification ou de résumé n'est ajouté.
+
+Le budget est compté avec le tokenizer et le template Gemma réellement chargés.
+Le plafond des événements/notes est de 1 024 tokens, configurable par
+`--continuity-memory-tokens`, avec réserve de sortie et marge de 32 tokens.
+La sélection conserve au plus six événements et deux lieux récents. Si nécessaire,
+les descriptions de cette copie sont réduites à leur première phrase complète.
+Les lieux, scènes, descriptions de référence, liens et historique complet restent
+conservés pendant la partie. Les requêtes et décisions de réduction sont archivées.
+Les tests mécaniques passent ; la revue réelle relève encore des extrapolations
+littéraires et ne démontre pas une continuité artistique systématique.
+
 La visière utilise `assets/masque-scaphandre-interieur-v3.png` : texture RGBA
 chargée une fois par fenêtre, alpha classique et mise à l'échelle linéaire,
 superposée à la scène avant le HUD. Les températures et la boussole sont remontées

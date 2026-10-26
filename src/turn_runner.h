@@ -62,6 +62,7 @@ struct HeadlessTurnResult {
     std::string dynamic_scene_metrics_json;
     std::vector<DynamicSceneResult::Attempt> scene_attempts;
     std::string narrative_metrics_json;
+    std::string engine_outcome;
     std::string thermal_prompt_text;
     std::string thermal_response_text;
     std::string rendered_scene_text;

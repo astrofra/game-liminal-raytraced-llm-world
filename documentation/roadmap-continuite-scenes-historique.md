@@ -3,7 +3,7 @@
 Projet : **Within the Latent Walls / Entre les Murs Latents**  
 Date : **26 octobre 2026**  
 Référence examinée : `main`, commit `f012cfa`  
-Statut : **spécification proposée ; aucun changement du runtime réalisé par ce document**.
+Statut : **pilote CONT-01 à CONT-05 implémenté le 26 octobre 2026 ; tests et recette réelle documentés dans [le bilan](CONTINUITE_SCENES.md). La qualité artistique reste mesurée avec réserves.**
 
 Révision : **improvisation directe par le modèle, suppression du catalogue cyclique, sans appel LLM supplémentaire**.
 

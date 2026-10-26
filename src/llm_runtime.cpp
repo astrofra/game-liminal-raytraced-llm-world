@@ -61,6 +61,7 @@ struct GenerationTrace {
     bool cancelled = false;
     LlmStreamCallback callback = nullptr;
     void* callback_data = nullptr;
+    bool count_only = false;
     bool expired() const { return ElapsedMs(started) >= config.timeout_ms; }
     bool loading_alive() {
         if (expired() || cancelled) return false;
@@ -68,6 +69,7 @@ struct GenerationTrace {
         return !cancelled;
     }
     ~GenerationTrace() {
+        if(count_only) {g_active_generation=nullptr;return;}
         result->wall_time_ms = ElapsedMs(started);
         if (inferring) result->inference_time_ms = ElapsedMs(inference_started);
         if (result->stop_reason.empty()) result->stop_reason = "error";
@@ -237,17 +239,18 @@ bool QueryLlmRuntimeInfo(LlmRuntimeInfo* info)
 #endif
 }
 
-bool GenerateChatCompletion(
+static bool ChatCompletionInternal(
     const LlmGenerationConfig& requested,
     const std::vector<LlmPromptMessage>& messages,
     LlmStreamCallback stream_callback,
     void* stream_user_data,
-    LlmGenerationResult* result)
+    LlmGenerationResult* result, bool count_only)
 {
     if (!result) return false;
     *result = LlmGenerationResult();
     LlmGenerationConfig config = requested;
     GenerationTrace trace{result, config};
+    trace.count_only=count_only;
     trace.callback = stream_callback;
     trace.callback_data = stream_user_data;
     const auto fail = [&](const char* reason, const std::string& message) {
@@ -373,6 +376,7 @@ bool GenerateChatCompletion(
             }
         }
         result->prompt_tokens = static_cast<int>(prompt_tokens.size());
+        if(count_only) {result->success=true;return true;}
         const int reserve = config.n_predict;
         if (result->prompt_tokens + reserve + 1 > config.n_ctx) return fail("context_limit", "Prompt and reserved output exceed fixed context budget");
         llama_context_params context_params = llama_context_default_params();
@@ -485,6 +489,21 @@ bool GenerateChatCompletion(
     (void) messages; (void) stream_callback; (void) stream_user_data;
     return fail("unavailable", "llama.cpp support is not compiled into this binary");
 #endif
+}
+
+bool CountChatPromptTokens(const LlmGenerationConfig& config,
+    const std::vector<LlmPromptMessage>& messages,LlmStreamCallback callback,void* user,
+    int* tokens,std::string* error) {
+    if(config.prompt_token_counter)return config.prompt_token_counter(messages,tokens,error);
+    LlmGenerationResult result;
+    const bool ok=ChatCompletionInternal(config,messages,callback,user,&result,true);
+    *tokens=result.prompt_tokens;*error=result.error_message;return ok;
+}
+
+bool GenerateChatCompletion(const LlmGenerationConfig& config,
+    const std::vector<LlmPromptMessage>& messages,LlmStreamCallback callback,void* user,
+    LlmGenerationResult* result) {
+    return ChatCompletionInternal(config,messages,callback,user,result,false);
 }
 
 bool GenerateChatCompletion(

@@ -2,6 +2,7 @@
 #define LIMINAL_SCENE_DESIGN_H
 
 #include "scene.h"
+#include "continuity.h"
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -9,6 +10,7 @@
 namespace liminal {
 
 struct SceneDesignContext {
+    ContinuityContextV1 continuity;
     std::string brief;
     std::string origin;
     std::string environment; // Read-only engine state and known invisible barriers.
@@ -69,9 +71,10 @@ std::string BuildSceneProgramPrompt(const SceneDesignContext& context, const Sce
 std::string LocalSceneSystemPrompt();
 std::string LocalSceneRepairPrefix();
 std::string LocalSceneHeader();
-std::string LocalSceneExplorationBrief(unsigned int discovery_index);
+std::string LocalSceneExplorationBrief();
 std::string LocalScenePilotLandmark();
 std::string BuildLocalSceneProgramPrompt(const std::string& brief,const std::string& landmark);
+std::string BuildLocalSceneProgramPrompt(const SceneDesignContext& context,const std::string& landmark);
 bool ValidateLocalSceneContract(const std::string& program,std::string* error);
 // Fixed local camera: forward +Z, screen-right -X. Necessary clear approaches,
 // not an automatic decision to open a route or proof of a continuous distant path.

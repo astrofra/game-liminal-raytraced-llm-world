@@ -21,6 +21,9 @@ suit l'évolution thermique du scaphandre.
 
 Un seul lieu est prédéfini. Les autres sont inventés pendant la partie et gardent
 leur géométrie lors des retours. Chaque lancement recommence une exploration.
+Le modèle compose librement à partir du lieu quitté et des événements validés.
+Tous les lieux restent en mémoire pendant la partie ; seul l'extrait d'historique
+envoyé au modèle est réduit selon son budget de tokens.
 Descriptions, `.scene`, images et résultats sont archivés sous
 `%LOCALAPPDATA%/WithinTheLatentWalls/research/`, sans réutilisation au lancement suivant.
 
@@ -68,6 +71,7 @@ annulation et sondes du modèle. `--llm-gpu-layers 0` sélectionne le CPU pour u
 Le jeu normal n'affiche aucun sélecteur de backend ou de mode de scène.
 
 - [État technique](documentation/TECHNICAL_STATE.md)
+- [Continuité des scènes et recette](documentation/CONTINUITE_SCENES.md)
 - [Guide de partie et archives](documentation/SINGLE_START_RESEARCH.md)
 - [Bilan du runtime autonome](documentation/BILAN_RUNTIME_AUTONOME.md)
 - [Index documentaire](documentation/README.md)

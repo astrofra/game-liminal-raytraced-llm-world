@@ -5,6 +5,9 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-028 | Audit relu et intégré avec réserves | [Contrat](tasks/DUO-028.md), [revue](reviews/DUO-028.md) ; écarts des prompts et archives confirmés, oracles de navigation corrigés par Codex |
+| DUO-029 | Tests de budget intégrés sélectivement | [Contrat](tasks/DUO-029.md), [revue](reviews/DUO-029.md) ; fixture corrigée, tests C++ exécutés par Codex |
+| CONT-01 à CONT-05 | Pilote livré et recette exécutée | [Bilan](../CONTINUITE_SCENES.md) : neuf tests CTest, 61 Python, parcours Gemma A → B → A → C, tokens vérifiés, binaire publié ; réserves artistiques documentées |
 | DUO-027 | Validé — documentation uniquement | [Contrat](tasks/DUO-027.md), [revue](reviews/DUO-027.md) ; matrice relue et précisée dans la [roadmap des interactions](../ROADMAP_INTERACTIONS_ENVIRONNEMENT.md), gameplay à implémenter |
 | DUO-026 | Masque bitmap livré et vérifié | [Contrat](tasks/DUO-026.md), [revue](reviews/DUO-026.md) ; v3 transparente, dessin procédural supprimé |
 | Runtime autonome | Livré, qualification locale effectuée | [Bilan](../BILAN_RUNTIME_AUTONOME.md) : parcours 20 commandes, tests des langues, protocole et poids résidents |

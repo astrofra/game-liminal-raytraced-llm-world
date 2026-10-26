@@ -72,6 +72,7 @@ static void PrintUsage()
     printf("  --write-initial-state <json> Export canonical initial state without inference\n");
     printf("  --llm-profile <name>     gemma-4-e4b-q4\n");
     printf("  --llm-context <n>        Fixed context limit (default 8192)\n");
+    printf("  --continuity-memory-tokens <n>  Recent memory cap (default 1024; output reserve unchanged)\n");
     printf("  --llm-gpu-layers <n>     Offloaded model layers; 0 isolates CPU qualification\n");
     printf("  --llm-timeout-ms <n>     Per-call deadline including model load\n");
     printf("  --llm-seed <n>           Sampling seed\n");
@@ -661,6 +662,11 @@ int main(int argc, char** argv)
         if (strcmp(argv[index], "--llm-context") == 0 && index + 1 < argc) {
             if (!ReadInt(argv[++index], &headless_turn_config.generation_config.n_ctx)) return 1; continue;
         }
+        if (strcmp(argv[index], "--continuity-memory-tokens") == 0 && index + 1 < argc) {
+            int& cap=headless_turn_config.generation_config.continuity_memory_tokens;
+            if(!ReadInt(argv[++index],&cap)||cap<0||cap>32768)return 1;
+            continue;
+        }
         if (strcmp(argv[index], "--llm-timeout-ms") == 0 && index + 1 < argc) {
             if (!ReadInt(argv[++index], &headless_turn_config.generation_config.timeout_ms)) return 1; continue;
         }
@@ -1098,6 +1104,14 @@ int main(int argc, char** argv)
         headless_turn_config.prefer_candidate_scene = prefer_candidate_scene;
         liminal::HeadlessTurnResult turn_result;
         const bool turn_ready=liminal::RunHeadlessTurnFromState(session_state, player_command, headless_turn_config, &turn_result, error_buffer, sizeof(error_buffer));
+        if(scene_artifacts_requested) {
+            const auto trace=nlohmann::json({{"accepted",turn_ready},{"error",error_buffer},
+                {"from",turn_result.initial_place_id},{"to",turn_result.updated_place_id},
+                {"request",turn_result.request_text},{"prompt",turn_result.prompt_text},
+                {"narrative_metrics",turn_result.narrative_metrics_json},{"narration",turn_result.turn_result.narration},
+                {"llm_calls",turn_result.llm_call_count}}).dump(2);
+            if(!WriteFileText((scene_artifacts+".turn.json").c_str(),trace))return 1;
+        }
         // Explicit diagnostic export only; rejected artifacts never become a saved room.
         if(scene_artifacts_requested&&!turn_result.dynamic_scene_metrics_json.empty()) {
             if(!WriteFileText((scene_artifacts+".metrics.json").c_str(),turn_result.dynamic_scene_metrics_json)||

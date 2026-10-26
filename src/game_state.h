@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <map>
 
 namespace liminal {
 
@@ -262,6 +263,7 @@ struct TurnResult {
 };
 
 struct SessionTurnRecord {
+    std::string origin_place_id, place_id, engine_outcome, place_description;
     int turn_number;
     LocationId location_id;
     std::string location_label;
@@ -340,6 +342,7 @@ struct SessionState {
     std::vector<RoomLink> room_links;
     std::vector<InvisibleBarrier> invisible_barriers;
     std::vector<std::string> field_notes; // Player-requested notes, confined to this game.
+    std::map<std::string,std::string> reference_descriptions; // Per-place accepted prose, never the global rolling summary.
 
     SessionState()
         : language(kGameLanguageEnglish)

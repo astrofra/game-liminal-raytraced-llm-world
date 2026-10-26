@@ -248,6 +248,10 @@ static json MakeSessionHistoryJson(const std::vector<SessionTurnRecord>& history
         item["intent"] = record.intent;
         item["narration"] = record.narration;
         item["clarification"] = record.clarification;
+        item["origin_place_id"]=record.origin_place_id;
+        item["place_id"]=record.place_id;
+        item["engine_outcome"]=record.engine_outcome;
+        item["place_description"]=record.place_description;
         node.push_back(item);
     }
     return node;
@@ -414,6 +418,10 @@ static void ParseHistoryNode(const json& node, std::vector<SessionTurnRecord>* h
         record.intent = ReadStringNode(node[index], "intent");
         record.narration = ReadStringNode(node[index], "narration");
         record.clarification = ReadStringNode(node[index], "clarification");
+        record.origin_place_id=ReadStringNode(node[index],"origin_place_id");
+        record.place_id=ReadStringNode(node[index],"place_id");
+        record.engine_outcome=ReadStringNode(node[index],"engine_outcome");
+        record.place_description=ReadStringNode(node[index],"place_description");
         history->push_back(record);
     }
 }
@@ -1431,6 +1439,7 @@ bool SerializeSessionStateToJsonString(const SessionState& state, std::string* j
     root["history"] = MakeSessionHistoryJson(state.history);
     root["origin_place_id"] = state.origin_place_id;
     root["field_notes"] = state.field_notes;
+    root["reference_descriptions"]=state.reference_descriptions;
     root["current_place_id"] = state.current_place_id;
     root["next_generated_room_index"] = state.next_generated_room_index;
     root["generated_rooms"] = MakeGeneratedRoomsJson(state.generated_rooms);
@@ -1495,6 +1504,7 @@ bool ParseSessionStateFromJson(
         }
         state->origin_place_id = ReadStringNode(root, "origin_place_id");
         state->field_notes = root.value("field_notes",std::vector<std::string>());
+        state->reference_descriptions=root.value("reference_descriptions",std::map<std::string,std::string>());
         state->current_place_id = ReadStringNode(root, "current_place_id");
         state->next_generated_room_index = ReadIntNode(root, "next_generated_room_index", state->next_generated_room_index);
         if (root.contains("generated_rooms")) {

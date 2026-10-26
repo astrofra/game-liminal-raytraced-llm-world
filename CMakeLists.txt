@@ -19,6 +19,7 @@ set(LIMINAL_SOURCES
     src/main.cpp
     src/game_state.cpp
     src/llm_runtime.cpp
+    src/continuity.cpp
     src/research_archive.cpp
     src/scene_design.cpp
     src/scene_validation.cpp
@@ -70,7 +71,7 @@ add_test(NAME distant_light COMMAND liminal_distant_light_test)
 add_executable(liminal_dynamic_scene_test tests/dynamic_scene_test.cpp
     src/scene_design.cpp src/scene_validation.cpp src/scene_normalization.cpp src/dynamic_scene.cpp src/scene.cpp src/renderer.cpp
     src/game_state.cpp src/place_proposal.cpp src/inventory.cpp src/narrative_language.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp
-    src/research_archive.cpp
+    src/research_archive.cpp src/continuity.cpp
     "${MODEL_HEADER}" "${SCENE_GUIDE_HEADER}")
 target_include_directories(liminal_dynamic_scene_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor"
     "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash" "${CMAKE_CURRENT_BINARY_DIR}/generated")
@@ -78,6 +79,12 @@ if(MSVC)
     target_compile_options(liminal_dynamic_scene_test PRIVATE /W4 /wd4996 /utf-8)
 endif()
 add_test(NAME dynamic_scene COMMAND liminal_dynamic_scene_test)
+add_executable(liminal_continuity_test tests/continuity_test.cpp src/continuity.cpp)
+target_include_directories(liminal_continuity_test PRIVATE src "${LIMINAL_LLAMA_CPP_DIR}/vendor")
+if(MSVC)
+    target_compile_options(liminal_continuity_test PRIVATE /W4 /utf-8)
+endif()
+add_test(NAME continuity_budget COMMAND liminal_continuity_test)
 set_tests_properties(dynamic_scene PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 if(WIN32)
@@ -198,7 +205,7 @@ target_include_directories(liminal_scene_normalization_test PRIVATE src)
 add_test(NAME scene_normalization COMMAND liminal_scene_normalization_test)
 
 add_executable(liminal_scene_visibility_test tests/scene_visibility_test.cpp
-    src/scene_validation.cpp src/scene_design.cpp src/scene.cpp src/renderer.cpp "${SCENE_GUIDE_HEADER}")
+    src/scene_validation.cpp src/scene_design.cpp src/continuity.cpp src/scene.cpp src/renderer.cpp "${SCENE_GUIDE_HEADER}")
 target_include_directories(liminal_scene_visibility_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash" "${CMAKE_CURRENT_BINARY_DIR}/generated")
 if(MSVC)
     target_compile_options(liminal_scene_visibility_test PRIVATE /utf-8)

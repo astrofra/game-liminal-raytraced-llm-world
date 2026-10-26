@@ -155,11 +155,32 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
             } else messages.back().content+=repair;
         }
         LlmGenerationResult generation;
-        const bool ok=config.completion?config.completion(cfg,messages,Gate::Stream,&gate,&generation):
-            GenerateChatCompletion(cfg,messages,Gate::Stream,&gate,&generation);
-        ++result->calls;
+        std::string selection="{}",budget_error;
+        bool fits=true;
+        if(context.continuity.core_json!="{}") {
+            const auto original=SerializeContinuityContext(context.continuity);
+            const auto unbounded=messages;
+            fits=FitContinuityPrompt(context.continuity,cfg.n_ctx,cfg.n_predict,cfg.continuity_memory_tokens,
+                [&](const ContinuityContextV1& selected) {
+                    auto bounded=unbounded;
+                    for(auto& message:bounded) {
+                        const auto pos=message.content.find(original);
+                        if(pos!=std::string::npos)message.content.replace(pos,original.size(),SerializeContinuityContext(selected));
+                    }
+                    return bounded;
+                },[&](const std::vector<LlmPromptMessage>& m,int* tokens,std::string* error) {
+                    return CountChatPromptTokens(cfg,m,Gate::Stream,&gate,tokens,error);
+                },&messages,&selection,&budget_error);
+        }
+        const bool ok=fits&&(config.completion?config.completion(cfg,messages,Gate::Stream,&gate,&generation):
+            GenerateChatCompletion(cfg,messages,Gate::Stream,&gate,&generation));
+        if(fits)++result->calls;
+        else {generation.stop_reason="context_limit";generation.error_message=budget_error;}
+        json request=json::array();for(const auto& m:messages)request.push_back({{"role",m.role},{"content",m.content}});
         if(!plan&&!patch_repair)last_program_tokens=generation.final_tokens;
-        calls.push_back({{"purpose",cfg.purpose},{"success",ok},{"eos",generation.reached_eog},
+        calls.push_back({{"purpose",cfg.purpose},{"success",ok},{"submitted",fits},{"eos",generation.reached_eog},
+            {"messages",request},{"prompt_text",generation.prompt_text},{"continuity_selection",json::parse(selection)},
+            {"prompt_time_ms",generation.prompt_time_ms},{"generation_time_ms",generation.generation_time_ms},
             {"seed",cfg.seed},{"temperature",cfg.temperature},
             {"prompt_sha256",SceneTextHash(generation.prompt_text)},
             {"stop_reason",generation.stop_reason},{"prompt_tokens",generation.prompt_tokens},
@@ -203,7 +224,7 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
     result->audit=SceneAuditReport();
     std::string prior,diagnosis;
     for(;;) {
-        bool ok=generate(false,config.fixed_frame?BuildLocalSceneProgramPrompt(context.brief,config.landmark):
+        bool ok=generate(false,config.fixed_frame?BuildLocalSceneProgramPrompt(context,config.landmark):
             BuildSceneProgramPrompt(context,design),prior,diagnosis,&result->scene_text);
         DynamicSceneResult::Attempt attempt;
         attempt.raw=result->scene_text;
