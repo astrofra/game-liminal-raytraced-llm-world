@@ -1,4 +1,5 @@
 #include "game_state.h"
+#include "object_interactions.h"
 #include "scene_design.h"
 
 #include <math.h>
@@ -1480,6 +1481,8 @@ bool SerializeSessionStateToJsonString(const SessionState& state, std::string* j
     root["origin_place_id"] = state.origin_place_id;
     root["field_notes"] = state.field_notes;
     root["reference_descriptions"]=state.reference_descriptions;
+    SessionState object_snapshot=state;EnsureObjectRegistry(&object_snapshot);
+    root["objects"]=json::parse(SerializeObjectState(object_snapshot.objects));
     root["current_place_id"] = state.current_place_id;
     root["next_generated_room_index"] = state.next_generated_room_index;
     root["generated_rooms"] = MakeGeneratedRoomsJson(state.generated_rooms);
@@ -1558,6 +1561,18 @@ bool ParseSessionStateFromJson(
         }
 
         NormalizeSessionState(state);
+        if(root.contains("objects")) {
+            std::string object_error;
+            if(!ParseObjectState(root.at("objects").dump(),&state->objects,&object_error)||
+               !ValidateObjectState(*state,&object_error))throw std::runtime_error(object_error);
+            for(const auto& room:state->objects.deposits)if(!room.second.empty()&&!IsKnownPlaceIdInSession(*state,room.first))
+                throw std::runtime_error("Object deposit references an unknown place");
+            for(const auto& source:state->objects.sources) {
+                const auto reference=state->reference_descriptions.find(source.place_id);
+                if(!IsKnownPlaceIdInSession(*state,source.place_id)||reference==state->reference_descriptions.end()||reference->second.find(source.quote)==std::string::npos)
+                    throw std::runtime_error("Object source has no retained literary reference");
+            }
+        } else EnsureObjectRegistry(state);
         return true;
     } catch (const std::exception& exception) {
         SetError(error_buffer, error_buffer_size, "Failed to parse session JSON: %s", exception.what());

@@ -44,7 +44,7 @@ sur une carte différente, sans appel LLM supplémentaire.
 
 ## Inventaire
 
-`i` ou `inventaire` affiche les possessions ; `examiner la tablette`, `examiner la craie`, `examiner les pinces` décrit les trois outils. Les commandes et réponses sont disponibles dans les six langues : voir le [document historique archivé](HISTORIQUE_RECHERCHE.md). Ces consultations ne demandent aucune inférence et ne changent pas BODY. Les outils restent portés ; le dépôt et le ramassage dans le décor ne sont pas encore disponibles.
+`i` ou `inventaire` affiche les possessions ; `examiner la tablette`, `examiner la craie`, `examiner les pinces` décrit les trois outils. Les commandes et réponses sont disponibles dans les six langues : voir le [document historique archivé](HISTORIQUE_RECHERCHE.md). Ces consultations ne demandent aucune inférence et ne changent pas BODY. Les outils peuvent être déposés puis repris : `déposer la craie`, `reprendre la craie`. `regarder tout autour` restitue les dépôts actuels. Une cible littéraire saisissable peut aussi être matérialisée dans l’inventaire ; ses retraits sont mémorisés. Voir les [interactions et leurs limites](INTERACTIONS_ENVIRONNEMENT.md).
 
 ## Archives automatiques de recherche
 

@@ -18,6 +18,9 @@ using json=nlohmann::json;
 #define CHECK(c) do { if(!(c)) throw std::runtime_error(std::string("Check failed at ")+std::to_string(__LINE__)+": "+#c); } while(false)
 
 // A deterministic fake tokenizer; real Gemma counts are qualified separately.
+void RunObjectJourneyTests();
+void RunObjectConservationTests();
+
 static bool FakePromptCount(const std::vector<LlmPromptMessage>& messages,int* count,std::string*) {
     size_t bytes=0;for(const auto& m:messages)bytes+=m.content.size()+16;
     *count=static_cast<int>((bytes+3)/4);return true;
@@ -430,6 +433,8 @@ static void LocalPilot() {
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     state.language=kGameLanguageFrench;
     HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true; // Composition seam; no real inference in this test.
+    cfg.interaction_completion=[](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,
+        LlmStreamCallback,void*,LlmGenerationResult*) {return false;};
     int narratives=0;
     cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* r) {
@@ -789,6 +794,7 @@ static void ContinuityJourney() {
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     state.language=kGameLanguageFrench;
     HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    cfg.interaction_completion=[](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult*){return false;};
     int scene_calls=0,narrative_calls=0;bool reject_first=true;
     // This continuity fixture needs two distinct forward branches in A and C.
     while(DrawExplorationExitTarget(cfg.generation_config.seed,1)!=3||
@@ -838,18 +844,18 @@ static void ContinuityJourney() {
         UpdateSessionStateFromTurn(command,turn,&state);
     };
     act("prendre le bloc");CHECK(state.history.back().engine_outcome.find("No movement or object manipulation")!=std::string::npos);
-    act("east");CHECK(scene_calls==2&&narrative_calls==1); // One repair, no planning call.
+    act("east");CHECK(scene_calls==2&&narrative_calls==2); // One refused action narration, one arrival, one composition repair.
     CHECK(last_geometry.at("recent_events").size()==1);
     CHECK(last_geometry["recent_events"][0]["outcome"].get<std::string>().find("No movement or object manipulation")!=std::string::npos);
     CHECK(geometry_prompts[0]==geometry_prompts[1]);
-    const auto a=state.current_place_id,description_a=state.spatial_state.room_summary;
+    const auto a=state.current_place_id,description_a=state.reference_descriptions.at(a),summary_a=state.spatial_state.room_summary;
     const auto geometry_a=state.generated_rooms.back().scene_text;
     CHECK(geometry_a==LocalFixture());
     act("north");const auto b=state.current_place_id;
     act("south");CHECK(state.current_place_id==a&&scene_calls==3);
-    CHECK(state.spatial_state.room_summary==description_a&&turn.rendered_scene_text==geometry_a);
+    CHECK(state.spatial_state.room_summary==summary_a&&turn.rendered_scene_text==geometry_a);
     // A -> B -> A -> new C: origin is A although B was the last room created.
-    act("east");CHECK(scene_calls==4&&narrative_calls==4);
+    act("east");CHECK(scene_calls==4&&narrative_calls==5);
     CHECK(last_geometry["origin"]["id"]==a&&last_geometry["origin"]["description"]==description_a);
     CHECK(last_geometry["recent_events"].back()["place_id"]==a);
     CHECK(state.generated_rooms.size()==3&&state.reference_descriptions.count(a)&&state.reference_descriptions.count(b));
@@ -913,7 +919,6 @@ static void InventoryTurns() {
     std::string canonical;
     for(const auto* command:{"i","  INVENTAIRE ! ","Qu’est-ce que je porte ?","examiner la tablette",
         "regarder la craie","examiner les pinces","prendre la craie","utiliser les pinces",
-        "poser la tablette","jeter les pinces","prendre le portail","prendre la craie avec les pinces",
         "examiner la craie et les pinces"}) {
         CHECK(RunHeadlessTurnFromState(state,command,cfg,&turn,error,sizeof(error)));
         CHECK(json::parse(turn.narrative_metrics_json).at("engine_only")==true);
@@ -925,11 +930,11 @@ static void InventoryTurns() {
         CHECK(turn.rendered_scene_text==canonical&&!turn.turn_result.narration.empty());
         UpdateSessionStateFromTurn(command,turn,&state);
     }
-    CHECK(narrative_calls==0&&scene_calls==0&&state.history.size()==13);
+    CHECK(narrative_calls==0&&scene_calls==0&&state.history.size()==9);
     CHECK(RunHeadlessTurnFromState(state,"prendre la craie",cfg,&turn,error,sizeof(error)));
     CHECK(turn.turn_result.intent=="inventory_already_carried");
     CHECK(turn.turn_result.narration.find("déjà")!=std::string::npos);
-    state.hard_state.inventory_items={"legacy keepsake"};
+    state.hard_state.inventory_items={"legacy keepsake"};state.objects=ObjectState();
     CHECK(RunHeadlessTurnFromState(state,"inventaire",cfg,&turn,error,sizeof(error)));
     CHECK(turn.turn_result.narration.find("legacy keepsake")!=std::string::npos);
     CHECK(RunHeadlessTurnFromState(state,"examiner la craie",cfg,&turn,error,sizeof(error)));
@@ -939,7 +944,7 @@ static void InventoryTurns() {
     std::string serialized;CHECK(SerializeSessionStateToJsonString(state,&serialized));SessionState restored;
     CHECK(ParseSessionStateFromJson(serialized.c_str(),&restored,error,sizeof(error)));
     CHECK(restored.hard_state.inventory_items==state.hard_state.inventory_items);
-    state.hard_state.inventory_items.clear();cfg.local_scenes=false;
+    state.hard_state.inventory_items.clear();state.objects=ObjectState();cfg.local_scenes=false;
     CHECK(RunHeadlessTurnFromState(state,"i",cfg,&turn,error,sizeof(error)));
     CHECK(turn.turn_result.intent=="read_inventory"&&narrative_calls==0&&scene_calls==0);
     CHECK(turn.turn_result.narration.find("craie")==std::string::npos);
@@ -1231,6 +1236,6 @@ static void CoplanarSupportJourney() {
     std::filesystem::remove_all(root);
 }
 int main() {
-    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
+    try {RunObjectConservationTests();RunObjectJourneyTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

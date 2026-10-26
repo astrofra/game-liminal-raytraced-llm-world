@@ -311,19 +311,19 @@ void TestTakeDropUse() {
 
     EXPECT_PARSE("poser la craie", Drop, "boundary chalk");
     EXPECT_PARSE("deposer la carte", Drop, "survey map slate");
-    EXPECT_PARSE("jeter les pinces", Drop, "sample tongs");
-    EXPECT_PARSE("donner la craie", Drop, "boundary chalk");
+    EXPECT_PARSE("jeter les pinces", Unsupported, "sample tongs");
+    EXPECT_PARSE("donner la craie", Unsupported, "boundary chalk");
     EXPECT_PARSE("drop the chalk", Drop, "boundary chalk");
-    EXPECT_PARSE("discard my map", Drop, "survey map slate");
-    EXPECT_PARSE("give the tongs", Drop, "sample tongs");
+    EXPECT_PARSE("discard my map", Unsupported, "survey map slate");
+    EXPECT_PARSE("give the tongs", Unsupported, "sample tongs");
     EXPECT_PARSE("ablegen die kreide", Drop, "boundary chalk");
-    EXPECT_PARSE("wegwerfen die karte", Drop, "survey map slate");
+    EXPECT_PARSE("wegwerfen die karte", Unsupported, "survey map slate");
     EXPECT_PARSE("legg fra deg kritt", Drop, "boundary chalk");
     EXPECT_PARSE("laeg kridt", Drop, "boundary chalk");
     EXPECT_PARSE("slip gesso", Drop, "boundary chalk");
     EXPECT_PARSE("posa la mappa", Drop, "survey map slate");
     EXPECT_PARSE("lascia le pinze", Drop, "sample tongs");
-    EXPECT_PARSE("getta il gesso", Drop, "boundary chalk");
+    EXPECT_PARSE("getta il gesso", Unsupported, "boundary chalk");
 
     EXPECT_PARSE("utiliser la craie", Use, "boundary chalk");
     EXPECT_PARSE("use the map", Use, "survey map slate");
@@ -451,7 +451,7 @@ void TestNonCommands() {
     EXPECT_PARSE("prendre", Take, "");
     EXPECT_PARSE("prendre la", Take, "");
     EXPECT_PARSE("poser", Drop, "");
-    EXPECT_PARSE("jeter", Drop, "");
+    EXPECT_PARSE("jeter", Unsupported, "");
     EXPECT_PARSE("utiliser", Use, "");
     EXPECT_PARSE("use", Use, "");
     EXPECT_PARSE("tag", Take, "");

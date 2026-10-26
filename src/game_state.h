@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "object_state.h"
 
 namespace liminal {
 
@@ -334,6 +335,7 @@ struct InvisibleBarrier {
 };
 
 struct SessionState {
+    ObjectState objects;
     GameLanguage language;
     HardState hard_state;
     SoftState soft_state;

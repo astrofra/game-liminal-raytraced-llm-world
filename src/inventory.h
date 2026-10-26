@@ -13,6 +13,7 @@ enum class InventoryCommand {
     Inspect,
     Take,
     Drop,
+    Unsupported,
     Use,
     Ambiguous,
 };
@@ -20,6 +21,7 @@ enum class InventoryCommand {
 struct InventoryRequest {
     InventoryCommand command = InventoryCommand::None;
     std::string item_id;
+    std::string target;
 };
 
 // The caller supplies an already normalized command: lowercase ASCII, folded

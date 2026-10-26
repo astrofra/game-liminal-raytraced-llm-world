@@ -1,8 +1,8 @@
 # Remettre l’inventaire en service avec les trois objets de départ
 
-25 octobre 2026 — **lots 1 et 2 implémentés et testés** en duo Codex / DeepSeek. Voir le [document historique archivé](HISTORIQUE_RECHERCHE.md). Les lots 3 et 4 restent des extensions prévues. Le texte ci-dessous conserve le plan et ses critères.
+25 octobre 2026 — **lots 1 et 2 implémentés et testés** en duo Codex / DeepSeek. Voir le [document historique archivé](HISTORIQUE_RECHERCHE.md). Le lot 3 reste une extension prévue ; le dépôt/reprise du lot 4 est désormais livré par la roadmap des interactions. Le texte ci-dessous conserve le plan et ses critères.
 
-26 octobre 2026 — La [roadmap des interactions avec l'environnement](ROADMAP_INTERACTIONS_ENVIRONNEMENT.md) précise et rend prioritaires le dépôt, la reprise et la collecte d'objets du décor. Elle remplace l'ordre de priorité du lot 4 ci-dessous ; ces nouvelles interactions restent à implémenter.
+26 octobre 2026 — La [roadmap des interactions avec l'environnement](ROADMAP_INTERACTIONS_ENVIRONNEMENT.md) précise et rend prioritaires le dépôt, la reprise et la collecte d'objets du décor. Elle remplace l'ordre de priorité du lot 4 ci-dessous ; ces interactions sont implémentées, voir le [bilan et les limites de qualification](INTERACTIONS_ENVIRONNEMENT.md). Les refus de dépôt décrits dans le plan initial du lot 2 sont remplacés par ces transferts validés.
 
 ## Référence concrète : l’inventaire d’Athanor 2
 

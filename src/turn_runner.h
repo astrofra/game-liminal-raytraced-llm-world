@@ -33,6 +33,7 @@ struct HeadlessTurnConfig {
     bool local_scenes = false; // Generate persistent places along open cardinal exits.
     DynamicSceneConfig dynamic_scene_config;
     SceneCompletion narrative_completion; // Optional deterministic seam for fiction tests.
+    SceneCompletion interaction_completion; // Structured object interpretation, independently testable.
     bool request_candidate_scene;
     bool prefer_candidate_scene;
     HeadlessTurnStreamCallback stream_callback;
@@ -48,6 +49,10 @@ struct HeadlessTurnConfig {
 };
 
 struct HeadlessTurnResult {
+    ObjectState updated_objects;
+    bool objects_prepared = false;
+    int initial_object_revision = 0;
+    std::string interaction_metrics_json;
     bool accepted = false; // Set only after the full turn and last cancellation poll succeed.
     int llm_call_count = 0;
     int reasoning_tokens = 0;

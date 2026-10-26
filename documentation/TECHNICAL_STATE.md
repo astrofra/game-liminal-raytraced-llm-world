@@ -48,7 +48,12 @@ réelles des limites de qualification restantes.
   et archives séparées. Aucun appel LLM supplémentaire ; bruit optique encore visible.
 - Narration, propositions d'issues et chaleur par le modèle, puis validation autoritative.
 - Température corporelle couplée à la température d'échantillonnage des prochains appels.
-- Inventaire déterministe : trois outils conservés, consultation et examen sans inférence ni évolution thermique.
+- Inventaire : trois outils initiaux, consultation et examen sans inférence ni évolution thermique.
+- [Interactions avec les objets](INTERACTIONS_ENVIRONNEMENT.md) : dépôt/reprise par identité,
+  prise littéraire validée, sources finies et décisions durables, partition autoritative
+  inventaire/pièces. Couche mobile déterministe, placements visibles à travers le masque,
+  annulation atomique et archives par révision. Six langues de secours ; aucun chargement
+  de partie ajouté. Les usages spécifiques de la carte, de la craie et des pinces restent prévus.
 - Six langues sélectionnées au lancement ; consigne répétée à chaque appel et secours localisés.
 - HUD compilé et traduit : initiales cardinales, températures alignées, cadres ouverts épais et lumineux, fermés fins et additifs.
 - Nouvelle graine et exploration à chaque lancement ; aucun chargement d'archive dans SDL.
@@ -70,7 +75,7 @@ conservés pendant la partie. Les requêtes et décisions de réduction sont arc
 Les tests mécaniques passent ; la revue réelle relève encore des extrapolations
 littéraires et ne démontre pas une continuité artistique systématique.
 
-La visière utilise `assets/masque-scaphandre-interieur-v3.png` : texture RGBA
+La visière utilise `assets/hud-mask.png` : texture RGBA
 chargée une fois par fenêtre, alpha classique et mise à l'échelle linéaire,
 superposée à la scène avant le HUD. Les températures sont centrées horizontalement
 dans l'œil gauche (25 % de la largeur), à hauteur inchangée. La boussole est centrée

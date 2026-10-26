@@ -1,6 +1,6 @@
 # Roadmap — Prendre, déposer et retrouver les objets
 
-26 octobre 2026 — **Proposition, aucune fonctionnalité implémentée par ce document.**
+26 octobre 2026 — **Lots 1 à 5 implémentés en duo Codex / DeepSeek**, avec reprise et corrections des tests par Codex. Voir le [bilan de livraison et de qualification](INTERACTIONS_ENVIRONNEMENT.md). Le lot 6 reste prévu. Le texte suivant conserve le contrat initial.
 
 ## Expérience visée
 
@@ -172,7 +172,7 @@ Chaque lot se termine par une revue des changements et des preuves. Pour l'impl�
 
 ## Matrice de recette à exécuter lors de l'implémentation
 
-Matrice issue du lot documentaire [DUO-027](duo/reviews/DUO-027.md), relue et précisée par Codex, puis adaptée à la distinction implicite/explicite demandée par l'utilisateur. **Tous ces tests restent à exécuter après implémentation.**
+Matrice issue du lot documentaire [DUO-027](duo/reviews/DUO-027.md), relue et précisée par Codex, puis adaptée à la distinction implicite/explicite demandée par l'utilisateur. Les scénarios exécutés, essais Gemma et vérifications SDL sont distingués dans le [bilan](INTERACTIONS_ENVIRONNEMENT.md) ; cette matrice demeure le contrat de référence.
 
 | Cas | Précondition et commande/parcours | Résultat attendu |
 |---|---|---|

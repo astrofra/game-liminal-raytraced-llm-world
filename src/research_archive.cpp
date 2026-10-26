@@ -1,4 +1,6 @@
 #include "research_archive.h"
+#include "object_interactions.h"
+#include "renderer.h"
 #include "scene_compiler.h"
 #include "scene_design.h"
 #include "nlohmann/json.hpp"
@@ -92,7 +94,9 @@ void ResearchArchive::WriteImage(const SessionState& state,const std::vector<uns
     const auto found=places_.find(state.current_place_id);
     if(found==places_.end())throw std::runtime_error("Image has no archived place");
     const auto file=path_/(found->second+".png");
-    if(std::filesystem::exists(file))return; // First displayed frame, no duplicate revisits.
+    const bool first=!std::filesystem::exists(file);
+    const bool objects=state.objects.revision>0&&pending_;
+    if(!first&&!objects)return;
     if(pixels.size()!=static_cast<size_t>(render_.width)*render_.height*3)
         throw std::runtime_error("Invalid research image dimensions");
     // Encode in memory so Windows Unicode paths are handled by std::filesystem.
@@ -103,7 +107,8 @@ void ResearchArchive::WriteImage(const SessionState& state,const std::vector<uns
     };
     if(!stbi_write_png_to_func(append,&png,render_.width,render_.height,3,pixels.data(),render_.width*3))
         throw std::runtime_error("Cannot encode research image");
-    Write(found->second+".png",std::string(png.begin(),png.end()));
+    if(first)Write(found->second+".png",std::string(png.begin(),png.end()));
+    if(objects)Write("turns/turn-"+Number(command_index_)+".png",std::string(png.begin(),png.end()));
 }
 bool ResearchArchive::Start(const std::string& root,const SessionState& state,
                             const LlmGenerationConfig& model,const RenderConfig& render) {
@@ -149,11 +154,37 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
         {"generated_room",turn.generated_room_created},{"prompt",turn.prompt_text},{"intent",turn.turn_result.intent},
         {"request",turn.request_text},{"engine_outcome",turn.engine_outcome},
         {"inventory_before",turn.initial_hard_state.inventory_items},{"inventory_after",turn.updated_hard_state.inventory_items},
+        {"interaction",turn.interaction_metrics_json},{"objects_prepared",turn.objects_prepared},
+        {"object_revision_before",turn.initial_object_revision},{"objects_after",json::parse(SerializeObjectState(turn.updated_objects))},
         {"raw_response",turn.raw_response_text},{"repair_response",turn.repair_response_text},
         {"narrative_metrics",turn.narrative_metrics_json},
         {"scene_provenance",turn.dynamic_scene_design_json},{"scene_metrics",turn.dynamic_scene_metrics_json},
         {"thermal_prompt",turn.thermal_prompt_text},{"thermal_response",turn.thermal_response_text}}).dump(2)+"\n");
     if(!turn.rendered_scene_text.empty())Write(stem+".scene",turn.rendered_scene_text);
+    if(status=="accepted"&&turn.updated_objects.revision>0&&!turn.rendered_scene.triangles.empty()) {
+        // Recompute from the composed revision; never reuse the architecture's
+        // visibility/depth evidence after a mobile object changes.
+        const auto& scene=turn.rendered_scene;
+        const auto forward=Normalize(scene.camera.target-scene.camera.eye);
+        const auto right=Normalize(Cross(forward,scene.camera.up)),up=Normalize(Cross(right,forward));
+        const float scale=std::tan(scene.camera.vertical_fov_degrees*3.14159265f/360.f);
+        std::vector<std::string> names(1,"");
+        for(const auto& material:scene.materials)names.push_back(material.name);
+        std::string ids="P5\n256 128\n65535\n",depth="P5\n256 128\n65535\n";json metres=json::array();
+        for(int y=0;y<128;++y)for(int x=0;x<256;++x) {
+            const auto direction=Normalize(forward+right*((2.f*(x+.5f)/256.f-1.f)*2.f*scale)+up*((1.f-2.f*(y+.5f)/128.f)*scale));
+            Hit hit;unsigned int id=0,d=65535;
+            if(ProbeSceneRay(scene,{scene.camera.eye,direction},kHuge,&hit)) {
+                id=static_cast<unsigned int>(scene.triangles[hit.triangle_index].material_index+1);
+                d=static_cast<unsigned int>(std::min(65534.f,hit.t*1000.f));metres.push_back(hit.t);
+            } else metres.push_back(nullptr);
+            ids+=static_cast<char>(id>>8);ids+=static_cast<char>(id&255);
+            depth+=static_cast<char>(d>>8);depth+=static_cast<char>(d&255);
+        }
+        Write(stem+".objects-ids.pgm",ids);Write(stem+".objects-depth-mm.pgm",depth);
+        Write(stem+".objects-visibility.json",json{{"width",256},{"height",128},{"revision",turn.updated_objects.revision},
+            {"object_names",names},{"metres",metres},{"kind","opaque first-hit evidence, before visor optics"}}.dump());
+    }
     if(!turn.raw_scene_audit_response_text.empty())Write(stem+".candidate.scene",turn.raw_scene_audit_response_text);
     for(size_t i=0;i<turn.scene_attempts.size();++i) {
         const auto& attempt=turn.scene_attempts[i];const auto prefix=stem+"-attempt-"+std::to_string(i+1);
