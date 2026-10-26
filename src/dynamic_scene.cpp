@@ -1,6 +1,7 @@
 #include "dynamic_scene.h"
 #include "renderer.h"
 #include "scene_normalization.h"
+#include "glass_supports.h"
 #include "nlohmann/json.hpp"
 #include <algorithm>
 #include <chrono>
@@ -105,6 +106,7 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
             {"removed_code_wrappers",removed_wrappers},
             {"program_patch_repairs",patch_repairs},
             {"audit_ms",audit_ms},{"preview_ms",preview_ms},
+            {"glass_supports",result->glass_supports_json.empty()?json(nullptr):json::parse(result->glass_supports_json)},
             {"elapsed_ms",std::chrono::duration<double,std::milli>(Clock::now()-start).count()},
             {"audit",json::parse(SerializeSceneAudit(result->audit))},{"audit_history",audits},{"error",result->error}}).dump(2);
         return success;
@@ -275,7 +277,53 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
         attempt.final_program=result->scene_text;attempt.after=result->audit;attempt.error=ok?"":result->error;
         result->attempts.push_back(std::move(attempt));
         if(!gate.Poll())return finish(false);
-        if(ok) { result->scene_hash=SceneTextHash(result->scene_text);result->error.clear();return finish(true); }
+        if(ok) {
+            result->opaque_scene_text=result->scene_text;
+            if(config.fixed_frame&&config.glass_supports) {
+                auto supports=BuildGlassSupports(result->opaque_scene_text);
+                auto report=json::parse(supports.report_json);
+                report["opaque_sha256"]=SceneTextHash(result->opaque_scene_text);
+                report["status"]=supports.success?"unchanged":"opaque_fallback";
+                if(supports.success&&supports.added_supports) {
+                    // Optional decoration may time out without discarding an
+                    // already accepted opaque place. User cancellation still wins.
+                    Gate support_gate=gate;
+                    Scene augmented;char load_error[512]={};std::vector<unsigned char> pixels;
+                    RenderConfig preview;preview.width=256;preview.height=128;preview.samples_per_pixel=4;
+                    preview.seed=model.seed;preview.max_bounces=3;
+                    RenderControl control{Gate::Render,&support_gate};SceneAuditReport refracted;
+                    const auto verify_start=Clock::now();
+                    bool accepted=LoadSceneFromSceneText("supported-place",supports.scene_text.c_str(),&augmented,load_error,sizeof(load_error))&&
+                        RenderSceneToPixels(augmented,preview,&pixels,&control)&&AuditDynamicPreview(pixels,"night",&refracted);
+                    // Image-space safeguard complements opaque visibility. It is
+                    // a coarse contrast check, not a proof of landmark readability.
+                    accepted=accepted&&refracted.mean_luminance>=result->audit.mean_luminance*.35;
+                    accepted=accepted&&LocalSceneClearApproaches(augmented)==LocalSceneClearApproaches(result->scene);
+                    gate.cancelled=support_gate.cancelled;
+                    report["optional_preview_timeout"]=support_gate.expired;
+                    report["refracted_preview"]=json::parse(SerializeSceneAudit(refracted));
+                    report["verification_ms"]=std::chrono::duration<double,std::milli>(Clock::now()-verify_start).count();
+                    report["status"]=accepted?"applied":"opaque_fallback";
+                    if(accepted) {
+                        result->scene_text=std::move(supports.scene_text);result->scene=std::move(augmented);
+                        result->preview_pixels=std::move(pixels);
+                    } else {
+                        report["fallback_reason"]="refracted preview, luminance or approach preservation failed";
+                        report["proposed_supports"]=report["added_supports"];
+                        report["proposed_triangles"]=report["added_triangles"];
+                        report["added_supports"]=0;report["added_triangles"]=0;
+                        for(auto& block:report["blocks"]) {
+                            if(block["decision"]=="added")block["decision"]="preview_omitted";
+                            else if(block["decision"]=="component_supported")block["decision"]="component_unsolved";
+                        }
+                    }
+                }
+                report["final_sha256"]=SceneTextHash(result->scene_text);
+                result->glass_supports_json=report.dump(2);
+                if(gate.cancelled)return finish(false);
+            }
+            result->scene_hash=SceneTextHash(result->scene_text);result->error.clear();return finish(true);
+        }
         if(!retryable_generation||result->repairs>=repair_limit)return finish(false);
         prior=result->scene_text;diagnosis=result->error;++result->repairs;
     }

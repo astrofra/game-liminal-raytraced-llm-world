@@ -27,6 +27,10 @@ réelles des limites de qualification restantes.
 - Trois compositions au maximum, normalisation syntaxique conservatrice et audit strict de caméra.
 - Visibilité 256 × 128, profondeur et ID d'objet ; suppression locale bornée des occultants.
 - Géométrie acceptée immuable, liens réciproques et retours garantis par le moteur.
+- [Soutiens de verre](SOUTIENS_VERRE.md) de 0,25 m sous les composantes flottantes :
+  graphe de contacts OBB, coque suivant l'emprise et la sous-face inclinée, après
+  validation opaque ; exclusions caméra/approches, aperçu réfracté, secours opaque
+  et archives séparées. Aucun appel LLM supplémentaire ; bruit optique encore visible.
 - Narration, propositions d'issues et chaleur par le modèle, puis validation autoritative.
 - Température corporelle couplée à la température d'échantillonnage des prochains appels.
 - Inventaire déterministe : trois outils conservés, consultation et examen sans inférence ni évolution thermique.
@@ -53,8 +57,10 @@ littéraires et ne démontre pas une continuité artistique systématique.
 
 La visière utilise `assets/masque-scaphandre-interieur-v3.png` : texture RGBA
 chargée une fois par fenêtre, alpha classique et mise à l'échelle linéaire,
-superposée à la scène avant le HUD. Les températures et la boussole sont remontées
-pour dégager le joint inférieur. Le dessin procédural du masque est supprimé.
+superposée à la scène avant le HUD. Les températures sont centrées horizontalement
+dans l'œil gauche (25 % de la largeur), à hauteur inchangée. La boussole est centrée
+dans l'œil droit (75 %), dégagée du joint droit ; son centre vertical est partagé
+avec celui du bloc des deux températures. Le dessin procédural du masque est supprimé.
 Le chargement PNG requiert SDL 3.4 minimum (version fournie : 3.4.12).
 Le post-traitement périphérique, les huit vues de respiration, les matériaux
 diélectriques et la lumière distante restent inchangés.

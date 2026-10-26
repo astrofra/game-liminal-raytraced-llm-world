@@ -19,6 +19,7 @@ struct DynamicSceneConfig {
     int total_timeout_ms = 900000; // Safety bound, not an acceptance target for latency.
     bool direct = false; // Benchmark baseline only; the game's dynamic mode uses a plan.
     bool fixed_frame = false; // Local roadmap pilot: shared benchmark contract, no plan pass.
+    bool glass_supports = true; // Engine decoration, only on the accepted local opaque scene.
     std::string landmark = "datum";
     SceneCompletion completion; // Optional test seam; empty selects the real native runtime.
 };
@@ -29,6 +30,7 @@ struct DynamicSceneResult {
     Scene scene;
     SceneAuditReport audit;
     std::string plan_json, scene_text, scene_hash, error, metrics_json;
+    std::string opaque_scene_text, glass_supports_json;
     int repairs = 0, calls = 0;
     std::vector<unsigned char> preview_pixels;
     struct Attempt {

@@ -37,6 +37,7 @@ static void ResetScene(Scene* scene)
     scene->distant_light = DistantLight();
     scene->sky_background = SkyBackground();
     scene->materials.clear();
+    scene->boxes.clear();
     scene->triangles.clear();
     scene->emissive_triangles.clear();
     scene->bvh_nodes.clear();
@@ -637,21 +638,8 @@ static void AddBoxPrimitive(
     const int material_index = use_glass
         ? AddGlassPrimitiveMaterial(scene, name, gray_value, emission_value)
         : AddPrimitiveMaterial(scene, name, gray_value, emission_value);
-    const Vec3 half_size = size * 0.5f;
-
-    Vec3 corners[8];
-    corners[0] = Vec3(-half_size.x, -half_size.y, -half_size.z);
-    corners[1] = Vec3(half_size.x, -half_size.y, -half_size.z);
-    corners[2] = Vec3(half_size.x, half_size.y, -half_size.z);
-    corners[3] = Vec3(-half_size.x, half_size.y, -half_size.z);
-    corners[4] = Vec3(-half_size.x, -half_size.y, half_size.z);
-    corners[5] = Vec3(half_size.x, -half_size.y, half_size.z);
-    corners[6] = Vec3(half_size.x, half_size.y, half_size.z);
-    corners[7] = Vec3(-half_size.x, half_size.y, half_size.z);
-
-    for (int index = 0; index < 8; ++index) {
-        corners[index] = center + RotateEulerDegrees(corners[index], rotation_degrees);
-    }
+    const SceneBox box = MakeSceneBox(name, center, size, rotation_degrees, use_glass);
+    const auto& corners = box.corners;
 
     FaceQuad faces[6];
     faces[0].i0 = 4; faces[0].i1 = 5; faces[0].i2 = 6; faces[0].i3 = 7;
@@ -2532,6 +2520,41 @@ static bool ParseSceneV1Directive(
         return true;
     }
 
+    // Explicit engine mesh data. Deliberately absent from the LLM authoring
+    // grammar and validator; archives reload vertices, never rerun an algorithm.
+    if (StartsWith(line, "engine_glass_triangle ")) {
+        std::string name;
+        Vec3 a, b, c;
+        if (!ExtractQuotedString(line, &name) || name.compare(0, 14, "glass_support_") != 0 ||
+            !ExtractVec3Property(line, "a(", &a) || !ExtractVec3Property(line, "b(", &b) ||
+            !ExtractVec3Property(line, "c(", &c)) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "Invalid engine glass triangle");
+            return false;
+        }
+        for (const auto& v : {a, b, c}) {
+            if (!std::isfinite(v.x) || !std::isfinite(v.y) || !std::isfinite(v.z) ||
+                fabsf(v.x) > 1024 || fabsf(v.y) > 1024 || fabsf(v.z) > 1024) {
+                SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "Invalid engine glass vertex");
+                return false;
+            }
+        }
+        if (LengthSquared(Cross(b-a,c-a)) < 1e-14f) {
+            SetLineError(error_buffer, error_buffer_size, scene_name, line_number, "Degenerate engine glass triangle");
+            return false;
+        }
+        int material = -1;
+        for (size_t i=0; i<scene->materials.size(); ++i) if (scene->materials[i].name == name) {
+            if (scene->materials[i].model != kMaterialModelDielectricGlass) return false;
+            material = static_cast<int>(i); break;
+        }
+        if (material < 0) material = AddGlassPrimitiveMaterial(scene, name, .66f, 0);
+        auto triangle = MakeTriangle(a,b,c,material);
+        const auto normal = Cross(b-a,c-a);
+        triangle.normal = normal/Length(normal);
+        AddTriangle(scene, triangle);
+        return true;
+    }
+
     if (StartsWith(line, "box ") || StartsWith(line, "glass_box ")) {
         std::string name;
         Vec3 position;
@@ -2560,7 +2583,9 @@ static bool ParseSceneV1Directive(
 
         ExtractVec3Property(line, "rot(", &rotation);
         ExtractFloatProperty(line, "emit(", &emission_value);
-        AddBoxPrimitive(scene, name, position, size, rotation, gray_value, emission_value, StartsWith(line, "glass_box "));
+        const bool glass = StartsWith(line, "glass_box ");
+        scene->boxes.push_back(MakeSceneBox(name, position, size, rotation, glass));
+        AddBoxPrimitive(scene, name, position, size, rotation, gray_value, emission_value, glass);
         return true;
     }
 
@@ -2579,6 +2604,19 @@ static bool FinalizeSceneLoad(const char* scene_name, Scene* scene, char* error_
 }
 
 }  // namespace
+
+SceneBox MakeSceneBox(const std::string& id, const Vec3& center, const Vec3& size,
+                     const Vec3& rotation, bool glass) {
+    SceneBox box;
+    box.id=id; box.center=center; box.size=size; box.glass=glass;
+    box.axes={RotateEulerDegrees(Vec3(1,0,0),rotation), RotateEulerDegrees(Vec3(0,1,0),rotation),
+              RotateEulerDegrees(Vec3(0,0,1),rotation)};
+    const Vec3 h=size*.5f;
+    box.corners={Vec3(-h.x,-h.y,-h.z),Vec3(h.x,-h.y,-h.z),Vec3(h.x,h.y,-h.z),Vec3(-h.x,h.y,-h.z),
+                 Vec3(-h.x,-h.y,h.z),Vec3(h.x,-h.y,h.z),Vec3(h.x,h.y,h.z),Vec3(-h.x,h.y,h.z)};
+    for(auto& corner:box.corners)corner=center+RotateEulerDegrees(corner,rotation);
+    return box;
+}
 
 bool LoadSceneFromPath(const char* scene_path, Scene* scene, char* error_buffer, size_t error_buffer_size)
 {

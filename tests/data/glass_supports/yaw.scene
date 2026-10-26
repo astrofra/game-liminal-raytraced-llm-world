@@ -1,0 +1,22 @@
+# DUO-032 glass-support fixture: floating mass rotated 38 degrees around Y.
+# Synthetic fixture, not a reconstruction of a user capture.
+# The opaque mass and the ground markers are authored here; the glass supports
+# are produced by BuildGlassSupports, so no glass_box appears in this file.
+
+room "DUO-032 glass supports fixture"
+camera eye(0.0,2.0,-10.0) target(0.0,2.0,5.0) up(0.0,1.0,0.0) fov(50.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(44.0) cone(15.0,36.0) intensity(58.0)
+distant_light direction(0.75,-0.42,0.35) intensity(3.6) color(1.0,0.90,0.74) angular_radius(0.40)
+sky zenith(0.04) horizon(0.35) nadir(0.00) band(0.34) curve(1.92) noise(0.12) stars(0,0,0) seed(257)
+
+plane "fixture_floor" pos(0.0,0.0,10.0) normal(0.0,1.0,0.0) size(120.0,160.0) gray(0.22)
+
+# Opaque ground markers, identical in the three fixtures and outside the mass
+# footprint. They give the refraction something to bend.
+box "refraction_marker_west" pos(-4.6,0.35,4.2) size(0.6,0.7,0.6) gray(0.70)
+box "refraction_marker_east" pos(4.5,0.30,6.4) size(0.5,0.6,0.5) gray(0.66)
+box "refraction_marker_front" pos(-2.4,0.25,0.9) size(0.4,0.5,0.4) gray(0.58)
+box "refraction_marker_rear" pos(2.6,0.40,9.4) size(0.7,0.8,0.7) gray(0.62)
+
+# Central mass: 2.25 m above the floor, only the rotation changes between files.
+box "floating_mass" pos(0.0,3.0,5.0) size(5.0,1.5,3.0) rot(0.0,38.0,0.0) gray(0.55)

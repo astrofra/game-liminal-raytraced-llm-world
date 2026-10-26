@@ -2,11 +2,24 @@
 #define LIMINAL_RENDERER_SCENE_H
 
 #include <stddef.h>
+#include <array>
 #include <vector>
 
 #include "core.h"
 
 namespace liminal {
+
+// Original authoring boxes, retained before BVH triangle reordering. The same
+// transform drives rendering and support/contact geometry (Euler X, Y, Z).
+struct SceneBox {
+    std::string id;
+    Vec3 center, size;
+    std::array<Vec3, 3> axes;
+    std::array<Vec3, 8> corners;
+    bool glass = false;
+};
+SceneBox MakeSceneBox(const std::string& id, const Vec3& center, const Vec3& size,
+                     const Vec3& rotation, bool glass = false);
 
 struct BvhNode {
     Aabb bounds;
@@ -29,6 +42,7 @@ struct Scene {
     DistantLight distant_light;
     SkyBackground sky_background;
     std::vector<Material> materials;
+    std::vector<SceneBox> boxes;
     std::vector<Triangle> triangles;
     std::vector<int> emissive_triangles;
     std::vector<BvhNode> bvh_nodes;

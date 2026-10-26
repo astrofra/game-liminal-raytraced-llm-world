@@ -90,6 +90,7 @@ def main():
         if args.with_cli:
             targets.append("llama-cli")
         targets.append("liminal_continuity_test")
+        targets.extend(["liminal_glass_supports", "liminal_glass_supports_test", "liminal_glass_supports_geometry_test"])
         subprocess.run(["cmake", "--build", str(build), "--config", "Release", "--parallel", str(args.parallel),
                         "--target", *targets], env=env, cwd=ROOT, check=True)
         artifacts = [build / "Release/liminal_cornell_renderer.exe"]

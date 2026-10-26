@@ -284,6 +284,8 @@ struct GeneratedRoom {
     SpatialState spatial_state;
     std::string scene_text;
     std::string scene_source;
+    std::string opaque_scene_text;
+    std::string glass_supports_json;
     std::string arrival_narration;
     std::string narrative_facts_json;
     int scene_contract_version = 0; // Zero identifies legacy scenes, retained without regeneration.

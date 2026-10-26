@@ -61,6 +61,8 @@ void ResearchArchive::Place(const SessionState& state) {
         for(const auto& room:state.generated_rooms)if(room.room_id==state.current_place_id){found=&room;break;}
         if(!found)throw std::runtime_error("Cannot archive a missing generated place");
         scene=found->scene_text;
+        if(!found->opaque_scene_text.empty())Write(stem+".opaque.scene",found->opaque_scene_text);
+        if(!found->glass_supports_json.empty())Write(stem+".supports.json",found->glass_supports_json+"\n");
         provenance={{"model",found->scene_model_filename},{"seed",found->scene_seed},
             {"brief_and_landmark",found->scene_design_json},{"prompt_version",found->scene_prompt_version},
             {"repairs",found->scene_repairs},{"scene_source",found->scene_source}};

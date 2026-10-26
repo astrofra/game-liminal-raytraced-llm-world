@@ -1033,7 +1033,7 @@ static void DrawLanguageSelection(SDL_Renderer* renderer, const UiFonts& fonts, 
 
 static SDL_Texture* LoadVisorTexture(SDL_Renderer* renderer)
 {
-    const std::string path = ResourcePath("assets/masque-scaphandre-interieur-v3.png");
+    const std::string path = ResourcePath("assets/hud-mask.png");
     SDL_Surface* surface = SDL_LoadPNG(path.c_str());
     if (!surface) return nullptr;
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -1110,6 +1110,16 @@ static void DrawCompassDirectionCell(
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 }
 
+// Shared vertical center of the HUD pair: the thermal block centers its two
+// panels on it, and the compass centers its own block on the same line.
+static float ThermalHudCenterY(const UiFonts& fonts, const SDL_FRect& scene_rect)
+{
+    const int label_height = std::max(TTF_GetFontHeight(fonts.regular), 1);
+    const float panel_height = static_cast<float>(label_height) + 12.0f;
+    // The 4 pixels are half the 8-pixel gap between the two thermal panels.
+    return scene_rect.y + scene_rect.h - panel_height - 72.0f - 4.0f;
+}
+
 static void DrawExitCompass(
     SDL_Renderer* renderer,
     const UiFonts& fonts,
@@ -1123,9 +1133,12 @@ static void DrawExitCompass(
     const float cell_size = 30.0f;
     const float gap = 8.0f;
     const float compass_size = 3.0f * cell_size + 2.0f * gap;
-    // Keep every cell above the bitmap gasket and its dotted transition.
-    const float anchor_x = scene_rect.x + scene_rect.w - compass_size - 48.0f;
-    const float anchor_y = scene_rect.y + scene_rect.h - compass_size - 72.0f;
+    // Center the compass in the right clear area, away from the right gasket joint.
+    const float compass_center_x = scene_rect.x + scene_rect.w * 0.75f;
+    const float anchor_x = compass_center_x - compass_size * 0.5f;
+    // Keep every cell above the bitmap gasket and its dotted transition while
+    // sharing the thermal block's vertical center.
+    const float anchor_y = ThermalHudCenterY(fonts, scene_rect) - compass_size * 0.5f;
 
     const SDL_FRect north_rect = {anchor_x + cell_size + gap, anchor_y, cell_size, cell_size};
     const SDL_FRect west_rect = {anchor_x, anchor_y + cell_size + gap, cell_size, cell_size};
@@ -1230,8 +1243,9 @@ static void DrawThermalHud(
         MeasureTextWidth(fonts.regular, body_buffer))) + 20.0f;
     const float panel_height = static_cast<float>(label_height) + 12.0f;
     // Center the aligned pair in the left clear area, away from rim and nose notch.
-    const float panel_x = scene_rect.x + scene_rect.w * 0.22f - panel_width * 0.5f;
-    const float body_y = scene_rect.y + scene_rect.h - panel_height - 72.0f;
+    const float panel_x = scene_rect.x + scene_rect.w * 0.25f - panel_width * 0.5f;
+    // Preserve the previous panel height: shared center plus half the 8-pixel gap.
+    const float body_y = ThermalHudCenterY(fonts, scene_rect) + 4.0f;
     const SDL_FRect external_rect = {panel_x, body_y - panel_height - 8.0f, panel_width, panel_height};
     const SDL_FRect body_rect = {panel_x, body_y, panel_width, panel_height};
     DrawThermalIndicator(renderer, fonts, external_rect, external_buffer);
@@ -2163,7 +2177,7 @@ bool RunSdlFrontend(
 
     SDL_Texture* visor_texture = LoadVisorTexture(renderer);
     if (!visor_texture) {
-        SetSdlError(error_buffer, error_buffer_size, "Cannot load visor assets/masque-scaphandre-interieur-v3.png");
+        SetSdlError(error_buffer, error_buffer_size, "Cannot load visor assets/hud-mask.png");
         SDL_DestroyTexture(scene_texture);
         SDL_StopTextInput(window);
         DestroyUiFonts(&ui_fonts);

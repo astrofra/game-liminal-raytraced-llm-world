@@ -912,7 +912,66 @@ static void ResearchArchives() {
     CHECK(std::filesystem::equivalent(root.parent_path(),std::filesystem::temp_directory_path()));
     std::filesystem::remove_all(root);
 }
+static void GlassSupportJourney() {
+    const auto opaque=Replace(LocalFixture(),"pos(-7,1,15)","pos(-7,4,15)");
+    SessionState state;char error[1024]={};
+    CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+    HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    int compositions=0,narratives=0;
+    cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+            LlmStreamCallback,void*,LlmGenerationResult* r) {
+        ++compositions;
+        for(const auto& m:messages)CHECK(m.content.find("engine_glass_triangle")==std::string::npos);
+        r->success=true;r->reached_eog=true;r->response_text=opaque;return true;
+    };
+    cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+            LlmStreamCallback,void*,LlmGenerationResult*) {
+        ++narratives;const auto request=json::parse(messages[1].content);
+        if(narratives==1) {
+            CHECK(request["facts"]["engine_glass_supports"]["ids"].size()==1);
+            CHECK(!request["facts"]["visible_geometry"].empty());
+        }
+        return false; // Narrative fallback must retain augmented geometry.
+    };
+    HeadlessTurnResult turn;CHECK(RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));
+    CHECK(compositions==1&&narratives==1);
+    const auto& room=turn.generated_rooms_to_add.at(0);
+    CHECK(room.opaque_scene_text==opaque);CHECK(room.scene_text!=opaque);
+    const auto supports=json::parse(room.glass_supports_json);
+    CHECK(supports["status"]=="applied"&&supports["added_supports"]==1);
+    CHECK(supports["final_sha256"]==room.scene_hash);
+    CHECK(turn.scene_attempts[0].final_program==opaque);
+    std::string invalid;CHECK(!ValidateLocalSceneContract(room.scene_text,&invalid));
+    const auto final=room.scene_text;
+    UpdateSessionStateFromTurn("east",turn,&state);
+    std::string saved;CHECK(SerializeSessionStateToJsonString(state,&saved));SessionState restored;
+    CHECK(ParseSessionStateFromJson(saved.c_str(),&restored,error,sizeof(error)));
+    CHECK(restored.generated_rooms.back().scene_text==final);
+    CHECK(restored.generated_rooms.back().glass_supports_json==room.glass_supports_json);
+    auto bad=json::parse(saved);bad["generated_rooms"].back()["opaque_scene_text"]="tampered";
+    SessionState rejected;CHECK(!ParseSessionStateFromJson(bad.dump().c_str(),&rejected,error,sizeof(error)));
+    for(const auto* command:{"west","east"}) {
+        CHECK(RunHeadlessTurnFromState(restored,command,cfg,&turn,error,sizeof(error)));
+        UpdateSessionStateFromTurn(command,turn,&restored);
+    }
+    CHECK(compositions==1&&turn.rendered_scene_text==final&&!turn.generated_room_cache_refreshed);
+    const auto root=std::filesystem::temp_directory_path()/
+        ("liminal-glass-archive-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    ResearchArchive archive;RenderConfig render;render.width=render.height=1;
+    CHECK(archive.Start(root.u8string(),restored,cfg.generation_config,render));
+    CHECK(archive.Image(restored,{80,90,100}));CHECK(archive.Close(restored));
+    auto read=[&](const char* suffix) {
+        std::ifstream file(std::filesystem::u8path(archive.Path())/(std::string("places/place-00000")+suffix),std::ios::binary);
+        CHECK(file.good());std::ostringstream text;text<<file.rdbuf();return text.str();
+    };
+    CHECK(read(".scene")==final&&read(".opaque.scene")==opaque);
+    CHECK(json::parse(read(".supports.json"))["final_sha256"]==SceneTextHash(final));
+    Scene reloaded;CHECK(LoadSceneFromSceneText("archive",read(".scene").c_str(),&reloaded,error,sizeof(error)));
+    CHECK(reloaded.triangles.size()==turn.rendered_scene.triangles.size());
+    CHECK(std::filesystem::equivalent(root.parent_path(),std::filesystem::temp_directory_path()));
+    std::filesystem::remove_all(root);
+}
 int main() {
-    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation and save integrity passed");return 0;}
+    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

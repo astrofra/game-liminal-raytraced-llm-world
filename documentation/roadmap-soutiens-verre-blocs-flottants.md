@@ -3,7 +3,10 @@
 Projet : **Within the Latent Walls / Entre les Murs Latents**  
 Date : **26 octobre 2026**  
 Base examinée : `main`, commit `0057fc4`  
-Statut : **proposition à implémenter ; aucun résultat de cette nouvelle passe n’est encore mesuré**.
+Statut : **pilote VERRE-01 à VERRE-04 implémenté et vérifié le 26 octobre 2026**.
+La passe est activée sur les nouvelles scènes locales après comparaison visuelle.
+Voir le [bilan, mesures et limites observées](SOUTIENS_VERRE.md). Le texte ci-dessous
+conserve les exigences qui ont guidé l'implémentation.
 
 ## 1. Intention et périmètre
 

@@ -265,6 +265,8 @@ static json MakeGeneratedRoomsJson(const std::vector<GeneratedRoom>& rooms)
         item["room_id"] = rooms[index].room_id;
         item["spatial_state"] = MakeSpatialStateJson(rooms[index].spatial_state);
         item["scene_text"] = rooms[index].scene_text;
+        item["opaque_scene_text"] = rooms[index].opaque_scene_text;
+        item["glass_supports"] = rooms[index].glass_supports_json;
         item["scene_source"] = rooms[index].scene_source;
         item["arrival_narration"] = rooms[index].arrival_narration;
         item["narrative_facts"] = rooms[index].narrative_facts_json;
@@ -444,6 +446,14 @@ static void ParseGeneratedRoomsNode(const json& node, std::vector<GeneratedRoom>
             ParseSpatialStateNode(node[index]["spatial_state"], &room.spatial_state);
         }
         room.scene_text = ReadStringNode(node[index], "scene_text");
+        room.opaque_scene_text = ReadStringNode(node[index], "opaque_scene_text");
+        room.glass_supports_json = ReadStringNode(node[index], "glass_supports");
+        if(!room.glass_supports_json.empty()) {
+            const auto support=json::parse(room.glass_supports_json);
+            if(support.at("opaque_sha256")!=SceneTextHash(room.opaque_scene_text)||
+               support.at("final_sha256")!=SceneTextHash(room.scene_text))
+                throw std::runtime_error("Invalid glass support archive hashes");
+        }
         room.scene_source = ReadStringNode(node[index], "scene_source");
         room.arrival_narration = ReadStringNode(node[index], "arrival_narration");
         room.narrative_facts_json = ReadStringNode(node[index], "narrative_facts");

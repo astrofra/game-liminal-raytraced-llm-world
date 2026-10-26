@@ -1,3 +1,4 @@
+#include "glass_supports.h"
 #include "turn_runner.h"
 
 #include <stdio.h>
@@ -2622,7 +2623,7 @@ static void ProtectCanonicalTopologyFromNarrativeDelta(
 static std::string SceneFacts(const std::string& program) {
     Scene scene;SceneAuditReport audit;SceneDesignContext context;
     // Facts come from the same native opaque visibility grid as acceptance.
-    AuditDynamicScene(program,context,nullptr,&scene,&audit);
+    AuditDynamicScene(OpaqueSceneWithoutGlassSupports(program),context,nullptr,&scene,&audit);
     if(scene.triangles.empty()) {char error[256]={};LoadSceneFromSceneText("fiction.scene",program.c_str(),&scene,error,sizeof(error));}
     struct Visible {size_t id;int pixels=0;double x=0;float nearest=kHuge;};
     std::vector<Visible> visible;
@@ -2652,8 +2653,15 @@ static std::string SceneFacts(const std::string& program) {
             {"dimensions_metres",{size.x,size.y,size.z}},{"height_bottom_metres",bounds.min.y}});
         if(masses.size()>=10)break;
     }
-    bool glass=false;for(const auto& m:scene.materials)if(m.model!=kMaterialModelDiffuse)glass=true;
+    Scene final_scene;char final_error[256]={};
+    LoadSceneFromSceneText("final-facts",program.c_str(),&final_scene,final_error,sizeof(final_error));
+    bool glass=false;json supports=json::array();
+    for(const auto& m:final_scene.materials)if(m.model==kMaterialModelDielectricGlass) {
+        glass=true;if(m.name.compare(0,14,"glass_support_")==0)supports.push_back(m.name);
+    }
     return json({{"visible_geometry",masses},{"transparent_geometry_present",glass},
+        {"engine_glass_supports",{{"ids",supports},{"material","visible dielectric glass"},{"thickness_metres",.25},
+            {"meaning","Decorative peripheral supports under opaque masses; distinct from invisible maze barriers. No portable objects or new exits."}}},
         {"lighting",{{"distant_enabled",scene.distant_light.enabled},{"distant_intensity",scene.distant_light.intensity},
             {"light_direction",{scene.distant_light.direction.x,scene.distant_light.direction.y,scene.distant_light.direction.z}},
             {"sky_horizon_luminance",scene.sky_background.horizon_luminance}}},
@@ -3520,6 +3528,7 @@ static bool RunHeadlessTurnFromStateImpl(
             }
             // Lighting is an artistic choice; the plan cannot advance the world clock.
             room.scene_text=generated.scene_text;room.scene_source="dynamic_v1";
+            room.opaque_scene_text=generated.opaque_scene_text;room.glass_supports_json=generated.glass_supports_json;
             room.scene_contract_version=1;room.scene_design_json=generated.plan_json;room.scene_hash=generated.scene_hash;
             room.scene_plan_hash=SceneTextHash(generated.plan_json);room.scene_profile=config.generation_config.profile_name;
             const auto& model_path=config.generation_config.model_path;

@@ -9,6 +9,7 @@ Les archives de recherche ne servent jamais à reprendre une partie.
 - [État technique actuel](TECHNICAL_STATE.md)
 - [Partie, génération et archives](SINGLE_START_RESEARCH.md)
 - [Continuité des scènes : implémentation et recette](CONTINUITE_SCENES.md)
+- [Soutiens de verre : implémentation, comparaisons et limites](SOUTIENS_VERRE.md)
 - [Runtime autonome : livraison et preuves](BILAN_RUNTIME_AUTONOME.md)
 - [Distribution Windows et téléchargement final du modèle](WINDOWS_DISTRIBUTION.md)
 - [Conservation des étapes antérieures](HISTORIQUE_RECHERCHE.md)

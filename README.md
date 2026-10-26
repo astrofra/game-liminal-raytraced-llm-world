@@ -79,6 +79,7 @@ Le jeu normal n'affiche aucun sélecteur de backend ou de mode de scène.
 
 - [État technique](documentation/TECHNICAL_STATE.md)
 - [Continuité des scènes et recette](documentation/CONTINUITE_SCENES.md)
+- [Soutiens de verre : pilote, comparaisons et limites](documentation/SOUTIENS_VERRE.md)
 - [Guide de partie et archives](documentation/SINGLE_START_RESEARCH.md)
 - [Bilan du runtime autonome](documentation/BILAN_RUNTIME_AUTONOME.md)
 - [Index documentaire](documentation/README.md)
