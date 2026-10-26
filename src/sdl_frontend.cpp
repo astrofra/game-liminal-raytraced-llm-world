@@ -1031,58 +1031,21 @@ static void DrawLanguageSelection(SDL_Renderer* renderer, const UiFonts& fonts, 
         0);
 }
 
-static void DrawProceduralVisorMask(SDL_Renderer* renderer, const SDL_FRect& rect)
+static SDL_Texture* LoadVisorTexture(SDL_Renderer* renderer)
 {
-    if (!renderer || rect.w <= 0.0f || rect.h <= 0.0f) {
-        return;
+    const std::string path = ResourcePath("assets/masque-scaphandre-interieur-v3.png");
+    SDL_Surface* surface = SDL_LoadPNG(path.c_str());
+    if (!surface) return nullptr;
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_DestroySurface(surface);
+    if (!texture) return nullptr;
+    // Straight alpha preserves the clear aperture and the dotted glass edge.
+    if (!SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND) ||
+        !SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_LINEAR)) {
+        SDL_DestroyTexture(texture);
+        return nullptr;
     }
-
-    const int height = static_cast<int>(rect.h);
-    const float center_x = rect.x + rect.w * 0.5f;
-    const float full_half_width = rect.w * 0.495f;
-    const float corner_radius = std::min(rect.h * 0.16f, 68.0f);
-    const float notch_start = rect.h * 0.68f;
-    const float notch_half_width = rect.w * 0.09f;
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-
-    for (int row = 0; row < height; ++row) {
-        const float y = static_cast<float>(row) + 0.5f;
-        float corner_inset = 0.0f;
-        if (y < corner_radius) {
-            const float dy = corner_radius - y;
-            corner_inset = corner_radius - sqrtf(std::max(0.0f, corner_radius * corner_radius - dy * dy));
-        } else if (y > rect.h - corner_radius) {
-            const float dy = y - (rect.h - corner_radius);
-            corner_inset = corner_radius - sqrtf(std::max(0.0f, corner_radius * corner_radius - dy * dy));
-        }
-
-        const float left_inside = center_x - full_half_width + corner_inset;
-        const float right_inside = center_x + full_half_width - corner_inset;
-        if (left_inside > rect.x) {
-            const SDL_FRect left_mask = {rect.x, rect.y + static_cast<float>(row), left_inside - rect.x, 1.0f};
-            SDL_RenderFillRect(renderer, &left_mask);
-        }
-        if (right_inside < rect.x + rect.w) {
-            const SDL_FRect right_mask = {
-                right_inside,
-                rect.y + static_cast<float>(row),
-                rect.x + rect.w - right_inside,
-                1.0f};
-            SDL_RenderFillRect(renderer, &right_mask);
-        }
-
-        if (y >= notch_start) {
-            const float t = (y - notch_start) / std::max(1.0f, rect.h - notch_start);
-            const float ellipse_term = std::max(0.0f, 1.0f - (1.0f - t) * (1.0f - t));
-            const float half_notch = notch_half_width * sqrtf(ellipse_term);
-            const SDL_FRect center_mask = {
-                center_x - half_notch,
-                rect.y + static_cast<float>(row),
-                half_notch * 2.0f,
-                1.0f};
-            SDL_RenderFillRect(renderer, &center_mask);
-        }
-    }
+    return texture;
 }
 
 static bool SpatialStateBlocksDirectionForUi(const SpatialState& spatial_state, CardinalDirection direction)
@@ -1160,9 +1123,9 @@ static void DrawExitCompass(
     const float cell_size = 30.0f;
     const float gap = 8.0f;
     const float compass_size = 3.0f * cell_size + 2.0f * gap;
-    // Leave room for the curved visor edge and the thicker open-exit border.
+    // Keep every cell above the bitmap gasket and its dotted transition.
     const float anchor_x = scene_rect.x + scene_rect.w - compass_size - 48.0f;
-    const float anchor_y = scene_rect.y + scene_rect.h - compass_size - 32.0f;
+    const float anchor_y = scene_rect.y + scene_rect.h - compass_size - 72.0f;
 
     const SDL_FRect north_rect = {anchor_x + cell_size + gap, anchor_y, cell_size, cell_size};
     const SDL_FRect west_rect = {anchor_x, anchor_y + cell_size + gap, cell_size, cell_size};
@@ -1268,7 +1231,7 @@ static void DrawThermalHud(
     const float panel_height = static_cast<float>(label_height) + 12.0f;
     // Center the aligned pair in the left clear area, away from rim and nose notch.
     const float panel_x = scene_rect.x + scene_rect.w * 0.22f - panel_width * 0.5f;
-    const float body_y = scene_rect.y + scene_rect.h - panel_height - 32.0f;
+    const float body_y = scene_rect.y + scene_rect.h - panel_height - 72.0f;
     const SDL_FRect external_rect = {panel_x, body_y - panel_height - 8.0f, panel_width, panel_height};
     const SDL_FRect body_rect = {panel_x, body_y, panel_width, panel_height};
     DrawThermalIndicator(renderer, fonts, external_rect, external_buffer);
@@ -2198,6 +2161,18 @@ bool RunSdlFrontend(
         return false;
     }
 
+    SDL_Texture* visor_texture = LoadVisorTexture(renderer);
+    if (!visor_texture) {
+        SetSdlError(error_buffer, error_buffer_size, "Cannot load visor assets/masque-scaphandre-interieur-v3.png");
+        SDL_DestroyTexture(scene_texture);
+        SDL_StopTextInput(window);
+        DestroyUiFonts(&ui_fonts);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return false;
+    }
+
     AnimatedView active_animated_view;
     uint64_t next_generation_id = 1u;
     if (!InitializeAnimatedView(
@@ -2208,6 +2183,7 @@ bool RunSdlFrontend(
             &rgb_pixels,
             initial_render_duration_ms)) {
         SetError(error_buffer, error_buffer_size, "Cannot initialize animated view.");
+        SDL_DestroyTexture(visor_texture);
         SDL_DestroyTexture(scene_texture);
         SDL_StopTextInput(window);
         DestroyUiFonts(&ui_fonts);
@@ -2804,7 +2780,7 @@ bool RunSdlFrontend(
         SDL_RenderDebugText(renderer, 48.0f, 500.0f, status_line.c_str());
 
         SDL_RenderTexture(renderer, scene_texture, 0, &scene_rect);
-        DrawProceduralVisorMask(renderer, scene_rect);
+        SDL_RenderTexture(renderer, visor_texture, 0, &scene_rect);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderRect(renderer, &scene_frame);
         DrawThermalHud(renderer, ui_fonts, current_session_state, scene_rect);
@@ -2862,6 +2838,7 @@ bool RunSdlFrontend(
         archive_ok = archive.Failure("Closed during turn; not committed.",worker_shared_state.turn_result) && archive_ok;
     archive_ok = archive.Close(current_session_state) && archive_ok;
 
+    SDL_DestroyTexture(visor_texture);
     SDL_DestroyTexture(scene_texture);
     SDL_StopTextInput(window);
     DestroyUiFonts(&ui_fonts);

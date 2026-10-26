@@ -97,7 +97,7 @@ if (LIMINAL_ENABLE_OPENMP)
 endif()
 
 if (LIMINAL_ENABLE_SDL3_FRONTEND)
-    find_package(SDL3 CONFIG QUIET)
+    find_package(SDL3 3.4.0 CONFIG QUIET)
     if (NOT SDL3_FOUND)
         include(FetchContent)
         set(SDL_SHARED OFF CACHE BOOL "Build a shared version of SDL3" FORCE)

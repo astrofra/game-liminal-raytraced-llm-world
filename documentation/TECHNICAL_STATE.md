@@ -1,4 +1,4 @@
-# État technique — 25 octobre 2026
+# État technique — 26 octobre 2026
 
 ## Runtime actuel
 
@@ -35,8 +35,13 @@ réelles des limites de qualification restantes.
 - Nouvelle graine et exploration à chaque lancement ; aucun chargement d'archive dans SDL.
 - Archives de recherche automatiques : descriptions, `.scene`, images, essais rejetés, profondeur/ID, prompts, métriques et états.
 
-La visière, le post-traitement périphérique, les huit vues de respiration,
-les matériaux diélectriques et la lumière distante restent inchangés.
+La visière utilise `assets/masque-scaphandre-interieur-v3.png` : texture RGBA
+chargée une fois par fenêtre, alpha classique et mise à l'échelle linéaire,
+superposée à la scène avant le HUD. Les températures et la boussole sont remontées
+pour dégager le joint inférieur. Le dessin procédural du masque est supprimé.
+Le chargement PNG requiert SDL 3.4 minimum (version fournie : 3.4.12).
+Le post-traitement périphérique, les huit vues de respiration, les matériaux
+diélectriques et la lumière distante restent inchangés.
 Les parcours hybrides et en deux passes sont des diagnostics explicites ;
 ils ne remplacent pas le parcours local normal.
 

@@ -1,10 +1,11 @@
-# Progression du duo — 25 octobre 2026
+# Progression du duo — 26 octobre 2026
 
 Codex coordonne les interfaces, le runtime, la validation et l'intégration.
 DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de ce kit.
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-026 | Masque bitmap livré et vérifié | [Contrat](tasks/DUO-026.md), [revue](reviews/DUO-026.md) ; v3 transparente, dessin procédural supprimé |
 | Runtime autonome | Livré, qualification locale effectuée | [Bilan](../BILAN_RUNTIME_AUTONOME.md) : parcours 20 commandes, tests des langues, protocole et poids résidents |
 | DUO-025 | Audit DeepSeek relu, nettoyage intégré | [Contrat](tasks/DUO-025.md), [revue](reviews/DUO-025.md) ; outils HTTP orphelins et anciens profils supprimés, bancs natifs conservés |
 | DUO-023 | HUD livré | [Revue](reviews/DUO-023.md) ; positions et contraste conservés dans le runtime actuel |
