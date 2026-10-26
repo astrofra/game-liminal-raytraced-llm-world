@@ -23,8 +23,10 @@ suit l'évolution thermique du scaphandre.
 Un seul lieu est prédéfini. Les autres sont inventés pendant la partie et gardent
 leur géométrie lors des retours. Chaque lancement recommence une exploration.
 Le moteur conserve une issue vers l'inconnu : les impasses restent possibles tant
-qu'un autre chemin inexploré est accessible. La dernière branche réserve une suite,
-ou deux nouvelles branches si le décor le permet, même si la narration échoue.
+qu'un autre chemin inexploré est accessible. Pour les autres pièces, il tire une
+cible de deux ou trois sorties, retour compris, avec une probabilité de 50 % pour
+chacune. Le LLM choisit les directions ; le moteur ajuste leur nombre si nécessaire,
+dans les limites du décor existant, sans modifier la géométrie 3D.
 Le modèle compose librement à partir du lieu quitté et des événements validés.
 Tous les lieux restent en mémoire pendant la partie ; seul l'extrait d'historique
 envoyé au modèle est réduit selon son budget de tokens.

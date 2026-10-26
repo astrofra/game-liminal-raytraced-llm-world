@@ -4,6 +4,7 @@
 #include "turn_runner.h"
 #include "research_archive.h"
 #include "coplanar_cleanup.h"
+#include "exploration_policy.h"
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -20,6 +21,23 @@ using json=nlohmann::json;
 static bool FakePromptCount(const std::vector<LlmPromptMessage>& messages,int* count,std::string*) {
     size_t bytes=0;for(const auto& m:messages)bytes+=m.content.size()+16;
     *count=static_cast<int>((bytes+3)/4);return true;
+}
+// Simulate constrained decoding in ordinary narrative fixtures. Choose the
+// allowed map closest to the fixture's intended directions, independently of
+// the engine's repair algorithm. Adversarial tests deliberately bypass this.
+static json FitTestExitSchema(const LlmGenerationConfig& config,const json& preferred) {
+    const auto schema=json::parse(config.json_schema).at("properties").at("exits");
+    if(!schema.contains("anyOf"))return preferred;
+    json selected;int best=17;
+    for(const auto& option:schema.at("anyOf")) {
+        json exits=json::object();int distance=0;
+        for(const auto* direction:{"north","east","south","west"}) {
+            exits[direction]=option.at("properties").at(direction).at("enum").at(0);
+            if(exits[direction]!=preferred.at(direction))distance+=preferred.at(direction).get<bool>()?4:1;
+        }
+        if(distance<best){best=distance;selected=exits;}
+    }
+    CHECK(!selected.is_null());return selected;
 }
 static json GeometryContinuity(const std::vector<LlmPromptMessage>& messages) {
     const std::string marker="CONTINUITY_V1:\n";
@@ -413,7 +431,7 @@ static void LocalPilot() {
     state.language=kGameLanguageFrench;
     HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true; // Composition seam; no real inference in this test.
     int narratives=0;
-    cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+    cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* r) {
         ++narratives;CHECK(messages[0].content.find("ENGINE OUTCOME")!=std::string::npos);
         CHECK(messages[1].content.find("portal")==std::string::npos);
@@ -427,6 +445,7 @@ static void LocalPilot() {
             {"body_temperature_c",request.at("temperature_body_c")},{"reason","Protection stable."}};
         response["exits"]={{"north",false},{"east",true},{"south",false},{"west",true}};
         for(auto it=request["exit_proposal"]["fixed"].begin();it!=request["exit_proposal"]["fixed"].end();++it)response["exits"][it.key()]=it.value();
+        response["exits"]=FitTestExitSchema(c,response["exits"]);
         r->response_text=response.dump();
         return true;
     };
@@ -555,6 +574,7 @@ static void LocalPilot() {
         json proposed={{"north",false},{"east",false},{"south",false},{"west",false}};
         if(exits.at("may_improvise").get<bool>())proposed[next_exit]=true;
         for(auto it=exits.at("fixed").begin();it!=exits.at("fixed").end();++it)proposed[it.key()]=it.value();
+        proposed=FitTestExitSchema(c,proposed);
         r->success=true;r->reached_eog=true;
         r->response_text=json({{"title","Les distances "+std::to_string(proposal_calls)},
             {"summary","Vous retrouvez la ligne des masses sous le ciel."},
@@ -571,7 +591,8 @@ static void LocalPilot() {
     };
     act("east");
     CHECK(fabsf(state.hard_state.body_temperature_c-37.2f)<.001f);
-    CHECK(state.spatial_state.blocked_exits==std::vector<std::string>({"east","south"}));
+    CHECK(std::find(state.spatial_state.blocked_exits.begin(),state.spatial_state.blocked_exits.end(),"north")==state.spatial_state.blocked_exits.end());
+    CHECK(state.spatial_state.blocked_exits.size()==4-DrawExplorationExitTarget(cfg.generation_config.seed,1));
     CHECK(fabsf(narrative_temperatures.back()-.1f)<.001f&&fabsf(scene_temperatures.back()-.1f)<.001f);
     const auto first_scene=state.generated_rooms[0].scene_text;
     act("attendre");CHECK(fabsf(state.hard_state.body_temperature_c-37.4f)<.001f);
@@ -640,10 +661,11 @@ static void LocalPilot() {
 static void ExplorationContinuity() {
     // Adversarial narrator: it requests no branches at all. Test the actual
     // traversal pipeline, including geometry, fallback, persistence and rollback.
-    for(int scenario=0;scenario<4;++scenario) {
+    for(int scenario=0;scenario<6;++scenario) {
         SessionState state;HeadlessTurnResult turn;char error[1024]={};
         CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
         HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+        if(scenario>=4)while(DrawExplorationExitTarget(cfg.generation_config.seed,3)!=(scenario==4?3:2))++cfg.generation_config.seed;
         cfg.dynamic_scene_config.coplanar_cleanup=false;cfg.dynamic_scene_config.glass_supports=false;
         int compositions=0,narrations=0;bool fail=false,violate=false,cancel=false,cancelled=false;
         json request,schema;
@@ -661,8 +683,14 @@ static void ExplorationContinuity() {
             json exits={{"north",false},{"east",false},{"south",false},{"west",false}};
             for(auto it=request["exit_proposal"]["fixed"].begin();it!=request["exit_proposal"]["fixed"].end();++it)
                 exits[it.key()]=it.value();
-            if(violate)for(const auto& direction:request["exit_proposal"]["exploration_required"])
-                exits[direction.get<std::string>()]=false;
+            if(scenario>=4&&compositions==3&&request["exit_proposal"]["may_improvise"]==true) {
+                int extra=0;
+                for(const auto& possible:request["exit_proposal"]["geometrically_possible"]) {
+                    const auto direction=possible.get<std::string>();
+                    if(!exits[direction].get<bool>()&&(scenario==5||extra==0)){exits[direction]=true;++extra;}
+                }
+            } else exits=FitTestExitSchema(c,exits);
+            if(violate)exits["north"]=false; // Break the established return, never silently repair it.
             r->success=true;r->reached_eog=true;
             r->response_text=json({{"title","Still stone"},{"summary","You study the stone under a pale sky."},
                 {"narration","You remain before the still stone. The pale light rests along its edges, and the dust settles slowly around your visor. You study the intervals between the blocks while your breath marks the pause. The distant sky holds its muted colour. "+std::to_string(narrations)},
@@ -685,15 +713,30 @@ static void ExplorationContinuity() {
         const auto body=state.hard_state.body_temperature_c;
         act("south");
         const auto third=state.generated_rooms.back();
-        const auto reserved=json::parse(third.scene_design_json).at("exploration_required").get<std::vector<std::string>>();
-        CHECK(reserved.size()==(scenario==3?1:2));
+        const auto policy=json::parse(third.scene_design_json).at("exit_balance");
+        std::vector<std::string> reserved;
+        for(const auto* direction:{"east","south","west"})
+            if(std::find(third.spatial_state.blocked_exits.begin(),third.spatial_state.blocked_exits.end(),direction)==third.spatial_state.blocked_exits.end())reserved.push_back(direction);
+        const int expected=scenario==3?2:policy.at("target_open_exits").get<int>();
+        CHECK(reserved.size()==expected-1);
         CHECK(state.spatial_state.blocked_exits.size()==3-reserved.size());
         CHECK(third.metadata_fallback_used==(fail||violate));
         CHECK(state.hard_state.body_temperature_c==body&&compositions==3);
+        CHECK(policy.at("allow_dead_end")==false);
+        for(const auto& option:schema["properties"]["exits"]["anyOf"]) {
+            int count=0;for(const auto* direction:{"north","east","south","west"})
+                count+=option["properties"][direction]["enum"][0].get<bool>()?1:0;
+            CHECK(count==expected&&option["properties"]["north"]["enum"]==json::array({true}));
+        }
         for(const auto& direction:reserved) {
             CHECK(direction!="north"); // Return is not a new branch.
-            CHECK(request["exit_proposal"]["fixed"][direction]==true);
-            CHECK(schema["properties"]["exits"]["properties"][direction]["enum"]==json::array({true}));
+        }
+        if(scenario>=4) {
+            const auto metrics=json::parse(turn.narrative_metrics_json);
+            CHECK(metrics.at("fallback_reason")=="exit_count_adjusted");
+            CHECK(metrics.at("exit_adjustments").at(scenario==4?"opened":"closed").size()==(scenario==4?1:2));
+            CHECK(turn.used_turn_fallback&&turn.turn_result.narration!=json::parse(turn.raw_response_text).at("narration"));
+            CHECK(state.spatial_state.room_title!=json::parse(turn.raw_response_text).at("title"));
         }
         CHECK(ParseSessionStateFromJson(save().c_str(),&state,error,sizeof(error)));
         if(fail||violate) {
@@ -705,6 +748,7 @@ static void ExplorationContinuity() {
         act("north");act("south");
         CHECK(compositions==3&&turn.rendered_scene_text==geometry);
         CHECK(state.current_place_id==third.room_id&&state.spatial_state.blocked_exits==third.spatial_state.blocked_exits);
+        CHECK(json::parse(state.generated_rooms.back().scene_design_json).at("exit_balance")==policy);
         if(scenario==0) {
             // Reject tampered reservation metadata even if its hash is updated.
             const auto snapshot=json::parse(save());
@@ -746,6 +790,9 @@ static void ContinuityJourney() {
     state.language=kGameLanguageFrench;
     HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
     int scene_calls=0,narrative_calls=0;bool reject_first=true;
+    // This continuity fixture needs two distinct forward branches in A and C.
+    while(DrawExplorationExitTarget(cfg.generation_config.seed,1)!=3||
+          DrawExplorationExitTarget(cfg.generation_config.seed,3)!=3)++cfg.generation_config.seed;
     json last_geometry;std::string expected_origin,expected_command;
     std::vector<std::string> geometry_prompts;
     cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
@@ -764,7 +811,7 @@ static void ContinuityJourney() {
             "box \"screen\" pos(0,4,3) size(20,8,0.2) gray(0.5)\n";
         reject_first=false;return true;
     };
-    cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+    cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* result) {
         ++narrative_calls;const auto request=json::parse(messages[1].content);
         CHECK(request.at("continuity").at("origin").at("id")==expected_origin);
@@ -777,6 +824,7 @@ static void ContinuityJourney() {
         }
         json exits={{"north",true},{"east",true},{"south",true},{"west",true}};
         for(auto it=request["exit_proposal"]["fixed"].begin();it!=request["exit_proposal"]["fixed"].end();++it)exits[it.key()]=it.value();
+        exits=FitTestExitSchema(c,exits);
         result->success=true;result->reached_eog=true;
         result->response_text=json({{"title","Les masses "+std::to_string(narrative_calls)},
             {"summary","Vous retrouvez la lumière sur les masses de pierre. Les intervalles restent visibles. "+std::to_string(narrative_calls)},

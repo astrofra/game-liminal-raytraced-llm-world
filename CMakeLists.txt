@@ -33,6 +33,7 @@ set(LIMINAL_SOURCES
     src/renderer.cpp
     src/turn_contract.cpp
     src/place_proposal.cpp
+    src/exploration_policy.cpp
     src/inventory.cpp
     src/narrative_language.cpp
     src/turn_runner.cpp
@@ -97,7 +98,7 @@ add_test(NAME distant_light COMMAND liminal_distant_light_test)
 
 add_executable(liminal_dynamic_scene_test tests/dynamic_scene_test.cpp
     src/scene_design.cpp src/scene_validation.cpp src/scene_normalization.cpp src/dynamic_scene.cpp src/scene.cpp src/renderer.cpp
-    src/game_state.cpp src/place_proposal.cpp src/inventory.cpp src/narrative_language.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp
+    src/game_state.cpp src/place_proposal.cpp src/exploration_policy.cpp src/inventory.cpp src/narrative_language.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp
     src/research_archive.cpp src/continuity.cpp src/glass_supports.cpp src/coplanar_cleanup.cpp src/scene_hash.cpp src/animated_view.cpp
     "${MODEL_HEADER}" "${SCENE_GUIDE_HEADER}")
 target_include_directories(liminal_dynamic_scene_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor"
@@ -246,6 +247,13 @@ add_test(NAME scene_visibility COMMAND liminal_scene_visibility_test)
 add_executable(liminal_place_proposal_test tests/place_proposal_test.cpp src/place_proposal.cpp)
 target_include_directories(liminal_place_proposal_test PRIVATE src "${LIMINAL_LLAMA_CPP_DIR}/vendor")
 add_test(NAME place_proposal COMMAND liminal_place_proposal_test)
+
+add_executable(liminal_exploration_policy_test tests/exploration_policy_test.cpp src/exploration_policy.cpp)
+target_include_directories(liminal_exploration_policy_test PRIVATE src)
+if(MSVC)
+    target_compile_options(liminal_exploration_policy_test PRIVATE /W4 /utf-8)
+endif()
+add_test(NAME exploration_policy COMMAND liminal_exploration_policy_test)
 
 add_executable(liminal_inventory_test tests/inventory_test.cpp src/inventory.cpp)
 target_include_directories(liminal_inventory_test PRIVATE src)

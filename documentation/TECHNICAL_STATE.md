@@ -32,12 +32,16 @@ réelles des limites de qualification restantes.
 - Géométrie acceptée immuable, liens réciproques et retours garantis par le moteur.
 - Seuil ouvert au nord, à l'est et au sud. Dans le parcours local, le moteur compte
   les issues ouvertes sans voisin connu encore accessibles, hors départ consommé.
-  Sur la dernière branche, l'audit exige au moins une approche supplémentaire et
-  le moteur réserve deux nouvelles issues si possible, sinon une, avant narration.
-  Ces valeurs sont fixées dans le prompt et le schéma JSON, conservées en secours
-  et lors de la résolution d'une narration en attente. Les impasses restent admises
-  ailleurs ; les scènes déjà acceptées ne sont pas recomposées. Les réservations
-  et le nombre d'autres issues sont archivés dans la provenance du lieu.
+  Une cible de deux ou trois sorties, retour compris, est tirée à 50/50 et conservée
+  dans la provenance de chaque nouveau lieu. Le LLM choisit les directions parmi
+  les approches praticables ; le schéma JSON borne leur nombre. Le moteur complète
+  ou réduit une proposition hors cible en conservant les liens fixes. Une impasse
+  proposée reste admise si un autre chemin inexploré est accessible. La dernière
+  branche garde une continuation, y compris en secours narratif. La géométrie peut
+  limiter la cible ; le ratio est une probabilité de tirage, pas un quota exact des
+  pièces visitées. Ce réglage ne modifie ni le décor, ni les consignes et audits de
+  composition 3D. Les cibles, propositions et corrections sont archivées ; les
+  revisites ne relancent ni tirage ni composition. Les anciennes scènes sont conservées.
 - [Soutiens de verre](SOUTIENS_VERRE.md) de 0,25 m sous les composantes flottantes :
   graphe de contacts OBB, coque suivant l'emprise et la sous-face inclinée, après
   correction et validation opaques ; exclusions caméra/approches, aperçu réfracté, secours opaque

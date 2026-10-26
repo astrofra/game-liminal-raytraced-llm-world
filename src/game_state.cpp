@@ -513,6 +513,14 @@ static void ParseGeneratedRoomsNode(const json& node, std::vector<GeneratedRoom>
                         seen.push_back(direction);
                     }
                 }
+                if(provenance.contains("exit_balance")) {
+                    const auto& balance=provenance.at("exit_balance");
+                    if(!balance.is_object()||!balance.at("target_open_exits").is_number_integer()||
+                       (balance.at("target_open_exits")!=2&&balance.at("target_open_exits")!=3)||
+                       !balance.at("allow_dead_end").is_boolean()||!balance.at("selection_seed").is_number_unsigned()||
+                       balance.at("selection_seed").get<uint64_t>()>UINT32_MAX)
+                        throw std::runtime_error("Invalid exploration balance policy");
+                }
             }
             if(room.scene_contract_version==2) {
                 const auto provenance=json::parse(room.scene_design_json);

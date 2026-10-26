@@ -10,6 +10,7 @@
 #include "scene_compiler.h"
 #include "turn_contract.h"
 #include "place_proposal.h"
+#include "exploration_policy.h"
 #include "inventory.h"
 #include "narrative_language.h"
 #include "nlohmann/json.hpp"
@@ -2741,7 +2742,13 @@ struct PlaceProposalConstraints {
     std::vector<std::string> possible;
     std::map<std::string,std::string> relative_directions;
     std::vector<std::string> exploration_required;
+    ExitBalancePolicy balance;
 };
+
+static json ExitBalanceJson(const ExitBalancePolicy& policy) {
+    return {{"target_open_exits",policy.target_open_exits},{"allow_dead_end",policy.allow_dead_end},
+        {"selection_seed",policy.selection_seed}};
+}
 
 // Count only reachable, open departures without an established neighbour. The
 // departure being consumed by this discovery is no longer an exploration option.
@@ -2780,18 +2787,6 @@ static PlaceProposalConstraints NewPlaceConstraints(const Scene& scene,const std
         constraints.possible.push_back(constraints.relative_directions.at(relative));
     constraints.fixed[entry]=true;
     return constraints;
-}
-
-static void ReserveExplorationExits(PlaceProposalConstraints* constraints,unsigned int seed) {
-    // Rotate relative directions so replenishing the frontier is not an east/west
-    // corridor template. Choose only audited approaches; never count the return.
-    const char* relative[]={"forward","left","right"};
-    for(unsigned int i=0;i<3&&constraints->exploration_required.size()<2;++i) {
-        const auto& direction=constraints->relative_directions.at(relative[(seed%3+i)%3]);
-        if(std::find(constraints->possible.begin(),constraints->possible.end(),direction)==constraints->possible.end())continue;
-        constraints->fixed[direction]=true;
-        constraints->exploration_required.push_back(direction);
-    }
 }
 
 // A local fallback must never inherit the language of cached/model prose.
@@ -2866,6 +2861,12 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             constraints=NewPlaceConstraints(scene,provenance.at("return_direction").get<std::string>());
         constraints.exploration_required=provenance.value("exploration_required",std::vector<std::string>());
         for(const auto& direction:constraints.exploration_required)constraints.fixed[direction]=true;
+        if(provenance.contains("exit_balance")) {
+            const auto& balance=provenance.at("exit_balance");
+            constraints.balance.target_open_exits=balance.at("target_open_exits").get<int>();
+            constraints.balance.allow_dead_end=balance.at("allow_dead_end").get<bool>();
+            constraints.balance.selection_seed=balance.at("selection_seed").get<unsigned int>();
+        }
         for(const auto& link:state.room_links)if(link.from_place_id==result->updated_place_id)
             constraints.fixed[CardinalDirectionToString(link.direction)]=true;
     } else for(const auto* direction:{"north","east","south","west"}) {
@@ -2903,7 +2904,8 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         {"exit_proposal",{{"may_improvise",propose_exits},{"fixed",constraints.fixed},
             {"geometrically_possible",constraints.possible},{"view_to_compass",constraints.relative_directions},
             {"exploration_required",constraints.exploration_required},
-            {"rule","Choose each north/east/south/west true=open or false=closed. Preserve fixed values, including exploration_required openings reserved by the engine to keep exploration possible. Only geometrically_possible may open. Other clear approaches permit but do NOT require an opening. Invent meaningful branches or a dead end only when fixed values permit it; no east/west template. An opening means an unknown neighbour can be discovered, not an already visited room. Match the narration to these exits."}}},
+            {"balance",ExitBalanceJson(constraints.balance)},
+            {"rule","Choose the directions yourself, preserving fixed values and opening only geometrically_possible directions. When target_open_exits is 2 or 3, that is the desired TOTAL including the return, limited by available approaches and established routes. A return-only dead end is allowed ONLY when allow_dead_end is true. Otherwise reach that total; do not open all four directions. A target of zero preserves the supplied fixed topology without balancing. Match narration to your final exits. An unlinked opening discovers an unknown neighbour, not an already visited room."}}},
         {"thermal_rule","Evaluate this action's exposure, effort and protection: body may rise, stay or fall, never automatic. Propose external_temperature_c integer [300,520], change at most 20; body_temperature_c number [34,43], change at most 0.4 from given values; reason briefly justifies your assessment. Waiting is exposure. Real inference time has no physical effect. Match narration to your proposed values without reciting a technical report."},
         {"metadata_language_repair",foreign_metadata?"Give this place a title and a short summary in the selected language using its accepted geometry; do not change the place or routes. Do not copy the generic fallback title.":""},
         {"task",card?"Invent a specific short literary title without compass directions, a 25-45 word revisit summary, and a 60-100 word arrival narration. Contrast this actual composition with the previous place: choose its most distinctive visible proportions and placement. Never reuse a previous arrival.":
@@ -2921,6 +2923,22 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         if(fixed!=constraints.fixed.end())property["enum"]=json::array({fixed->second});
         else if(std::find(constraints.possible.begin(),constraints.possible.end(),direction)==constraints.possible.end())
             property["enum"]=json::array({false});
+    }
+    if(propose_exits&&constraints.balance.target_open_exits) {
+        // Decode the count constraint while leaving the model free to select
+        // directions. The independent balancing pass below also handles bad seams
+        // or future backends which do not honor this schema.
+        json alternatives=json::array();
+        const char* directions[]={"north","east","south","west"};
+        for(unsigned int mask=0;mask<16;++mask) {
+            std::map<std::string,bool> candidate;
+            for(unsigned int i=0;i<4;++i)candidate[directions[i]]=(mask&(1u<<i))!=0;
+            if(BalanceExplorationExits(candidate,constraints.fixed,constraints.possible,constraints.balance)!=candidate)continue;
+            auto variant=schema["properties"]["exits"];
+            for(const auto& exit:candidate)variant["properties"][exit.first]["enum"]=json::array({exit.second});
+            alternatives.push_back(std::move(variant));
+        }
+        if(!alternatives.empty())schema["properties"]["exits"]={{"anyOf",alternatives}};
     }
     auto& thermal_schema=schema["properties"]["thermal"]["properties"];
     thermal_schema["external_temperature_c"]["minimum"]=std::max(300,state.hard_state.external_temperature_c-20);
@@ -2969,6 +2987,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     result->prompt_tokens+=generation.prompt_tokens;result->generated_tokens+=generation.generated_tokens;
     result->inference_time_ms+=generation.inference_time_ms;
     std::string reason;bool proposal_accepted=false;PlaceProposal proposal;
+    json proposed_exits=nullptr,opened=json::array(),closed=json::array();
     if(!ok)reason=generation.error_message.empty()?"narrative_backend_failure":generation.error_message;
     else if(!generation.reached_eog)reason="incomplete_narration";
     else {
@@ -2976,6 +2995,13 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             state.hard_state.body_temperature_c,constraints.fixed,constraints.possible,&proposal,&reason)) {}
         else {
             proposal_accepted=true;
+            proposed_exits=proposal.exits;
+            if(propose_exits) {
+                const auto balanced=BalanceExplorationExits(proposal.exits,constraints.fixed,constraints.possible,constraints.balance);
+                for(const auto& exit:balanced)if(proposal.exits.at(exit.first)!=exit.second)
+                    (exit.second?opened:closed).push_back(exit.first);
+                proposal.exits=balanced;
+            }
             result->updated_hard_state.external_temperature_c=proposal.external_temperature_c;
             result->updated_hard_state.body_temperature_c=proposal.body_temperature_c;
             if(propose_exits) {
@@ -2985,7 +3011,12 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             const auto response=json::parse(generation.response_text);
             const auto text=response["narration"].get<std::string>();
             const auto whole=json({{"title",proposal.title},{"summary",proposal.summary},{"narration",proposal.narration}}).dump();
-            if(IsClearlyWrongNarrativeLanguage(proposal.narration,state.language)||
+            if(!opened.empty()||!closed.empty()) {
+                // Changed exits invalidate prose written against the old map.
+                // Keep a neutral localized description without an extra LLM call.
+                reason="exit_count_adjusted";*narration=SceneLanguageFallback(state.language);
+            }
+            else if(IsClearlyWrongNarrativeLanguage(proposal.narration,state.language)||
                IsClearlyWrongNarrativeLanguage(proposal.summary,state.language)||
                IsClearlyWrongNarrativeLanguage(proposal.title,state.language))reason="wrong_output_language";
             else if(text.size()<(card?180u:35u)||text.size()>2600||whole.find("volume_")!=std::string::npos||whole.find("portal")!=std::string::npos||std::regex_search(whole,std::regex("volume[s]? [0-9]+")))
@@ -3036,7 +3067,9 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         {"body_before_c",state.hard_state.body_temperature_c},{"body_after_c",result->updated_hard_state.body_temperature_c},
         {"external_after_c",result->updated_hard_state.external_temperature_c},{"thermal_reason",proposal_accepted?proposal.thermal_reason:""},
         {"accepted_exits",proposal_accepted?json(proposal.exits):json(nullptr)},
-        {"constraints",{{"fixed",constraints.fixed},{"possible",constraints.possible},{"exploration_required",constraints.exploration_required}}},
+        {"proposed_exits",proposed_exits},{"exit_adjustments",{{"opened",opened},{"closed",closed}}},
+        {"constraints",{{"fixed",constraints.fixed},{"possible",constraints.possible},{"exploration_required",constraints.exploration_required},
+            {"balance",ExitBalanceJson(constraints.balance)}}},
         {"wall_ms",generation.wall_time_ms},{"tokens",generation.generated_tokens},
         {"outcome",outcome},{"displayed",*narration}}).dump();
     if(!reason.empty())result->used_turn_fallback=true;
@@ -3551,19 +3584,21 @@ static bool RunHeadlessTurnFromStateImpl(
                 // Narrative failure keeps this valid geometry and its place-specific fallback.
                 result->updated_spatial_state=room.spatial_state;
                 discovery_constraints=NewPlaceConstraints(generated.scene,context.entry_direction);
-                if(context.require_onward_exit)ReserveExplorationExits(&discovery_constraints,scene_generation_config.seed);
+                discovery_constraints.balance.target_open_exits=DrawExplorationExitTarget(config.generation_config.seed,initial_session_state.next_generated_room_index);
+                discovery_constraints.balance.allow_dead_end=remaining_exits>0;
+                discovery_constraints.balance.selection_seed=scene_generation_config.seed;
                 // Safe topology is ready before inference, including on failure or
                 // rejected JSON. No extra LLM call is needed to preserve exploration.
                 result->updated_spatial_state.blocked_exits.clear();
-                for(const auto* direction:{"north","east","south","west"}) {
-                    const auto fixed=discovery_constraints.fixed.find(direction);
-                    if(fixed==discovery_constraints.fixed.end()||!fixed->second)
-                        result->updated_spatial_state.blocked_exits.push_back(direction);
-                }
+                const auto fallback_exits=BalanceExplorationExits(discovery_constraints.fixed,discovery_constraints.fixed,
+                    discovery_constraints.possible,discovery_constraints.balance);
+                for(const auto& exit:fallback_exits)if(!exit.second)result->updated_spatial_state.blocked_exits.push_back(exit.first);
                 NarrateScene(initial_session_state,body_driven_config,room.narrative_facts_json,player_command?player_command:"east",
                     "The engine has accepted this new place and the requested move. The fixed return exit leads to the previous place. Propose the other exits and thermal evolution. No item gained.",
                     true,result,&room.spatial_state.room_title,&room.spatial_state.room_summary,&generated.design.arrival,&discovery_constraints,&context.continuity);
                 room.metadata_fallback_used=!json::parse(result->narrative_metrics_json).value("proposal_accepted",false);
+                if(room.metadata_fallback_used)for(const auto& exit:fallback_exits)
+                    if(exit.second&&exit.first!=context.entry_direction)discovery_constraints.exploration_required.push_back(exit.first);
                 room.arrival_narration=generated.design.arrival;
             }
             room.spatial_state.location_archetype="dynamic_scene";
@@ -3598,6 +3633,7 @@ static bool RunHeadlessTurnFromStateImpl(
                     {"landmark",scene_config.landmark},{"return_direction",context.entry_direction},
                     {"forward_direction",CardinalDirectionToString(traversal_direction)},{"accepted_exits",exits},
                     {"exploration_required",discovery_constraints.exploration_required},{"other_frontier_exits",remaining_exits},
+                    {"exit_balance",ExitBalanceJson(discovery_constraints.balance)},
                     {"proposal_pending",room.metadata_fallback_used}}).dump();
                 room.scene_plan_hash=SceneTextHash(room.scene_design_json);
                 room.scene_prompt_version="local-topology-v2/"+

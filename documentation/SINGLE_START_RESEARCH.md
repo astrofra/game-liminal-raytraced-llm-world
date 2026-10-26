@@ -21,13 +21,26 @@ La navigation reste textuelle. Après au maximum trois compositions, un échec c
 Depuis le 26 octobre, le moteur protège aussi la possibilité d'explorer : une
 impasse est autorisée tant qu'une autre issue inexplorée reste accessible dans
 le graphe connu. Quand la dernière est empruntée, le nouveau décor doit offrir
-au moins une continuation, et le moteur réserve deux nouvelles issues s'il y a
-deux approches dégagées, sinon une. Le retour n'entre pas dans ce compte. Le LLM
-reçoit ces ouvertures comme des faits imposés avant de narrer ; un échec de sa
-réponse ne les ferme pas. Une géométrie qui condamnerait la dernière branche est
+au moins une continuation. Une géométrie qui condamnerait la dernière branche est
 retentée dans le budget normal, sans modifier les lieux déjà acceptés. Ce
 garde-fou concerne le parcours local normal ; les diagnostics anciens restent
 distincts.
+
+Le réglage suivant tire, pour chaque nouveau lieu, une cible de **deux ou trois
+sorties, retour compris**, avec une probabilité de 50 % chacune. Le LLM choisit
+les directions et peut proposer une impasse tant qu'un autre chemin inexploré
+reste accessible. Pour les autres pièces, le schéma JSON borne le nombre de
+sorties ; le moteur complète une proposition trop pauvre ou réduit une proposition
+trop ouverte, en préservant le retour et les liens déjà établis. La cible est
+limitée par les approches réellement praticables : elle n'impose pas de percer
+ou de modifier le décor 3D. Les consignes de composition restent inchangées.
+
+La cible est tirée une fois puis mémorisée, et ne change pas aux revisites. Les
+impasses conservées et les limites géométriques expliquent que les comptes d'une
+partie ne soient pas exactement 50/50. Un secours narratif conserve une continuation
+sur la dernière branche. Si le moteur corrige les sorties d'une réponse hors
+contrat, il affiche une description neutre localisée plutôt qu'un texte fondé
+sur une carte différente, sans appel LLM supplémentaire.
 
 ## Inventaire
 

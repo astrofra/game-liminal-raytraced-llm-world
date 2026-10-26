@@ -5,6 +5,7 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-035 / DUO-036 | Livré — cibles 50/50, binaire publié | [Revue initiale](reviews/DUO-035.md), [revue finale](reviews/DUO-036.md) ; tests DeepSeek corrigés et intégrés, politique logique Codex, impasses préservées, géométrie inchangée, 14 CTest passent et essai réel Gemma accepté |
 | DUO-034 | Correctif Codex livré ; livraison DeepSeek rejetée | [Contrat](tasks/DUO-034.md), [revue](reviews/DUO-034.md) ; seuil N/E/S, continuation réservée sur la dernière branche, huit pièces en test adversarial, 13 CTest passent, essai réel nord/retour ; binaire publié |
 | DUO-033 / COP-01 à 04 | Pilote livré, binaire publié | [Contrat](tasks/DUO-033.md), [revue](reviews/DUO-033.md), [bilan](../CORRECTION_COPLANAIRE.md) ; quinze cas DeepSeek, géométrie et intégration Codex, quatre scènes × huit vues examinées, 13 CTest et 64 Python passent ; COP précède le verre |
 | DUO-032 / VERRE-01 à 04 | Pilote livré, binaire publié | [Contrat](tasks/DUO-032.md), [revue](reviews/DUO-032.md), [bilan](../SOUTIENS_VERRE.md) ; tests DeepSeek corrigés, maillage et intégration Codex, cinq paires et deux vues SDL examinées ; 11 CTest et 64 Python passent |
