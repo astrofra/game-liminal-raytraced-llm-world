@@ -2,6 +2,8 @@
 
 25 octobre 2026 — **lots 1 et 2 implémentés et testés** en duo Codex / DeepSeek. Voir le [document historique archivé](HISTORIQUE_RECHERCHE.md). Les lots 3 et 4 restent des extensions prévues. Le texte ci-dessous conserve le plan et ses critères.
 
+26 octobre 2026 — La [roadmap des interactions avec l'environnement](ROADMAP_INTERACTIONS_ENVIRONNEMENT.md) précise et rend prioritaires le dépôt, la reprise et la collecte d'objets du décor. Elle remplace l'ordre de priorité du lot 4 ci-dessous ; ces nouvelles interactions restent à implémenter.
+
 ## Référence concrète : l’inventaire d’Athanor 2
 
 L’utilisateur a fourni `E:/_games_/athanor_2/athanor-2-amiga/game` comme exemple de simplicité. Lecture du code effectuée le 25 octobre 2026, sans modification ni exécution du projet Athanor.

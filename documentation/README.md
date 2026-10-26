@@ -18,6 +18,7 @@ un paquet autonome. Les archives de recherche ne servent jamais à reprendre une
 - [Spécification de visibilité et fiction](SPEC_VISIBILITE_ET_FICTION.md)
 - [Étude des issues et températures](ETUDE_ISSUES_ET_TEMPERATURE.md)
 - [Inventaire : roadmap et extensions](ROADMAP_REMISE_EN_SERVICE_INVENTAIRE.md)
+- [Interactions avec l'environnement : prendre, déposer, retrouver](ROADMAP_INTERACTIONS_ENVIRONNEMENT.md)
 - [Vue animée](ANIMATED_VIEW_SPEC.md)
 - [Format des scènes](SCENE_FORMAT_V1.md)
 - [Catalogue des prefabs](PREFAB_CATALOG.md)

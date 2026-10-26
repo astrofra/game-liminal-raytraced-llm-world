@@ -5,6 +5,7 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-027 | Validé — documentation uniquement | [Contrat](tasks/DUO-027.md), [revue](reviews/DUO-027.md) ; matrice relue et précisée dans la [roadmap des interactions](../ROADMAP_INTERACTIONS_ENVIRONNEMENT.md), gameplay à implémenter |
 | DUO-026 | Masque bitmap livré et vérifié | [Contrat](tasks/DUO-026.md), [revue](reviews/DUO-026.md) ; v3 transparente, dessin procédural supprimé |
 | Runtime autonome | Livré, qualification locale effectuée | [Bilan](../BILAN_RUNTIME_AUTONOME.md) : parcours 20 commandes, tests des langues, protocole et poids résidents |
 | DUO-025 | Audit DeepSeek relu, nettoyage intégré | [Contrat](tasks/DUO-025.md), [revue](reviews/DUO-025.md) ; outils HTTP orphelins et anciens profils supprimés, bancs natifs conservés |
@@ -17,3 +18,5 @@ Les étapes antérieures et leur progression détaillée sont conservées dans
 l'[archive de recherche](../HISTORIQUE_RECHERCHE.md) et dans Git. Les contrats et
 revues restent des traces datées, pas des instructions de lancement actuelles.
 Aucun commit ni push effectué par Codex.
+
+Précision produit du 26 octobre 2026, traitée directement par Codex car elle modifie la sémantique : la roadmap distingue désormais les cibles implicites issues de la description littéraire et les objets explicitement déposés. Une reprise retire l'entrée de la liste de la pièce ; une première prise implicite matérialise l'objet et mémorise son retrait. Lots et recette adaptés ; aucun code changé ni nouveau run DeepSeek.
