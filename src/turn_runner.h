@@ -30,7 +30,7 @@ typedef bool (*HeadlessTurnStreamCallback)(
 struct HeadlessTurnConfig {
     LlmGenerationConfig generation_config;
     bool dynamic_scenes = false;
-    bool local_scenes = false; // Generate persistent places along the eastward exploration route.
+    bool local_scenes = false; // Generate persistent places along open cardinal exits.
     DynamicSceneConfig dynamic_scene_config;
     SceneCompletion narrative_completion; // Optional deterministic seam for fiction tests.
     bool request_candidate_scene;

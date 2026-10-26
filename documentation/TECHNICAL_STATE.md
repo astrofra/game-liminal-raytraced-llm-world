@@ -30,6 +30,14 @@ réelles des limites de qualification restantes.
   intersection plane, microtranslations bornées et auditées, union des huit
   vues de respiration, rapports et étapes persistées ; aucun appel LLM ajouté.
 - Géométrie acceptée immuable, liens réciproques et retours garantis par le moteur.
+- Seuil ouvert au nord, à l'est et au sud. Dans le parcours local, le moteur compte
+  les issues ouvertes sans voisin connu encore accessibles, hors départ consommé.
+  Sur la dernière branche, l'audit exige au moins une approche supplémentaire et
+  le moteur réserve deux nouvelles issues si possible, sinon une, avant narration.
+  Ces valeurs sont fixées dans le prompt et le schéma JSON, conservées en secours
+  et lors de la résolution d'une narration en attente. Les impasses restent admises
+  ailleurs ; les scènes déjà acceptées ne sont pas recomposées. Les réservations
+  et le nombre d'autres issues sont archivés dans la provenance du lieu.
 - [Soutiens de verre](SOUTIENS_VERRE.md) de 0,25 m sous les composantes flottantes :
   graphe de contacts OBB, coque suivant l'emprise et la sous-face inclinée, après
   correction et validation opaques ; exclusions caméra/approches, aperçu réfracté, secours opaque

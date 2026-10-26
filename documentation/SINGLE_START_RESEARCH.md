@@ -12,11 +12,22 @@ Le [Setup standard](WINDOWS_DISTRIBUTION.md) télécharge le GGUF en dernière p
 
 Lancer `play_within_the_latent_walls.bat`. Le jeu commence au **seuil de la carrière**, seul lieu Eryx prédéfini. Son décor natif s'inspire du [concept 12, variante raytracer](concept-art/12-les-vingt-cinq-centimetres-du-vide-raytracer-v2.png) : dalle de verre de 25 cm, parois monumentales à gauche, sol ocre et horizon dégagé à droite. Le [rendu moteur](benchmarks/eryx-local/single-start/start.png) montre la transposition. Les texels procéduraux et la variation de rugosité du concept ne sont pas implémentés par ce lot ; les matériaux diffus restent simples.
 
-Au seuil, **est** découvre un lieu généré directement par Gemma via llama.cpp intégré. Ensuite, les issues indiquées permettent de découvrir un voisin ou de revenir vers un lieu connu ; leur direction dépend des propositions acceptées du LLM. La génération intervient à la demande, jamais au chargement d'une archive. La graine initiale change à chaque lancement ; les découvertes et nouvelles tentatives ont des graines distinctes. Les briefs varient entre cinq relations architecturales, sans géométrie prédéfinie.
+Au seuil, **nord, est et sud** découvrent un lieu généré directement par Gemma via llama.cpp intégré. Ensuite, les issues indiquées permettent de découvrir un voisin ou de revenir vers un lieu connu ; leur direction dépend des propositions acceptées du LLM et des réservations du moteur. La génération intervient à la demande, jamais au chargement d'une archive. La graine initiale change à chaque lancement ; les découvertes et nouvelles tentatives ont des graines distinctes. Le brief s'appuie sur le lieu quitté et les événements validés, sans géométrie prédéfinie.
 
 Dans une même partie, les lieux acceptés restent en mémoire et les revisites conservent leur géométrie. À la fermeture, cette mémoire ne devient pas l'entrée de la partie suivante. SDL refuse `--load-state`. La lecture d'un état reste disponible uniquement dans les outils headless de diagnostic.
 
-La navigation reste textuelle. Après au maximum trois compositions, un échec conserve le joueur au lieu précédent. Au départ, seul l’est est ouvert. Les lieux suivants proposent leurs propres issues cardinales, avec retour garanti et géométrie validée. BODY peut monter, se stabiliser ou baisser selon le LLM, et modifie l’échantillonnage du tour suivant.
+La navigation reste textuelle. Après au maximum trois compositions, un échec conserve le joueur au lieu précédent. Au départ, seul l’ouest est fermé. Les lieux suivants proposent leurs propres issues cardinales, avec retour garanti et géométrie validée. BODY peut monter, se stabiliser ou baisser selon le LLM, et modifie l’échantillonnage du tour suivant.
+
+Depuis le 26 octobre, le moteur protège aussi la possibilité d'explorer : une
+impasse est autorisée tant qu'une autre issue inexplorée reste accessible dans
+le graphe connu. Quand la dernière est empruntée, le nouveau décor doit offrir
+au moins une continuation, et le moteur réserve deux nouvelles issues s'il y a
+deux approches dégagées, sinon une. Le retour n'entre pas dans ce compte. Le LLM
+reçoit ces ouvertures comme des faits imposés avant de narrer ; un échec de sa
+réponse ne les ferme pas. Une géométrie qui condamnerait la dernière branche est
+retentée dans le budget normal, sans modifier les lieux déjà acceptés. Ce
+garde-fou concerne le parcours local normal ; les diagnostics anciens restent
+distincts.
 
 ## Inventaire
 

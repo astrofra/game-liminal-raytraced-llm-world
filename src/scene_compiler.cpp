@@ -362,12 +362,11 @@ static void SetCommonQuarryThresholdSpatialState(SpatialState* state)
     state->anchors.push_back("open_eastern_horizon");
     state->visible_objects.push_back("transparent slab with a twenty-five-centimetre edge");
     state->visible_objects.push_back("angular quarry fragments");
-    state->blocked_exits.push_back("north");
-    state->blocked_exits.push_back("south");
     state->blocked_exits.push_back("west");
     state->scene_constraints.push_back("physical transparent slab, not an invisible topology barrier");
     state->scene_constraints.push_back("monumental quarry walls to the left");
     state->scene_constraints.push_back("open eastern horizon and persistent generated discoveries");
+    state->scene_constraints.push_back("north, east and south open to unexplored places; west is closed");
 }
 
 static void SetCommonGateSpatialState(SpatialState* state)

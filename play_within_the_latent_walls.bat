@@ -18,7 +18,7 @@ echo.
 echo === Within the Latent Walls / Entre les Murs Latents ===
 echo EXE: "%EXE_PATH%"
 echo Nouvelle partie. Archives : "%LOCALAPPDATA%\WithinTheLatentWalls\research"
-echo Depart : seuil de la carriere. Est pour commencer, puis suivre les issues indiquees.
+echo Depart : seuil de la carriere. Nord, Est ou Sud pour commencer, puis suivre les issues indiquees.
 echo.
 pushd "%ROOT_DIR%"
 "%EXE_PATH%" --sdl %*

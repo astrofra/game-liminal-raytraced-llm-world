@@ -231,7 +231,7 @@ std::vector<std::string> LocalSceneClearApproaches(const Scene& scene) {
 bool AuditDynamicScene(const std::string& program,const SceneDesignContext& context,
                        const SceneDesignV1* design,Scene* output,SceneAuditReport* r,
                        const SceneViewConstraints* view) {
-    (void)context;*r=SceneAuditReport();std::vector<Directive> directives;
+    *r=SceneAuditReport();std::vector<Directive> directives;
     const SceneViewConstraints limits = view ? *view : SceneViewConstraints();
     if(!std::isfinite(limits.aspect)||limits.aspect<=0 ||
        !std::isfinite(limits.near_distance)||limits.near_distance<=0 ||
@@ -319,6 +319,13 @@ bool AuditDynamicScene(const std::string& program,const SceneDesignContext& cont
                     ". Keep other objects unchanged; a centre on the boundary does not clear the full solid.");
             }
         }
+    }
+    if(limits.require_return_clearance&&context.require_onward_exit) {
+        const auto approaches=LocalSceneClearApproaches(scene);
+        if(std::none_of(approaches.begin(),approaches.end(),[](const std::string& name){return name!="back";}))
+            Error(r,"exploration_continuation_blocked","",
+                "This is the last unexplored route. Keep supporting floor and clear space for at least one onward approach "
+                "(forward x[-0.8,0.8] z[-9,-3], left x[0,6] z[-10.8,-9.2], or right x[-6,0] z[-10.8,-9.2], y[0.25,2.25]). Return alone is insufficient.");
     }
     const float scale=tanf(camera.vertical_fov_degrees*kPi/360.0f);
     constexpr int width=256,height=128;

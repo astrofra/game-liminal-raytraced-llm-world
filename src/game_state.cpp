@@ -501,6 +501,18 @@ static void ParseGeneratedRoomsNode(const json& node, std::vector<GeneratedRoom>
                         throw std::runtime_error("Local exits disagree with accepted proposal");
                 }
                 if(!exits.at(entry_text).get<bool>())throw std::runtime_error("Local return exit is closed");
+                if(provenance.contains("exploration_required")) {
+                    const auto& required=provenance.at("exploration_required");
+                    if(!required.is_array()||required.size()>2)throw std::runtime_error("Invalid exploration exit reservation");
+                    std::vector<std::string> seen;
+                    for(const auto& item:required) {
+                        const auto direction=item.get<std::string>();
+                        if(direction==entry_text||!exits.contains(direction)||!exits.at(direction).get<bool>()||
+                           std::find(seen.begin(),seen.end(),direction)!=seen.end())
+                            throw std::runtime_error("Reserved exploration exit is invalid or closed");
+                        seen.push_back(direction);
+                    }
+                }
             }
             if(room.scene_contract_version==2) {
                 const auto provenance=json::parse(room.scene_design_json);

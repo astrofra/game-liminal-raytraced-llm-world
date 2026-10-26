@@ -5,6 +5,7 @@
 #include <string.h>
 #include <regex>
 #include <sstream>
+#include <set>
 
 #include "scene_compiler.h"
 #include "turn_contract.h"
@@ -2739,7 +2740,33 @@ struct PlaceProposalConstraints {
     std::map<std::string,bool> fixed;
     std::vector<std::string> possible;
     std::map<std::string,std::string> relative_directions;
+    std::vector<std::string> exploration_required;
 };
+
+// Count only reachable, open departures without an established neighbour. The
+// departure being consumed by this discovery is no longer an exploration option.
+static size_t RemainingExplorationExits(const SessionState& state,CardinalDirection consumed) {
+    std::vector<std::string> queue{state.current_place_id};
+    std::set<std::string> visited{state.current_place_id};
+    size_t count=0;
+    for(size_t i=0;i<queue.size();++i) {
+        const std::string place=queue[i];
+        SpatialState canonical;
+        const SpatialState* spatial=nullptr;
+        LocationId location=kLocationUnknown;
+        if(ParseCanonicalPlaceId(place,&location)&&BuildCanonicalSpatialState(location,&canonical))spatial=&canonical;
+        else if(const auto* room=FindGeneratedRoomById(state,place))spatial=&room->spatial_state;
+        if(!spatial)continue;
+        for(const auto direction:{kDirectionNorth,kDirectionEast,kDirectionSouth,kDirectionWest}) {
+            if(SpatialStateBlocksDirection(*spatial,direction)||FindInvisibleBarrier(state,place,direction))continue;
+            std::string target;
+            if(FindRoomLinkTarget(state,place,direction,&target)) {
+                if(visited.insert(target).second)queue.push_back(target);
+            } else if(place!=state.current_place_id||direction!=consumed)++count;
+        }
+    }
+    return count;
+}
 
 static PlaceProposalConstraints NewPlaceConstraints(const Scene& scene,const std::string& entry) {
     const std::vector<std::string> compass={"north","east","south","west"};
@@ -2753,6 +2780,18 @@ static PlaceProposalConstraints NewPlaceConstraints(const Scene& scene,const std
         constraints.possible.push_back(constraints.relative_directions.at(relative));
     constraints.fixed[entry]=true;
     return constraints;
+}
+
+static void ReserveExplorationExits(PlaceProposalConstraints* constraints,unsigned int seed) {
+    // Rotate relative directions so replenishing the frontier is not an east/west
+    // corridor template. Choose only audited approaches; never count the return.
+    const char* relative[]={"forward","left","right"};
+    for(unsigned int i=0;i<3&&constraints->exploration_required.size()<2;++i) {
+        const auto& direction=constraints->relative_directions.at(relative[(seed%3+i)%3]);
+        if(std::find(constraints->possible.begin(),constraints->possible.end(),direction)==constraints->possible.end())continue;
+        constraints->fixed[direction]=true;
+        constraints->exploration_required.push_back(direction);
+    }
 }
 
 // A local fallback must never inherit the language of cached/model prose.
@@ -2825,6 +2864,8 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         Scene scene;char error[512]={};
         if(LoadSceneFromSceneText("pending.scene",pending_room->scene_text.c_str(),&scene,error,sizeof(error)))
             constraints=NewPlaceConstraints(scene,provenance.at("return_direction").get<std::string>());
+        constraints.exploration_required=provenance.value("exploration_required",std::vector<std::string>());
+        for(const auto& direction:constraints.exploration_required)constraints.fixed[direction]=true;
         for(const auto& link:state.room_links)if(link.from_place_id==result->updated_place_id)
             constraints.fixed[CardinalDirectionToString(link.direction)]=true;
     } else for(const auto* direction:{"north","east","south","west"}) {
@@ -2861,7 +2902,8 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         {"temperature_external_c",state.hard_state.external_temperature_c},{"temperature_body_c",state.hard_state.body_temperature_c},
         {"exit_proposal",{{"may_improvise",propose_exits},{"fixed",constraints.fixed},
             {"geometrically_possible",constraints.possible},{"view_to_compass",constraints.relative_directions},
-            {"rule","Choose each north/east/south/west true=open or false=closed. Preserve fixed values. Only geometrically_possible may open. A clear approach permits but does NOT require an opening. Invent meaningful branches or a dead end consistent with this place; no east/west template. An opening means an unknown neighbour can be discovered, not an already visited room."}}},
+            {"exploration_required",constraints.exploration_required},
+            {"rule","Choose each north/east/south/west true=open or false=closed. Preserve fixed values, including exploration_required openings reserved by the engine to keep exploration possible. Only geometrically_possible may open. Other clear approaches permit but do NOT require an opening. Invent meaningful branches or a dead end only when fixed values permit it; no east/west template. An opening means an unknown neighbour can be discovered, not an already visited room. Match the narration to these exits."}}},
         {"thermal_rule","Evaluate this action's exposure, effort and protection: body may rise, stay or fall, never automatic. Propose external_temperature_c integer [300,520], change at most 20; body_temperature_c number [34,43], change at most 0.4 from given values; reason briefly justifies your assessment. Waiting is exposure. Real inference time has no physical effect. Match narration to your proposed values without reciting a technical report."},
         {"metadata_language_repair",foreign_metadata?"Give this place a title and a short summary in the selected language using its accepted geometry; do not change the place or routes. Do not copy the generic fallback title.":""},
         {"task",card?"Invent a specific short literary title without compass directions, a 25-45 word revisit summary, and a 60-100 word arrival narration. Contrast this actual composition with the previous place: choose its most distinctive visible proportions and placement. Never reuse a previous arrival.":
@@ -2993,7 +3035,8 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         {"fallback_reason",reason},{"language",GameLanguageToString(state.language)},{"proposal_accepted",proposal_accepted},{"sampling_temperature",cfg.temperature},
         {"body_before_c",state.hard_state.body_temperature_c},{"body_after_c",result->updated_hard_state.body_temperature_c},
         {"external_after_c",result->updated_hard_state.external_temperature_c},{"thermal_reason",proposal_accepted?proposal.thermal_reason:""},
-        {"accepted_exits",proposal_accepted?json(proposal.exits):json(nullptr)},{"constraints",{{"fixed",constraints.fixed},{"possible",constraints.possible}}},
+        {"accepted_exits",proposal_accepted?json(proposal.exits):json(nullptr)},
+        {"constraints",{{"fixed",constraints.fixed},{"possible",constraints.possible},{"exploration_required",constraints.exploration_required}}},
         {"wall_ms",generation.wall_time_ms},{"tokens",generation.generated_tokens},
         {"outcome",outcome},{"displayed",*narration}}).dump();
     if(!reason.empty())result->used_turn_fallback=true;
@@ -3434,6 +3477,8 @@ static bool RunHeadlessTurnFromStateImpl(
             SceneDesignContext context;
             context.language=GameLanguageEnglishName(initial_session_state.language);
             context.entry_direction=CardinalDirectionToString(OppositeCardinalDirection(traversal_direction));
+            const size_t remaining_exits=local_direct?RemainingExplorationExits(initial_session_state,traversal_direction):0;
+            context.require_onward_exit=local_direct&&remaining_exits==0;
             context.origin=initial_session_state.spatial_state.room_title+": "+initial_session_state.spatial_state.room_summary;
             json barriers=json::array();
             for(const auto& barrier:initial_session_state.invisible_barriers)
@@ -3494,6 +3539,7 @@ static bool RunHeadlessTurnFromStateImpl(
             room.spatial_state=prospective_spatial_state;
             room.spatial_state.location_id=kLocationUnknown;room.spatial_state.canonical_fixture.clear();
             room.spatial_state.room_title=generated.design.title;room.spatial_state.room_summary=generated.design.intent;
+            PlaceProposalConstraints discovery_constraints;
             if(local_direct) {
                 room.spatial_state.room_title=std::string(PlayerText(initial_session_state.language,
                     "Quarry — place ","Carrière — lieu ","Steinbrudd — sted ","Stenbrud — sted ","Steinbruch — Ort ","Cava — luogo "))+
@@ -3504,13 +3550,19 @@ static bool RunHeadlessTurnFromStateImpl(
                 // Publish the geometry only after the whole turn's final cancellation poll.
                 // Narrative failure keeps this valid geometry and its place-specific fallback.
                 result->updated_spatial_state=room.spatial_state;
+                discovery_constraints=NewPlaceConstraints(generated.scene,context.entry_direction);
+                if(context.require_onward_exit)ReserveExplorationExits(&discovery_constraints,scene_generation_config.seed);
+                // Safe topology is ready before inference, including on failure or
+                // rejected JSON. No extra LLM call is needed to preserve exploration.
                 result->updated_spatial_state.blocked_exits.clear();
-                for(const auto* direction:{"north","east","south","west"})
-                    if(context.entry_direction!=direction)result->updated_spatial_state.blocked_exits.push_back(direction);
-                const auto constraints=NewPlaceConstraints(generated.scene,context.entry_direction);
+                for(const auto* direction:{"north","east","south","west"}) {
+                    const auto fixed=discovery_constraints.fixed.find(direction);
+                    if(fixed==discovery_constraints.fixed.end()||!fixed->second)
+                        result->updated_spatial_state.blocked_exits.push_back(direction);
+                }
                 NarrateScene(initial_session_state,body_driven_config,room.narrative_facts_json,player_command?player_command:"east",
                     "The engine has accepted this new place and the requested move. The fixed return exit leads to the previous place. Propose the other exits and thermal evolution. No item gained.",
-                    true,result,&room.spatial_state.room_title,&room.spatial_state.room_summary,&generated.design.arrival,&constraints,&context.continuity);
+                    true,result,&room.spatial_state.room_title,&room.spatial_state.room_summary,&generated.design.arrival,&discovery_constraints,&context.continuity);
                 room.metadata_fallback_used=!json::parse(result->narrative_metrics_json).value("proposal_accepted",false);
                 room.arrival_narration=generated.design.arrival;
             }
@@ -3545,6 +3597,7 @@ static bool RunHeadlessTurnFromStateImpl(
                 room.scene_design_json=json({{"mode","local-topology-v2"},{"brief",context.brief},
                     {"landmark",scene_config.landmark},{"return_direction",context.entry_direction},
                     {"forward_direction",CardinalDirectionToString(traversal_direction)},{"accepted_exits",exits},
+                    {"exploration_required",discovery_constraints.exploration_required},{"other_frontier_exits",remaining_exits},
                     {"proposal_pending",room.metadata_fallback_used}}).dump();
                 room.scene_plan_hash=SceneTextHash(room.scene_design_json);
                 room.scene_prompt_version="local-topology-v2/"+
@@ -4191,11 +4244,38 @@ bool RunNavigationSelfTest(FILE* output)
 
     SpatialState start_state;
     if (!BuildCanonicalSpatialState(kLocationQuarryThreshold, &start_state) ||
+        SpatialStateBlocksDirection(start_state, kDirectionNorth) ||
         SpatialStateBlocksDirection(start_state, kDirectionEast) ||
+        SpatialStateBlocksDirection(start_state, kDirectionSouth) ||
         !SpatialStateBlocksDirection(start_state, kDirectionWest) ||
         !route_state.room_links.empty() || !route_state.invisible_barriers.empty()) {
-        if (output) fprintf(output, "Single starting location must open east without pre-authored links.\n");
+        if (output) fprintf(output, "Single starting location must open north/east/south without pre-authored links.\n");
         return false;
+    }
+
+    {
+        SessionState frontier=route_state;
+        const auto start=frontier.current_place_id;
+        GeneratedRoom room;room.room_id=BuildGeneratedPlaceId(1);
+        room.spatial_state.blocked_exits={"east","south"}; // North new, west return.
+        frontier.generated_rooms.push_back(room);
+        GeneratedRoom orphan;orphan.room_id=BuildGeneratedPlaceId(2);
+        frontier.generated_rooms.push_back(orphan); // Four open exits, but unreachable.
+        AddRoomLinkUnique(&frontier.room_links,start,kDirectionEast,room.room_id);
+        AddRoomLinkUnique(&frontier.room_links,room.room_id,kDirectionWest,start);
+        frontier.current_place_id=room.room_id;frontier.spatial_state=room.spatial_state;
+        const bool reachable_count=RemainingExplorationExits(frontier,kDirectionNorth)==2;
+        for(const auto direction:{kDirectionNorth,kDirectionSouth}) {
+            InvisibleBarrier barrier;barrier.place_id=start;barrier.direction=direction;
+            frontier.invisible_barriers.push_back(barrier);
+        }
+        // Neither the backtracking cycle, an undiscovered barrier, nor an orphan
+        // room is an alternative continuation.
+        if(RemainingExplorationExits(route_state,kDirectionEast)!=2||!reachable_count||
+           RemainingExplorationExits(frontier,kDirectionNorth)!=0) {
+            if(output)fprintf(output,"Exploration frontier must count only reachable unknown neighbours.\n");
+            return false;
+        }
     }
 
     GeneratedRoomDraft archetype_draft;

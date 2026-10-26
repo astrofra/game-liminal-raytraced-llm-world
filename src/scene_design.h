@@ -17,6 +17,7 @@ struct SceneDesignContext {
     std::string environment; // Read-only engine state and known invisible barriers.
     std::string language = "English";
     std::string entry_direction = "south"; // Side through which the player enters.
+    bool require_onward_exit = false; // Last reachable frontier: a local scene must allow continuation.
     std::vector<std::string> allowed_exits = {"north", "east", "south", "west"};
     std::vector<std::string> recent_intents;
 };

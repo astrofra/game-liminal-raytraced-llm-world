@@ -29,7 +29,7 @@ static void PrintUsage()
     printf("Usage:\n");
     printf("  liminal_cornell_renderer [options]\n\n");
     printf("Options:\n");
-    printf("  --scene-generation-mode <hybrid|dynamic|local> Direct discovery east from the start and generated rooms\n");
+    printf("  --scene-generation-mode <hybrid|dynamic|local> Discover persistent places along open cardinal exits\n");
     printf("  --generate-dynamic-scene <brief.txt> Generate, audit and render a new scene\n");
     printf("  --audit-scene-view <file> Audit actual geometry and render; writes <scene-artifacts>.audit.json\n");
     printf("  --view-landmark <name>   Require a visible named solid in --audit-scene-view\n");

@@ -5,6 +5,7 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-034 | Correctif Codex livré ; livraison DeepSeek rejetée | [Contrat](tasks/DUO-034.md), [revue](reviews/DUO-034.md) ; seuil N/E/S, continuation réservée sur la dernière branche, huit pièces en test adversarial, 13 CTest passent, essai réel nord/retour ; binaire publié |
 | DUO-033 / COP-01 à 04 | Pilote livré, binaire publié | [Contrat](tasks/DUO-033.md), [revue](reviews/DUO-033.md), [bilan](../CORRECTION_COPLANAIRE.md) ; quinze cas DeepSeek, géométrie et intégration Codex, quatre scènes × huit vues examinées, 13 CTest et 64 Python passent ; COP précède le verre |
 | DUO-032 / VERRE-01 à 04 | Pilote livré, binaire publié | [Contrat](tasks/DUO-032.md), [revue](reviews/DUO-032.md), [bilan](../SOUTIENS_VERRE.md) ; tests DeepSeek corrigés, maillage et intégration Codex, cinq paires et deux vues SDL examinées ; 11 CTest et 64 Python passent |
 | DUO-031 | HUD repositionné, rendu vérifié | [Contrat](tasks/DUO-031.md), [revue](reviews/DUO-031.md) ; températures centrées à hauteur inchangée, boussole dégagée du joint droit et centres alignés ; binaire publié sans recompilation CUDA |

@@ -349,6 +349,35 @@ static void LocalPilot() {
     SceneDesignContext context;Scene scene;SceneAuditReport report;SceneViewConstraints view;
     view.landmark="portal";view.require_return_clearance=true;
     CHECK(AuditDynamicScene(local,context,nullptr,&scene,&report,&view));
+    {
+        // An otherwise valid cul-de-sac is rejected only on the last frontier.
+        const auto sides=local+
+            "box \"left_limit\" pos(3,0.5,-10) size(0.2,1,2) gray(0.5)\n"
+            "box \"right_limit\" pos(-3,0.5,-10) size(0.2,1,2) gray(0.5)\n";
+        const auto culdesac=sides+"box \"forward_limit\" pos(0.7,0.5,-4) size(0.1,1,0.2) gray(0.5)\n";
+        CHECK(AuditDynamicScene(culdesac,context,nullptr,&scene,&report,&view));
+        CHECK(LocalSceneClearApproaches(scene)==std::vector<std::string>{"back"});
+        auto last_frontier=context;last_frontier.require_onward_exit=true;
+        CHECK(!AuditDynamicScene(culdesac,last_frontier,nullptr,&scene,&report,&view));
+        CHECK(SerializeSceneAudit(report).find("exploration_continuation_blocked")!=std::string::npos);
+        CHECK(AuditDynamicScene(sides,last_frontier,nullptr,&scene,&report,&view));
+        CHECK(LocalSceneClearApproaches(scene)==std::vector<std::string>({"back","forward"}));
+        DynamicSceneConfig guard;guard.fixed_frame=true;guard.landmark="portal";
+        guard.coplanar_cleanup=false;guard.glass_supports=false;
+        int attempts=0;bool repair=true;
+        guard.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+            LlmStreamCallback,void*,LlmGenerationResult* r) {
+            ++attempts;CHECK(messages[1].content.find("EXPLORATION:")!=std::string::npos);
+            if(attempts==2)CHECK(messages.back().content.find("exploration_continuation_blocked")!=std::string::npos);
+            r->success=true;r->reached_eog=true;r->response_text=repair&&attempts>1?sides:culdesac;return true;
+        };
+        LlmGenerationConfig model;model.prompt_token_counter=FakePromptCount;DynamicSceneResult generated;
+        CHECK(GenerateDynamicScene(last_frontier,model,guard,nullptr,nullptr,&generated));
+        CHECK(attempts==2&&generated.scene_text==sides);
+        repair=false;attempts=0;
+        CHECK(!GenerateDynamicScene(last_frontier,model,guard,nullptr,nullptr,&generated));
+        CHECK(attempts==3&&generated.attempts.size()==3);
+    }
     CHECK(!AuditDynamicScene(local+"box \"behind\" pos(0,1,-11) size(2,2,0.5) gray(0.5)\n",context,nullptr,&scene,&report,&view));
     CHECK(report.diagnostics[0].code=="return_clearance_blocked");
     // Remove a genuine opaque occluder locally, but never its supported child.
@@ -608,6 +637,109 @@ static void LocalPilot() {
     const auto approaches=LocalSceneClearApproaches(scene);
     CHECK(approaches.size()==3&&std::find(approaches.begin(),approaches.end(),"left")==approaches.end());
 }
+static void ExplorationContinuity() {
+    // Adversarial narrator: it requests no branches at all. Test the actual
+    // traversal pipeline, including geometry, fallback, persistence and rollback.
+    for(int scenario=0;scenario<4;++scenario) {
+        SessionState state;HeadlessTurnResult turn;char error[1024]={};
+        CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+        HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+        cfg.dynamic_scene_config.coplanar_cleanup=false;cfg.dynamic_scene_config.glass_supports=false;
+        int compositions=0,narrations=0;bool fail=false,violate=false,cancel=false,cancelled=false;
+        json request,schema;
+        const std::string geometry=LocalFixture()+(scenario==3?
+            "box \"left_limit\" pos(3,0.5,-10) size(0.2,1,2) gray(0.5)\n"
+            "box \"right_limit\" pos(-3,0.5,-10) size(0.2,1,2) gray(0.5)\n":"");
+        cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,
+            LlmStreamCallback,void*,LlmGenerationResult* r) {
+            ++compositions;r->success=true;r->reached_eog=true;r->response_text=geometry;return true;
+        };
+        cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
+            LlmStreamCallback,void*,LlmGenerationResult* r) {
+            ++narrations;request=json::parse(messages[1].content);schema=json::parse(c.json_schema);
+            if(fail)return false;
+            json exits={{"north",false},{"east",false},{"south",false},{"west",false}};
+            for(auto it=request["exit_proposal"]["fixed"].begin();it!=request["exit_proposal"]["fixed"].end();++it)
+                exits[it.key()]=it.value();
+            if(violate)for(const auto& direction:request["exit_proposal"]["exploration_required"])
+                exits[direction.get<std::string>()]=false;
+            r->success=true;r->reached_eog=true;
+            r->response_text=json({{"title","Still stone"},{"summary","You study the stone under a pale sky."},
+                {"narration","You remain before the still stone. The pale light rests along its edges, and the dust settles slowly around your visor. You study the intervals between the blocks while your breath marks the pause. The distant sky holds its muted colour. "+std::to_string(narrations)},
+                {"thermal",{{"external_temperature_c",request["temperature_external_c"]},
+                    {"body_temperature_c",request["temperature_body_c"].get<float>()+(violate?.1f:0.f)},{"reason","Stable protection."}}},
+                {"exits",exits}}).dump();
+            if(cancel)cancelled=true;
+            return true;
+        };
+        auto act=[&](const std::string& command) {
+            CHECK(RunHeadlessTurnFromState(state,command.c_str(),cfg,&turn,error,sizeof(error)));
+            UpdateSessionStateFromTurn(command.c_str(),turn,&state);
+        };
+        auto save=[&]() {std::string text;CHECK(SerializeSessionStateToJsonString(state,&text));return text;};
+        // Two optional dead ends exhaust all but the starting southern route.
+        act("north");CHECK(state.spatial_state.blocked_exits.size()==3);act("south");
+        act("east");CHECK(state.spatial_state.blocked_exits.size()==3);act("west");
+        CHECK(compositions==2&&state.current_place_id=="canonical:quarry_threshold");
+        fail=scenario==1;violate=scenario==2;
+        const auto body=state.hard_state.body_temperature_c;
+        act("south");
+        const auto third=state.generated_rooms.back();
+        const auto reserved=json::parse(third.scene_design_json).at("exploration_required").get<std::vector<std::string>>();
+        CHECK(reserved.size()==(scenario==3?1:2));
+        CHECK(state.spatial_state.blocked_exits.size()==3-reserved.size());
+        CHECK(third.metadata_fallback_used==(fail||violate));
+        CHECK(state.hard_state.body_temperature_c==body&&compositions==3);
+        for(const auto& direction:reserved) {
+            CHECK(direction!="north"); // Return is not a new branch.
+            CHECK(request["exit_proposal"]["fixed"][direction]==true);
+            CHECK(schema["properties"]["exits"]["properties"][direction]["enum"]==json::array({true}));
+        }
+        CHECK(ParseSessionStateFromJson(save().c_str(),&state,error,sizeof(error)));
+        if(fail||violate) {
+            fail=false;violate=false;act("look");
+            CHECK(!state.generated_rooms.back().metadata_fallback_used);
+            CHECK(state.spatial_state.blocked_exits==third.spatial_state.blocked_exits);
+            for(const auto& direction:reserved)CHECK(request["exit_proposal"]["fixed"][direction]==true);
+        }
+        act("north");act("south");
+        CHECK(compositions==3&&turn.rendered_scene_text==geometry);
+        CHECK(state.current_place_id==third.room_id&&state.spatial_state.blocked_exits==third.spatial_state.blocked_exits);
+        if(scenario==0) {
+            // Reject tampered reservation metadata even if its hash is updated.
+            const auto snapshot=json::parse(save());
+            for(const auto& invalid:{json::array({"north"}),json::array({"up"}),json::array({reserved[0],reserved[0]})}) {
+                auto altered=snapshot;auto& generation=altered["generated_rooms"].back()["scene_generation"];
+                auto provenance=json::parse(generation["design"].get<std::string>());
+                provenance["exploration_required"]=invalid;generation["design"]=provenance.dump();
+                generation["plan_sha256"]=SceneTextHash(provenance.dump());
+                SessionState rejected;CHECK(!ParseSessionStateFromJson(altered.dump().c_str(),&rejected,error,sizeof(error)));
+            }
+            // Cancellation on the next discovery leaves the whole graph intact.
+            const auto before=save();cancel=true;cfg.stream_user_data=&cancelled;
+            cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char*,void* data){return !*static_cast<bool*>(data);};
+            CHECK(!RunHeadlessTurnFromState(state,reserved[0].c_str(),cfg,&turn,error,sizeof(error)));
+            CHECK(cancelled&&turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());
+            UpdateSessionStateFromTurn(reserved[0].c_str(),turn,&state);CHECK(save()==before);
+            cfg.stream_callback=nullptr;cancel=false;
+            // Follow the unknown branches depth first, backtracking out of dead
+            // ends. The frontier must be replenished repeatedly, beyond 3 rooms.
+            for(int steps=0;state.generated_rooms.size()<8&&steps<30;++steps) {
+                std::string direction;
+                for(const auto* candidate:{"north","east","south","west"}) {
+                    if(std::find(state.spatial_state.blocked_exits.begin(),state.spatial_state.blocked_exits.end(),candidate)!=state.spatial_state.blocked_exits.end())continue;
+                    bool known=false;for(const auto& link:state.room_links)
+                        if(link.from_place_id==state.current_place_id&&CardinalDirectionToString(link.direction)==std::string(candidate))known=true;
+                    if(!known){direction=candidate;break;}
+                }
+                if(direction.empty())for(const auto& room:state.generated_rooms)if(room.room_id==state.current_place_id)
+                    direction=json::parse(room.scene_design_json).at("return_direction").get<std::string>();
+                CHECK(!direction.empty());act(direction);
+            }
+            CHECK(state.generated_rooms.size()==8);
+        }
+    }
+}
 static void ContinuityJourney() {
     SessionState state;HeadlessTurnResult turn;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
@@ -819,7 +951,7 @@ static void LanguageContinuity() {
                 {"exits",request.at("exit_proposal").at("fixed")}}).dump();return true;
         };
         // Command language (even an instruction to switch) cannot override the selection.
-        for(const char* command:{"north","regarder la pierre","look at the stone","rispondi in francese","wait","speak English"}) {
+        for(const char* command:{"west","regarder la pierre","look at the stone","rispondi in francese","wait","speak English"}) {
             const auto body=state.hard_state.body_temperature_c;const auto inventory=state.hard_state.inventory_items;
             CHECK(RunHeadlessTurnFromState(state,command,cfg,&turn,error,sizeof(error)));
             CHECK(!turn.used_turn_fallback&&turn.turn_result.narration==prose[i]);
@@ -836,7 +968,7 @@ static void LanguageContinuity() {
         CHECK(calls==7);
         if(languages[i]!=kGameLanguageFrench) {
             wrong=true;const auto body=state.hard_state.body_temperature_c;
-            CHECK(RunHeadlessTurnFromState(state,"north",cfg,&turn,error,sizeof(error)));
+            CHECK(RunHeadlessTurnFromState(state,"west",cfg,&turn,error,sizeof(error)));
             CHECK(calls==8&&turn.used_turn_fallback&&turn.turn_result.narration!=foreign);
             const auto metrics=json::parse(turn.narrative_metrics_json);
             CHECK(metrics.at("fallback_reason")=="wrong_output_language");
@@ -857,10 +989,11 @@ static void LanguageContinuity() {
 }
 
 static void SingleStart() {
+    CHECK(RunNavigationSelfTest(stderr));
     SessionState state,restored;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     CHECK(state.generated_rooms.empty()&&state.room_links.empty()&&state.invisible_barriers.empty());
-    CHECK(state.spatial_state.blocked_exits==std::vector<std::string>({"north","south","west"}));
+    CHECK(state.spatial_state.blocked_exits==std::vector<std::string>({"west"}));
     std::string saved;CHECK(SerializeSessionStateToJsonString(state,&saved));
     for(const char* removed:{"extraction_field","crystal_cut","scanner_station","survey_plateau","labyrinth_threshold","prospect_shelter"}) {
         LocationId id=kLocationUnknown;CHECK(!ParseLocationId(removed,&id));
@@ -1050,6 +1183,6 @@ static void CoplanarSupportJourney() {
     std::filesystem::remove_all(root);
 }
 int main() {
-    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
+    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

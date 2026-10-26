@@ -10,7 +10,7 @@ Le moteur C++17 garde l'autorité sur les déplacements, l'inventaire et les tem
 
 Lancer `play_within_the_latent_walls.bat` dans le dépôt, ou
 `WithinTheLatentWalls.exe` dans le dossier portable. Choisir une des six langues,
-puis jouer directement. Au seuil, **est** ouvre l'exploration ; suivre ensuite
+puis jouer directement. Au seuil, **nord, est et sud** ouvrent l'exploration ; suivre ensuite
 les issues de la boussole. `inventaire` / `inventory` / `i` consulte les trois outils.
 
 Gemma 4 E4B Q4_K_M tourne dans le processus via **llama.cpp intégré**. Aucun
@@ -22,6 +22,9 @@ suit l'évolution thermique du scaphandre.
 
 Un seul lieu est prédéfini. Les autres sont inventés pendant la partie et gardent
 leur géométrie lors des retours. Chaque lancement recommence une exploration.
+Le moteur conserve une issue vers l'inconnu : les impasses restent possibles tant
+qu'un autre chemin inexploré est accessible. La dernière branche réserve une suite,
+ou deux nouvelles branches si le décor le permet, même si la narration échoue.
 Le modèle compose librement à partir du lieu quitté et des événements validés.
 Tous les lieux restent en mémoire pendant la partie ; seul l'extrait d'historique
 envoyé au modèle est réduit selon son budget de tokens.
