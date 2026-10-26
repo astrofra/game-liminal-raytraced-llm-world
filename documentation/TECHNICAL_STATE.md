@@ -26,10 +26,13 @@ réelles des limites de qualification restantes.
 - Un seuil de carrière prédéfini, inspiré du concept 12 ; tous les autres lieux sont inventés pendant la partie.
 - Trois compositions au maximum, normalisation syntaxique conservatrice et audit strict de caméra.
 - Visibilité 256 × 128, profondeur et ID d'objet ; suppression locale bornée des occultants.
+- [Correction coplanaire](CORRECTION_COPLANAIRE.md) avant le verre : faces originales,
+  intersection plane, microtranslations bornées et auditées, union des huit
+  vues de respiration, rapports et étapes persistées ; aucun appel LLM ajouté.
 - Géométrie acceptée immuable, liens réciproques et retours garantis par le moteur.
 - [Soutiens de verre](SOUTIENS_VERRE.md) de 0,25 m sous les composantes flottantes :
   graphe de contacts OBB, coque suivant l'emprise et la sous-face inclinée, après
-  validation opaque ; exclusions caméra/approches, aperçu réfracté, secours opaque
+  correction et validation opaques ; exclusions caméra/approches, aperçu réfracté, secours opaque
   et archives séparées. Aucun appel LLM supplémentaire ; bruit optique encore visible.
 - Narration, propositions d'issues et chaleur par le modèle, puis validation autoritative.
 - Température corporelle couplée à la température d'échantillonnage des prochains appels.

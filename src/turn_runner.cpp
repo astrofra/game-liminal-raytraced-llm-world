@@ -3528,6 +3528,7 @@ static bool RunHeadlessTurnFromStateImpl(
             }
             // Lighting is an artistic choice; the plan cannot advance the world clock.
             room.scene_text=generated.scene_text;room.scene_source="dynamic_v1";
+            room.pre_coplanar_scene_text=generated.pre_coplanar_scene_text;room.coplanar_cleanup_json=generated.coplanar_cleanup_json;
             room.opaque_scene_text=generated.opaque_scene_text;room.glass_supports_json=generated.glass_supports_json;
             room.scene_contract_version=1;room.scene_design_json=generated.plan_json;room.scene_hash=generated.scene_hash;
             room.scene_plan_hash=SceneTextHash(generated.plan_json);room.scene_profile=config.generation_config.profile_name;

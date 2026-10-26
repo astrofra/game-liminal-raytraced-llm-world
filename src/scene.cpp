@@ -22,14 +22,6 @@ struct MaterialDraft {
     MaterialDraft() : ka(0.0f), kd(0.0f), has_ka(false), has_kd(false) {}
 };
 
-struct FaceQuad {
-    int i0;
-    int i1;
-    int i2;
-    int i3;
-    Vec3 expected_normal;
-};
-
 static void ResetScene(Scene* scene)
 {
     scene->name.clear();
@@ -639,32 +631,8 @@ static void AddBoxPrimitive(
         ? AddGlassPrimitiveMaterial(scene, name, gray_value, emission_value)
         : AddPrimitiveMaterial(scene, name, gray_value, emission_value);
     const SceneBox box = MakeSceneBox(name, center, size, rotation_degrees, use_glass);
-    const auto& corners = box.corners;
-
-    FaceQuad faces[6];
-    faces[0].i0 = 4; faces[0].i1 = 5; faces[0].i2 = 6; faces[0].i3 = 7;
-    faces[0].expected_normal = Normalize(RotateEulerDegrees(Vec3(0.0f, 0.0f, 1.0f), rotation_degrees));
-    faces[1].i0 = 1; faces[1].i1 = 0; faces[1].i2 = 3; faces[1].i3 = 2;
-    faces[1].expected_normal = Normalize(RotateEulerDegrees(Vec3(0.0f, 0.0f, -1.0f), rotation_degrees));
-    faces[2].i0 = 0; faces[2].i1 = 4; faces[2].i2 = 7; faces[2].i3 = 3;
-    faces[2].expected_normal = Normalize(RotateEulerDegrees(Vec3(-1.0f, 0.0f, 0.0f), rotation_degrees));
-    faces[3].i0 = 5; faces[3].i1 = 1; faces[3].i2 = 2; faces[3].i3 = 6;
-    faces[3].expected_normal = Normalize(RotateEulerDegrees(Vec3(1.0f, 0.0f, 0.0f), rotation_degrees));
-    faces[4].i0 = 3; faces[4].i1 = 7; faces[4].i2 = 6; faces[4].i3 = 2;
-    faces[4].expected_normal = Normalize(RotateEulerDegrees(Vec3(0.0f, 1.0f, 0.0f), rotation_degrees));
-    faces[5].i0 = 0; faces[5].i1 = 1; faces[5].i2 = 5; faces[5].i3 = 4;
-    faces[5].expected_normal = Normalize(RotateEulerDegrees(Vec3(0.0f, -1.0f, 0.0f), rotation_degrees));
-
-    for (int face_index = 0; face_index < 6; ++face_index) {
-        const FaceQuad& face = faces[face_index];
-        AddQuad(
-            scene,
-            corners[face.i0],
-            corners[face.i1],
-            corners[face.i2],
-            corners[face.i3],
-            material_index,
-            face.expected_normal);
+    for (const auto& face : SceneBoxFaces(box)) {
+        AddQuad(scene,face.corners[0],face.corners[1],face.corners[2],face.corners[3],material_index,face.normal);
     }
 }
 
@@ -2616,6 +2584,34 @@ SceneBox MakeSceneBox(const std::string& id, const Vec3& center, const Vec3& siz
                  Vec3(-h.x,-h.y,h.z),Vec3(h.x,-h.y,h.z),Vec3(h.x,h.y,h.z),Vec3(-h.x,h.y,h.z)};
     for(auto& corner:box.corners)corner=center+RotateEulerDegrees(corner,rotation);
     return box;
+}
+
+std::array<SceneBoxFace,6> SceneBoxFaces(const SceneBox& box) {
+    static const int indices[6][4]={{4,5,6,7},{1,0,3,2},{0,4,7,3},{5,1,2,6},{3,7,6,2},{0,1,5,4}};
+    const Vec3 normals[6]={box.axes[2],-box.axes[2],-box.axes[0],box.axes[0],box.axes[1],-box.axes[1]};
+    std::array<SceneBoxFace,6> faces;
+    for(size_t i=0;i<faces.size();++i) {
+        auto& face=faces[i];face.normal=Normalize(normals[i]);
+        for(size_t j=0;j<4;++j){face.corners[j]=box.corners[indices[i][j]];face.center+=face.corners[j]*.25f;}
+    }
+    return faces;
+}
+
+bool SceneBoxesTouch(const SceneBox& a,const SceneBox& b,float tolerance) {
+    Aabb ab,bb;for(const auto& p:a.corners)ab.Expand(p);for(const auto& p:b.corners)bb.Expand(p);
+    if(ab.max.x+tolerance<bb.min.x||bb.max.x+tolerance<ab.min.x||
+       ab.max.y+tolerance<bb.min.y||bb.max.y+tolerance<ab.min.y||
+       ab.max.z+tolerance<bb.min.z||bb.max.z+tolerance<ab.min.z)return false;
+    std::vector<Vec3> axes(a.axes.begin(),a.axes.end());axes.insert(axes.end(),b.axes.begin(),b.axes.end());
+    for(const auto& x:a.axes)for(const auto& y:b.axes)axes.push_back(Cross(x,y));
+    for(auto axis:axes) {
+        const float length=Length(axis);if(length<1e-6f)continue;axis=axis/length;
+        double amin=1e30,amax=-1e30,bmin=1e30,bmax=-1e30;
+        for(const auto& p:a.corners){const double d=Dot(p,axis);amin=std::min(amin,d);amax=std::max(amax,d);}
+        for(const auto& p:b.corners){const double d=Dot(p,axis);bmin=std::min(bmin,d);bmax=std::max(bmax,d);}
+        if(amax+tolerance+1e-6<bmin||bmax+tolerance+1e-6<amin)return false;
+    }
+    return true;
 }
 
 bool LoadSceneFromPath(const char* scene_path, Scene* scene, char* error_buffer, size_t error_buffer_size)

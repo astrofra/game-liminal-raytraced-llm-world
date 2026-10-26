@@ -58,8 +58,10 @@ originales n'ancrent pas le graphe opaque et ne sont pas modifiées.
 ## Intégration et conservation
 
 La scène opaque passe toujours par la normalisation, le contrat 8–20 boîtes,
-l'audit, les suppressions d'occultants et son aperçu. Ensuite seulement viennent
-les soutiens. Un second aperçu 256 × 128, 4 échantillons, vérifie le rendu réfracté,
+l'audit, les suppressions d'occultants et son aperçu. La [correction des faces
+coplanaires](CORRECTION_COPLANAIRE.md) effectue ensuite ses microtranslations et
+repasse les audits opaques. Les soutiens consomment ces positions définitives.
+Un aperçu 256 × 128, 4 échantillons, vérifie ensuite le rendu réfracté,
 sa variation lumineuse et une luminance moyenne d'au moins 35 % de l'originale.
 Les approches claires doivent rester identiques. Échec ou délai de ce complément :
 scène opaque conservée, statut `opaque_fallback`. L'annulation utilisateur reste
@@ -79,7 +81,7 @@ réfractée. Les essais de composition restent opaques. Les revisites chargent l
 scène finale immuable. Une réapplication explicite remplace son enveloppe moteur
 et ne double pas les soutiens.
 
-Les faits narratifs gardent la visibilité opaque originale et ajoutent les seuls
+Les faits narratifs utilisent la visibilité opaque corrigée par COP et ajoutent les seuls
 identifiants de soutiens réellement présents : verre visible décoratif, distinct
 des barrières invisibles, sans nouvelle issue ni objet manipulable. Aucun prompt
 d'improvisation ni modèle du jeu n'a été modifié ; aucun appel LLM ajouté.

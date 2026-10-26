@@ -22,6 +22,8 @@ set(LIMINAL_SOURCES
     src/continuity.cpp
     src/research_archive.cpp
     src/scene_design.cpp
+    src/scene_hash.cpp
+    src/coplanar_cleanup.cpp
     src/scene_validation.cpp
     src/scene_normalization.cpp
     src/dynamic_scene.cpp
@@ -74,6 +76,18 @@ endforeach()
 add_test(NAME glass_supports COMMAND liminal_glass_supports_test)
 add_test(NAME glass_supports_geometry COMMAND liminal_glass_supports_geometry_test)
 
+add_executable(liminal_coplanar_cleanup src/coplanar_cleanup_cli.cpp src/coplanar_cleanup.cpp src/scene_hash.cpp src/glass_supports.cpp src/scene.cpp src/renderer.cpp src/animated_view.cpp)
+add_executable(liminal_coplanar_cleanup_test tests/coplanar_cleanup_test.cpp src/coplanar_cleanup.cpp src/scene_hash.cpp src/glass_supports.cpp src/scene.cpp)
+add_executable(liminal_coplanar_cleanup_geometry_test tests/coplanar_cleanup_geometry_test.cpp src/coplanar_cleanup.cpp src/scene_hash.cpp src/glass_supports.cpp src/scene.cpp src/animated_view.cpp)
+foreach(target liminal_coplanar_cleanup liminal_coplanar_cleanup_test liminal_coplanar_cleanup_geometry_test)
+    target_include_directories(${target} PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash")
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4 /wd4996 /utf-8)
+    endif()
+endforeach()
+add_test(NAME coplanar_cleanup COMMAND liminal_coplanar_cleanup_test)
+add_test(NAME coplanar_cleanup_geometry COMMAND liminal_coplanar_cleanup_geometry_test)
+
 add_executable(liminal_distant_light_test tests/distant_light_test.cpp src/scene.cpp src/renderer.cpp)
 target_include_directories(liminal_distant_light_test PRIVATE src vendor/stb)
 if(MSVC)
@@ -84,7 +98,7 @@ add_test(NAME distant_light COMMAND liminal_distant_light_test)
 add_executable(liminal_dynamic_scene_test tests/dynamic_scene_test.cpp
     src/scene_design.cpp src/scene_validation.cpp src/scene_normalization.cpp src/dynamic_scene.cpp src/scene.cpp src/renderer.cpp
     src/game_state.cpp src/place_proposal.cpp src/inventory.cpp src/narrative_language.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp
-    src/research_archive.cpp src/continuity.cpp src/glass_supports.cpp
+    src/research_archive.cpp src/continuity.cpp src/glass_supports.cpp src/coplanar_cleanup.cpp src/scene_hash.cpp src/animated_view.cpp
     "${MODEL_HEADER}" "${SCENE_GUIDE_HEADER}")
 target_include_directories(liminal_dynamic_scene_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor"
     "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash" "${CMAKE_CURRENT_BINARY_DIR}/generated")
@@ -113,6 +127,8 @@ if (LIMINAL_ENABLE_OPENMP)
         target_compile_definitions(liminal_cornell_renderer PRIVATE LIMINAL_ENABLE_OPENMP=1)
         target_link_libraries(liminal_glass_supports PRIVATE OpenMP::OpenMP_CXX)
         target_compile_definitions(liminal_glass_supports PRIVATE LIMINAL_ENABLE_OPENMP=1)
+        target_link_libraries(liminal_coplanar_cleanup PRIVATE OpenMP::OpenMP_CXX)
+        target_compile_definitions(liminal_coplanar_cleanup PRIVATE LIMINAL_ENABLE_OPENMP=1)
     else()
         message(STATUS "OpenMP requested but not found; building renderer without OpenMP")
     endif()
@@ -220,7 +236,7 @@ target_include_directories(liminal_scene_normalization_test PRIVATE src)
 add_test(NAME scene_normalization COMMAND liminal_scene_normalization_test)
 
 add_executable(liminal_scene_visibility_test tests/scene_visibility_test.cpp
-    src/scene_validation.cpp src/scene_design.cpp src/continuity.cpp src/scene.cpp src/renderer.cpp "${SCENE_GUIDE_HEADER}")
+    src/scene_validation.cpp src/scene_design.cpp src/scene_hash.cpp src/continuity.cpp src/scene.cpp src/renderer.cpp "${SCENE_GUIDE_HEADER}")
 target_include_directories(liminal_scene_visibility_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash" "${CMAKE_CURRENT_BINARY_DIR}/generated")
 if(MSVC)
     target_compile_options(liminal_scene_visibility_test PRIVATE /utf-8)

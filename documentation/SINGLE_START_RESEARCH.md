@@ -39,6 +39,8 @@ Sur cette machine : `C:/Users/fra/AppData/Local/WithinTheLatentWalls/research/`.
 | `places/place-*.txt` | Description du lieu et brief de composition pour les lieux générés. |
 | `places/place-*.scene` | Programme exact du lieu accepté ; le premier lieu est également archivé. |
 | `places/place-*.png` | Première image affichée, post-traitement inclus, sans HUD ; pas les huit images de respiration. |
+| `places/place-*.pre-coplanar.scene`, `.opaque.scene`, `.scene` | Opaque accepté avant correction, opaque corrigé, scène finale avec les soutiens retenus. |
+| `places/place-*.coplanar.json`, `.supports.json` | Paramètres, essais, décisions et empreintes des deux passes moteur. |
 | `places/place-*.json` | Identifiant, description, empreinte de scène, modèle, graine et provenance. |
 | `events.jsonl`, `transcript.txt` | Commandes envoyées au moteur, résultats, narration et erreurs. |
 | `turns/turn-*.json` | Réponse, prompt disponible, métriques de composition, provenance et résultat du tour. |

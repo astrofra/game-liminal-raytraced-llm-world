@@ -78,23 +78,6 @@ Polygon Footprint(const SceneBox& b) {
     Polygon p;for(const auto& v:b.corners)p.push_back({v.x,v.z});return Hull(p);
 }
 Aabb Bounds(const SceneBox& b) {Aabb a;for(const auto& p:b.corners)a.Expand(p);return a;}
-bool Contact(const SceneBox& a,const SceneBox& b) {
-    const auto ab=Bounds(a),bb=Bounds(b);
-    if(ab.max.x+kContact<bb.min.x||bb.max.x+kContact<ab.min.x||
-       ab.max.y+kContact<bb.min.y||bb.max.y+kContact<ab.min.y||
-       ab.max.z+kContact<bb.min.z||bb.max.z+kContact<ab.min.z)return false;
-    std::vector<Vec3> axes(a.axes.begin(),a.axes.end());
-    axes.insert(axes.end(),b.axes.begin(),b.axes.end());
-    for(const auto& x:a.axes)for(const auto& y:b.axes)axes.push_back(Cross(x,y));
-    for(auto axis:axes) {
-        const float length=Length(axis);if(length<1e-6f)continue;axis=axis/length;
-        double amin=1e30,amax=-1e30,bmin=1e30,bmax=-1e30;
-        for(const auto& p:a.corners){const double d=Dot(p,axis);amin=std::min(amin,d);amax=std::max(amax,d);}
-        for(const auto& p:b.corners){const double d=Dot(p,axis);bmin=std::min(bmin,d);bmax=std::max(bmax,d);}
-        if(amax+kContact+kTolerance<bmin||bmax+kContact+kTolerance<amin)return false;
-    }
-    return true;
-}
 struct LowerFace { Polygon footprint; Vec3 normal, point; };
 std::vector<LowerFace> LowerFaces(const SceneBox& b) {
     static const int indices[6][4]={{1,2,6,5},{0,4,7,3},{3,7,6,2},{0,1,5,4},{4,5,6,7},{0,3,2,1}};
@@ -285,7 +268,7 @@ GlassSupportResult BuildGlassSupports(const std::string& program,const GlassSupp
         std::vector<std::vector<size_t>> neighbors(n);
         for(size_t i=0;i<n;++i) {
             ground[i]=Bounds(boxes[i]).min.y<=kContact+kTolerance;
-            for(size_t j=0;j<i;++j)if(Contact(boxes[i],boxes[j])){neighbors[i].push_back(j);neighbors[j].push_back(i);}
+            for(size_t j=0;j<i;++j)if(SceneBoxesTouch(boxes[i],boxes[j],float(kContact))){neighbors[i].push_back(j);neighbors[j].push_back(i);}
         }
         int next_component=0;std::vector<bool> grounded;
         for(size_t root=0;root<n;++root)if(component[root]<0) {

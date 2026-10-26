@@ -284,6 +284,8 @@ struct GeneratedRoom {
     SpatialState spatial_state;
     std::string scene_text;
     std::string scene_source;
+    std::string pre_coplanar_scene_text;
+    std::string coplanar_cleanup_json;
     std::string opaque_scene_text;
     std::string glass_supports_json;
     std::string arrival_narration;

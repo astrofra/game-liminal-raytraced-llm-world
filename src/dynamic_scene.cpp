@@ -2,6 +2,8 @@
 #include "renderer.h"
 #include "scene_normalization.h"
 #include "glass_supports.h"
+#include "coplanar_cleanup.h"
+#include "animated_view.h"
 #include "nlohmann/json.hpp"
 #include <algorithm>
 #include <chrono>
@@ -106,6 +108,7 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
             {"removed_code_wrappers",removed_wrappers},
             {"program_patch_repairs",patch_repairs},
             {"audit_ms",audit_ms},{"preview_ms",preview_ms},
+            {"coplanar_cleanup",result->coplanar_cleanup_json.empty()?json(nullptr):json::parse(result->coplanar_cleanup_json)},
             {"glass_supports",result->glass_supports_json.empty()?json(nullptr):json::parse(result->glass_supports_json)},
             {"elapsed_ms",std::chrono::duration<double,std::milli>(Clock::now()-start).count()},
             {"audit",json::parse(SerializeSceneAudit(result->audit))},{"audit_history",audits},{"error",result->error}}).dump(2);
@@ -278,6 +281,75 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
         result->attempts.push_back(std::move(attempt));
         if(!gate.Poll())return finish(false);
         if(ok) {
+            result->pre_coplanar_scene_text=result->scene_text;
+            if(config.fixed_frame&&config.coplanar_cleanup) {
+                // Keep the accepted opaque scene until the complete correction
+                // passes the same authoritative audits and a fresh preview.
+                Gate cleanup_gate=gate;
+                cleanup_gate.Stage(DynamicScenePhase::Audit);
+                const auto approaches=LocalSceneClearApproaches(result->scene);
+                SceneViewConstraints view;view.landmark=config.landmark;view.near_distance=3;
+                view.max_near_coverage=.9f;view.require_return_clearance=true;
+                CoplanarCleanupOptions options;
+                const auto pose_b=BuildBreathingPoseB(result->scene.camera,AnimatedViewConfig());
+                for(int i=1;i<kAnimatedViewImageCapacity;++i)
+                    options.extra_cameras.push_back(CalculateAnimatedCameraPose(result->scene.camera,pose_b,i));
+                options.validate=[&](const std::string& text,std::string* reason) {
+                    if(!cleanup_gate.Poll()){*reason="cancelled_or_timeout";return false;}
+                    Scene candidate;SceneAuditReport audit;
+                    if(!ValidateLocalSceneContract(text,reason))return false;
+                    if(!AuditDynamicScene(text,context,design,&candidate,&audit,&view)) {
+                        *reason=SerializeSceneAudit(audit);return false;
+                    }
+                    if(LocalSceneClearApproaches(candidate)!=approaches) {
+                        *reason="authoritative_approaches_changed";return false;
+                    }
+                    return true;
+                };
+                auto cleaned=CleanupCoplanarFaces(result->scene_text,options);
+                auto report=json::parse(cleaned.report_json);
+                bool accepted=cleaned.success&&cleanup_gate.Poll();
+                std::string rejection=cleaned.error;
+                Scene corrected;SceneAuditReport corrected_audit;
+                std::vector<unsigned char> pixels;
+                if(accepted&&cleaned.accepted_translations) {
+                    const auto verify_start=Clock::now();
+                    accepted=ValidateLocalSceneContract(cleaned.scene_text,&rejection)&&
+                        AuditDynamicScene(cleaned.scene_text,context,design,&corrected,&corrected_audit,&view);
+                    report["corrected_geometry_audit"]=json::parse(SerializeSceneAudit(corrected_audit));
+                    if(accepted) {
+                        cleanup_gate.Stage(DynamicScenePhase::Preview);
+                        RenderConfig preview;preview.width=256;preview.height=128;preview.samples_per_pixel=4;
+                        preview.seed=model.seed;preview.max_bounces=3;
+                        RenderControl control{Gate::Render,&cleanup_gate};
+                        accepted=RenderSceneToPixels(corrected,preview,&pixels,&control)&&
+                            AuditDynamicPreview(pixels,"night",&corrected_audit);
+                        report["corrected_preview_audit"]=json::parse(SerializeSceneAudit(corrected_audit));
+                    }
+                    report["verification_ms"]=std::chrono::duration<double,std::milli>(Clock::now()-verify_start).count();
+                }
+                if(accepted) {
+                    result->scene_text=std::move(cleaned.scene_text);
+                    if(cleaned.accepted_translations) {
+                        result->scene=std::move(corrected);result->audit=std::move(corrected_audit);
+                        result->preview_pixels=std::move(pixels);record_audit("coplanar_corrected");
+                    }
+                } else {
+                    report["proposed_correction"]=json::parse(cleaned.report_json);
+                    report["status"]="opaque_fallback";report["success"]=false;
+                    report["fallback_reason"]=rejection.empty()?"corrected audit, preview or timeout failed":rejection;
+                    report["accepted_translations"]=0;report["moves"]=json::array();report["modified_blocks"]=json::array();
+                    for(auto& trial:report["trials"])if(trial["accepted"].get<bool>()) {
+                        trial["accepted"]=false;trial["reason"]="final_verification_rollback";
+                    }
+                    report["remaining_conflicts"]=report["initial_conflicts"];report["final_pairs"]=report["initial_pairs"];
+                }
+                report["optional_preview_timeout"]=cleanup_gate.expired;
+                report["corrected_sha256"]=SceneTextHash(result->scene_text);
+                result->coplanar_cleanup_json=report.dump(2);
+                gate.cancelled=cleanup_gate.cancelled;
+                if(gate.cancelled)return finish(false);
+            }
             result->opaque_scene_text=result->scene_text;
             if(config.fixed_frame&&config.glass_supports) {
                 auto supports=BuildGlassSupports(result->opaque_scene_text);

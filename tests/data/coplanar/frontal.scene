@@ -1,0 +1,13 @@
+# DUO-033 coplanar-cleanup fixture for case 1 (frontal coplanar overlap).
+# Synthetic fixture, not a reconstruction of a user capture.
+
+room "DUO-033 coplanar cleanup fixture"
+camera eye(0.0,1.7,-10.0) target(0.0,1.7,5.0) up(0.0,1.0,0.0) fov(50.0)
+spotlight panel(1.0,1.0) offset(0.0,0.0,0.35) range(44.0) cone(15.0,36.0) intensity(58.0)
+distant_light direction(0.75,-0.42,0.35) intensity(3.6) color(1.0,0.90,0.74) angular_radius(0.40)
+sky zenith(0.04) horizon(0.35) nadir(0.00) band(0.34) curve(1.92) noise(0.12) stars(0,0,0) seed(257)
+
+plane "fixture_floor" pos(0.0,0.0,10.0) normal(0.0,1.0,0.0) size(120.0,160.0) gray(0.22)
+
+box "a" pos(-0.5,1.0,5.0) size(3.0,2.0,1.0) gray(0.25)
+box "b" pos(0.5,1.0,5.0) size(3.0,2.0,1.0) gray(0.75)

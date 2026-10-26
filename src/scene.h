@@ -20,6 +20,13 @@ struct SceneBox {
 };
 SceneBox MakeSceneBox(const std::string& id, const Vec3& center, const Vec3& size,
                      const Vec3& rotation, bool glass = false);
+struct SceneBoxFace {
+    std::array<Vec3,4> corners;
+    Vec3 normal, center;
+};
+// Stable face order: +Z, -Z, -X, +X, +Y, -Y. Also used to triangulate boxes.
+std::array<SceneBoxFace,6> SceneBoxFaces(const SceneBox& box);
+bool SceneBoxesTouch(const SceneBox& a,const SceneBox& b,float tolerance=.01f);
 
 struct BvhNode {
     Aabb bounds;

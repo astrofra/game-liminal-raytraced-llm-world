@@ -265,6 +265,8 @@ static json MakeGeneratedRoomsJson(const std::vector<GeneratedRoom>& rooms)
         item["room_id"] = rooms[index].room_id;
         item["spatial_state"] = MakeSpatialStateJson(rooms[index].spatial_state);
         item["scene_text"] = rooms[index].scene_text;
+        item["pre_coplanar_scene_text"] = rooms[index].pre_coplanar_scene_text;
+        item["coplanar_cleanup"] = rooms[index].coplanar_cleanup_json;
         item["opaque_scene_text"] = rooms[index].opaque_scene_text;
         item["glass_supports"] = rooms[index].glass_supports_json;
         item["scene_source"] = rooms[index].scene_source;
@@ -446,7 +448,15 @@ static void ParseGeneratedRoomsNode(const json& node, std::vector<GeneratedRoom>
             ParseSpatialStateNode(node[index]["spatial_state"], &room.spatial_state);
         }
         room.scene_text = ReadStringNode(node[index], "scene_text");
+        room.pre_coplanar_scene_text = ReadStringNode(node[index], "pre_coplanar_scene_text");
+        room.coplanar_cleanup_json = ReadStringNode(node[index], "coplanar_cleanup");
         room.opaque_scene_text = ReadStringNode(node[index], "opaque_scene_text");
+        if(!room.coplanar_cleanup_json.empty()) {
+            const auto cleanup=json::parse(room.coplanar_cleanup_json);
+            if(cleanup.at("source_sha256")!=SceneTextHash(room.pre_coplanar_scene_text)||
+               cleanup.at("corrected_sha256")!=SceneTextHash(room.opaque_scene_text))
+                throw std::runtime_error("Invalid coplanar correction archive hashes");
+        }
         room.glass_supports_json = ReadStringNode(node[index], "glass_supports");
         if(!room.glass_supports_json.empty()) {
             const auto support=json::parse(room.glass_supports_json);

@@ -3,6 +3,7 @@
 #include "renderer.h"
 #include "turn_runner.h"
 #include "research_archive.h"
+#include "coplanar_cleanup.h"
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -971,7 +972,84 @@ static void GlassSupportJourney() {
     CHECK(std::filesystem::equivalent(root.parent_path(),std::filesystem::temp_directory_path()));
     std::filesystem::remove_all(root);
 }
+static void CoplanarSupportJourney() {
+    const auto source=LocalFixture()+
+        "box \"floating_a\" pos(-.5,4,5) size(3,2,2) gray(.25)\n"
+        "box \"floating_b\" pos(.5,4,5) size(3,2,2) gray(.75)\n";
+    SessionState state;char error[1024]={};
+    CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+    HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    int compositions=0,narratives=0;json facts;
+    cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,
+            LlmStreamCallback,void*,LlmGenerationResult* r) {
+        ++compositions;r->success=true;r->reached_eog=true;r->response_text=source;return true;
+    };
+    cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+            LlmStreamCallback,void*,LlmGenerationResult*) {
+        if(++narratives==1)facts=json::parse(messages[1].content)["facts"];
+        return false;
+    };
+    HeadlessTurnResult turn;CHECK(RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));
+    CHECK(compositions==1&&narratives==1);
+    const auto room=turn.generated_rooms_to_add.at(0);
+    const auto report=json::parse(room.coplanar_cleanup_json),support=json::parse(room.glass_supports_json);
+    CHECK(report["success"]==true&&report["accepted_translations"].get<int>()>0&&report["remaining_conflicts"]==0);
+    CHECK(report["camera_eyes"].size()==8);
+    CHECK(room.pre_coplanar_scene_text==source&&room.opaque_scene_text!=source&&room.scene_text!=room.opaque_scene_text);
+    CHECK(report["source_sha256"]==SceneTextHash(source));
+    CHECK(report["corrected_sha256"]==SceneTextHash(room.opaque_scene_text));
+    CHECK(support["opaque_sha256"]==report["corrected_sha256"]);
+    CHECK(support["status"]=="applied"&&support["added_supports"].get<int>()>0&&support["final_sha256"]==room.scene_hash);
+    CHECK(turn.scene_attempts.size()==1&&turn.scene_attempts[0].raw==source&&turn.scene_attempts[0].final_program==source);
+    CHECK(facts["engine_glass_supports"]["ids"].size()==support["added_supports"].get<size_t>());
+    // Independently sample the corrected scene: the narrator must receive its
+    // visible coverage, not a fresh audit of the raw model program.
+    Scene corrected;SceneAuditReport audited;SceneDesignContext context;
+    CHECK(AuditDynamicScene(room.opaque_scene_text,context,nullptr,&corrected,&audited));
+    std::vector<int> coverage;
+    for(size_t id=1;id<audited.object_names.size();++id) {
+        int count=0;for(const auto pixel:audited.object_ids)if(pixel==id)++count;
+        if(count)coverage.push_back(count);
+    }
+    std::sort(coverage.begin(),coverage.end(),std::greater<int>());
+    CHECK(facts["visible_geometry"].size()==std::min<size_t>(10,coverage.size()));
+    for(size_t i=0;i<facts["visible_geometry"].size();++i)
+        CHECK(facts["visible_geometry"][i]["visible_percent"]==std::round(coverage[i]*1000.0/(256*128))/10);
+    for(const auto& move:report["modified_blocks"]) {
+        bool found=false;
+        for(const auto& box:corrected.boxes)if(box.id==move["id"]) {
+            found=true;CHECK((json{box.center.x,box.center.y,box.center.z}==move["final_position"]));
+        }
+        CHECK(found);
+    }
+    CHECK(CleanupCoplanarFaces(room.scene_text).scene_text==room.opaque_scene_text);
+    UpdateSessionStateFromTurn("east",turn,&state);
+    std::string saved;CHECK(SerializeSessionStateToJsonString(state,&saved));SessionState restored;
+    CHECK(ParseSessionStateFromJson(saved.c_str(),&restored,error,sizeof(error)));
+    CHECK(restored.generated_rooms.back().coplanar_cleanup_json==room.coplanar_cleanup_json);
+    for(const auto* field:{"pre_coplanar_scene_text","opaque_scene_text"}) {
+        auto corrupt=json::parse(saved);corrupt["generated_rooms"].back()[field]="tampered";
+        SessionState rejected;CHECK(!ParseSessionStateFromJson(corrupt.dump().c_str(),&rejected,error,sizeof(error)));
+    }
+    for(const auto* command:{"west","east"}) {
+        CHECK(RunHeadlessTurnFromState(restored,command,cfg,&turn,error,sizeof(error)));
+        UpdateSessionStateFromTurn(command,turn,&restored);
+    }
+    CHECK(compositions==1&&turn.rendered_scene_text==room.scene_text&&!turn.generated_room_cache_refreshed);
+    const auto root=std::filesystem::temp_directory_path()/
+        ("liminal-coplanar-archive-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    ResearchArchive archive;RenderConfig render;render.width=render.height=1;
+    CHECK(archive.Start(root.u8string(),restored,cfg.generation_config,render));CHECK(archive.Close(restored));
+    auto read=[&](const char* suffix) {
+        std::ifstream file(std::filesystem::u8path(archive.Path())/(std::string("places/place-00000")+suffix),std::ios::binary);
+        CHECK(file.good());std::ostringstream text;text<<file.rdbuf();return text.str();
+    };
+    CHECK(read(".pre-coplanar.scene")==source&&read(".opaque.scene")==room.opaque_scene_text&&read(".scene")==room.scene_text);
+    CHECK(json::parse(read(".coplanar.json"))==report&&json::parse(read(".supports.json"))==support);
+    CHECK(std::filesystem::equivalent(root.parent_path(),std::filesystem::temp_directory_path()));
+    std::filesystem::remove_all(root);
+}
 int main() {
-    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation and save integrity passed");return 0;}
+    try {Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

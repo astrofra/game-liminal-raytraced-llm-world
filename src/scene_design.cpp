@@ -13,8 +13,6 @@ namespace {
 // Property order is part of the generation prompt: dimensions precede centers,
 // and global bounds follow the geometry they must contain.
 using json = nlohmann::ordered_json;
-// Reuse the vendored public-domain SHA-256 implementation without modifying it.
-#include "sha256/sha256.c"
 
 double Decimal(float n) {return std::round(static_cast<double>(n)*10000.0)/10000.0;}
 json V(const Vec3& v) { return json::array({Decimal(v.x),Decimal(v.y),Decimal(v.z)}); }
@@ -84,12 +82,6 @@ json Number(float lo,float hi) {return {{"type","number"},{"minimum",Decimal(lo)
 json Vector(float lo=-256,float hi=256) {return {{"type","array"},{"items",Number(lo,hi)},{"minItems",3},{"maxItems",3}};}
 json String(size_t max=240) {return {{"type","string"},{"minLength",1},{"maxLength",max}};}
 json Array(const json& items,int lo,int hi) {return {{"type","array"},{"items",items},{"minItems",lo},{"maxItems",hi}};}
-}
-
-std::string SceneTextHash(const std::string& text) {
-    unsigned char digest[32];sha256_hash(digest,reinterpret_cast<const unsigned char*>(text.data()),text.size());
-    const char* hex="0123456789abcdef";std::string out;
-    for(unsigned char c:digest){out+=hex[c>>4];out+=hex[c&15];}return out;
 }
 
 std::string SceneCompositionGuide() { return kSceneCompositionV1; }

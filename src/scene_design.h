@@ -2,6 +2,7 @@
 #define LIMINAL_SCENE_DESIGN_H
 
 #include "scene.h"
+#include "scene_hash.h"
 #include "continuity.h"
 #include <string>
 #include <vector>
@@ -64,7 +65,6 @@ std::string SerializeSceneDesign(const SceneDesignV1& design);
 bool ParseSceneDesign(const std::string& text, const SceneDesignContext& context,
                       SceneDesignV1* design, SceneAuditReport* report);
 std::string SerializeSceneAudit(const SceneAuditReport& report);
-std::string SceneTextHash(const std::string& text);
 std::string SceneCompositionGuide();
 std::string BuildSceneDesignPrompt(const SceneDesignContext& context);
 std::string BuildSceneProgramPrompt(const SceneDesignContext& context, const SceneDesignV1* design);

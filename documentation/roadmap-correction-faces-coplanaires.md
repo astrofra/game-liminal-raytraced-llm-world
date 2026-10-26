@@ -2,7 +2,7 @@
 
 Projet : **Within the Latent Walls / Entre les Murs Latents**  
 Date : **26 octobre 2026**  
-Statut : **spécification proposée ; aucune correction ni mesure nouvelle effectuée par ce document**.
+Statut : **pilote COP-01 à COP-04 implémenté et activé pour les nouvelles scènes locales**. Voir le [bilan et les mesures](CORRECTION_COPLANAIRE.md). Les exigences ci-dessous restent le contrat de référence.
 
 ## 1. Objectif
 
