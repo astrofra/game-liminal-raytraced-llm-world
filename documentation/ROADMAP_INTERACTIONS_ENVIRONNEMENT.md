@@ -1,6 +1,6 @@
 # Roadmap — Prendre, déposer et retrouver les objets
 
-26 octobre 2026 — **Lots 1 à 5 implémentés en duo Codex / DeepSeek**, avec reprise et corrections des tests par Codex. Voir le [bilan de livraison et de qualification](INTERACTIONS_ENVIRONNEMENT.md). Le lot 6 reste prévu. Le texte suivant conserve le contrat initial.
+26 octobre 2026 — **Lots 1 à 5 implémentés en duo Codex / DeepSeek**, avec reprise et corrections des tests par Codex. Voir le [bilan de livraison et de qualification](INTERACTIONS_ENVIRONNEMENT.md). Le [correctif après retour de partie](RETOUR_JEU_INTERACTIONS.md) étend les preuves aux observations et corrige les rejets narratifs. Le lot 6 reste prévu. Le texte suivant conserve le contrat initial.
 
 ## Expérience visée
 

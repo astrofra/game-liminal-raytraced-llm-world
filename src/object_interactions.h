@@ -32,8 +32,12 @@ bool PrepareObjectTransfer(const SessionState& state, const ObjectProposal& prop
     const ObjectPlacement* placement, SessionState* candidate, std::string* reason);
 std::string SerializeObjectState(const ObjectState& state);
 bool ParseObjectState(const std::string& text, ObjectState* state, std::string* error);
-std::string ObjectContext(const SessionState& state);
-std::string ObjectPresenceText(const SessionState& state);
+std::string ObjectEvidence(const SessionState& state, const std::string& place);
+void RetainObjectObservation(SessionState* state, const std::string& observation);
+std::string ObjectContext(const SessionState& state, const std::string& focus = {});
+bool ObjectNarrationAllowed(const SessionState& state, const std::string& text,
+    const std::string& action, const std::string& id, bool* transfer_mentioned);
+std::string ObjectPresenceText(const SessionState& state, bool include_sources = true);
 std::string ObjectActionText(const SessionState& state, const std::string& action, const std::string& id);
 std::string ObjectRefusalText(GameLanguage language, const std::string& reason);
 bool FindObjectPlacement(const Scene& scene, const SessionState& state, ObjectPlacement* placement);

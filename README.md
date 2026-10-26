@@ -13,7 +13,7 @@ Lancer `play_within_the_latent_walls.bat` dans le dépôt, ou
 puis jouer directement. Au seuil, **nord, est et sud** ouvrent l'exploration ; suivre ensuite
 les issues de la boussole. `inventaire` / `inventory` / `i` consulte les possessions. `déposer la craie`,
 `reprendre la craie` et `regarder tout autour` permettent de laisser et retrouver
-un objet. Une petite cible décrite dans le lieu peut être ramassée après validation
+un objet. Une petite cible décrite à l'arrivée ou révélée par une observation peut être ramassée après validation
 par le moteur ; les objets et leurs retraits persistent pendant la partie.
 
 Gemma 4 E4B Q4_K_M tourne dans le processus via **llama.cpp intégré**. Aucun

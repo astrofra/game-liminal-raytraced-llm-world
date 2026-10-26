@@ -1481,6 +1481,7 @@ bool SerializeSessionStateToJsonString(const SessionState& state, std::string* j
     root["origin_place_id"] = state.origin_place_id;
     root["field_notes"] = state.field_notes;
     root["reference_descriptions"]=state.reference_descriptions;
+    root["observed_descriptions"]=state.observed_descriptions;
     SessionState object_snapshot=state;EnsureObjectRegistry(&object_snapshot);
     root["objects"]=json::parse(SerializeObjectState(object_snapshot.objects));
     root["current_place_id"] = state.current_place_id;
@@ -1548,6 +1549,7 @@ bool ParseSessionStateFromJson(
         state->origin_place_id = ReadStringNode(root, "origin_place_id");
         state->field_notes = root.value("field_notes",std::vector<std::string>());
         state->reference_descriptions=root.value("reference_descriptions",std::map<std::string,std::string>());
+        state->observed_descriptions=root.value("observed_descriptions",std::map<std::string,std::vector<std::string>>());
         state->current_place_id = ReadStringNode(root, "current_place_id");
         state->next_generated_room_index = ReadIntNode(root, "next_generated_room_index", state->next_generated_room_index);
         if (root.contains("generated_rooms")) {
@@ -1561,6 +1563,11 @@ bool ParseSessionStateFromJson(
         }
 
         NormalizeSessionState(state);
+        for(const auto& observations:state->observed_descriptions) {
+            if(!IsKnownPlaceIdInSession(*state,observations.first))throw std::runtime_error("Observation references an unknown place");
+            for(const auto& text:observations.second)if(text.empty()||text.size()>1500)
+                throw std::runtime_error("Invalid retained observation");
+        }
         if(root.contains("objects")) {
             std::string object_error;
             if(!ParseObjectState(root.at("objects").dump(),&state->objects,&object_error)||
@@ -1568,8 +1575,7 @@ bool ParseSessionStateFromJson(
             for(const auto& room:state->objects.deposits)if(!room.second.empty()&&!IsKnownPlaceIdInSession(*state,room.first))
                 throw std::runtime_error("Object deposit references an unknown place");
             for(const auto& source:state->objects.sources) {
-                const auto reference=state->reference_descriptions.find(source.place_id);
-                if(!IsKnownPlaceIdInSession(*state,source.place_id)||reference==state->reference_descriptions.end()||reference->second.find(source.quote)==std::string::npos)
+                if(!IsKnownPlaceIdInSession(*state,source.place_id)||ObjectEvidence(*state,source.place_id).find(source.quote)==std::string::npos)
                     throw std::runtime_error("Object source has no retained literary reference");
             }
         } else EnsureObjectRegistry(state);

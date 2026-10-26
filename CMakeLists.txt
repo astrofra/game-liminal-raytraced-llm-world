@@ -99,7 +99,7 @@ if(MSVC)
 endif()
 add_test(NAME distant_light COMMAND liminal_distant_light_test)
 
-add_executable(liminal_dynamic_scene_test tests/dynamic_scene_test.cpp tests/object_journey_test.cpp tests/object_conservation_test.cpp
+add_executable(liminal_dynamic_scene_test tests/dynamic_scene_test.cpp tests/object_journey_test.cpp tests/object_conservation_test.cpp tests/object_narrative_test.cpp
     src/scene_design.cpp src/scene_validation.cpp src/scene_normalization.cpp src/dynamic_scene.cpp src/scene.cpp src/renderer.cpp
     src/game_state.cpp src/object_interactions.cpp src/object_resolution.cpp src/object_render.cpp src/place_proposal.cpp src/exploration_policy.cpp src/inventory.cpp src/narrative_language.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp
     src/research_archive.cpp src/continuity.cpp src/glass_supports.cpp src/coplanar_cleanup.cpp src/scene_hash.cpp src/animated_view.cpp

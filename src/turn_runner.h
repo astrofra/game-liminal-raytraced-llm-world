@@ -53,6 +53,8 @@ struct HeadlessTurnResult {
     bool objects_prepared = false;
     int initial_object_revision = 0;
     std::string interaction_metrics_json;
+    std::string authorized_object_action, authorized_object_id;
+    std::string accepted_observation;
     bool accepted = false; // Set only after the full turn and last cancellation poll succeed.
     int llm_call_count = 0;
     int reasoning_tokens = 0;

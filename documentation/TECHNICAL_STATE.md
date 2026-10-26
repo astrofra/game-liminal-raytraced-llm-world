@@ -52,7 +52,10 @@ réelles des limites de qualification restantes.
 - [Interactions avec les objets](INTERACTIONS_ENVIRONNEMENT.md) : dépôt/reprise par identité,
   prise littéraire validée, sources finies et décisions durables, partition autoritative
   inventaire/pièces. Couche mobile déterministe, placements visibles à travers le masque,
-  annulation atomique et archives par révision. Six langues de secours ; aucun chargement
+  annulation atomique et archives par révision. Le [retour de partie](RETOUR_JEU_INTERACTIONS.md)
+  ajoute les observations persistantes, les prélèvements interprétés sémantiquement,
+  la narration des transferts validés et le complément local des dépôts oubliés.
+  Six langues de secours ; aucun chargement
   de partie ajouté. Les usages spécifiques de la carte, de la craie et des pinces restent prévus.
 - Six langues sélectionnées au lancement ; consigne répétée à chaque appel et secours localisés.
 - HUD compilé et traduit : initiales cardinales, températures alignées, cadres ouverts épais et lumineux, fermés fins et additifs.

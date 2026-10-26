@@ -35,7 +35,7 @@ SessionState Fixture() {
 }
 struct Harness {
     HeadlessTurnConfig cfg;int interpretations=0,narrations=0;std::string mode;
-    json proposal;bool cancel=false;
+    json proposal;bool cancel=false;std::string observed_prose;
     Harness() {
         cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=[](const std::vector<LlmPromptMessage>& messages,int* count,std::string*) {
             size_t n=0;for(const auto& m:messages)n+=m.content.size();*count=static_cast<int>(n/4+1);return true;};
@@ -57,7 +57,9 @@ struct Harness {
                 ids.push_back(item["id"]);
                 if(mode!="omit")prose+=" Ici repose "+item["name"].get<std::string>()+".";
             }
+            if(mode=="reverse")prose="Vous sentez la craie quitter vos mains et se déposer sur le sol ocre.";
             if(mode=="invent")prose="Vous ramassez une clé dorée et la rangez dans votre équipement.";
+            if(mode=="observe")prose=observed_prose;
             if(mode=="resurrect")prose="Un petit caillou repose ici, toujours disponible à vos pieds.";
             json response={{"title","Le seuil clair"},{"summary","Les masses claires bordent ce passage ouvert."},{"narration",prose},
                 {"thermal",{{"external_temperature_c",464},{"body_temperature_c",request["temperature_body_c"].get<float>()+.1f},{"reason","Une brève exposition."}}},
@@ -98,12 +100,18 @@ void RunObjectJourneyTests() {
     h.Run(s,"south");REQUIRE(s.current_place_id==a);
     REQUIRE(s.objects.deposits.at(a)[0].x==pos.x&&s.objects.deposits.at(a)[0].z==pos.z);
     h.mode="omit";t=h.Run(s,"regarder tout autour");
-    REQUIRE(t.turn_result.narration.find("craie")!=std::string::npos);REQUIRE(t.used_turn_fallback);
+    REQUIRE(t.turn_result.narration.find("craie")!=std::string::npos);REQUIRE(!t.used_turn_fallback);
     REQUIRE(t.rendered_scene_text.find("mobile_")!=std::string::npos);
+    h.mode="observe";h.observed_prose="La craie de délimitation que vous avez déposée repose au sol. La lumière en souligne la surface claire.";
+    t=h.Run(s,"regarder");REQUIRE(!t.used_turn_fallback&&t.turn_result.narration.find("que vous avez déposée")!=std::string::npos);
     h.mode="";t=h.Run(s,"reprendre la craie");REQUIRE(Has(s,"boundary chalk"));REQUIRE(s.objects.deposits.at(a).empty());
     REQUIRE(t.rendered_scene_text==original);REQUIRE(RenderSceneToImage(t.rendered_scene,render,(artifacts/"retrieved.png").string().c_str()));
     const auto calls=h.narrations;t=h.Run(s,"prendre la craie");REQUIRE(h.narrations==calls);REQUIRE(t.turn_result.narration.find("déjà")!=std::string::npos);
     REQUIRE(ValidateObjectState(s,&why));
+
+    s=Fixture();h.Run(s,"poser craie");h.mode="reverse";t=h.Run(s,"prendre craie");
+    REQUIRE(Has(s,"boundary chalk")&&t.used_turn_fallback);
+    REQUIRE(t.turn_result.narration.find("quitter vos mains")==std::string::npos);h.mode="";
 
     // First implicit acquisition, transition to a deposit elsewhere, persistent source.
     s=Fixture();h.Implicit("Un petit caillou repose ici.","caillou");t=h.Run(s,"prendre le caillou");
@@ -121,10 +129,58 @@ void RunObjectJourneyTests() {
     REQUIRE(ParseSessionStateFromJson(old.dump().c_str(),&restored,error,sizeof(error)));REQUIRE(restored.objects.instances.size()==1&&!restored.objects.instances.begin()->second.portable);
     REQUIRE(Fixture().hard_state.inventory_items.size()==3);
 
+    // Observations are durable evidence only after accepted publication. They
+    // survive history trimming, revisits and diagnostic serialization.
+    s=Fixture();s.reference_descriptions[a]="Le sol ocre s'étend entre les masses rocheuses.";
+    h.mode="observe";h.observed_prose="Une fine poussière minérale couvre le sol à vos pieds. La lumière en souligne les grains.";
+    t=h.Run(s,"regarder par terre",false);REQUIRE(s.observed_descriptions.empty());
+    UpdateSessionStateFromTurn("regarder par terre",t,&s);
+    REQUIRE(ObjectEvidence(s,a).find("poussière minérale")!=std::string::npos);
+    const auto retained=s.observed_descriptions;UpdateSessionStateFromTurn("regarder par terre",t,&s);
+    REQUIRE(s.observed_descriptions==retained);
+    h.mode="";for(int i=0;i<14;++i)h.Run(s,"look around");
+    h.Run(s,"north");h.Run(s,"south");s.history.clear();
+    saved=Snapshot(s);REQUIRE(ParseSessionStateFromJson(saved.c_str(),&restored,error,sizeof(error)));
+    REQUIRE(restored.observed_descriptions==s.observed_descriptions);s=restored;
+    h.Implicit("Une fine poussière minérale couvre le sol à vos pieds.","poussière minérale");
+    h.proposal["material_source"]=true;
+    t=h.Run(s,"recueillir un peu de cette poudre");
+    REQUIRE(t.turn_result.intent=="object_take"&&s.objects.instances.size()==4);
+    const auto dust=s.hard_state.inventory_items.back();REQUIRE(s.objects.sources.back().material_source);
+    REQUIRE(s.objects.instances.at(dust).label.find("échantillon")!=std::string::npos);
+    h.Run(s,"north");const int sample_interpretations=h.interpretations;
+    h.Run(s,"déposer cet échantillon");REQUIRE(h.interpretations==sample_interpretations);h.Run(s,"regarder");
+    REQUIRE(ObjectEvidence(s,b).find("poussière")==std::string::npos);
+    h.Run(s,"prendre poussière minérale");REQUIRE(Has(s,dust));h.Run(s,"south");
+    h.mode="observe";h.observed_prose="La poussière minérale couvre encore le sol dans la lumière ocre.";
+    t=h.Run(s,"regarder par terre");REQUIRE(!t.used_turn_fallback);
+    REQUIRE(s.observed_descriptions.at(a)==retained.at(a)||
+        ObjectEvidence(s,a).find("couvre encore")==std::string::npos);
+    // Rephrasing a sampled source never creates another instance.
+    h.mode="";h.Run(s,"ramasser de la poussière");REQUIRE(s.objects.instances.size()==4);
+    saved=Snapshot(s);REQUIRE(ParseSessionStateFromJson(saved.c_str(),&restored,error,sizeof(error)));
+    REQUIRE(restored.objects.sources.back().material_source);
+    auto legacy_source=json::parse(saved);legacy_source["objects"]["sources"][0].erase("material_source");
+    REQUIRE(ParseSessionStateFromJson(legacy_source.dump().c_str(),&restored,error,sizeof(error)));
+    REQUIRE(!restored.objects.sources[0].material_source&&Has(restored,dust));
+    legacy_source["objects"]["sources"][0].erase("allowed");
+    REQUIRE(!ParseSessionStateFromJson(legacy_source.dump().c_str(),&restored,error,sizeof(error)));
+    // Failed/cancelled prose and notebook claims are not source evidence.
+    s=Fixture();h.mode="invent";h.Run(s,"regarder");REQUIRE(ObjectEvidence(s,a).find("clé dorée")==std::string::npos);
+    h.mode="";h.Run(s,"noter un diamant repose au sol");REQUIRE(ObjectEvidence(s,a).find("diamant")==std::string::npos);
+    h.mode="observe";h.observed_prose="Un diamant pourrait reposer ici. Vous ne voyez aucun cristal au sol.";
+    h.Run(s,"regarder");REQUIRE(ObjectEvidence(s,a).find("diamant")==std::string::npos);
+    h.mode="cancel";h.cancel=false;
+    h.cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char*,void* opaque){return !static_cast<Harness*>(opaque)->cancel;};
+    h.cfg.stream_user_data=&h;const auto observation_before=Snapshot(s);
+    REQUIRE(!RunHeadlessTurnFromState(s,"regarder",h.cfg,&t,error,sizeof(error)));
+    UpdateSessionStateFromTurn("regarder",t,&s);REQUIRE(Snapshot(s)==observation_before&&t.accepted_observation.empty());
+    h.cfg.stream_callback=nullptr;h.mode="";h.cancel=false;
+
     // Malformed, nonexistent, fixed, hypothetical and finite matter targets.
     s=Fixture();h.mode="malformed";t=h.Run(s,"prendre le cristal");REQUIRE(s.hard_state.inventory_items.size()==3);
     h.mode="";h.Implicit("Un cristal repose ici.","cristal");h.Run(s,"prendre le cristal");REQUIRE(s.objects.sources.empty());
-    h.Implicit("Un petit caillou repose ici.","caillou");h.Run(s,"prendre le cristal");REQUIRE(s.objects.sources.empty());
+    h.Implicit("Un petit caillou repose ici.","caillou");h.proposal["action"]="none";h.proposal["origin"]="none";h.proposal["verdict"]="forbid";h.Run(s,"prendre le cristal");REQUIRE(s.objects.sources.empty());
     s.reference_descriptions[a]="Un mur ferme la pièce.";h.Implicit(s.reference_descriptions[a],"mur");h.Run(s,"prendre le mur");REQUIRE(s.objects.sources.empty());
     s.reference_descriptions[a]="Un caillou pourrait reposer ici.";h.Implicit(s.reference_descriptions[a],"caillou");h.Run(s,"prendre le caillou");REQUIRE(s.objects.sources.empty());
     s.reference_descriptions[a]="Un tas de gravats repose ici.";h.Implicit(s.reference_descriptions[a],"gravats");h.proposal["material_source"]=true;

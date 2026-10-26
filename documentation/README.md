@@ -23,6 +23,7 @@ Les archives de recherche ne servent jamais à reprendre une partie.
 - [Étude des issues et températures](ETUDE_ISSUES_ET_TEMPERATURE.md)
 - [Inventaire : roadmap et extensions](ROADMAP_REMISE_EN_SERVICE_INVENTAIRE.md)
 - [Prendre, déposer et retrouver : livraison et qualification](INTERACTIONS_ENVIRONNEMENT.md)
+- [Retour de partie : souplesse des prises et narration](RETOUR_JEU_INTERACTIONS.md)
 - [Roadmap des interactions avec l’environnement](ROADMAP_INTERACTIONS_ENVIRONNEMENT.md)
 - [Vue animée](ANIMATED_VIEW_SPEC.md)
 - [Format des scènes](SCENE_FORMAT_V1.md)

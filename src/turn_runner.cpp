@@ -2879,7 +2879,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     object_view.current_place_id=result->updated_place_id;
     object_view.hard_state.inventory_items=result->updated_hard_state.inventory_items;
     if(result->objects_prepared)object_view.objects=result->updated_objects;
-    const auto object_context=json::parse(ObjectContext(object_view));
+    const auto object_context=json::parse(ObjectContext(object_view,command));
     const bool has_dynamic_objects=!object_context["deposited"].empty()||!object_context["resolved_sources"].empty();
     json carried=json::array();std::vector<std::string> seen_items;
     for(const auto& id:object_view.hard_state.inventory_items) {
@@ -2893,10 +2893,16 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     const bool completed_move = arrival || result->updated_place_id != result->initial_place_id;
     const std::string prompt=json({{"language",GameLanguageEnglishName(state.language)},{"language_code",GameLanguageToString(state.language)},
         {"world","Eryx: Venusian quarry, human explorer inside a protective suit. Material, embodied strangeness; no invented supernatural events."},
-        {"facts",json::parse(facts,nullptr,false)},{"current_title",*title},{"base_description",has_dynamic_objects?SceneLanguageFallback(state.language):*summary},
+        {"facts",json::parse(facts,nullptr,false)},{"current_title",*title},{"base_description",*summary},
         {"objects",object_context},
-        {"literary_objects_rule",arrival?"An arrival may establish a small loose inert object or a bounded rubble source on visible ground, consistent with the accepted scene. This is literary detail, not an acquisition or an inventory entry; never reinterpret a structural mass as portable.":"Use the retained reference description and current objects only. Do not invent new collectible objects on observation or revisit."},
-        {"object_rule","Current deposits and resolved sources override all history and old summaries. Never reintroduce a consumed source as available. Describe every current deposit by its supplied name, list its ID in deposited_ids. Narrate sensory consequences only: the engine appends the exact authorized object action as a separate sentence. No additional manipulation, possession or disappearance may be claimed."},
+        {"resolved_object_action",result->authorized_object_action.empty()?json(nullptr):json{
+            {"action",result->authorized_object_action},{"name",ObjectName(object_view,result->authorized_object_id)},
+            {"completed_fact",ObjectActionText(object_view,result->authorized_object_action,result->authorized_object_id)},
+            {"before",result->authorized_object_action=="take"?"in this place, outside the carried inventory":"carried by the player"},
+            {"after",result->authorized_object_action=="take"?"carried by the player, no longer deposited":"deposited on the ground here, no longer carried"},
+            {"rule","This is the CURRENT completed action. Describe its direction accurately even when the previous action was the opposite. Do not replay history. Use natural sensory prose; avoid terms like transaction, transfer or inventory mechanics."}}},
+        {"literary_objects_rule",arrival?"An arrival may establish a small loose inert object or a bounded rubble source on visible ground, consistent with the accepted scene. This is literary detail, not an acquisition or an inventory entry; never reinterpret a structural mass as portable.":result->turn_result.intent=="perceive_accepted_scene"?"An observation may reveal a small inert detail of visible ground or surfaces (loose dust, grit, a small detached fragment) consistent with accepted geometry. Describe its actual location and state. Accepted observations are retained as evidence. A player question is not evidence: never conjure a requested valuable, tool or creature, and never revive a resolved source. Use retained observed_details on revisits.":"Use retained reference_description, observed_details and current objects. Do not introduce new collectible details while narrating a manipulation or refusal."},
+        {"object_rule","Current deposits and resolved sources override all history and old summaries. Never reintroduce a consumed source as available. Describe every current deposit by its supplied name, list its ID in deposited_ids. You may narrate the exact authorized transfer in engine_outcome, using its supplied object name. No other manipulation, possession or disappearance may be claimed. For a general observation, weave the current deposits into the prose. Avoid stock paragraphs and address the current command concretely."},
         {"player_command",completed_move ? "Describe my arrival at the destination after the successful movement." : command},
         {"completed_movement",completed_move||arrival},{"engine_outcome",outcome},
         {"continuity",json::parse(SerializeContinuityContext(continuity))},
@@ -3031,8 +3037,8 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
                IsClearlyWrongNarrativeLanguage(proposal.title,state.language))reason="wrong_output_language";
             else if(text.size()<(card?180u:35u)||text.size()>2600||whole.find("volume_")!=std::string::npos||whole.find("portal")!=std::string::npos||std::regex_search(whole,std::regex("volume[s]? [0-9]+")))
                 reason="short_oversized_or_internal_identifier";
-            else if(std::regex_search(NormalizeInventoryText(proposal.narration),std::regex(
-                R"((vous (ramassez|empoignez|saisissez|jetez|deposez|recevez|rangez)|vous (avez|venez de) (ramasse|pris|recupere|trouve|perdu)|you (pick up|acquire|discard|drop|receive)|you have (picked up|acquired|lost)|sie (nehmen|werfen|erhalten)|du (tar opp|plukker opp|samler op)|voi (raccogliete|prendete)|aggiungete all inventario))")))reason="unvalidated_inventory_effect";
+            else if(!ObjectNarrationAllowed(object_view,proposal.narration,result->authorized_object_action,
+                result->authorized_object_id,nullptr))reason="unvalidated_inventory_effect";
             else if(state.language==kGameLanguageFrench && std::regex_search(whole,std::regex(
                 R"((^|[ \t\n".!?])[Tt](u|on|es) |effac|dispar|referm|réorganis|reorganis)")))reason="voice_or_unvalidated_world_change";
             else {
@@ -3070,31 +3076,43 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             result->generated_rooms_to_add.push_back(localized);
         }
     }
+    bool presence_completed=false;
     if(has_dynamic_objects) {
-        bool faithful=reason.empty();
+        bool faithful=reason.empty(),missing_presence=false;
         const auto full=json::parse(generation.response_text,nullptr,false);
         std::vector<std::string> described;
         if(full.is_object()&&full.contains("deposited_ids")&&full["deposited_ids"].is_array()) {
             for(const auto& id:full["deposited_ids"])if(id.is_string())described.push_back(id.get<std::string>());else faithful=false;
-        } else faithful=false;
+        } else if(full.is_object()&&!full.contains("deposited_ids"))missing_presence=true;
+        else faithful=false;
         std::vector<std::string> expected;
         for(const auto& deposit:object_context["deposited"]) {
             expected.push_back(deposit["id"].get<std::string>());
-            if(NormalizeObjectText(*narration).find(NormalizeObjectText(deposit["name"].get<std::string>()))==std::string::npos)faithful=false;
+            if(NormalizeObjectText(*narration).find(NormalizeObjectText(deposit["name"].get<std::string>()))==std::string::npos)missing_presence=true;
         }
         std::sort(expected.begin(),expected.end());std::sort(described.begin(),described.end());
-        if(expected!=described)faithful=false;
+        // Missing coverage can be completed locally. Unknown or duplicate IDs
+        // contradict the supplied state and still require a safe replacement.
+        for(size_t i=0;i<described.size();++i)
+            if(!std::binary_search(expected.begin(),expected.end(),described[i])||
+               (i&&described[i]==described[i-1]))faithful=false;
+        if(expected!=described)missing_presence=true;
         // A consumed source in free prose is unsafe to present as still available.
         // Its status is restated below from authoritative data, with no extra call.
         for(const auto& source:object_view.objects.sources)if(source.place_id==object_view.current_place_id&&!source.object_id.empty()) {
             const bool deposited_here=std::find(expected.begin(),expected.end(),source.object_id)!=expected.end();
-            if(!deposited_here&&NormalizeObjectText(*narration).find(NormalizeObjectText(source.label))!=std::string::npos)faithful=false;
+            if(!source.material_source&&!deposited_here&&NormalizeObjectText(*narration).find(NormalizeObjectText(source.label))!=std::string::npos)faithful=false;
         }
         if(!faithful){*narration=SceneLanguageFallback(state.language);if(reason.empty())reason="dynamic_object_coverage";}
-        const auto presence=ObjectPresenceText(object_view);
-        if(!presence.empty())*narration+=" "+presence;
+        const auto presence=ObjectPresenceText(object_view,!faithful);
+        if(!presence.empty()&&(!faithful||missing_presence)) {
+            *narration+=" "+presence;presence_completed=faithful;
+        }
     }
+    if(reason.empty()&&result->turn_result.intent=="perceive_accepted_scene")
+        result->accepted_observation=ConstrainNarrationText(proposal.narration,1100,7);
     result->narrative_metrics_json=json({{"purpose",cfg.purpose},{"success",reason.empty()},
+        {"presence_completed",presence_completed},{"accepted_observation",result->accepted_observation},
         {"continuity_selection",json::parse(selection)},{"prompt_tokens",generation.prompt_tokens},
         {"prompt_time_ms",generation.prompt_time_ms},{"generation_time_ms",generation.generation_time_ms},
         {"fallback_reason",reason},{"language",GameLanguageToString(state.language)},{"proposal_accepted",proposal_accepted},{"sampling_temperature",cfg.temperature},
@@ -3288,6 +3306,7 @@ void UpdateSessionStateFromTurn(
     session_state->soft_state = turn_result.updated_soft_state;
     session_state->spatial_state = turn_result.updated_spatial_state;
     session_state->current_place_id = turn_result.updated_place_id;
+    RetainObjectObservation(session_state,turn_result.accepted_observation);
 
     for (size_t index = 0; index < turn_result.generated_rooms_to_add.size(); ++index) {
         bool existed = false;
@@ -3357,16 +3376,26 @@ static bool RunObjectTurn(const SessionState& state,const std::string& command,c
     SessionState candidate=state;
     const auto action=ResolveObjectAction(state,command,config,current,&candidate);
     result->interaction_metrics_json=action.metrics;
+    if(action.changed){result->authorized_object_action=action.action;result->authorized_object_id=action.object_id;}
     result->objects_prepared=true;result->updated_objects=candidate.objects;
     result->updated_hard_state.inventory_items=candidate.hard_state.inventory_items;
     result->turn_result.intent=action.changed?"object_"+action.action:
         action.reason=="already_carried"?"inventory_already_carried":action.clarified?"clarify_object":"object_refused";
-    const auto exact=action.changed?ObjectActionText(candidate,action.action,action.object_id):ObjectRefusalText(state.language,action.reason);
+    auto exact=action.changed?ObjectActionText(candidate,action.action,action.object_id):ObjectRefusalText(state.language,action.reason);
+    if(action.reason=="not_here"||action.reason=="clarify"||action.reason=="insufficient_evidence") {
+        const auto metrics=json::parse(action.metrics,nullptr,false);
+        if(metrics.is_object()&&metrics.contains("proposal")&&metrics["proposal"].is_object()) {
+            const auto explanation=metrics["proposal"].value("reason",std::string());
+            if(!explanation.empty()&&explanation.size()<=500&&explanation.find("object:")==std::string::npos&&
+               !IsClearlyWrongNarrativeLanguage(explanation,state.language)&&
+               ObjectNarrationAllowed(state,explanation,"","",nullptr))exact=explanation;
+        }
+    }
     result->turn_result.narration=SceneLanguageFallback(state.language);
     std::string title=state.spatial_state.room_title,summary=state.spatial_state.room_summary;
-    result->engine_outcome=action.changed?"Validated object "+action.action+" of "+action.object_id+". No other manipulation or movement. Only this transfer is authorized.":
+    result->engine_outcome=action.changed?"Validated object "+action.action+" of "+ObjectName(candidate,action.object_id)+" ("+action.object_id+"). No other manipulation or movement. Only this transfer is authorized.":
         "No movement or object manipulation performed. Refusal: "+action.reason;
-    if(!action.clarified&&action.reason!="already_carried") {
+    if(!action.clarified&&action.reason!="already_carried"&&action.reason!="not_here"&&action.reason!="insufficient_evidence") {
         // Withhold provisional prose until the complete state/render publication gate.
         auto quiet=config;
         quiet.stream_user_data=const_cast<HeadlessTurnConfig*>(&config);
@@ -3374,7 +3403,10 @@ static bool RunObjectTurn(const SessionState& state,const std::string& command,c
             const auto& parent=*static_cast<const HeadlessTurnConfig*>(opaque);
             return !parent.stream_callback||parent.stream_callback(phase,"","",parent.stream_user_data);};
         NarrateScene(candidate,quiet,SceneFacts(program),command,result->engine_outcome,false,result,&title,&summary,&result->turn_result.narration);
-        result->turn_result.narration=exact+" "+result->turn_result.narration;
+        bool narrated_transfer=false;
+        ObjectNarrationAllowed(candidate,result->turn_result.narration,action.changed?action.action:"",
+            action.changed?action.object_id:"",&narrated_transfer);
+        if(!narrated_transfer)result->turn_result.narration=exact+" "+result->turn_result.narration;
     } else {
         result->turn_result.narration=exact;
         result->narrative_metrics_json=json({{"engine_only",true},{"outcome",result->engine_outcome},{"displayed",exact}}).dump();
@@ -4301,6 +4333,7 @@ bool RunHeadlessTurnFromState(
             result->updated_place_id=result->initial_place_id;result->updated_hard_state=result->initial_hard_state;
             result->updated_soft_state=result->initial_soft_state;result->updated_spatial_state=result->initial_spatial_state;
             result->objects_prepared=false;result->updated_objects=initial_session_state.objects;
+            result->accepted_observation.clear();
             result->rendered_scene=Scene();result->rendered_scene_text.clear();result->turn_result.narration.clear();
         }
         SetError(error_buffer, error_buffer_size, "Turn cancelled: %s", "state was not committed");

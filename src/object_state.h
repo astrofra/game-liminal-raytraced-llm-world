@@ -19,6 +19,7 @@ struct ObjectSource {
     std::string place_id, quote, label, object_id, reason, visual_id;
     bool allowed = false;
     int remaining = 0; // One bounded extraction per literary source in this version.
+    bool material_source = false; // Its parent dust/pile may remain after one sample.
 };
 struct ObjectState {
     int version = 1;

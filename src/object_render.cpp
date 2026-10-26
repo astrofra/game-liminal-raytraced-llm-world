@@ -25,7 +25,7 @@ bool Visible(const Scene& scene,const Vec3& point) {
         const float scale=std::tan(camera.vertical_fov_degrees*3.14159265f/360.f)*depth;
         const float x=.5f+Dot(delta,right)/(4.f*scale),y=.5f-Dot(delta,up)/(2.f*scale);
         const bool upper=y>.14f&&y<.66f&&x>.12f&&x<.88f;
-        const bool left_lower=x>.16f&&x<.34f&&y>.855f&&y<.885f;
+        const bool left_lower=x>.16f&&x<.34f&&y>.835f&&y<.885f;
         const bool right_lower=x>.81f&&x<.835f&&y>.70f&&y<.865f;
         if(!upper&&!left_lower&&!right_lower)return false;
         Hit hit;
@@ -39,14 +39,12 @@ bool FindObjectPlacement(const Scene& scene,const SessionState& state,ObjectPlac
     const auto right=Normalize(Cross(forward,Vec3(0,1,0)));
     // A bounded local floor patch, visible even with the slightly upward authored
     // threshold camera. No distant surface or hidden placement is accepted.
-    for(int step=0;step<=30;++step)for(int side=0;side<=22;++side) {
-        const float distance=2.4f+.1f*step;
-        const float offset=(1.f+.2f*(side/2))*(side%2?1.f:-1.f);
+    auto try_placement=[&](float distance,float offset,ObjectPlacement* target) {
         const auto above=scene.camera.eye+forward*distance+right*offset;
         Hit floor;
-        if(!ProbeSceneRay(scene,{above,Vec3(0,-1,0)},2.2f,&floor)||floor.normal.y<.98f)continue;
+        if(!ProbeSceneRay(scene,{above,Vec3(0,-1,0)},2.2f,&floor)||floor.normal.y<.98f)return false;
         const auto point=floor.position+Vec3(0,.10f,0);
-        if(!Visible(scene,point))continue;
+        if(!Visible(scene,point))return false;
         bool free=true;
         for(const auto& box:scene.boxes) {
             // Conservative overlap test for the complete largest mobile footprint.
@@ -62,8 +60,18 @@ bool FindObjectPlacement(const Scene& scene,const SessionState& state,ObjectPlac
         auto room=state.objects.deposits.find(state.current_place_id);
         if(room!=state.objects.deposits.end())for(const auto& p:room->second)
             if(Length(Vec3(p.x,p.y,p.z)-floor.position)<.6f)free=false;
-        if(!free)continue;
-        placement->x=floor.position.x;placement->y=floor.position.y;placement->z=floor.position.z;return true;
+        if(!free)return false;
+        target->x=floor.position.x;target->y=floor.position.y;target->z=floor.position.z;return true;
+    };
+    for(int step=0;step<=30;++step)for(int side=0;side<=22;++side) {
+        const float distance=2.4f+.1f*step;
+        const float offset=(1.f+.2f*(side/2))*(side%2?1.f:-1.f);
+        ObjectPlacement nearest;
+        if(!try_placement(distance,offset,&nearest))continue;
+        // Give the first visible position 20 cm of breathing room from the
+        // visor edge. Recheck visibility, support and collisions at that point.
+        if(!try_placement(distance+.2f,offset,placement))*placement=nearest;
+        return true;
     }
     return false;
 }

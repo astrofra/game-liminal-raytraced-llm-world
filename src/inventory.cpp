@@ -248,8 +248,8 @@ const InventoryVerb kInventoryVerbs[] = {
 };
 
 const char* const kArticles[] = {
-    "la", "le", "les", "l", "ma", "mon", "mes",
-    "the", "my",
+    "la", "le", "les", "l", "ma", "mon", "mes", "ce", "cet", "cette", "ces",
+    "the", "my", "this", "that", "these", "those",
     "der", "die", "das", "meine", "den", "det", "min", "mit",
     "il", "lo", "gli", "le", "mio", "mia",
 };

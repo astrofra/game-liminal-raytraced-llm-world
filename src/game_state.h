@@ -349,6 +349,7 @@ struct SessionState {
     std::vector<InvisibleBarrier> invisible_barriers;
     std::vector<std::string> field_notes; // Player-requested notes, confined to this game.
     std::map<std::string,std::string> reference_descriptions; // Per-place accepted prose, never the global rolling summary.
+    std::map<std::string,std::vector<std::string>> observed_descriptions; // Accepted observations, retained beyond the recent history window.
 
     SessionState()
         : language(kGameLanguageEnglish)

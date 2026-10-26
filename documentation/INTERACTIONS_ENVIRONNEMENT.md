@@ -2,7 +2,9 @@
 
 Implémentation des lots 1 à 5 de la roadmap des interactions, avec maintien du
 lot 2 de l'inventaire. Binaire publié et recettes exécutées ; les observations ci-dessous
-distinguent les contrôles mécaniques des essais du modèle.
+distinguent les contrôles mécaniques des essais du modèle. Le
+[retour de partie du même jour](RETOUR_JEU_INTERACTIONS.md) corrige ensuite les refus
+excessifs et la narration ; ses recettes réelles complètent la qualification initiale.
 
 ## Jouer
 
@@ -11,7 +13,7 @@ chaleur. `déposer la craie`, `reprendre la craie`, `drop chalk` et `take chalk`
 transfèrent une seule identité. `regarder tout autour` / `look around` restitue
 les objets actuellement déposés. Les homonymes portent des numéros de sélection.
 
-Une petite cible mentionnée dans la description conservée peut être prise sans
+Une petite cible mentionnée dans la description ou une observation conservée peut être prise sans
 catalogue préalable. Le modèle apprécie le geste ; le moteur vérifie le passage,
 la cible demandée, la localisation et les retraits précédents. Une source de
 gravats fournit au plus un fragment dans cette version. Une source inconnue,
@@ -37,9 +39,10 @@ Une nouvelle partie retrouve seulement les trois outils initiaux.
   prélèvement. Deux cibles d'une même phrase nécessiteront un contrat plus fin.
 - Le schéma distingue identités explicites, citations implicites et absence de
   cible. Révision et candidats sont contraints au décodage, puis revérifiés.
-  Une garde lexicale et des synonymes usuels empêchent la substitution d'une
-  cible sans rapport avec la demande ; les formulations non résolues échouent
-  sans mutation.
+  Le modèle juge la correspondance sémantique ; le moteur contraint les citations
+  et identités locales disponibles, puis valide la provenance et le transfert.
+  Les formulations non résolues échouent sans mutation. Les observations acceptées
+  persistent indépendamment de la fenêtre d'historique.
 - Une décision physique durable est mémorisée ; un refus d'accès temporaire ne
   devient pas une propriété définitive. Les identifiants diagnostiques inconnus
   sont conservés sans leur attribuer de capacité de manipulation.
@@ -48,13 +51,15 @@ Une nouvelle partie retrouve seulement les trois outils initiaux.
   confirmation « déjà porté » ne modifient pas la chaleur. Les autres tours
   gardent la proposition thermique bornée existante, appliquée une seule fois.
 - Le narrateur reçoit les possessions candidates, les dépôts et les retraits.
-  Le moteur ajoute la phrase exacte du transfert. La couverture structurée des
-  dépôts et leur mention dans le texte sont vérifiées ; une omission ou une
-  réapparition d'une source prélevée reçoit un secours localisé.
+  Le narrateur peut raconter le transfert validé ; le moteur ajoute sa confirmation
+  lorsqu'elle manque. La couverture structurée des dépôts et leur mention dans le
+  texte sont vérifiées. Une omission reçoit un complément local qui conserve la
+  prose ; une contradiction ou la réapparition d'un objet prélevé reçoit un secours.
 - Les propositions ne sont pas affichées comme réussies pendant leur préparation.
   L'annulation abandonne instances, transferts, chaleur et rendu candidats.
 
-La sérialisation diagnostique inclut `objects.version = 1`. Un ancien état sans
+La sérialisation diagnostique inclut `objects.version = 1`, les observations par lieu
+et une distinction facultative des sources de matière, compatible avec les états antérieurs. Un ancien état sans
 registre conserve ses possessions, sans ajouter des outils manquants ni du
 butin. Aucun chargement d'archive n'est ajouté au jeu SDL.
 
