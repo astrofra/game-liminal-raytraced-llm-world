@@ -10,7 +10,8 @@ import subprocess
 import sys
 import urllib.request
 import zipfile
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
+from urllib.parse import quote
 
 if __package__:
     from .model_profiles import DEFAULT_PROFILE, get_profile
@@ -39,6 +40,8 @@ MODEL_FILENAME = MODEL_PROFILE["filename"]
 MODEL_SIZE = MODEL_PROFILE["size_bytes"]
 MODEL_SHA256 = MODEL_PROFILE["sha256"]
 MODEL_RELATIVE_PATH = MODEL_PROFILE["relative_path"]
+MODEL_URL = (f"https://huggingface.co/{quote(MODEL_REPOSITORY, safe='/')}/resolve/"
+             f"{MODEL_REVISION}/{quote(MODEL_FILENAME)}?download=true")
 
 INNO_VERSION = "6.7.3"
 INNO_URL = (
@@ -82,10 +85,10 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Stage and build the Windows installer for Within the Latent Walls. "
-            "The verified Gemma model is included for offline installation."
+            "Setup downloads and verifies Gemma after installing the game files."
         )
     )
-    parser.add_argument("--version", default="3.0.0", help="Installer application version.")
+    parser.add_argument("--version", default="3.0.1", help="Installer application version.")
     parser.add_argument("--skip-build", action="store_true", help="Reuse the current Release executable.")
     parser.add_argument(
         "--skip-source-archive",
@@ -277,7 +280,7 @@ def copy_runtime_dependencies(source_exe: Path, staged_exe: Path) -> list[dict[s
     return sorted(records, key=lambda item: str(item["name"]).lower())
 
 
-def copy_distribution_payload(version: str) -> None:
+def copy_distribution_payload(version: str, *, include_model: bool = False) -> None:
     if not SOURCE_EXE.is_file():
         raise FileNotFoundError(f"Release executable not found: {SOURCE_EXE}")
     provenance_path = SOURCE_EXE.parent / "runtime-build.json"
@@ -292,7 +295,7 @@ def copy_distribution_payload(version: str) -> None:
     if provenance.get("llama_cpp_commit") != expected_commit:
         raise RuntimeError("Native build and packaged vendor revision differ")
     model_source = PROJECT_ROOT / MODEL_RELATIVE_PATH
-    if not model_source.is_file() or model_source.stat().st_size != MODEL_SIZE or sha256_file(model_source) != MODEL_SHA256:
+    if include_model and (not model_source.is_file() or model_source.stat().st_size != MODEL_SIZE or sha256_file(model_source) != MODEL_SHA256):
         raise RuntimeError("The pinned Gemma model is missing or invalid; run download_gemma.bat before packaging")
     reset_directory(STAGE_DIR)
     DIST_DIR.mkdir(parents=True, exist_ok=True)
@@ -307,7 +310,8 @@ def copy_distribution_payload(version: str) -> None:
     shutil.copy2(PACKAGING_DIR / "INSTALLATION_README.txt", STAGE_DIR / "INSTALLATION_README.txt")
     (STAGE_DIR / "output").mkdir()
     (STAGE_DIR / Path(MODEL_RELATIVE_PATH).parent).mkdir(parents=True)
-    shutil.copy2(model_source, STAGE_DIR / MODEL_RELATIVE_PATH)
+    if include_model:
+        shutil.copy2(model_source, STAGE_DIR / MODEL_RELATIVE_PATH)
 
     license_dir = STAGE_DIR / "licenses" / "third-party"
     license_dir.mkdir(parents=True)
@@ -352,7 +356,7 @@ def copy_distribution_payload(version: str) -> None:
     runtime_records = copy_runtime_dependencies(SOURCE_EXE, staged_exe)
 
     gguf_files = list(STAGE_DIR.rglob("*.gguf"))
-    if gguf_files != [STAGE_DIR / MODEL_RELATIVE_PATH]:
+    if gguf_files != ([STAGE_DIR / MODEL_RELATIVE_PATH] if include_model else []):
         raise RuntimeError(f"Unexpected model payload: {gguf_files}")
 
     payload_files: list[dict[str, object]] = []
@@ -370,7 +374,7 @@ def copy_distribution_payload(version: str) -> None:
         "application": "Within the Latent Walls / Entre les Murs Latents",
         "version": version,
         "executable": STAGED_EXE_NAME,
-        "model_embedded": True,
+        "model_embedded": include_model,
         "llama_cpp_commit": (PROJECT_ROOT / "vendor/llama.cpp/VENDORED_COMMIT.txt").read_text().strip(),
         "model": {
             "profile": MODEL_PROFILE_NAME,
@@ -380,7 +384,8 @@ def copy_distribution_payload(version: str) -> None:
             "relative_path": MODEL_RELATIVE_PATH,
             "bytes": MODEL_SIZE,
             "sha256": MODEL_SHA256,
-            "downloaded_during_installation": False,
+            "downloaded_during_installation": not include_model,
+            "download_url": MODEL_URL,
         },
         "runtime_dependencies": runtime_records,
         "payload_files": payload_files,
@@ -484,6 +489,9 @@ def bootstrap_inno_setup() -> Path:
 
 
 def build_inno_installer(version: str, iscc: Path) -> Path:
+    # Never accidentally compile a previous complete portable staging folder.
+    if any(STAGE_DIR.rglob("*.gguf")):
+        raise RuntimeError("Installer staging must not contain model weights; restage without --portable-only")
     expected_name = f"Within-the-Latent-Walls-Setup-{version}.exe"
     expected_output = DIST_DIR / expected_name
     if expected_output.exists():
@@ -495,14 +503,19 @@ def build_inno_installer(version: str, iscc: Path) -> Path:
             f"/DStageDir={STAGE_DIR}",
             f"/DDistDir={DIST_DIR}",
             f"/DAppVersion={version}",
+            f"/DModelDir={PureWindowsPath(MODEL_RELATIVE_PATH).parent}",
+            f"/DModelName={MODEL_FILENAME}",
+            f"/DModelUrl={MODEL_URL}",
+            f"/DModelHash={MODEL_SHA256}",
+            f"/DModelSize={MODEL_SIZE}",
             str(INNO_SCRIPT),
         ]
     )
     if not expected_output.is_file():
         raise RuntimeError(f"Inno Setup did not create the expected installer: {expected_output}")
     slices = list(DIST_DIR.glob(f"Within-the-Latent-Walls-Setup-{version}-*.bin"))
-    if not slices or sum(path.stat().st_size for path in slices) < MODEL_SIZE:
-        raise RuntimeError("Offline installer data volumes are incomplete")
+    if slices:
+        raise RuntimeError("Unexpected data volumes for the single-file installer; use a new version or inspect old artifacts")
     return expected_output
 
 
@@ -578,7 +591,7 @@ def main() -> int:
     if not args.skip_build:
         run([sys.executable, str(PROJECT_ROOT / "scripts/build_native.py"), "--publish"])
 
-    copy_distribution_payload(args.version)
+    copy_distribution_payload(args.version, include_model=args.portable_only)
     smoke_test_staged_executable()
 
     if args.portable_only:
@@ -595,14 +608,14 @@ def main() -> int:
     print(f"Inno Setup compiler: {iscc}")
 
     installer = build_inno_installer(args.version, iscc)
-    outputs = [installer, *sorted(DIST_DIR.glob(f"Within-the-Latent-Walls-Setup-{args.version}-*.bin"))]
+    outputs = [installer]
     if not args.skip_source_archive:
         outputs.append(build_source_archive(args.version))
 
     print("\nDistribution artifacts:")
     for output in outputs:
         print(f"  {output} ({output.stat().st_size:,} bytes, SHA-256 {sha256_file(output)})")
-    print("\nGemma is included. Keep Setup.exe and every .bin volume together; installation needs no network.")
+    print("\nDistribute Setup.exe alone. Setup downloads and verifies Gemma in the final file-installation phase.")
     return 0
 
 

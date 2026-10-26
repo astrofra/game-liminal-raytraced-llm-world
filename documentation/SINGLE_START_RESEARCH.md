@@ -8,7 +8,7 @@
 
 ## Jouer
 
-Le paquet complet contient le GGUF et fonctionne hors ligne, sans service externe. Le [bilan natif](BILAN_RUNTIME_AUTONOME.md) décrit la qualification actuelle.
+Le [Setup standard](WINDOWS_DISTRIBUTION.md) télécharge le GGUF en dernière phase ; le jeu fonctionne ensuite hors ligne, sans service externe. Le dossier portable complet inclut le GGUF. Le [bilan natif](BILAN_RUNTIME_AUTONOME.md) décrit la qualification du runtime.
 
 Lancer `play_within_the_latent_walls.bat`. Le jeu commence au **seuil de la carrière**, seul lieu Eryx prédéfini. Son décor natif s'inspire du [concept 12, variante raytracer](concept-art/12-les-vingt-cinq-centimetres-du-vide-raytracer-v2.png) : dalle de verre de 25 cm, parois monumentales à gauche, sol ocre et horizon dégagé à droite. Le [rendu moteur](benchmarks/eryx-local/single-start/start.png) montre la transposition. Les texels procéduraux et la variation de rugosité du concept ne sont pas implémentés par ce lot ; les matériaux diffus restent simples.
 

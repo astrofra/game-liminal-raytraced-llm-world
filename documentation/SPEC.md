@@ -264,7 +264,7 @@ Invisible barriers belong to traversal and collision semantics. Optional diagnos
 - Distribute a native desktop build.
 - Use in-process `llama.cpp`; do not require an external model service.
 - On Windows, distribute the game and its application-local runtime libraries through the project installer.
-- Include the pinned Gemma Q4_K_M GGUF in the offline distribution and local installer volumes. Verify its exact size and SHA-256 during packaging; installation must not download it.
+- The standard Windows installer contains no model weights. After copying the game files, download the pinned Gemma Q4_K_M GGUF and verify its exact size and SHA-256. Reuse an existing model only after validation. Keep the complete offline portable folder as an explicit developer packaging option.
 - Run offline after setup.
 - Support save/load.
 - Keep CPU-only inference possible, even if slower, while supporting available hardware acceleration.
@@ -464,7 +464,7 @@ Goals:
 - no Python or inference-service requirement for players
 - no mandatory network dependency after setup
 
-For the active Windows distribution, model weights are downloaded during installation from Mistral AI's official Hugging Face repository. The game payload and corresponding source archive are distributed separately from those weights. Other platforms still require platform-specific packaging decisions.
+For the active Windows distribution, model weights are downloaded during the final installation phase from the ggml-org Gemma repository on Hugging Face, with the revision, size and SHA-256 pinned in `scripts/models.json`. The game payload and corresponding source archive are distributed separately from those weights. Other platforms still require platform-specific packaging decisions.
 
 ## 15. Prototype priorities and roadmap
 
@@ -502,7 +502,7 @@ For the active Windows distribution, model weights are downloaded during install
 ### Phase E — Distribution and optional geometry research
 
 - package native builds and model management
-- test offline installation and performance profiles
+- test final-phase model download, verified model reuse, offline play and performance profiles
 - retain direct `.scene` and `.OBJ` generation as bounded experiments
 
 ## 16. Major friction points

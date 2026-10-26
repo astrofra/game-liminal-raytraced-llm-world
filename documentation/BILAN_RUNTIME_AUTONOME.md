@@ -2,6 +2,10 @@
 
 25 octobre 2026 — implémentation intégrée et qualification locale réalisée.
 
+Mise à jour du 26 octobre : les mesures de distribution ci-dessous décrivent le
+Setup 3.0.0 historique avec modèle embarqué. Le [Setup actuel](WINDOWS_DISTRIBUTION.md)
+3.0.1 télécharge Gemma en dernière phase ; le runtime reste local après installation.
+
 ## Implémentation
 
 Gemma 4 E4B Q4_K_M est chargé par llama.cpp dans le processus du jeu.

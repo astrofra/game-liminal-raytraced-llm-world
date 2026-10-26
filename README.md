@@ -14,7 +14,8 @@ puis jouer directement. Au seuil, **est** ouvre l'exploration ; suivre ensuite
 les issues de la boussole. `inventaire` / `inventory` / `i` consulte les trois outils.
 
 Gemma 4 E4B Q4_K_M tourne dans le processus via **llama.cpp intégré**. Aucun
-service, serveur, compte ou accès Internet n'est nécessaire avec le paquet complet.
+service, serveur, compte ou accès Internet n'est nécessaire pour jouer après installation.
+L'installeur télécharge le modèle en dernière phase, puis le jeu fonctionne hors ligne.
 Le modèle est vérifié au premier appel et reste chargé jusqu'à la fermeture.
 Chaque requête possède son contexte propre ; la température d'échantillonnage
 suit l'évolution thermique du scaphandre.
@@ -44,17 +45,23 @@ Le manifeste unique est `scripts/models.json`. Les modèles ne sont pas suivis d
 Le dossier de build par défaut est `build_native/` ; le lanceur utilise le binaire
 publié dans `build/Release/`. `--with-cli` construit aussi l'outil de diagnostic amont.
 
-## Distribution complète hors ligne
+## Distribution Windows
 
 ```powershell
-python scripts/build_installer.py --skip-build --portable-only
-python scripts/build_installer.py --skip-build --version 3.0.0
+python scripts/build_installer.py --skip-build --version 3.0.1
 ```
 
-Le dossier portable est `output/installer/stage/`. L'installeur, ses volumes `.bin`
-et l'archive des sources sont dans `output/installer/dist/`. Garder l'exécutable
-Setup et **tous** ses volumes ensemble. Le modèle et les DLL sont inclus ; aucune
+L'installeur unique et l'archive des sources sont dans `output/installer/dist/`.
+Le Setup contient le jeu, ses ressources et ses DLL, sans modèle ni volumes `.bin`.
+Après leur copie, il télécharge les 5,34 Go de Gemma dans le dossier du jeu et
+vérifie son SHA-256. Un modèle déjà présent et valide est conservé. Aucune
 installation de Python, CUDA Toolkit ou d'un service d'inférence chez le joueur.
+La fabrication standard n'exige pas de GGUF local et `--skip-build` réutilise le
+binaire publié sans recompiler CUDA.
+
+Pour préparer explicitement un dossier portable complet hors ligne, utiliser
+`python scripts/build_installer.py --skip-build --portable-only` avec le GGUF local
+vérifié. Cette option remplace `output/installer/stage/` et ne produit pas de Setup.
 Voir le [guide de distribution](documentation/WINDOWS_DISTRIBUTION.md).
 
 ## Vérifications et documentation

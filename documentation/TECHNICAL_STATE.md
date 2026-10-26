@@ -63,13 +63,18 @@ ils ne remplacent pas le parcours local normal.
 
 ## Distribution et construction
 
-Build développeur : `scripts/build_native.py --publish`. Modèle préparé par
-`download_gemma.bat`, puis contrôlé par `--verify-only`. Le joueur reçoit le modèle.
-Le [paquet Windows](WINDOWS_DISTRIBUTION.md) comprend le GGUF, les ressources,
-les DLL redistribuables et les notices. Dossier portable puis Setup accompagné
-de ses volumes locaux ; aucune récupération réseau pendant l'installation.
+Build développeur : `scripts/build_native.py --publish`. Le modèle de développement
+se prépare par `download_gemma.bat`, puis se contrôle par `--verify-only`.
+Le [Setup Windows](WINDOWS_DISTRIBUTION.md) 3.0.1 contient les ressources,
+les DLL redistribuables et les notices, sans GGUF ni volumes séparés. Après la copie
+du jeu, Inno Setup télécharge Gemma à la révision épinglée et vérifie son SHA-256.
+Un modèle existant est réutilisé seulement après contrôle de taille 64 bits et SHA.
+Le jeu fonctionne ensuite hors ligne. `--portable-only` reste une option explicite
+de fabrication d'un dossier complet avec GGUF ; le Setup standard n'en dépend pas.
+Un changement de packaging se construit avec `--skip-build`, sans rebuild CUDA.
 
-Les anciens transports, manifestes et téléchargements du produit ont été supprimés.
+Les anciens transports d'inférence et profils concurrents ont été supprimés.
+Le téléchargement final de l'installeur reste distinct du runtime local.
 Les qualifications dépassées ont été retirées de la documentation courante et
 conservées dans l'[archive de recherche](HISTORIQUE_RECHERCHE.md), ainsi que dans Git.
 Le kit externe du duo reste distinct du runtime livré et n'est pas distribué.

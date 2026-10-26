@@ -1,9 +1,12 @@
 WITHIN THE LATENT WALLS - MODEL NOTICE
 =====================================
 
-This distribution includes Gemma 4 E4B Instruct, quantized Q4_K_M by ggml-org.
+This game uses Gemma 4 E4B Instruct, quantized Q4_K_M by ggml-org.
 Inference runs locally through the integrated llama.cpp runtime.
-No account, model server or network is required to play or install.
+The standard installer downloads the pinned model in its final phase and
+verifies its size and SHA-256. The complete portable build includes the model.
+No account or model server is required. Playing after installation is offline;
+the standard installation needs Internet unless a verified model already exists.
 
 Repository: https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF
 Revision: 51db8454ac67b58ed848e54d4111be2ad16ba4bf
