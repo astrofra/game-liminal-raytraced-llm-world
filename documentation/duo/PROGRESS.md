@@ -5,6 +5,7 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-040 / DUO-041 | Correctif livré et publié | [Revue DUO-040](reviews/DUO-040.md), [revue DUO-041](reviews/DUO-041.md), [bilan](../RETOUR_JEU_INTERACTIONS_2.md) ; premier contrat retiré après clarification ; tests DeepSeek repris avec écart de lecture documenté, formulations libres interprétées par le LLM, raccourcis directs, inventaire sans nouveau rendu ; 14 CTest, recettes Gemma et nouvelle partie SDL de douze commandes sans secours narratif |
 | DUO-039 | Correctif après partie livré et publié | [Contrat](tasks/DUO-039.md), [revue](reviews/DUO-039.md), [bilan](../RETOUR_JEU_INTERACTIONS.md) ; six tests DeepSeek intégrés, observations persistantes et résolution/narration Codex, 14 CTest et 64 Python passent ; nouvelle partie SDL de dix commandes sans remplacement narratif, prises libres Gemma et dépôt avancé de 20 cm vérifiés |
 | DUO-037 / DUO-038 | Interactions livrées, binaire publié | [Revue](reviews/DUO-038.md), [bilan](../INTERACTIONS_ENVIRONNEMENT.md) ; tests DeepSeek repris après deux runs non conformes, moteur et intégration Codex ; 14 CTest + 64 Python passent, Gemma et SDL vérifiés, dépôt visible à travers le masque |
 | DUO-035 / DUO-036 | Livré — cibles 50/50, binaire publié | [Revue initiale](reviews/DUO-035.md), [revue finale](reviews/DUO-036.md) ; tests DeepSeek corrigés et intégrés, politique logique Codex, impasses préservées, géométrie inchangée, 14 CTest passent et essai réel Gemma accepté |

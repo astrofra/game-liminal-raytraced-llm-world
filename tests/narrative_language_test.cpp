@@ -222,6 +222,15 @@ int main() {
     TestClearlyWrongParagraphs();
     TestConservativeAcceptanceForAmbiguousText();
     TestItalianSessionRegression();
+    const std::map<std::string,bool> exits={{"north",true},{"east",true},{"south",true},{"west",false}};
+    const auto arrival=ConstrainArrivalDirections("La dalle est immense. Le passage vers l'ouest permet de revenir en arrière. Une lumière rase éclaire le sol.",kGameLanguageFrench,exits,kDirectionSouth,true);
+    CHECK(arrival=="La dalle est immense. Une lumière rase éclaire le sol. Passages ouverts : nord, est, sud. Retour : sud.");
+    CHECK(ConstrainArrivalDirections("Le retour est à l'est. Le sol est ocre.",kGameLanguageFrench,exits,kDirectionSouth,false)=="Le sol est ocre.");
+    CHECK(ConstrainArrivalDirections("The way back lies west. The slab casts a shadow.",kGameLanguageEnglish,exits,kDirectionSouth,true)=="The slab casts a shadow. Open passages: north, east, south. Way back: south.");
+    const std::map<std::string,bool> only_east={{"east",true}};
+    const auto east=ConstrainArrivalDirections("Le sol est ocre.",kGameLanguageFrench,only_east,kDirectionEast,true);
+    CHECK(ConstrainArrivalDirections(east,kGameLanguageFrench,only_east,kDirectionEast,true)==east);
+    CHECK(ConstrainArrivalDirections("Øst ligger veien tilbake. Lyset er svakt.",kGameLanguageNorwegian,exits,kDirectionSouth,false)=="Lyset er svakt.");
 
     if (g_failures != 0) {
         std::cerr << g_failures << " narrative language check(s) failed\n";

@@ -1521,6 +1521,7 @@ static void RunTurnWorker(
     }
 
     HeadlessTurnConfig turn_config = config.turn_config;
+    turn_config.reuse_unchanged_view = true;
     turn_config.stream_callback = OnHeadlessTurnStream;
     turn_config.stream_user_data = shared_state;
 
@@ -1566,32 +1567,35 @@ static void RunTurnWorker(
     SessionState updated_session_state = initial_session_state;
     UpdateSessionStateFromTurn(player_command.c_str(), turn_result, &updated_session_state);
 
-    {
-        std::lock_guard<std::mutex> lock(shared_state->mutex);
-        CloseTerminalStreamLocked(shared_state);
-        shared_state->activity = kWorkerActivityRenderer;
-        shared_state->status_text = UiText(shared_state->language,"Calculating the view...","Calcul de la vue...",
-            "Beregner utsikten...","Beregner udsigten...","Ansicht wird berechnet...","Calcolo della vista...");
-    }
-
-    const std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();
     std::vector<unsigned char> pixels;
-    RenderControl control{[](void* state) { return !static_cast<WorkerSharedState*>(state)->stop_requested.load(); },shared_state};
-    if (!RenderSceneToPixels(turn_result.rendered_scene, config.render_config, &pixels,&control)) {
-        fail_turn("Rendering failed.");
-        return;
+    double render_duration_ms = 0.0;
+    if (!turn_result.view_unchanged) {
+        {
+            std::lock_guard<std::mutex> lock(shared_state->mutex);
+            CloseTerminalStreamLocked(shared_state);
+            shared_state->activity = kWorkerActivityRenderer;
+            shared_state->status_text = UiText(shared_state->language,"Calculating the view...","Calcul de la vue...",
+                "Beregner utsikten...","Beregner udsigten...","Ansicht wird berechnet...","Calcolo della vista...");
+        }
+
+        const std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();
+        RenderControl control{[](void* state) { return !static_cast<WorkerSharedState*>(state)->stop_requested.load(); },shared_state};
+        if (!RenderSceneToPixels(turn_result.rendered_scene, config.render_config, &pixels,&control)) {
+            fail_turn("Rendering failed.");
+            return;
+        }
+        if (!ApplyPeripheralViewPostProcess(
+                &pixels,
+                config.render_config.width,
+                config.render_config.height,
+                PostProcessConfigForAnimationImage(config.post_process_config, target_generation_id, 0),
+                0)) {
+            fail_turn("View post-processing failed.");
+            return;
+        }
+        render_duration_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - render_start).count();
     }
-    if (!ApplyPeripheralViewPostProcess(
-            &pixels,
-            config.render_config.width,
-            config.render_config.height,
-            PostProcessConfigForAnimationImage(config.post_process_config, target_generation_id, 0),
-            0)) {
-        fail_turn("View post-processing failed.");
-        return;
-    }
-    const double render_duration_ms = std::chrono::duration<double, std::milli>(
-        std::chrono::steady_clock::now() - render_start).count();
 
     if (shared_state->stop_requested.load()) {
         fail_turn("Turn cancelled.");
@@ -2554,7 +2558,18 @@ bool RunSdlFrontend(
             }
         }
 
-        if (turn_result_ready) {
+        if (turn_result_ready && completed_turn_result.view_unchanged) {
+            current_session_state = std::move(completed_session_state);
+            last_turn_result = std::move(completed_turn_result);
+            have_last_turn = true;
+            pending_command.clear();
+            turn_completed = true;
+            archive_ok = archive.Turn(current_session_state,last_turn_result,{}) && archive_ok;
+            ui_message.clear();
+            fprintf(stdout,"[animated-view] reused generation=%llu; read-only turn, render_ms=0\n",
+                static_cast<unsigned long long>(active_animated_view.generation_id));
+            fflush(stdout);
+        } else if (turn_result_ready) {
             AnimatedView replacement_view;
             ++next_generation_id;
             if (!InitializeAnimatedView(

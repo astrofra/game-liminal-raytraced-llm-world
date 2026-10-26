@@ -1,3 +1,4 @@
+#include "player_action_fixture.h"
 #include "object_interactions.h"
 #include "turn_runner.h"
 #include "nlohmann/json.hpp"
@@ -153,25 +154,13 @@ struct Harness {
                 void*, LlmGenerationResult* result) {
                 ++interpretations;
                 REQUIRE_NARRATIVE(interpretation_config.purpose ==
-                    "object_interpretation_v1");
+                    "player_interpretation_v2");
                 REQUIRE_NARRATIVE(messages.size() > 1);
                 const json context = json::parse(messages[1].content);
-                json proposal = {
-                    {"action", "none"},
-                    {"origin", "none"},
-                    {"object_id", ""},
-                    {"quote", ""},
-                    {"label", ""},
-                    {"visual_id", ""},
-                    {"verdict", "forbid"},
-                    {"durable", false},
-                    {"material_source", false},
-                    {"reason", "Aucun transfert demandé."},
-                    {"revision", context.value("revision", 0)},
-                };
+                json proposal = FixturePlayerAction(context);
                 result->success = true;
                 result->reached_eog = true;
-                result->response_text = proposal.dump();
+                result->response_text = FixtureWireAction(proposal,context).dump();
                 return true;
             };
         config.narrative_completion =
@@ -255,7 +244,7 @@ void TestExplicitDropConservesProse() {
     REQUIRE_NARRATIVE(state.hard_state.inventory_items.size() == 2);
     REQUIRE_NARRATIVE(DepositCount(state, kPlace) == 1);
     REQUIRE_NARRATIVE(state.objects.deposits.at(kPlace)[0].object_id == kChalk);
-    REQUIRE_NARRATIVE(harness.interpretations == 0);
+    REQUIRE_NARRATIVE(harness.interpretations == 1);
     REQUIRE_NARRATIVE(harness.compositions == 0);
     REQUIRE_NARRATIVE(harness.narrations == 1);
     std::string why;
@@ -305,7 +294,7 @@ void TestObservationCompletesDepositedPresence() {
     REQUIRE_NARRATIVE(prose_end != std::string::npos);
     REQUIRE_NARRATIVE(presence != std::string::npos);
     REQUIRE_NARRATIVE(presence > prose_end);
-    REQUIRE_NARRATIVE(harness.interpretations == interpretations_before);
+    REQUIRE_NARRATIVE(harness.interpretations == interpretations_before + 1);
     REQUIRE_NARRATIVE(harness.compositions == compositions_before);
     REQUIRE_NARRATIVE(harness.narrations == narrations_before + 1);
     REQUIRE_NARRATIVE(state.hard_state.inventory_items == inventory_before);

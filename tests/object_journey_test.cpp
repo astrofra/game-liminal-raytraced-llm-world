@@ -1,3 +1,4 @@
+#include "player_action_fixture.h"
 #include "object_interactions.h"
 #include "inventory.h"
 #include "turn_runner.h"
@@ -42,10 +43,10 @@ struct Harness {
         cfg.dynamic_scene_config.completion=[](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult*)->bool{
             throw std::runtime_error("Object action composed a room");};
         cfg.interaction_completion=[this](const LlmGenerationConfig& config,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback,void*,LlmGenerationResult* r) {
-            ++interpretations;REQUIRE(config.purpose=="object_interpretation_v1");const auto context=json::parse(messages[1].content);
+            ++interpretations;REQUIRE(config.purpose=="player_interpretation_v2");const auto context=json::parse(messages[1].content);
             r->success=true;r->reached_eog=true;
             if(mode=="malformed"){r->response_text="{}";return true;}
-            auto p=proposal;p["revision"]=context["revision"];r->response_text=p.dump();return true;
+            auto p=FixturePlayerAction(context,proposal);r->response_text=FixtureWireAction(p,context).dump();return true;
         };
         cfg.narrative_completion=[this](const LlmGenerationConfig& config,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback,void*,LlmGenerationResult* r) {
             ++narrations;const auto request=json::parse(messages[1].content);
@@ -86,7 +87,7 @@ std::string Snapshot(const SessionState& s) {std::string text;REQUIRE(SerializeS
 void RunObjectJourneyTests() {
     auto s=Fixture();Harness h;std::string why;
     auto t=h.Run(s,"déposer la craie");
-    REQUIRE(!Has(s,"boundary chalk"));REQUIRE(s.objects.deposits.at(a).size()==1);REQUIRE(h.interpretations==0&&h.narrations==1);
+    REQUIRE(!Has(s,"boundary chalk"));REQUIRE(s.objects.deposits.at(a).size()==1);REQUIRE(h.interpretations==1&&h.narrations==1);
     REQUIRE(t.rendered_scene_text.find("mobile_")!=std::string::npos);REQUIRE(t.turn_result.narration.find("Vous déposez ici")!=std::string::npos);
     REQUIRE(std::abs(s.hard_state.body_temperature_c-37.1f)<.001f);
     const auto pos=s.objects.deposits.at(a)[0];const auto original=s.generated_rooms[0].scene_text;
@@ -149,7 +150,7 @@ void RunObjectJourneyTests() {
     const auto dust=s.hard_state.inventory_items.back();REQUIRE(s.objects.sources.back().material_source);
     REQUIRE(s.objects.instances.at(dust).label.find("échantillon")!=std::string::npos);
     h.Run(s,"north");const int sample_interpretations=h.interpretations;
-    h.Run(s,"déposer cet échantillon");REQUIRE(h.interpretations==sample_interpretations);h.Run(s,"regarder");
+    h.Run(s,"déposer cet échantillon");REQUIRE(h.interpretations==sample_interpretations+1);h.Run(s,"regarder");
     REQUIRE(ObjectEvidence(s,b).find("poussière")==std::string::npos);
     h.Run(s,"prendre poussière minérale");REQUIRE(Has(s,dust));h.Run(s,"south");
     h.mode="observe";h.observed_prose="La poussière minérale couvre encore le sol dans la lumière ocre.";
@@ -225,7 +226,9 @@ void RunObjectJourneyTests() {
     REQUIRE(t.rendered_scene_text.find("box \"wall\"")!=std::string::npos);REQUIRE(s.generated_rooms[0].scene_text.find("box \"pebble\"")!=std::string::npos);
     s=Fixture();s.generated_rooms[0].scene_text+="box \"pebble\" pos(0,0.1,-3) size(0.2,0.2,0.2) gray(0.9)\n";
     h.proposal["visual_id"]="";h.proposal["material_source"]=true;
-    t=h.Run(s,"prendre le caillou");REQUIRE(t.rendered_scene_text.find("box \"pebble\"")==std::string::npos);
+    // A model-declared material sample leaves its parent; the engine no longer
+    // infers a different semantic kind or visual ID from a word in the label.
+    t=h.Run(s,"prendre le caillou");REQUIRE(t.rendered_scene_text.find("box \"pebble\"")!=std::string::npos);
     // A structural binding is never removed, even with a favorable semantic verdict.
     s=Fixture();h.proposal["visual_id"]="wall";h.Run(s,"prendre le caillou");REQUIRE(s.objects.instances.size()==3);
 

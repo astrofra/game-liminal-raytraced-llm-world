@@ -48,7 +48,14 @@ réelles des limites de qualification restantes.
   et archives séparées. Aucun appel LLM supplémentaire ; bruit optique encore visible.
 - Narration, propositions d'issues et chaleur par le modèle, puis validation autoritative.
 - Température corporelle couplée à la température d'échantillonnage des prochains appels.
-- Inventaire : trois outils initiaux, consultation et examen sans inférence ni évolution thermique.
+- Inventaire : trois outils initiaux ; les raccourcis exacts `i` / `inventaire` / `inventory`
+  répondent sans inférence ni évolution thermique. SDL réutilise la vue et l'animation,
+  sans nouveau rendu ; les archives référencent la dernière preuve visuelle.
+- Le LLM interprète toutes les formulations libres du parcours local en un appel
+  structuré : déplacement, observation, inventaire, prise/dépôt, carnet et instruments.
+  Le C++ distribue les intentions, vérifie les identités, la provenance et les préconditions,
+  puis publie l'état. Les raccourcis de boussole restent directs. Aucun parseur de
+  compléments nominaux n'est ajouté. Voir le [second correctif de partie](RETOUR_JEU_INTERACTIONS_2.md).
 - [Interactions avec les objets](INTERACTIONS_ENVIRONNEMENT.md) : dépôt/reprise par identité,
   prise littéraire validée, sources finies et décisions durables, partition autoritative
   inventaire/pièces. Couche mobile déterministe, placements visibles à travers le masque,
@@ -64,7 +71,11 @@ réelles des limites de qualification restantes.
 
 La [continuité scénique](CONTINUITE_SCENES.md) est désormais explicite : le même
 instantané du lieu quitté, de son décor accepté et des événements publiés alimente
-la composition locale, ses corrections et la narration. Le catalogue cyclique de
+la composition locale et ses corrections. Pour une nouvelle arrivée, la narration
+conserve la géométrie de départ et les événements validés, mais retire leurs anciens
+paragraphes descriptifs du prompt. Son contexte d'objets est celui de la destination.
+Les indications cardinales d'arrivée et de retour proviennent des sorties validées.
+Le catalogue cyclique de
 cinq briefs est retiré du runtime ; `portal` reste un identifiant de visibilité,
 sans imposer une porte. Aucun appel de planification ou de résumé n'est ajouté.
 

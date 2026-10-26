@@ -1,3 +1,4 @@
+#include "player_action_fixture.h"
 #include "narrative_language.h"
 #include "dynamic_scene.h"
 #include "renderer.h"
@@ -20,6 +21,7 @@ using json=nlohmann::json;
 // A deterministic fake tokenizer; real Gemma counts are qualified separately.
 void RunObjectJourneyTests();
 void RunObjectNarrativeTests();
+void RunObjectSemanticTests();
 void RunObjectConservationTests();
 
 static bool FakePromptCount(const std::vector<LlmPromptMessage>& messages,int* count,std::string*) {
@@ -281,7 +283,7 @@ static void PersistenceAndNavigation() {
     GeneratedRoom original;original.room_id=state.current_place_id;original.spatial_state=state.spatial_state;original.scene_text=program;
     state.generated_rooms.push_back(original);
     std::string before;CHECK(SerializeSessionStateToJsonString(state,&before));
-    HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.dynamic_scenes=true;cfg.request_candidate_scene=false;int calls=0;
+    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.dynamic_scenes=true;cfg.request_candidate_scene=false;int calls=0;
     cfg.dynamic_scene_config.completion=Completion(&calls,10);
     HeadlessTurnResult turn;CHECK(!RunHeadlessTurnFromState(state,"north",cfg,&turn,error,sizeof(error)));
     std::string unchanged;CHECK(SerializeSessionStateToJsonString(state,&unchanged));CHECK(before==unchanged);
@@ -336,7 +338,7 @@ static void CanonicalBranches() {
     design.lighting_mode="night"; // An artistic label must not override engine time.
     design.reserved_passages.push_back({"east",Vec3(8,1.2f,0),Vec3(2,2.2f,2)});
     design.reserved_passages.push_back({"west",Vec3(-8,1.2f,0),Vec3(2,2.2f,2)});
-    HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.dynamic_scenes=true;cfg.request_candidate_scene=false;
+    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.dynamic_scenes=true;cfg.request_candidate_scene=false;
     cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult* r) {
         r->success=true;r->reached_eog=true;r->response_text=c.use_json_grammar?SerializeSceneDesign(design):program;return true;
     };
@@ -433,9 +435,8 @@ static void LocalPilot() {
     SessionState state;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     state.language=kGameLanguageFrench;
-    HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true; // Composition seam; no real inference in this test.
-    cfg.interaction_completion=[](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,
-        LlmStreamCallback,void*,LlmGenerationResult*) {return false;};
+    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true; // Composition seam; no real inference in this test.
+    cfg.interaction_completion=FixturePlayerCompletion;
     int narratives=0;
     cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* r) {
@@ -670,7 +671,7 @@ static void ExplorationContinuity() {
     for(int scenario=0;scenario<6;++scenario) {
         SessionState state;HeadlessTurnResult turn;char error[1024]={};
         CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
-        HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+        HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
         if(scenario>=4)while(DrawExplorationExitTarget(cfg.generation_config.seed,3)!=(scenario==4?3:2))++cfg.generation_config.seed;
         cfg.dynamic_scene_config.coplanar_cleanup=false;cfg.dynamic_scene_config.glass_supports=false;
         int compositions=0,narrations=0;bool fail=false,violate=false,cancel=false,cancelled=false;
@@ -794,8 +795,8 @@ static void ContinuityJourney() {
     SessionState state;HeadlessTurnResult turn;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     state.language=kGameLanguageFrench;
-    HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
-    cfg.interaction_completion=[](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult*){return false;};
+    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    cfg.interaction_completion=FixturePlayerCompletion;
     int scene_calls=0,narrative_calls=0;bool reject_first=true;
     // This continuity fixture needs two distinct forward branches in A and C.
     while(DrawExplorationExitTarget(cfg.generation_config.seed,1)!=3||
@@ -823,8 +824,13 @@ static void ContinuityJourney() {
         ++narrative_calls;const auto request=json::parse(messages[1].content);
         CHECK(request.at("continuity").at("origin").at("id")==expected_origin);
         if(request.at("exit_proposal").at("may_improvise")==true) {
-            CHECK(request.at("continuity").at("origin")==last_geometry.at("origin"));
-            CHECK(request.at("continuity").at("recent_events")==last_geometry.at("recent_events"));
+            CHECK(request["objects"]["place_id"]!=request["continuity"]["origin"]["id"]);
+            CHECK(request["objects"]["deposited"].empty());
+            auto origin=last_geometry.at("origin");origin.erase("description");
+            CHECK(request.at("continuity").at("origin")==origin);
+            CHECK(request.at("base_description")=="");
+            auto events=last_geometry.at("recent_events");for(auto& event:events)event.erase("description");
+            CHECK(request.at("continuity").at("recent_events")==events);
             CHECK(request.at("facts").contains("visible_geometry"));
             for(const auto& mass:request.at("facts").at("visible_geometry"))
                 CHECK(mass.at("dimensions_metres")!=json::array({20,8,.2})); // Removed screen is absent.
@@ -845,7 +851,7 @@ static void ContinuityJourney() {
         UpdateSessionStateFromTurn(command,turn,&state);
     };
     act("prendre le bloc");CHECK(state.history.back().engine_outcome.find("No movement or object manipulation")!=std::string::npos);
-    act("east");CHECK(scene_calls==2&&narrative_calls==2); // One refused action narration, one arrival, one composition repair.
+    act("east");CHECK(scene_calls==2&&narrative_calls==1); // Refusal needs no narration; arrival plus one composition repair.
     CHECK(last_geometry.at("recent_events").size()==1);
     CHECK(last_geometry["recent_events"][0]["outcome"].get<std::string>().find("No movement or object manipulation")!=std::string::npos);
     CHECK(geometry_prompts[0]==geometry_prompts[1]);
@@ -856,7 +862,7 @@ static void ContinuityJourney() {
     act("south");CHECK(state.current_place_id==a&&scene_calls==3);
     CHECK(state.spatial_state.room_summary==summary_a&&turn.rendered_scene_text==geometry_a);
     // A -> B -> A -> new C: origin is A although B was the last room created.
-    act("east");CHECK(scene_calls==4&&narrative_calls==5);
+    act("east");CHECK(scene_calls==4&&narrative_calls==4);
     CHECK(last_geometry["origin"]["id"]==a&&last_geometry["origin"]["description"]==description_a);
     CHECK(last_geometry["recent_events"].back()["place_id"]==a);
     CHECK(state.generated_rooms.size()==3&&state.reference_descriptions.count(a)&&state.reference_descriptions.count(b));
@@ -907,7 +913,7 @@ static void ContinuityJourney() {
 }
 
 static void InventoryTurns() {
-    SessionState state;char error[1024]={};HeadlessTurnResult turn;HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    SessionState state;char error[1024]={};HeadlessTurnResult turn;HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     state.language=kGameLanguageFrench;cfg.local_scenes=true;
     int narrative_calls=0,scene_calls=0;
@@ -932,6 +938,11 @@ static void InventoryTurns() {
         UpdateSessionStateFromTurn(command,turn,&state);
     }
     CHECK(narrative_calls==0&&scene_calls==0&&state.history.size()==9);
+    cfg.reuse_unchanged_view=true;
+    CHECK(RunHeadlessTurnFromState(state,"inventaire",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.accepted&&turn.view_unchanged&&turn.rendered_scene.triangles.empty()&&turn.rendered_scene_text.empty());
+    CHECK(turn.updated_hard_state.inventory_items==possessions&&narrative_calls==0&&scene_calls==0);
+    cfg.reuse_unchanged_view=false;
     CHECK(RunHeadlessTurnFromState(state,"prendre la craie",cfg,&turn,error,sizeof(error)));
     CHECK(turn.turn_result.intent=="inventory_already_carried");
     CHECK(turn.turn_result.narration.find("déjà")!=std::string::npos);
@@ -939,9 +950,9 @@ static void InventoryTurns() {
     CHECK(RunHeadlessTurnFromState(state,"inventaire",cfg,&turn,error,sizeof(error)));
     CHECK(turn.turn_result.narration.find("legacy keepsake")!=std::string::npos);
     CHECK(RunHeadlessTurnFromState(state,"examiner la craie",cfg,&turn,error,sizeof(error)));
-    CHECK(turn.turn_result.intent=="inventory_item_absent");
+    CHECK(turn.turn_result.intent=="object_refused");
     CHECK(RunHeadlessTurnFromState(state,"utiliser les pinces",cfg,&turn,error,sizeof(error)));
-    CHECK(turn.turn_result.intent=="inventory_item_absent");
+    CHECK(turn.turn_result.intent=="object_refused");
     std::string serialized;CHECK(SerializeSessionStateToJsonString(state,&serialized));SessionState restored;
     CHECK(ParseSessionStateFromJson(serialized.c_str(),&restored,error,sizeof(error)));
     CHECK(restored.hard_state.inventory_items==state.hard_state.inventory_items);
@@ -989,7 +1000,7 @@ static void LanguageContinuity() {
         SessionState state;HeadlessTurnResult turn;char error[1024]={};
         CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
         state.language=languages[i];state.spatial_state.room_title=titles[i];state.spatial_state.room_summary=prose[i];
-        HeadlessTurnConfig cfg;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true;int calls=0;bool wrong=false,fail=false;
+        HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true;int calls=0;bool wrong=false,fail=false;
         cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
             LlmStreamCallback,void*,LlmGenerationResult* r) {
             ++calls;const auto request=json::parse(messages.at(1).content);
@@ -1082,6 +1093,15 @@ static void ResearchArchives() {
     CHECK(first.Command("east"));CHECK(first.Pending());
     HeadlessTurnResult failure;failure.raw_scene_audit_response_text="unfinished scene";
     CHECK(first.Failure("cancelled",failure));CHECK(!first.Pending());
+    CHECK(first.Command("inventaire"));HeadlessTurnResult read_only;read_only.view_unchanged=true;
+    read_only.updated_objects=initial.objects;read_only.updated_objects.revision=1;
+    CHECK(first.Turn(initial,read_only,{}));
+    const auto reused_dir=std::filesystem::u8path(first.Path());
+    CHECK(!std::filesystem::exists(reused_dir/"turns/turn-00002.png"));
+    CHECK(!std::filesystem::exists(reused_dir/"turns/turn-00002.objects-ids.pgm"));
+    std::ifstream reused_file(reused_dir/"turns/turn-00002.json");json reused;reused_file>>reused;
+    reused_file.close();
+    CHECK(reused["view_reused"]==true&&reused["visual_reference"]=="places/place-00000");
     CHECK(first.Close(initial));
     CHECK(second.Start(root.u8string(),initial,model,render));CHECK(first.Path()!=second.Path());
     CHECK(second.Image(initial,{80,90,100}));CHECK(second.Close(initial));
@@ -1104,7 +1124,7 @@ static void GlassSupportJourney() {
     const auto opaque=Replace(LocalFixture(),"pos(-7,1,15)","pos(-7,4,15)");
     SessionState state;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
-    HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
     int compositions=0,narratives=0;
     cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
             LlmStreamCallback,void*,LlmGenerationResult* r) {
@@ -1165,7 +1185,7 @@ static void CoplanarSupportJourney() {
         "box \"floating_b\" pos(.5,4,5) size(3,2,2) gray(.75)\n";
     SessionState state;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
-    HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
     int compositions=0,narratives=0;json facts;
     cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,
             LlmStreamCallback,void*,LlmGenerationResult* r) {
@@ -1237,6 +1257,6 @@ static void CoplanarSupportJourney() {
     std::filesystem::remove_all(root);
 }
 int main() {
-    try {RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
+    try {RunObjectSemanticTests();RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

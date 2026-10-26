@@ -31,9 +31,10 @@ struct HeadlessTurnConfig {
     LlmGenerationConfig generation_config;
     bool dynamic_scenes = false;
     bool local_scenes = false; // Generate persistent places along open cardinal exits.
+    bool reuse_unchanged_view = false; // Frontend owns the existing image; headless exports still render.
     DynamicSceneConfig dynamic_scene_config;
     SceneCompletion narrative_completion; // Optional deterministic seam for fiction tests.
-    SceneCompletion interaction_completion; // Structured object interpretation, independently testable.
+    SceneCompletion interaction_completion; // Structured free-command interpretation, independently testable.
     bool request_candidate_scene;
     bool prefer_candidate_scene;
     HeadlessTurnStreamCallback stream_callback;
@@ -56,6 +57,7 @@ struct HeadlessTurnResult {
     std::string authorized_object_action, authorized_object_id;
     std::string accepted_observation;
     bool accepted = false; // Set only after the full turn and last cancellation poll succeed.
+    bool view_unchanged = false; // Read-only inventory response, no scene or pixels supplied.
     int llm_call_count = 0;
     int reasoning_tokens = 0;
     int final_tokens = 0;

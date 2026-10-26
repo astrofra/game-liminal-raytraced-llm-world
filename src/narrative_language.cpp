@@ -2,8 +2,46 @@
 #include <array>
 #include <sstream>
 #include <unordered_set>
+#include <regex>
 
 namespace liminal {
+namespace { std::unordered_set<std::string> Words(std::string text); }
+std::string ConstrainArrivalDirections(const std::string& text,GameLanguage language,
+    const std::map<std::string,bool>& exits,CardinalDirection return_direction,bool append_routes) {
+    // French "est" is also a verb: only treat it as east in an orientation phrase.
+    static const auto compass=Words("north east south west nord sud ouest nordost nordwest sudost sudwest nordouest sudouest nordest sudest nordøst sydøst nordvest sydvest norden osten süden westen sued ost ovest syd sør sor øst vest");
+    static const std::regex french_east(R"((\b(vers|au|de|du|depuis|par|retour|direction|passage|sortie)|à|À)\s*(:\s*)?(l['’ ]*)?[Ee][Ss][Tt]\b|\b[Ee][Ss][Tt]\s*[:;,])",std::regex::icase);
+    static const char* names[6][4]={{"north","east","south","west"},{"nord","est","sud","ouest"},
+        {"nord","øst","sør","vest"},{"nord","øst","syd","vest"},{"Norden","Osten","Süden","Westen"},{"nord","est","sud","ovest"}};
+    static const char* headings[6]={"Open passages: ","Passages ouverts : ","Åpne passasjer: ","Åbne passager: ","Offene Wege: ","Passaggi aperti: "};
+    static const char* backs[6]={"Way back: ","Retour : ","Tilbake: ","Tilbage: ","Rückweg: ","Ritorno: "};
+    const int lang=language>=kGameLanguageEnglish&&language<=kGameLanguageItalian?static_cast<int>(language):0;
+    std::string result;
+    size_t begin=0;
+    while(begin<text.size()) {
+        const auto end=text.find_first_of(".!?\n",begin);
+        auto sentence=text.substr(begin,(end==std::string::npos?text.size():end+1)-begin);
+        bool names_compass=false;
+        for(const auto& word:Words(sentence))
+            if(compass.count(word)||(language==kGameLanguageItalian&&word=="est"))names_compass=true;
+        if(!names_compass&&!std::regex_search(sentence,french_east)) {
+            const auto first=sentence.find_first_not_of(" \t\r\n");
+            if(first!=std::string::npos&&sentence.compare(first,std::char_traits<char>::length(headings[lang]),headings[lang])!=0&&sentence.compare(first,std::char_traits<char>::length(backs[lang]),backs[lang])!=0){if(!result.empty())result+=' ';result+=sentence.substr(first);}
+        }
+        if(end==std::string::npos)break;begin=end+1;
+    }
+    if(!append_routes)return result;
+    const char* keys[]={"north","east","south","west"};std::string routes,back;
+    const CardinalDirection directions[]={kDirectionNorth,kDirectionEast,kDirectionSouth,kDirectionWest};
+    for(int i=0;i<4;++i) {
+        const auto exit=exits.find(keys[i]);
+        if(exit!=exits.end()&&exit->second){if(!routes.empty())routes+=", ";routes+=names[lang][i];
+            if(return_direction==directions[i])back=names[lang][i];}
+    }
+    if(!routes.empty()){if(!result.empty())result+=' ';result+=std::string(headings[lang])+routes+".";}
+    if(!back.empty()){if(!result.empty())result+=' ';result+=std::string(backs[lang])+back+".";}
+    return result;
+}
 namespace {
 size_t LanguageIndex(GameLanguage language) {
     return language >= kGameLanguageEnglish && language <= kGameLanguageItalian ?

@@ -5,6 +5,8 @@
 namespace liminal {
 struct HeadlessTurnConfig;
 struct ObjectResolution {
+    // Non-transfer intents (perceive, inventory, move_*, etc.) are dispatched
+    // by the caller. Every free command is interpreted once by the model.
     bool handled = false, changed = false, clarified = false;
     std::string action, object_id, reason, metrics;
 };

@@ -96,6 +96,7 @@ void ResearchArchive::WriteImage(const SessionState& state,const std::vector<uns
     const auto file=path_/(found->second+".png");
     const bool first=!std::filesystem::exists(file);
     const bool objects=state.objects.revision>0&&pending_;
+    last_visual_reference_=objects?"turns/turn-"+Number(command_index_):found->second;
     if(!first&&!objects)return;
     if(pixels.size()!=static_cast<size_t>(render_.width)*render_.height*3)
         throw std::runtime_error("Invalid research image dimensions");
@@ -153,6 +154,7 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
         {"from",turn.initial_place_id},{"to",turn.updated_place_id},{"description",turn.turn_result.narration},
         {"generated_room",turn.generated_room_created},{"prompt",turn.prompt_text},{"intent",turn.turn_result.intent},
         {"request",turn.request_text},{"engine_outcome",turn.engine_outcome},
+        {"view_reused",turn.view_unchanged},{"visual_reference",last_visual_reference_},
         {"inventory_before",turn.initial_hard_state.inventory_items},{"inventory_after",turn.updated_hard_state.inventory_items},
         {"interaction",turn.interaction_metrics_json},{"objects_prepared",turn.objects_prepared},
         {"object_revision_before",turn.initial_object_revision},{"objects_after",json::parse(SerializeObjectState(turn.updated_objects))},
@@ -220,7 +222,8 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
 }
 bool ResearchArchive::Turn(const SessionState& state,const HeadlessTurnResult& turn,
                            const std::vector<unsigned char>& pixels) {
-    return Guard([&]{Place(state);WriteImage(state,pixels);Snapshot(state);Result("accepted",turn,"");});
+    return Guard([&]{Place(state);if(!turn.view_unchanged)WriteImage(state,pixels);
+        Snapshot(state);Result("accepted",turn,"");});
 }
 bool ResearchArchive::Failure(const std::string& error,const HeadlessTurnResult& turn) {
     return Guard([&]{Result("not_committed",turn,error);});

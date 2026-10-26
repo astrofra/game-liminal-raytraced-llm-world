@@ -2841,6 +2841,15 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         BuildContinuityContext(state,command,result->traversal_direction,outcome);
     auto core=json::parse(continuity.core_json);
     core["transition"]["outcome"]=outcome;
+    if(discovery_constraints) {
+        // Keep the journey's facts and departure geometry for contrast, without
+        // feeding old literary paragraphs back as a template for the new place.
+        core["origin"].erase("description");
+        core["engine"].erase("objects");
+        for(auto& event:continuity.events_json) {
+            auto data=json::parse(event);data.erase("description");event=data.dump();
+        }
+    }
     continuity.core_json=core.dump();
     PlaceProposalConstraints constraints;
     const GeneratedRoom* pending_room=FindGeneratedRoomById(state,result->updated_place_id);
@@ -2877,6 +2886,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     if(IsClearlyWrongNarrativeLanguage(*narration,state.language))*narration=SceneLanguageFallback(state.language);
     SessionState object_view=state;
     object_view.current_place_id=result->updated_place_id;
+    object_view.spatial_state=result->updated_spatial_state;
     object_view.hard_state.inventory_items=result->updated_hard_state.inventory_items;
     if(result->objects_prepared)object_view.objects=result->updated_objects;
     const auto object_context=json::parse(ObjectContext(object_view,command));
@@ -2893,7 +2903,8 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     const bool completed_move = arrival || result->updated_place_id != result->initial_place_id;
     const std::string prompt=json({{"language",GameLanguageEnglishName(state.language)},{"language_code",GameLanguageToString(state.language)},
         {"world","Eryx: Venusian quarry, human explorer inside a protective suit. Material, embodied strangeness; no invented supernatural events."},
-        {"facts",json::parse(facts,nullptr,false)},{"current_title",*title},{"base_description",*summary},
+        {"facts",json::parse(facts,nullptr,false)},{"current_title",discovery_constraints?"":*title},{"base_description",discovery_constraints?"":*summary},
+        {"orientation_rule","Write sensory prose without cardinal directions or a claim about the way back. The engine appends open routes and the return direction from the accepted exit map. Describe the actual destination geometry in facts; origin geometry is only a comparison."},
         {"objects",object_context},
         {"resolved_object_action",result->authorized_object_action.empty()?json(nullptr):json{
             {"action",result->authorized_object_action},{"name",ObjectName(object_view,result->authorized_object_id)},
@@ -3051,6 +3062,14 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             }
         }
     }
+    if(card) {
+        std::map<std::string,bool> exits;
+        for(const auto* direction:{"north","east","south","west"})
+            exits[direction]=std::find(result->updated_spatial_state.blocked_exits.begin(),result->updated_spatial_state.blocked_exits.end(),direction)==result->updated_spatial_state.blocked_exits.end();
+        *narration=ConstrainArrivalDirections(*narration,state.language,exits,OppositeCardinalDirection(result->traversal_direction),true);
+        const auto clean_summary=ConstrainArrivalDirections(*summary,state.language,exits,kDirectionUnknown,false);
+        *summary=clean_summary.empty()?SceneLanguageFallback(state.language):clean_summary;
+    }
     if(pending&&proposal_accepted) {
         GeneratedRoom resolved=*pending_room;
         resolved.spatial_state=result->updated_spatial_state;
@@ -3128,32 +3147,22 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     return reason.empty();
 }
 
-static std::string SceneActionOutcome(const SessionState& state,const std::string& command,HeadlessTurnResult* result) {
-    auto text=ToLowerAsciiCopy(TrimWhitespaceCopy(command));
-    for(const auto* prefix:{"je voudrais ","je veux ","je ","i want to ","i "})
-        if(text.compare(0,strlen(prefix),prefix)==0){text.erase(0,strlen(prefix));break;}
-    auto starts=[&](const std::vector<std::string>& verbs) {
-        for(const auto& verb:verbs)if(text==verb||text.compare(0,verb.size()+1,verb+" ")==0)return true;
-        return false;
-    };
-    if(starts({"noter","note","noter dans le carnet","consigner","record","annoter"})) {
+static std::string SceneActionOutcome(const SessionState& state,const std::string& command,const std::string& action,HeadlessTurnResult* result) {
+    if(action=="note") {
         result->turn_result.intent="record_field_note";
         return "The engine records the player's words as a subjective notebook entry, not a new world fact. No mark appears on geometry. Note: "+ConstrainNarrationText(command,500,0);
     }
-    if(starts({"mesurer","mesure","measure","consulter","consulte","read instruments"}) &&
-       (text.find("temp")!=std::string::npos||text.find("instrument")!=std::string::npos)) {
+    if(action=="measure") {
         result->turn_result.intent="read_suit_temperature";
         return "Only existing suit readings are consulted and remembered: external "+std::to_string(state.hard_state.external_temperature_c)+
             " C, body "+std::to_string(state.hard_state.body_temperature_c)+" C. No spatial scan, no geometry change, no resource consumed.";
     }
-    if(starts({"lire le carnet","consulter le carnet","read notebook","rappeler les notes"})) {
+    if(action=="read_notes") {
         result->turn_result.intent="read_field_notes";
         return "Read the existing notebook, distinguishing subjective player notes from measured values. No new facts or physical effects.";
     }
     result->turn_result.intent="perceive_accepted_scene";
-    if(starts({"look","l","regarder","regarde","observer","observe","examiner","examine","inspecter","inspect","x",
-        "ecouter","écouter","écoute","ecoute","listen","attendre","attends","wait","comparer","compare","rappeler","rappelle","remember",
-        "orienter","orientation","guarda","osserva","aspetta","attendi","attendere","vent","vente","warten","warte","schauen","untersuche","se"}))
+    if(action=="perceive")
         return "Perception/reflection only at the current fixed viewpoint. Address the requested detail using accepted geometry and memory. "
             "If an alleged object/gap is absent or unverifiable, say so naturally. No manipulation or displacement. Evaluate thermal exposure during perception or waiting; no other resource change.";
     result->turn_result.intent="unavailable_scene_action";
@@ -3366,15 +3375,16 @@ void UpdateSessionStateFromTurn(
 }
 
 static bool RunObjectTurn(const SessionState& state,const std::string& command,const HeadlessTurnConfig& config,
-                          HeadlessTurnResult* result,char* error,size_t error_size) {
+                          HeadlessTurnResult* result,char* error,size_t error_size,
+                          const ObjectResolution* prepared=nullptr,const SessionState* prepared_state=nullptr) {
     std::string program;
     const auto* room=FindGeneratedRoomById(state,state.current_place_id);
     if(room)program=room->scene_text;
     else if(!BuildSceneTextFromSpatialState(state.spatial_state,&program,error,error_size))return false;
     Scene current;std::string composed,why;
     if(!BuildObjectScene(program,state,&composed,&current,&why)){SetError(error,error_size,"Objects: %s",why.c_str());return false;}
-    SessionState candidate=state;
-    const auto action=ResolveObjectAction(state,command,config,current,&candidate);
+    SessionState candidate=prepared_state?*prepared_state:state;
+    const auto action=prepared?*prepared:ResolveObjectAction(state,command,config,current,&candidate);
     result->interaction_metrics_json=action.metrics;
     if(action.changed){result->authorized_object_action=action.action;result->authorized_object_id=action.object_id;}
     result->objects_prepared=true;result->updated_objects=candidate.objects;
@@ -3382,20 +3392,11 @@ static bool RunObjectTurn(const SessionState& state,const std::string& command,c
     result->turn_result.intent=action.changed?"object_"+action.action:
         action.reason=="already_carried"?"inventory_already_carried":action.clarified?"clarify_object":"object_refused";
     auto exact=action.changed?ObjectActionText(candidate,action.action,action.object_id):ObjectRefusalText(state.language,action.reason);
-    if(action.reason=="not_here"||action.reason=="clarify"||action.reason=="insufficient_evidence") {
-        const auto metrics=json::parse(action.metrics,nullptr,false);
-        if(metrics.is_object()&&metrics.contains("proposal")&&metrics["proposal"].is_object()) {
-            const auto explanation=metrics["proposal"].value("reason",std::string());
-            if(!explanation.empty()&&explanation.size()<=500&&explanation.find("object:")==std::string::npos&&
-               !IsClearlyWrongNarrativeLanguage(explanation,state.language)&&
-               ObjectNarrationAllowed(state,explanation,"","",nullptr))exact=explanation;
-        }
-    }
     result->turn_result.narration=SceneLanguageFallback(state.language);
     std::string title=state.spatial_state.room_title,summary=state.spatial_state.room_summary;
     result->engine_outcome=action.changed?"Validated object "+action.action+" of "+ObjectName(candidate,action.object_id)+" ("+action.object_id+"). No other manipulation or movement. Only this transfer is authorized.":
         "No movement or object manipulation performed. Refusal: "+action.reason;
-    if(!action.clarified&&action.reason!="already_carried"&&action.reason!="not_here"&&action.reason!="insufficient_evidence") {
+    if(action.changed) {
         // Withhold provisional prose until the complete state/render publication gate.
         auto quiet=config;
         quiet.stream_user_data=const_cast<HeadlessTurnConfig*>(&config);
@@ -3459,7 +3460,38 @@ static bool RunHeadlessTurnFromStateImpl(
         result->initial_hard_state);
     result->effective_llm_temperature = body_driven_config.generation_config.temperature;
 
-    const auto inventory_request=ParseInventoryRequest(NormalizeInventoryText(player_command?player_command:""));
+    const std::string command=player_command?player_command:"";
+    const auto shortcut=NormalizeInventoryText(command);
+    CardinalDirection traversal_direction=kDirectionUnknown;
+    bool traversal=false;
+    std::string interpreted_action;
+    InventoryRequest inventory_request;
+    const auto* local_room=FindGeneratedRoomById(initial_session_state,result->initial_place_id);
+    const bool semantic_commands=config.local_scenes||(local_room&&local_room->scene_contract_version);
+    if(semantic_commands) {
+        // Exact UI shortcuts are commands in their own right. Every free phrase
+        // goes through the model; C++ dispatches its structured result only.
+        if(shortcut=="i"||shortcut=="inventaire"||shortcut=="inventory")inventory_request.command=InventoryCommand::List;
+        else if(shortcut.find(' ')==std::string::npos&&TryParseTraversalCommand(initial_session_state.language,shortcut.c_str(),&traversal_direction))traversal=true;
+        else {
+            Scene scene;
+            if(!LoadSceneForPlace(initial_session_state,result->initial_place_id,&scene,error_buffer,error_buffer_size))return false;
+            SessionState candidate=initial_session_state;
+            const auto interpreted=ResolveObjectAction(initial_session_state,command,body_driven_config,scene,&candidate);
+            result->interaction_metrics_json=interpreted.metrics;
+            if(interpreted.handled)return RunObjectTurn(initial_session_state,command,body_driven_config,result,error_buffer,error_buffer_size,&interpreted,&candidate);
+            interpreted_action=interpreted.action;
+            if(interpreted_action=="inventory")inventory_request.command=InventoryCommand::List;
+            else if(interpreted_action=="inspect"||interpreted_action=="use") {
+                inventory_request.command=interpreted_action=="inspect"?InventoryCommand::Inspect:InventoryCommand::Use;
+                inventory_request.item_id=interpreted.object_id;
+            } else if(interpreted_action.compare(0,5,"move_")==0)
+                traversal=ParseCardinalDirection(interpreted_action.substr(5).c_str(),&traversal_direction);
+        }
+    } else {
+        inventory_request=ParseInventoryRequest(shortcut);
+        traversal=TryParseTraversalCommand(initial_session_state.language,player_command,&traversal_direction);
+    }
     const bool object_action=inventory_request.command==InventoryCommand::Take||
         inventory_request.command==InventoryCommand::Drop||inventory_request.command==InventoryCommand::Unsupported;
     if(inventory_request.command!=InventoryCommand::None&&!object_action) {
@@ -3469,6 +3501,7 @@ static bool RunHeadlessTurnFromStateImpl(
         result->narrative_metrics_json=json({{"engine_only",true},{"purpose","inventory_v1"},
             {"intent",result->turn_result.intent},{"item_id",inventory_request.item_id},
             {"inventory",result->updated_hard_state.inventory_items},{"displayed",result->turn_result.narration}}).dump();
+        if(config.reuse_unchanged_view) {result->view_unchanged=true;return true;}
         const auto* room=FindGeneratedRoomById(initial_session_state,result->initial_place_id);
         std::string program;
         if(room)program=room->scene_text;
@@ -3479,8 +3512,7 @@ static bool RunHeadlessTurnFromStateImpl(
 
     if(object_action)return RunObjectTurn(initial_session_state,player_command?player_command:"",body_driven_config,result,error_buffer,error_buffer_size);
 
-    CardinalDirection traversal_direction = kDirectionUnknown;
-    if (TryParseTraversalCommand(initial_session_state.language, player_command, &traversal_direction)) {
+    if (traversal) {
         result->traversal_requested = true;
         result->traversal_direction = traversal_direction;
 
@@ -3706,6 +3738,7 @@ static bool RunHeadlessTurnFromStateImpl(
                 // Publish the geometry only after the whole turn's final cancellation poll.
                 // Narrative failure keeps this valid geometry and its place-specific fallback.
                 result->updated_spatial_state=room.spatial_state;
+                result->updated_place_id=room.room_id;
                 discovery_constraints=NewPlaceConstraints(generated.scene,context.entry_direction);
                 discovery_constraints.balance.target_open_exits=DrawExplorationExitTarget(config.generation_config.seed,initial_session_state.next_generated_room_index);
                 discovery_constraints.balance.allow_dead_end=remaining_exits>0;
@@ -4041,9 +4074,7 @@ static bool RunHeadlessTurnFromStateImpl(
         if(accepted_room)program=accepted_room->scene_text;
         else if(!BuildSceneTextFromSpatialState(initial_session_state.spatial_state,&program,error_buffer,error_buffer_size))return false;
         std::string title=result->initial_spatial_state.room_title,summary=result->initial_spatial_state.room_summary;
-        const auto outcome=SceneActionOutcome(initial_session_state,player_command?player_command:"",result);
-        if(result->turn_result.intent=="unavailable_scene_action"&&MayRequestObjectTransfer(player_command?player_command:""))
-            return RunObjectTurn(initial_session_state,player_command?player_command:"",body_driven_config,result,error_buffer,error_buffer_size);
+        const auto outcome=SceneActionOutcome(initial_session_state,command,interpreted_action,result);
         result->turn_result.narration=summary;
         if(result->turn_result.intent=="record_field_note")result->turn_result.narration=PlayerText(initial_session_state.language,
             "You record a note: ","Vous consignez dans votre carnet : ","Du noterer: ","Du noterer: ","Du notierst: ","Annoti: ")+std::string(player_command?player_command:"").substr(0,500);
@@ -4303,7 +4334,19 @@ bool RunHeadlessTurnFromState(
     const LlmRuntimeTotals before = QueryLlmRuntimeTotals();
     bool success = RunHeadlessTurnFromStateImpl(initial_session_state, player_command, guarded,
                                                      result, error_buffer, error_buffer_size);
-    if(success&&result&&!result->objects_prepared) {
+    if(success&&result&&result->traversal_requested&&result->updated_place_id!=result->initial_place_id) {
+        std::map<std::string,bool> exits;
+        for(const auto* direction:{"north","east","south","west"})
+            exits[direction]=std::find(result->updated_spatial_state.blocked_exits.begin(),result->updated_spatial_state.blocked_exits.end(),direction)==result->updated_spatial_state.blocked_exits.end();
+        result->turn_result.narration=ConstrainArrivalDirections(result->turn_result.narration,initial_session_state.language,
+            exits,OppositeCardinalDirection(result->traversal_direction),true);
+        result->updated_soft_state.rolling_summary=result->turn_result.narration;
+        auto metrics=json::parse(result->narrative_metrics_json,nullptr,false);
+        if(!metrics.is_object())metrics=json::object();
+        metrics["navigation_completed"]=true;metrics["displayed"]=result->turn_result.narration;
+        result->narrative_metrics_json=metrics.dump();
+    }
+    if(success&&result&&!result->objects_prepared&&!result->view_unchanged) {
         SessionState view=initial_session_state;view.current_place_id=result->updated_place_id;
         const auto deposits=view.objects.deposits.find(view.current_place_id);
         bool dynamic=deposits!=view.objects.deposits.end()&&!deposits->second.empty();
@@ -4334,6 +4377,7 @@ bool RunHeadlessTurnFromState(
             result->updated_soft_state=result->initial_soft_state;result->updated_spatial_state=result->initial_spatial_state;
             result->objects_prepared=false;result->updated_objects=initial_session_state.objects;
             result->accepted_observation.clear();
+            result->view_unchanged=false;
             result->rendered_scene=Scene();result->rendered_scene_text.clear();result->turn_result.narration.clear();
         }
         SetError(error_buffer, error_buffer_size, "Turn cancelled: %s", "state was not committed");

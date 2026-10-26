@@ -15,6 +15,9 @@ les issues de la boussole. `inventaire` / `inventory` / `i` consulte les possess
 `reprendre la craie` et `regarder tout autour` permettent de laisser et retrouver
 un objet. Une petite cible décrite à l'arrivée ou révélée par une observation peut être ramassée après validation
 par le moteur ; les objets et leurs retraits persistent pendant la partie.
+Les formulations libres sont interprétées par le LLM ; le moteur vérifie puis exécute
+la proposition. Les raccourcis exacts d'inventaire et de boussole restent directs.
+Consulter l'inventaire conserve la vue et l'animation déjà calculées.
 
 Gemma 4 E4B Q4_K_M tourne dans le processus via **llama.cpp intégré**. Aucun
 service, serveur, compte ou accès Internet n'est nécessaire pour jouer après installation.

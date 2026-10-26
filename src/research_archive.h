@@ -32,7 +32,7 @@ private:
     void Result(const std::string& status, const HeadlessTurnResult& turn, const std::string& error);
     std::filesystem::path path_;
     std::map<std::string,std::string> places_;
-    std::string error_, command_;
+    std::string error_, command_, last_visual_reference_;
     RenderConfig render_;
     unsigned int command_index_=0;
     bool pending_=false;
