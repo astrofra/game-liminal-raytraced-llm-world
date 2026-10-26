@@ -1,6 +1,6 @@
 # Within the Latent Walls / Entre les Murs Latents
 
-![Carrière vénusienne](img/[2026-10-26_134518.png)
+![Carrière vénusienne](img/2026-10-26_134518.png)
 
 Fiction interactive et recherche-création : un labyrinthe vénusien inspiré de
 *In the Walls of Eryx*, avec narration générée et décors calculés par un raytracer.
