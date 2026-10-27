@@ -35,6 +35,7 @@ struct HeadlessTurnConfig {
     LlmGenerationConfig generation_config;
     bool dynamic_scenes = false;
     bool local_scenes = false; // Generate persistent places along open cardinal exits.
+    bool investigation_opportunities = true; // Disable only for isolated geometry diagnostics/fixtures.
     bool reuse_unchanged_view = false; // Frontend owns the existing image; headless exports still render.
     DynamicSceneConfig dynamic_scene_config;
     SceneCompletion narrative_completion; // Optional deterministic seam for fiction tests.
@@ -54,6 +55,9 @@ struct HeadlessTurnConfig {
 };
 
 struct HeadlessTurnResult {
+    InvestigationState initial_investigation, updated_investigation;
+    bool investigation_prepared = false;
+    std::string investigation_metrics_json;
     AudioMixDecision audio_mix;
     ObjectState updated_objects;
     bool objects_prepared = false;

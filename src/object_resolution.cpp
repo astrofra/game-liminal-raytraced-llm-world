@@ -1,4 +1,5 @@
 #include "object_interactions.h"
+#include "investigation.h"
 #include "turn_runner.h"
 #include "renderer.h"
 #include "narrative_language.h"
@@ -34,6 +35,7 @@ ObjectResolution ResolveObjectAction(const SessionState& state,const std::string
             visuals.push_back({{"id",b.id},{"size",{b.size.x,b.size.y,b.size.z}}});
         auto context=json::parse(ObjectContext(state,command));context["small_visible_candidates"]=visuals;
         context["command"]=command;context["language"]=GameLanguageEnglishName(state.language);
+        context["investigation"]=json::parse(InvestigationContext(state));
         json recent=json::array();
         const size_t first_event=state.history.size()>4?state.history.size()-4:0;
         for(size_t i=first_event;i<state.history.size();++i)recent.push_back({{"past_outcome",state.history[i].engine_outcome}});
@@ -61,7 +63,9 @@ ObjectResolution ResolveObjectAction(const SessionState& state,const std::string
         using ordered_json=nlohmann::ordered_json;
         auto properties=ordered_json::object();
         properties["reason"]={{"type","string"},{"maxLength",160}};
-        properties["action"]={{"enum",{"take","drop","perceive","move_north","move_east","move_south","move_west","inventory","inspect","use","note","read_notes","measure","none","clarify","refuse"}}};
+        properties["action"]={{"enum",{"take","drop","perceive","move_north","move_east","move_south","move_west","inventory","inspect","use","note","read_notes","measure","examine_clue","review_investigation","none","clarify","refuse"}}};
+        json clue_ids=json::array({""});
+        for(const auto& clue:context["investigation"]["accessible_clues"])clue_ids.push_back(clue["id"]);
         ids.push_back("");properties["object_id"]={{"enum",ordered_json::parse(ids.dump())}};
         properties["source"]={{"type","integer"},{"minimum",0},{"maximum",quotes.size()}};
         properties["label"]={{"type","string"},{"maxLength",120}};
@@ -70,14 +74,17 @@ ObjectResolution ResolveObjectAction(const SessionState& state,const std::string
         properties["material_source"]={{"type","boolean"}};
         properties["durable"]={{"type","boolean"}};
         properties["revision"]={{"enum",{state.objects.revision}}};
+        properties["investigation_id"]={{"enum",ordered_json::parse(clue_ids.dump())}};
+        properties["investigation_revision"]={{"enum",{state.investigation.revision}}};
         cfg.json_schema=ordered_json{{"type","object"},{"properties",properties},
-            {"required",{"action","object_id","source","label","visual_id","material_source","durable","reason","revision"}},
+            {"required",{"action","object_id","source","label","visual_id","material_source","durable","reason","revision","investigation_id","investigation_revision"}},
             {"additionalProperties",false}}.dump();
         context["eligible_source_sentences"]=quotes;
         json sources=json::array();
         for(size_t i=0;i<quotes.size();++i)sources.push_back({{"source",i+1},{"sentence",quotes[i]}});
         context["source_references"]=sources;
         context["eligible_explicit_ids"]=ids;
+        context["available_transfers"]={{"drop_to_ground_here",context["carried"]},{"take_from_ground_here",context["deposited"]}};
         // Keep historical outcomes as memory, never a competing list of orders.
         // Place the one current request last, immediately before generation.
         auto ordered_context=ordered_json::parse(context.dump());ordered_context.erase("command");
@@ -89,7 +96,11 @@ ObjectResolution ResolveObjectAction(const SessionState& state,const std::string
             "First paraphrase the CURRENT intention in reason: for a transfer, state where the player wants the object to end up (carried with their belongings, or on the ground). Then output the action and target that achieve that intention. "
             "Actions: take (ground -> carried), drop (carried -> ground HERE), perceive (look, observe, question, reflect, wait), inventory (list carried objects), inspect (describe carried object), use (use a tool's function), "
             "move_north/move_east/move_south/move_west (NEW departure from the CURRENT place), note (write notebook), read_notes, measure (read suit temperatures), none (unsupported or absent target), clarify (ambiguous), refuse (established physical obstacle). "
+            "For a dossier, a comparison, a recap, or a question about what is known about Vey, crystals or the obstruction, use review_investigation. "
+            "To examine an accessible clue use examine_clue with its exact investigation_id and investigation_revision; leave object_id empty and source=0. This includes reading a survey tablet or identification plate. Never invent an identification from prose. "
+            "Taking a specimen still uses take with the deposited object_id, not examine_clue. For other actions leave investigation_id empty. "
             "A repeated move is another departure, not staying put. The engine checks closed exits. Set down/poser/deposer is drop, never use. Put a ground object with one's belongings is take, never drop. "
+            "The action MUST match the destination you just described in reason: ground -> drop; carried belongings -> take. Never output take when reason says to put down a carried specimen. "
             "'je remets avec mes affaires l'objet qui est au sol' means take. 'je voudrais reprendre ce que je viens de poser' means take. These illustrate intents only and do not add objects. "
             "Resolve the actual target using the authoritative carried and deposited lists and recent_actions. For an existing object, fill its exact object_id; source=0, label empty, material_source=false, durable=false. Do not replace a listed object with a new literary object. A deposited object exists even when the description omits it. "
             "For a NEW literary object or material sample, object_id is empty and source is the numbered sentence that actually describes it in source_references. Copy its exact noun phrase into label. source=0 means no literary source. Never substitute a different object or an atmospheric metaphor. "
@@ -108,7 +119,11 @@ ObjectResolution ResolveObjectAction(const SessionState& state,const std::string
         if(!ok||!generation.reached_eog)result.reason="interpretation_unavailable";
         else try {
             raw=json::parse(response);
-            if(!raw.is_object()||raw.size()!=9)throw std::runtime_error("invalid proposal fields");
+            if(!raw.is_object()||(raw.size()!=9&&raw.size()!=11))throw std::runtime_error("invalid proposal fields");
+            if(raw.contains("investigation_revision")&&(!raw["investigation_revision"].is_number_integer()||
+               raw["investigation_revision"]!=state.investigation.revision))throw std::runtime_error("invalid investigation revision");
+            result.investigation_id=raw.value("investigation_id",std::string());
+            result.investigation_revision=raw.value("investigation_revision",-1);
             p.action=raw.at("action").get<std::string>();p.object_id=raw.at("object_id").get<std::string>();
             const int source=raw.at("source").get<int>();
             if(source<0||static_cast<size_t>(source)>quotes.size())throw std::runtime_error("invalid source reference");
@@ -120,7 +135,14 @@ ObjectResolution ResolveObjectAction(const SessionState& state,const std::string
             if(p.origin!="implicit"){p.label.clear();p.material_source=false;p.durable=false;}
             p.verdict=p.action=="none"||p.action=="refuse"?"forbid":p.action=="clarify"?"uncertain":"allow";
             if(p.action=="refuse")p.action=p.origin=="implicit"?"take":"none";
-            const std::vector<std::string> observations={"perceive","move_north","move_east","move_south","move_west","inventory","inspect","use","note","read_notes","measure"};
+            // Inspecting an explicitly registered clue is its authorized examination.
+            // This dispatch uses identities, never words from the player's request.
+            if((p.action=="inspect"||p.action=="perceive"||p.action=="examine_clue")&&!p.object_id.empty())
+                for(const auto& clue:context["investigation"]["accessible_clues"])
+                if(clue["object_id"]==p.object_id&&(result.investigation_id.empty()||clue["id"]==result.investigation_id)) {
+                    p.action="examine_clue";result.investigation_id=clue["id"].get<std::string>();break;
+                }
+            const std::vector<std::string> observations={"perceive","move_north","move_east","move_south","move_west","inventory","inspect","use","note","read_notes","measure","examine_clue","review_investigation"};
             const bool non_transfer=std::find(observations.begin(),observations.end(),p.action)!=observations.end();
             if(p.revision!=state.objects.revision)result.reason="stale_revision";
             else if(non_transfer&&p.verdict=="allow")result.handled=false;
@@ -129,10 +151,23 @@ ObjectResolution ResolveObjectAction(const SessionState& state,const std::string
             else if(p.action!="take"&&p.action!="drop")result.reason="malformed_proposal";
             else if(p.verdict=="uncertain")result.reason="insufficient_evidence";
             if(non_transfer) {
-                const bool item_query=p.action=="inspect"||p.action=="use";
+                const bool item_query=p.action=="inspect"||p.action=="use"||
+                    (p.action=="examine_clue"&&!p.object_id.empty());
                 if(p.origin!=(item_query?"explicit":"none")||!p.quote.empty()||!p.label.empty()||!p.visual_id.empty()||
                    (!item_query&&!p.object_id.empty()))result.reason="malformed_proposal";
             }
+            if(p.action=="examine_clue"&&(result.investigation_id.empty()||result.investigation_revision!=state.investigation.revision||
+               std::find(clue_ids.begin(),clue_ids.end(),json(result.investigation_id))==clue_ids.end()))result.reason="invalid_investigation_reference";
+            if(p.action=="examine_clue"&&!p.object_id.empty()) {
+                bool same=false;for(const auto& clue:context["investigation"]["accessible_clues"])
+                    if(clue["id"]==result.investigation_id&&clue["object_id"]==p.object_id)same=true;
+                if(!same)result.reason="conflicting_investigation_object";
+            }
+            // A recap may name an accessible clue as its focus; it remains read-only.
+            if(p.action!="examine_clue"&&p.action!="review_investigation"&&!result.investigation_id.empty())result.reason="unexpected_investigation_reference";
+            if(p.action=="review_investigation"&&!result.investigation_id.empty()&&
+               (result.investigation_revision!=state.investigation.revision||std::find(clue_ids.begin(),clue_ids.end(),json(result.investigation_id))==clue_ids.end()))
+                result.reason="invalid_investigation_reference";
             if(result.reason.empty()&&p.origin=="explicit"&&std::find(ids.begin(),ids.end(),json(p.object_id))==ids.end())result.reason="unrelated_target";
             if(result.reason.empty()&&!ValidVisual(scene,p))result.reason="invalid_visual_binding";
             if(p.reason.size()>500)result.reason="malformed_proposal";

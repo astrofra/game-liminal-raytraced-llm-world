@@ -1,6 +1,9 @@
 # Roadmap — Une enquête à indices dans Entre les Murs Latents
 
 **Option 2 : preuves persistantes, hypothèses révisables, exploration générative.**  
+Suivi du pilote : [implémentation, contrat et qualification](ENQUETE_INDICES.md).
+Les sections suivantes conservent le cahier des charges ; le bilan distingue
+les mécanismes livrés et leurs limites de vérification.
 Date : 27 octobre 2026.  
 Dépôt : https://github.com/astrofra/game-liminal-raytraced-llm-world  
 Base examinée : `main`, commit `f87b230b42560fd6fe236d8a93ab3b11f993baa5`.
@@ -306,4 +309,4 @@ Liens figés sur la base examinée :
 - [Continuité et publication des tours](https://github.com/astrofra/game-liminal-raytraced-llm-world/blob/f87b230b42560fd6fe236d8a93ab3b11f993baa5/src/turn_runner.cpp).
 - [Canevas narratif à remettre à jour](https://github.com/astrofra/game-liminal-raytraced-llm-world/blob/f87b230b42560fd6fe236d8a93ab3b11f993baa5/documentation/STORY.md).
 
-Cette roadmap spécifie un travail futur ; elle ne déclare pas ces mécanismes déjà implémentés.
+Cette roadmap conserve le cahier des charges initial ; le [bilan du pilote](ENQUETE_INDICES.md) décrit les mécanismes livrés et les vérifications observées.

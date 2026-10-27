@@ -1,4 +1,5 @@
 #include "game_state.h"
+#include "investigation.h"
 #include "object_interactions.h"
 #include "scene_design.h"
 
@@ -1331,10 +1332,8 @@ SoftState MakeInitialSoftState()
 {
     SoftState state;
     state.rolling_summary =
-        "A survey prospector has entered an Erycinian crystal quarry to recover a specimen, locate Vey, and test a route that no longer agrees with the map.";
+        "A survey prospector enters an Erycinian crystal quarry to collect a specimen, trace missing prospector Vey and investigate reports of invisible obstructions. No evidence has yet been collected.";
     state.atmosphere = "instrumental, mineral, sparse, spatially uncertain";
-    state.active_hypotheses.push_back("the open field is divided by surfaces the viewport cannot resolve");
-    state.active_hypotheses.push_back("Vey reached the shelter by a route that cannot be retraced consistently");
     return state;
 }
 
@@ -1484,7 +1483,11 @@ bool SerializeSessionStateToJsonString(const SessionState& state, std::string* j
     root["reference_descriptions"]=state.reference_descriptions;
     root["observed_descriptions"]=state.observed_descriptions;
     SessionState object_snapshot=state;EnsureObjectRegistry(&object_snapshot);
+    EnsureInvestigation(&object_snapshot);
     root["objects"]=json::parse(SerializeObjectState(object_snapshot.objects));
+    root["investigation"]=json::parse(SerializeInvestigation(object_snapshot.investigation));
+    root["hard_state"]=MakeHardStateJson(object_snapshot.hard_state);
+    root["soft_state"]=MakeSoftStateJson(object_snapshot.soft_state);
     root["current_place_id"] = state.current_place_id;
     root["next_generated_room_index"] = state.next_generated_room_index;
     root["generated_rooms"] = MakeGeneratedRoomsJson(state.generated_rooms);
@@ -1587,6 +1590,12 @@ bool ParseSessionStateFromJson(
                     throw std::runtime_error("Object source has no retained literary reference");
             }
         } else EnsureObjectRegistry(state);
+        if(root.contains("investigation")) {
+            std::string why;
+            if(!ParseInvestigation(root.at("investigation").dump(),&state->investigation,&why)||
+               !ValidateInvestigation(*state,&why))throw std::runtime_error(why);
+        }
+        EnsureInvestigation(state);
         return true;
     } catch (const std::exception& exception) {
         SetError(error_buffer, error_buffer_size, "Failed to parse session JSON: %s", exception.what());

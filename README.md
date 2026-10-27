@@ -19,6 +19,11 @@ Les formulations libres sont interprétées par le LLM ; le moteur vérifie puis
 la proposition. Les raccourcis exacts d'inventaire et de boussole restent directs.
 Consulter l'inventaire conserve la vue et l'animation déjà calculées.
 
+Une [enquête à indices](documentation/ENQUETE_INDICES.md) relie la disparition de
+Vey, les obstructions invisibles et les cristaux. Examiner les traces, prélever
+un spécimen puis demander « faire le point » alimente un carnet de constats et
+d'hypothèses. Les découvertes persistent ; déposer le cristal conserve sa trace.
+
 Quatre boucles d'ambiance OGG accompagnent le parcours. Le modèle propose leurs
 niveaux dans l'appel narratif ; le moteur les valide et effectue une transition
 continue de cinq secondes. Le seuil initial possède un mix pré-scripté, audible

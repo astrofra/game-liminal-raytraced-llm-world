@@ -298,7 +298,7 @@ void RunObjectSemanticTests() {
     REQUIRE_SEMANTIC(ObjectNarrationAllowed(source,"Vous vous trouvez dans un espace vaste, baigné d'une lumière diffuse.","","",nullptr));
     harness.expected_command="celle qui est à mes pieds, je la remets avec mes affaires";
     harness.action="take";harness.origin="explicit";harness.object_id=kChalk;harness.verdict="allow";
-    harness.config.local_scenes=true;
+    harness.config.local_scenes=true;harness.config.investigation_opportunities=false;
     harness.config.generation_config.prompt_token_counter=[](const std::vector<LlmPromptMessage>&,int* count,std::string*){*count=1000;return true;};
     int narrations=0;
     harness.config.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult*){++narrations;return false;};

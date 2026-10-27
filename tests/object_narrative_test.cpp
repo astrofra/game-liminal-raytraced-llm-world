@@ -131,7 +131,7 @@ struct Harness {
     std::vector<std::string> last_deposited_ids;
 
     Harness() {
-        config.local_scenes = true;
+        config.local_scenes = true;config.investigation_opportunities=false;
         config.generation_config.prompt_token_counter =
             [](const std::vector<LlmPromptMessage>& messages, int* count,
                 std::string*) {

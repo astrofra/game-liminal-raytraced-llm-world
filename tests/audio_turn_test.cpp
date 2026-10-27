@@ -13,7 +13,7 @@ void RunAudioTurnTests() {
     RequireAudio(std::any_of(state.audio_targets.begin(),state.audio_targets.end(),[](float v){return v>0;}),
         "authored opening must have audible targets before any narrative call");
     state.language=kGameLanguageEnglish;state.audio_targets={.1f,.2f,.3f,.4f};
-    HeadlessTurnConfig config;config.local_scenes=true;config.reuse_unchanged_view=true;
+    HeadlessTurnConfig config;config.local_scenes=true;config.investigation_opportunities=false;config.reuse_unchanged_view=true;
     config.interaction_completion=FixturePlayerCompletion;
     config.generation_config.prompt_token_counter=[](const std::vector<LlmPromptMessage>&,int* count,std::string*){*count=1000;return true;};
     auto catalog=std::make_shared<AmbienceCatalog>();catalog->version=std::string(64,'a');

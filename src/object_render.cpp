@@ -106,7 +106,11 @@ bool BuildObjectScene(const std::string& base,const SessionState& state,std::str
         } else if(p.object_id=="sample tongs") {
             box(-.065f,.035f,0,.035f,.07f,.30f,.8f);box(.065f,.035f,0,.035f,.07f,.30f,.8f);
             box(0,.035f,-.13f,.16f,.07f,.04f,.7f);
-        } else box(0,.08f,0,.19f,.16f,.15f,.72f);
+        } else if(p.object_id=="clue:vey_equipment"||p.object_id.compare(0,19,"clue:vey_equipment:")==0) {
+            box(-.06f,.035f,0,.035f,.07f,.30f,.8f);box(.06f,.035f,0,.035f,.07f,.30f,.8f);
+            box(0,.035f,-.13f,.16f,.07f,.04f,.7f);
+        } else if(p.object_id=="clue:vey_survey"||p.object_id.compare(0,16,"clue:vey_survey:")==0)box(0,.035f,0,.32f,.07f,.24f,.65f);
+        else box(0,.08f,0,.19f,.16f,.15f,.72f);
     }
     char buffer[512]={};const auto text=out.str();
     if(!LoadSceneFromSceneText("objects.scene",text.c_str(),scene,buffer,sizeof(buffer))){if(error)*error=buffer;return false;}

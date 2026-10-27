@@ -1125,6 +1125,7 @@ int main(int argc, char** argv)
                 {"from",turn_result.initial_place_id},{"to",turn_result.updated_place_id},
                 {"request",turn_result.request_text},{"prompt",turn_result.prompt_text},
                 {"narrative_metrics",turn_result.narrative_metrics_json},{"narration",turn_result.turn_result.narration},
+                {"interaction",turn_result.interaction_metrics_json},{"investigation",turn_result.investigation_metrics_json},
                 {"llm_calls",turn_result.llm_call_count}}).dump(2);
             if(!WriteFileText((scene_artifacts+".turn.json").c_str(),trace))return 1;
         }

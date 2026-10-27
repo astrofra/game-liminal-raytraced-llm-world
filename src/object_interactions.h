@@ -9,6 +9,8 @@ struct ObjectResolution {
     // by the caller. Every free command is interpreted once by the model.
     bool handled = false, changed = false, clarified = false;
     std::string action, object_id, reason, metrics;
+    std::string investigation_id;
+    int investigation_revision = -1;
 };
 ObjectResolution ResolveObjectAction(const SessionState& state, const std::string& command,
     const HeadlessTurnConfig& config, const Scene& scene, SessionState* candidate);

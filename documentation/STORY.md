@@ -6,7 +6,7 @@ The project is titled *Within the Latent Walls* in English and *Entre les Murs L
 
 The active fiction places the player in a Venusian extraction zone. The player is a prospector or survey operative moving among a quarry, sparse industrial shelters, extraction machinery, navigation beacons, sample containers, and other human attempts to measure and exploit a hostile environment.
 
-Within this visible infrastructure lies another architecture: a labyrinth whose walls cannot ordinarily be seen. An apparently open route may reject movement. A corridor may reconnect to a different place. A path followed in reverse may not return from the expected direction. A familiar site may preserve its local appearance while acquiring different connections.
+Within this visible infrastructure lies another architecture: a labyrinth whose walls cannot ordinarily be seen. An apparently open route may reject movement. The player may question the global arrangement, while the engine preserves every established return link and the appearance of each accepted place.
 
 The player is therefore not only exploring territory. They are trying to establish whether space can still be trusted.
 
@@ -35,39 +35,27 @@ The setting is a mediated, speculative Venus rather than an exercise in historic
 
 > human brutalist extraction infrastructure + sparse hostile planetary environment + invisible alien topology
 
-## Current playable incident
+## Current investigation pilot — 27 October 2026
 
-The implemented slice begins at a split-crown quarry threshold. The prospector follows a reliable chain of human evidence: an extraction rig, an exposed crystal cut, an affinity scanner, and a sparse beacon plateau. Each place has a practical function and a return cue before the route reaches the open datum.
+Only the quarry threshold is authored. Subsequent places are composed freely and
+keep their accepted geometry and reciprocal links. Vey is a missing prospector
+created for this project; his biography is not attributed to Lovecraft and Sterling.
 
-At that datum, two quarry pylons frame an unobstructed northern field. Moving north produces bodily and instrumental contact with a smooth surface, although the image continues to show open sky. The player can detour east to Vey's pressure shelter. Vey is absent, but the shelter preserves a route recorder, scratched map, oxygen service, and a sealed crystal sample.
+The expedition has three questions: Vey's whereabouts, reported invisible
+obstructions, and the significance of a crystal specimen. The engine distributes
+bounded opportunities in new compatible places: one specimen, an invisible
+obstruction, and two distinct traces of Vey's prospecting. Examination, acquisition
+and contact establish different persistent facts. The notebook separates these
+facts from revisable hypotheses and records the specimen's current location.
+Vey's fate remains unknown. No automatic ending or collection score is added.
 
-The first hard contradiction occurs on return: moving west from the shelter arrives directly at the affinity scanner, bypassing both the open datum and the beacon plateau. The scanner remains locally recognizable. The journey is therefore not erased or randomized; the relation between known places has become impossible.
+See [the implementation and qualification](ENQUETE_INDICES.md) and
+[the investigation roadmap](roadmap-enquete-indices-eryx.md).
 
-This incident establishes the active dramatic grammar:
-
-```text
-measure -> traverse -> contact -> detour -> find evidence -> retrace -> contradict
-```
-
-## The labyrinth changes under controlled rules
-
-The system maintains an authoritative world state outside the language model. Inventory, collected specimens, survival resources if used, named discoveries, and the player's committed current position must not disappear because a model improvises.
-
-The LLM receives controlled authority over selected topological relations. It may propose that:
-
-- a known exit is now blocked by an unseen barrier
-- a barrier previously encountered is absent
-- a corridor reaches a different known location
-- a return path arrives from an impossible direction
-- an open quarry contains a newly inferred hidden division
-- a revisited site retains recognizable anchors but changes connectivity
-- the player's map conflicts with an otherwise actionable local scene
-
-The engine validates each proposal before committing it. It must preserve immediate playability, protect hard state, and keep at least one useful course of action available. Random sampling alone is not the labyrinth; the artistic mechanism is the deliberate negotiation between generative proposals and deterministic validation.
-
-The central design question is:
-
-> What must remain stable for a changing maze to feel uncanny rather than merely broken?
+The earlier fixed route through an extraction rig, scanner, datum and shelter,
+and the deliberately inconsistent return from that shelter, are historical
+proposals. They are not the current playable route. The model cannot redirect a
+published link, remove a barrier or change an accepted room on a revisit.
 
 ## Four-stage lineage
 
@@ -99,7 +87,7 @@ Mandarine's [*Within the Mesh*](https://www.pouet.net/prod.php?which=61730) (201
 
 ### 4. Interactive generative transformation
 
-The current work makes the labyrinth inhabitable and mutable. The player no longer watches unstable computed space unfold in a fixed audiovisual sequence. A local model interprets actions and proposes controlled changes to the navigable graph while a deterministic engine protects the conditions of play.
+The current work makes the labyrinth inhabitable and progressively generated. The player no longer watches unstable computed space unfold in a fixed audiovisual sequence. A local model interprets actions and proposes unknown extensions to the navigable graph while a deterministic engine protects the conditions of play.
 
 This is the new contribution to the lineage:
 
@@ -107,14 +95,14 @@ This is the new contribution to the lineage:
 
 ## Text, image, and incomplete perception
 
-The LLM is not merely a prose generator. It interprets commands, narrates local consequences, updates selected facts, and proposes changes to soft topology. A separate spatial state and deterministic scene compiler mediate those proposals into geometry.
+The LLM is not merely a prose generator. It interprets commands, narrates local consequences, proposes descriptions and unknown exits under engine validation. A separate spatial state and deterministic scene compiler mediate those proposals into geometry.
 
 The renderer remains deliberately austere. Simple slabs, boxes, planes, a constrained palette, camera-linked lighting, low sample counts, and visible noise make the image feel like an incomplete instrument reading rather than an exhaustive depiction.
 
 The text and image do different work:
 
 - the text can name a wall the image cannot show
-- the image can preserve a familiar local landmark while the text reports changed access
+- the image can preserve a familiar local landmark while the text records contact on a previously untried approach
 - the scene can orient the player without proving the global map
 - the gap between both channels can become evidence of the labyrinth
 
@@ -126,11 +114,11 @@ The fiction may use oxygen, suit stress, exposure time, confidence in the map, d
 
 Temperature is now an active feedback loop grounded in Venus. The suit reports the extreme exterior temperature and a slower body temperature. The LLM decides whether exposure, effort, damage, shelter, or atmospheric equipment changes either value; the suit keeps both correlated but deliberately lagged.
 
-Body temperature then raises the sampling temperature used by the LLM to interpret actions and imagine places. This creates an embodied drift from hostile environment to generative instability. It remains subordinate to structured topological mutation: hotter sampling may alter proposals and prose, but it never grants the model direct authority over committed traversal or geometry.
+Body temperature then raises the sampling temperature used by the LLM to interpret actions and imagine places. This creates an embodied drift from hostile environment to generative instability. It remains subordinate to authoritative validation: hotter sampling may alter proposals and prose, but it never grants the model direct authority over committed traversal or geometry.
 
 ## Autonomous presentation
 
-An exhibition or demoparty version may use a scripted ghost player. Its command sequence should provide dramatic structure while leaving narration and accepted topology changes live.
+An exhibition or demoparty version may use a scripted ghost player. Its command sequence should provide dramatic structure while leaving narration and new-place composition live.
 
 A suitable progression is:
 

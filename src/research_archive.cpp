@@ -1,5 +1,6 @@
 #include "research_archive.h"
 #include "object_interactions.h"
+#include "investigation.h"
 #include "renderer.h"
 #include "scene_compiler.h"
 #include "scene_design.h"
@@ -157,6 +158,9 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
         {"view_reused",turn.view_unchanged},{"visual_reference",last_visual_reference_},
         {"inventory_before",turn.initial_hard_state.inventory_items},{"inventory_after",turn.updated_hard_state.inventory_items},
         {"interaction",turn.interaction_metrics_json},{"objects_prepared",turn.objects_prepared},
+        {"investigation",{{"before",json::parse(SerializeInvestigation(turn.initial_investigation))},
+            {"candidate",json::parse(SerializeInvestigation(turn.updated_investigation))},
+            {"published",status=="accepted"&&turn.investigation_prepared},{"decision",turn.investigation_metrics_json}}},
         {"object_revision_before",turn.initial_object_revision},{"objects_after",json::parse(SerializeObjectState(turn.updated_objects))},
         {"raw_response",turn.raw_response_text},{"repair_response",turn.repair_response_text},
         {"narrative_metrics",turn.narrative_metrics_json},

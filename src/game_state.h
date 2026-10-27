@@ -8,6 +8,7 @@
 #include <map>
 #include "object_state.h"
 #include "ambience.h"
+#include "investigation_state.h"
 
 namespace liminal {
 
@@ -336,6 +337,7 @@ struct InvisibleBarrier {
 };
 
 struct SessionState {
+    InvestigationState investigation;
     AudioGains audio_targets{};
     std::string audio_catalog_version;
     ObjectState objects;

@@ -3,6 +3,7 @@
 #include "nlohmann/json.hpp"
 #include "narrative_language.h"
 #include "sdl_frontend.h"
+#include "investigation.h"
 
 #include <algorithm>
 #include <atomic>
@@ -887,12 +888,12 @@ static const char* ReadyHint(GameLanguage language)
 {
     return UiText(
         language,
-        "Ready. Press Enter to send a command.",
-        "Prêt. Appuyez sur Entrée pour envoyer une commande.",
-        "Klar. Trykk Enter for å sende en kommando.",
-        "Klar. Tryk på Enter for at sende en kommando.",
-        "Bereit. Drücke die Eingabetaste, um einen Befehl zu senden.",
-        "Pronto. Premi Invio per inviare un comando.");
+        "Enter: send a command. Wheel / Page Up / Page Down: read the transcript.",
+        "Entrée : envoyer. Molette / Page précédente / Page suivante : relire le carnet.",
+        "Enter: send kommando. Musehjul / Page Up / Page Down: les teksten.",
+        "Enter: send kommando. Musehjul / Page Up / Page Down: læs teksten.",
+        "Eingabe: Befehl senden. Mausrad / Bild auf / Bild ab: Text lesen.",
+        "Invio: invia comando. Rotella / Pag su / Pag giù: rileggi il testo.");
 }
 
 static void DrawTextSpan(
@@ -1859,7 +1860,7 @@ static void BuildTranscriptLines(
     }
 
     lines->clear();
-
+    AppendWrappedText(InvestigationMandate(session_state.language),fonts,max_width,lines);
     for (size_t index = 0; index < session_state.history.size(); ++index) {
         const SessionTurnRecord& record = session_state.history[index];
         const size_t start_line = lines->size();
@@ -1950,15 +1951,16 @@ static void DrawConsoleText(
     const UiFonts& fonts,
     const SDL_FRect& text_rect,
     const std::vector<UiTextLine>& lines,
-    size_t line_capacity)
+    size_t line_capacity, size_t scroll_offset)
 {
     if (!renderer || line_capacity == 0) {
         return;
     }
 
-    const size_t start = lines.size() > line_capacity ? lines.size() - line_capacity : 0;
+    const size_t end = lines.size() - std::min(scroll_offset,lines.size());
+    const size_t start = end > line_capacity ? end - line_capacity : 0;
     float y = text_rect.y + 8.0f;
-    for (size_t index = start; index < lines.size(); ++index) {
+    for (size_t index = start; index < end; ++index) {
         float x = text_rect.x + 8.0f;
         const SDL_Color color = lines[index].command_line ? SDL_Color{76, 76, 76, 255} : SDL_Color{0, 0, 0, 255};
         for (size_t span_index = 0; span_index < lines[index].spans.size(); ++span_index) {
@@ -2291,6 +2293,7 @@ bool RunSdlFrontend(
     std::string worker_status = "idle";
     std::string pending_command;
     std::vector<UiTextLine> transcript_lines;
+    int console_scroll = 0;
     bool worker_busy = false;
     Uint64 text_input_suppressed_until = 0;
     const Uint64 smoke_test_start_ticks = SDL_GetTicks();
@@ -2329,6 +2332,12 @@ bool RunSdlFrontend(
                 continue;
             }
 
+            if(event.type==SDL_EVENT_MOUSE_WHEEL) {
+                const int sign=event.wheel.direction==SDL_MOUSEWHEEL_FLIPPED?-1:1;
+                const int maximum=static_cast<int>(transcript_lines.size()>console_line_capacity?transcript_lines.size()-console_line_capacity:0);
+                console_scroll=std::clamp(console_scroll+sign*event.wheel.integer_y*3,0,maximum);
+                continue;
+            }
             if (event.type == SDL_EVENT_TEXT_INPUT) {
                 if (SDL_GetTicks() < text_input_suppressed_until) {
                     continue;
@@ -2347,6 +2356,11 @@ bool RunSdlFrontend(
             }
 
             const SDL_Keycode key = event.key.key;
+            if(key==SDLK_PAGEUP||key==SDLK_PAGEDOWN) {
+                const int maximum=static_cast<int>(transcript_lines.size()>console_line_capacity?transcript_lines.size()-console_line_capacity:0);
+                console_scroll=std::clamp(console_scroll+(key==SDLK_PAGEUP?1:-1)*static_cast<int>(console_line_capacity),0,maximum);
+                continue;
+            }
             if (key == SDLK_LEFT) {
                 input_cursor = RetreatUtf8(input_text, input_cursor);
                 continue;
@@ -2426,6 +2440,7 @@ bool RunSdlFrontend(
                 continue;
             }
             if (key == SDLK_RETURN) {
+                console_scroll=0;
                 const std::string raw_command = TrimCommandText(input_text);
                 if (raw_command.empty()) {
                     ui_message = UiText(
@@ -2828,6 +2843,17 @@ bool RunSdlFrontend(
             ui_fonts,
             console_wrap_width,
             &transcript_lines);
+        if(turn_completed&&(last_turn_result.turn_result.intent=="review_investigation"||
+                            last_turn_result.turn_result.intent=="read_field_notes")) {
+            // Start a long dossier at the latest command, not at its final lines.
+            size_t first=transcript_lines.size();
+            while(first>0&&!transcript_lines[first-1].command_line)--first;
+            while(first>0&&transcript_lines[first-1].command_line)--first;
+            console_scroll=static_cast<int>(transcript_lines.size()>first+console_line_capacity?
+                transcript_lines.size()-first-console_line_capacity:0);
+        }
+        console_scroll=std::clamp(console_scroll,0,static_cast<int>(transcript_lines.size()>console_line_capacity?
+            transcript_lines.size()-console_line_capacity:0));
 
         InputWindow input_window;
         BuildInputWindow(input_text, input_cursor, ui_fonts.regular, input_text_max_width, &input_window);
@@ -2849,7 +2875,7 @@ bool RunSdlFrontend(
         SDL_RenderRect(renderer, &scene_frame);
         DrawThermalHud(renderer, ui_fonts, current_session_state, scene_rect);
         DrawExitCompass(renderer, ui_fonts, current_session_state, scene_rect);
-        DrawConsoleText(renderer, ui_fonts, console_rect, transcript_lines, console_line_capacity);
+        DrawConsoleText(renderer, ui_fonts, console_rect, transcript_lines, console_line_capacity,static_cast<size_t>(console_scroll));
 
         const SDL_Color player_text_color = {0, 0, 0, 255};
         const float input_text_y =

@@ -436,7 +436,7 @@ static void LocalPilot() {
     SessionState state;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     state.language=kGameLanguageFrench;
-    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true; // Composition seam; no real inference in this test.
+    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true;cfg.investigation_opportunities=false; // Composition seam; no real inference in this test.
     cfg.interaction_completion=FixturePlayerCompletion;
     int narratives=0;
     cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
@@ -672,7 +672,7 @@ static void ExplorationContinuity() {
     for(int scenario=0;scenario<6;++scenario) {
         SessionState state;HeadlessTurnResult turn;char error[1024]={};
         CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
-        HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+        HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.investigation_opportunities=false;cfg.generation_config.prompt_token_counter=FakePromptCount;
         if(scenario>=4)while(DrawExplorationExitTarget(cfg.generation_config.seed,3)!=(scenario==4?3:2))++cfg.generation_config.seed;
         cfg.dynamic_scene_config.coplanar_cleanup=false;cfg.dynamic_scene_config.glass_supports=false;
         int compositions=0,narrations=0;bool fail=false,violate=false,cancel=false,cancelled=false;
@@ -796,7 +796,7 @@ static void ContinuityJourney() {
     SessionState state;HeadlessTurnResult turn;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     state.language=kGameLanguageFrench;
-    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.investigation_opportunities=false;cfg.generation_config.prompt_token_counter=FakePromptCount;
     cfg.interaction_completion=FixturePlayerCompletion;
     int scene_calls=0,narrative_calls=0;bool reject_first=true;
     // This continuity fixture needs two distinct forward branches in A and C.
@@ -916,7 +916,7 @@ static void ContinuityJourney() {
 static void InventoryTurns() {
     SessionState state;char error[1024]={};HeadlessTurnResult turn;HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
-    state.language=kGameLanguageFrench;cfg.local_scenes=true;
+    state.language=kGameLanguageFrench;cfg.local_scenes=true;cfg.investigation_opportunities=false;
     int narrative_calls=0,scene_calls=0;
     cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,
         LlmStreamCallback,void*,LlmGenerationResult*) {++narrative_calls;return false;};
@@ -961,7 +961,7 @@ static void InventoryTurns() {
     CHECK(RunHeadlessTurnFromState(state,"i",cfg,&turn,error,sizeof(error)));
     CHECK(turn.turn_result.intent=="read_inventory"&&narrative_calls==0&&scene_calls==0);
     CHECK(turn.turn_result.narration.find("craie")==std::string::npos);
-    cfg.local_scenes=true;
+    cfg.local_scenes=true;cfg.investigation_opportunities=false;
     // Prose cannot invent an acquisition, even on the general narrative path.
     cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* r) {
@@ -1001,7 +1001,7 @@ static void LanguageContinuity() {
         SessionState state;HeadlessTurnResult turn;char error[1024]={};
         CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
         state.language=languages[i];state.spatial_state.room_title=titles[i];state.spatial_state.room_summary=prose[i];
-        HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true;int calls=0;bool wrong=false,fail=false;
+        HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true;cfg.investigation_opportunities=false;int calls=0;bool wrong=false,fail=false;
         cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
             LlmStreamCallback,void*,LlmGenerationResult* r) {
             ++calls;const auto request=json::parse(messages.at(1).content);
@@ -1125,7 +1125,7 @@ static void GlassSupportJourney() {
     const auto opaque=Replace(LocalFixture(),"pos(-7,1,15)","pos(-7,4,15)");
     SessionState state;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
-    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.investigation_opportunities=false;cfg.generation_config.prompt_token_counter=FakePromptCount;
     int compositions=0,narratives=0;
     cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
             LlmStreamCallback,void*,LlmGenerationResult* r) {
@@ -1186,7 +1186,7 @@ static void CoplanarSupportJourney() {
         "box \"floating_b\" pos(.5,4,5) size(3,2,2) gray(.75)\n";
     SessionState state;char error[1024]={};
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
-    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.local_scenes=true;cfg.investigation_opportunities=false;cfg.generation_config.prompt_token_counter=FakePromptCount;
     int compositions=0,narratives=0;json facts;
     cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,
             LlmStreamCallback,void*,LlmGenerationResult* r) {
@@ -1258,7 +1258,9 @@ static void CoplanarSupportJourney() {
     std::filesystem::remove_all(root);
 }
 int main() {
+    extern void RunInvestigationContractTests();
+    extern void RunInvestigationJourneyTests();
     RunAudioTurnTests();
-    try {RunObjectSemanticTests();RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
+    try {RunInvestigationContractTests();RunInvestigationJourneyTests();RunObjectSemanticTests();RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

@@ -23,6 +23,15 @@ réelles des limites de qualification restantes.
 
 ## Jeu et recherche
 
+- [Enquête à indices](ENQUETE_INDICES.md) : état versionné et révisé, quatre
+  possibilités distribuées dans les nouveaux lieux compatibles, cristal lié
+  au registre d'objets, contact invisible effectif et deux traces de Vey.
+  Preuves et hypothèses distinctes, bilan interprété par le LLM puis restitué
+  depuis l'état validé, six langues, publication atomique et migration sans
+  preuves rétroactives. Les chaînes historiques sont des projections.
+  Vey reste disparu ; aucune fin automatique. Recette Gemma et SDL en français
+  effectuée, carnet défilant ; résultats et limites dans le bilan.
+
 - [Audio d'ambiance](AUDIO_AMBIENCE.md) : catalogue acoustique reproductible des
   quatre OGG, fiches et annotations distinctes, gains proposés dans le même appel
   narratif et publiés après acceptation du tour. Décodage stb_vorbis au chargement,

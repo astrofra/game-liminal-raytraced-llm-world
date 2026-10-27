@@ -38,7 +38,7 @@ struct Harness {
     HeadlessTurnConfig cfg;int interpretations=0,narrations=0;std::string mode;
     json proposal;bool cancel=false;std::string observed_prose;
     Harness() {
-        cfg.local_scenes=true;cfg.generation_config.prompt_token_counter=[](const std::vector<LlmPromptMessage>& messages,int* count,std::string*) {
+        cfg.local_scenes=true;cfg.investigation_opportunities=false;cfg.generation_config.prompt_token_counter=[](const std::vector<LlmPromptMessage>& messages,int* count,std::string*) {
             size_t n=0;for(const auto& m:messages)n+=m.content.size();*count=static_cast<int>(n/4+1);return true;};
         cfg.dynamic_scene_config.completion=[](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult*)->bool{
             throw std::runtime_error("Object action composed a room");};

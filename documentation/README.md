@@ -17,6 +17,9 @@ Les archives de recherche ne servent jamais à reprendre une partie.
 
 ## Fiction, état et interface
 
+- [Enquête à indices : fonctionnement et qualification](ENQUETE_INDICES.md)
+- [Roadmap de l'enquête](roadmap-enquete-indices-eryx.md)
+
 - [Source littéraire : In the Walls of Eryx](IN_THE_WALLS_OF_ERYX.md)
 - [Direction artistique et narrative](ERYX_PROJECT_REORIENTATION_CODEX_BRIEF.md)
 - [Spécification de visibilité et fiction](SPEC_VISIBILITE_ET_FICTION.md)
