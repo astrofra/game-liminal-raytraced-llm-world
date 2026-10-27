@@ -12,6 +12,7 @@
 namespace liminal {
 
 struct SdlFrontendConfig {
+    double audio_ramp_seconds = 5;
     RenderConfig render_config;
     HeadlessTurnConfig turn_config;
     AnimatedViewConfig animated_view_config;

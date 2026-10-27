@@ -2,7 +2,11 @@
 
 Projet : **Within the Latent Walls / Entre les Murs Latents**  
 Date : **26 octobre 2026**  
-Statut : **proposition ; script, extraction et mixer décrits ici restent à implémenter ou à raccorder à l’existant**.
+Statut au 27 octobre 2026 : **pilote implémenté — AUDIO-01/02/03 raccordés, AUDIO-04 vérifié techniquement ; écoute et validation artistique des trims/jonctions encore à effectuer par l’auteur**.
+
+L'[implémentation et la recette](AUDIO_AMBIENCE.md) donnent les commandes réelles,
+les conventions retenues, les versions, les résultats observés et les limites.
+Les propositions ci-dessous restent la spécification de référence.
 
 ## 1. Objectif
 
@@ -48,7 +52,7 @@ Cette séparation permet au LLM de créer des associations son/image sans lui im
 
 ## 4. Pipeline d’analyse Python proposé
 
-Créer un outil, par exemple `scripts/analyze_ambience.py`. Son interface reste à implémenter ; commande cible :
+Outil livré : `scripts/analyze_ambience.py`. Commande :
 
 ```bash
 python scripts/analyze_ambience.py --input assets/sfx --output assets/sfx/ambience_features.json

@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string>
+#include <memory>
 
 #include "game_state.h"
 #include "llm_runtime.h"
@@ -28,6 +29,9 @@ typedef bool (*HeadlessTurnStreamCallback)(
     void* user_data);
 
 struct HeadlessTurnConfig {
+    std::shared_ptr<const AmbienceCatalog> ambience_catalog;
+    AudioGains audio_current_gains{};
+    bool audio_current_known = false;
     LlmGenerationConfig generation_config;
     bool dynamic_scenes = false;
     bool local_scenes = false; // Generate persistent places along open cardinal exits.
@@ -50,6 +54,7 @@ struct HeadlessTurnConfig {
 };
 
 struct HeadlessTurnResult {
+    AudioMixDecision audio_mix;
     ObjectState updated_objects;
     bool objects_prepared = false;
     int initial_object_revision = 0;

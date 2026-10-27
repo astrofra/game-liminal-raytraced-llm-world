@@ -1,4 +1,4 @@
-# État technique — 26 octobre 2026
+# État technique — 27 octobre 2026
 
 ## Runtime actuel
 
@@ -22,6 +22,14 @@ Le [bilan de migration](BILAN_RUNTIME_AUTONOME.md) distingue les vérifications
 réelles des limites de qualification restantes.
 
 ## Jeu et recherche
+
+- [Audio d'ambiance](AUDIO_AMBIENCE.md) : catalogue acoustique reproductible des
+  quatre OGG, fiches et annotations distinctes, gains proposés dans le même appel
+  narratif et publiés après acceptation du tour. Décodage stb_vorbis au chargement,
+  sortie SDL3, boucles continues à gain nul, rampes par échantillon et marge sur
+  les pics simultanés. Le jeu continue si l'audio est indisponible. Aucune
+  dépendance Python/FFmpeg au runtime. Trims à 0 dB ; validation artistique des
+  jonctions et de l'équilibre encore à effectuer par l'auteur.
 
 - Un seuil de carrière prédéfini, inspiré du concept 12 ; tous les autres lieux sont inventés pendant la partie.
 - Trois compositions au maximum, normalisation syntaxique conservatrice et audit strict de caméra.

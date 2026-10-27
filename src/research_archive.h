@@ -19,6 +19,7 @@ public:
               const std::vector<unsigned char>& pixels);
     bool Failure(const std::string& error, const HeadlessTurnResult& turn);
     bool Close(const SessionState& state);
+    bool AudioEvent(const std::string& event_json);
     const std::string& Error() const { return error_; }
     std::string Path() const { return path_.u8string(); }
     bool Pending() const { return pending_; }

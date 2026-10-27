@@ -1,0 +1,56 @@
+{
+  "bands": {
+    "edges_hz": [
+      0.0,
+      250.0,
+      2000.0,
+      8000.0
+    ],
+    "note": "Band shares use summed power over half-open ranges low [0,250), mid [250,2000), high [2000,8000), very_high [8000, analysed Nyquist]. The denominator is restricted to the source Nyquist. A band is null when it has no bins below that limit; coverage records the fraction of the nominal band width that was actually analysed. The exact source Nyquist bin belongs to the last available band only."
+  },
+  "config_version": 1,
+  "description": {
+    "busy_peak_rate_hz": 2.0,
+    "diffuse_flatness": 0.4,
+    "dominant_band_share": 0.5,
+    "junction_delta_db": 1.0,
+    "marked_crest_db": 12.0,
+    "moderate_spread_db": 9.0,
+    "mono_correlation": 0.5,
+    "note": "Absolute thresholds for the deterministic acoustic sheet. No track is ranked against another and no source identifier contributes vocabulary. When a measurement is unavailable the corresponding qualifier is omitted or stated as not measurable.",
+    "opposition_correlation": -0.1,
+    "quiet_peak_rate_hz": 0.2,
+    "stable_spread_db": 3.0,
+    "tonal_flatness": 0.1
+  },
+  "flux": {
+    "note": "Per-frame flux is the sum of positive changes of the L1-normalised magnitude spectrum. Flux of the first frame is zero. A peak is counted on an interior frame when flux is at least peak_threshold, strictly greater than the previous frame and at least the next frame. Rate is peaks divided by analysed duration in seconds.",
+    "peak_threshold": 0.02
+  },
+  "loudness": {
+    "enabled": true,
+    "note": "Optional integrated loudness (LUFS) and true peak (dBTP) measured by ffmpeg loudnorm input_i/input_tp. Failures and silence leave both values null with a reason; they never abort extraction.",
+    "timeout_seconds": 120.0
+  },
+  "playback": {
+    "max_gain": 1.0,
+    "note": "Playback metadata copied to every track. trim_db is authored in the annotations file and must be finite and within [-24, 6]; a non-zero trim also requires trim_validated true. max_gain caps any future target gain; this is not automatic loudness compensation.",
+    "trim_db_max": 6.0,
+    "trim_db_min": -24.0
+  },
+  "silence": {
+    "note": "A source is silent when its full-signal native RMS is at or below this threshold. Silence is detected before any spectral or temporal qualification; every derived measurement is then null with a reason.",
+    "rms_dbfs": -70.0
+  },
+  "spectrum": {
+    "block_frames": 64,
+    "epsilon": 1e-06,
+    "hop_size": 512,
+    "note": "Native float32 samples are decoded once. Levels use the native rate; the spectrum uses resample_poly at sample_rate_hz. Hann is periodic (0.5 - 0.5*cos(2*pi*n/N)). The final frame is zero padded and FFT work is bounded to block_frames frames. Spectral statistics only use bins up to the lower of the source Nyquist and the analysed Nyquist. Channel powers are averaged before magnitude is derived, so anti-phase channels cannot cancel. Frames at or below the silence threshold are excluded from spectral statistics. Flatness uses a relative epsilon times mean bin power. Zero-energy frames use rms_floor_dbfs in the RMS percentiles. Config numbers are consumed at six-decimal precision.",
+    "rms_floor_dbfs": -120.0,
+    "rolloff_fraction": 0.85,
+    "sample_rate_hz": 48000,
+    "window": "hann_periodic",
+    "window_size": 2048
+  }
+}

@@ -304,7 +304,9 @@ bool ParsePlaceProposal(const std::string& text, int current_external, float cur
         return SetFailure(error, "missing JSON root value");
     }
 
-    const nlohmann::json& root = sax.root();
+    nlohmann::json root = sax.root();
+    // Audio is independently validated and cannot reject a mechanical proposal.
+    if(root.is_object())root.erase("audio_mix");
     if (!RequireExactKeys(root, {"title", "summary", "narration", "thermal", "exits"},
                           error, "root object")) {
         return false;

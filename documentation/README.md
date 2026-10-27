@@ -1,6 +1,6 @@
 # Documentation — Within the Latent Walls
 
-État au 26 octobre 2026. Le jeu utilise Gemma dans llama.cpp intégré, avec
+État au 27 octobre 2026. Le jeu utilise Gemma dans llama.cpp intégré, avec
 un runtime autonome après téléchargement du modèle en fin d'installation.
 Les archives de recherche ne servent jamais à reprendre une partie.
 
@@ -26,6 +26,7 @@ Les archives de recherche ne servent jamais à reprendre une partie.
 - [Retour de partie : souplesse des prises et narration](RETOUR_JEU_INTERACTIONS.md)
 - [Roadmap des interactions avec l’environnement](ROADMAP_INTERACTIONS_ENVIRONNEMENT.md)
 - [Vue animée](ANIMATED_VIEW_SPEC.md)
+- [Audio : extraction, mixage et recette](AUDIO_AMBIENCE.md)
 - [Format des scènes](SCENE_FORMAT_V1.md)
 - [Catalogue des prefabs](PREFAB_CATALOG.md)
 - [Atlas de composition](concept-art/ATLAS_COMPOSITION.md)

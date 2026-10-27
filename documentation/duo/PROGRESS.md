@@ -1,10 +1,13 @@
-# Progression du duo — 26 octobre 2026
+# Progression du duo — 27 octobre 2026
 
 Codex coordonne les interfaces, le runtime, la validation et l'intégration.
 DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de ce kit.
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-042 / AUDIO-01–02 | Livraison brute rejetée ; contenu repris et corrigé par Codex | [Revue](reviews/DUO-042.md) : timeout, lectures hors contrat et poursuite après échec d'outil ; deux défauts numériques constatés par tests. Extraction corrigée et reproductible, OGG inchangés. |
+| DUO-043 | Validé et intégré | [Revue](reviews/DUO-043.md) : un fichier, cinq régressions physiques ; outils/chemins conformes, 5/5 tests exécutés par Codex passent. |
+| AUDIO-03–04 | Binaire publié, recette technique effectuée | [Bilan](../AUDIO_AMBIENCE.md) : décodeur léger intégré, gains dans l'appel narratif, rampes et marges, annulation et erreurs ; 15 CTest et 114 Python passent, Gemma/SDL réels vérifiés. Écoute et validation artistique des trims/jonctions encore à effectuer par l'auteur. |
 | DUO-040 / DUO-041 | Correctif livré et publié | [Revue DUO-040](reviews/DUO-040.md), [revue DUO-041](reviews/DUO-041.md), [bilan](../RETOUR_JEU_INTERACTIONS_2.md) ; premier contrat retiré après clarification ; tests DeepSeek repris avec écart de lecture documenté, formulations libres interprétées par le LLM, raccourcis directs, inventaire sans nouveau rendu ; 14 CTest, recettes Gemma et nouvelle partie SDL de douze commandes sans secours narratif |
 | DUO-039 | Correctif après partie livré et publié | [Contrat](tasks/DUO-039.md), [revue](reviews/DUO-039.md), [bilan](../RETOUR_JEU_INTERACTIONS.md) ; six tests DeepSeek intégrés, observations persistantes et résolution/narration Codex, 14 CTest et 64 Python passent ; nouvelle partie SDL de dix commandes sans remplacement narratif, prises libres Gemma et dépôt avancé de 20 cm vérifiés |
 | DUO-037 / DUO-038 | Interactions livrées, binaire publié | [Revue](reviews/DUO-038.md), [bilan](../INTERACTIONS_ENVIRONNEMENT.md) ; tests DeepSeek repris après deux runs non conformes, moteur et intégration Codex ; 14 CTest + 64 Python passent, Gemma et SDL vérifiés, dépôt visible à travers le masque |

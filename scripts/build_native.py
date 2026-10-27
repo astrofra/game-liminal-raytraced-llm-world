@@ -90,6 +90,7 @@ def main():
         if args.with_cli:
             targets.append("llama-cli")
         targets.append("liminal_continuity_test")
+        targets.extend(["liminal_audio_diagnostic", "liminal_ambience_test"])
         targets.append("liminal_exploration_policy_test")
         targets.extend(["liminal_glass_supports", "liminal_glass_supports_test", "liminal_glass_supports_geometry_test"])
         targets.extend(["liminal_coplanar_cleanup", "liminal_coplanar_cleanup_test", "liminal_coplanar_cleanup_geometry_test"])

@@ -160,6 +160,7 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
         {"object_revision_before",turn.initial_object_revision},{"objects_after",json::parse(SerializeObjectState(turn.updated_objects))},
         {"raw_response",turn.raw_response_text},{"repair_response",turn.repair_response_text},
         {"narrative_metrics",turn.narrative_metrics_json},
+        {"audio",json::parse(AudioDecisionJson(turn.audio_mix,status=="accepted"))},
         {"scene_provenance",turn.dynamic_scene_design_json},{"scene_metrics",turn.dynamic_scene_metrics_json},
         {"thermal_prompt",turn.thermal_prompt_text},{"thermal_response",turn.thermal_response_text}}).dump(2)+"\n");
     if(!turn.rendered_scene_text.empty())Write(stem+".scene",turn.rendered_scene_text);
@@ -231,5 +232,9 @@ bool ResearchArchive::Failure(const std::string& error,const HeadlessTurnResult&
 bool ResearchArchive::Close(const SessionState& state) {
     return Guard([&]{Snapshot(state);Write("closed.json",json({{"ended_utc",UtcTime()},
         {"commands",command_index_},{"places",places_.size()},{"archive_error",error_}}).dump(2)+"\n");});
+}
+bool ResearchArchive::AudioEvent(const std::string& event_json) {
+    return Guard([&]{auto event=json::parse(event_json);event["utc"]=UtcTime();
+        event["command_index"]=command_index_;Write("audio-events.jsonl",event.dump()+"\n",true);});
 }
 } // namespace liminal

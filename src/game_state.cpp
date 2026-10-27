@@ -1480,6 +1480,7 @@ bool SerializeSessionStateToJsonString(const SessionState& state, std::string* j
     root["history"] = MakeSessionHistoryJson(state.history);
     root["origin_place_id"] = state.origin_place_id;
     root["field_notes"] = state.field_notes;
+    root["audio"]={{"catalog_version",state.audio_catalog_version},{"targets",json::parse(AudioGainsJson(state.audio_targets))}};
     root["reference_descriptions"]=state.reference_descriptions;
     root["observed_descriptions"]=state.observed_descriptions;
     SessionState object_snapshot=state;EnsureObjectRegistry(&object_snapshot);
@@ -1548,6 +1549,13 @@ bool ParseSessionStateFromJson(
         }
         state->origin_place_id = ReadStringNode(root, "origin_place_id");
         state->field_notes = root.value("field_notes",std::vector<std::string>());
+        state->audio_targets={};state->audio_catalog_version.clear();
+        if(root.contains("audio")) {
+            AmbienceCatalog bounds;std::string why;
+            const auto& audio=root.at("audio");
+            if(ParseAudioGains(audio.at("targets").dump(),bounds,&state->audio_targets,&why))
+                state->audio_catalog_version=audio.value("catalog_version",std::string());
+        }
         state->reference_descriptions=root.value("reference_descriptions",std::map<std::string,std::string>());
         state->observed_descriptions=root.value("observed_descriptions",std::map<std::string,std::vector<std::string>>());
         state->current_place_id = ReadStringNode(root, "current_place_id");

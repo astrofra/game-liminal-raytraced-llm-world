@@ -22,6 +22,7 @@ using json=nlohmann::json;
 void RunObjectJourneyTests();
 void RunObjectNarrativeTests();
 void RunObjectSemanticTests();
+void RunAudioTurnTests();
 void RunObjectConservationTests();
 
 static bool FakePromptCount(const std::vector<LlmPromptMessage>& messages,int* count,std::string*) {
@@ -1257,6 +1258,7 @@ static void CoplanarSupportJourney() {
     std::filesystem::remove_all(root);
 }
 int main() {
+    RunAudioTurnTests();
     try {RunObjectSemanticTests();RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

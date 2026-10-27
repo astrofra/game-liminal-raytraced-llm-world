@@ -1,4 +1,6 @@
 #include "file_io.h"
+#include "resource_paths.h"
+#include <cmath>
 #if defined(_WIN32)
 #define NOMINMAX
 #include <windows.h>
@@ -29,6 +31,7 @@ static void PrintUsage()
     printf("Usage:\n");
     printf("  liminal_cornell_renderer [options]\n\n");
     printf("Options:\n");
+    printf("  --audio-ramp-seconds <0..60> Ambience transition duration (default: 5)\n");
     printf("  --scene-generation-mode <hybrid|dynamic|local> Discover persistent places along open cardinal exits\n");
     printf("  --generate-dynamic-scene <brief.txt> Generate, audit and render a new scene\n");
     printf("  --audit-scene-view <file> Audit actual geometry and render; writes <scene-artifacts>.audit.json\n");
@@ -405,6 +408,7 @@ int main(int argc, char** argv)
     liminal::LocationId selected_location = liminal::kLocationQuarryThreshold;
     liminal::CardinalDirection generated_room_direction = liminal::kDirectionNorth;
     liminal::HeadlessTurnConfig headless_turn_config;
+    double audio_ramp_seconds=5;
     headless_turn_config.local_scenes=true;
     const char* dynamic_brief_path = nullptr;
     std::string scene_artifacts = "dynamic-scene";
@@ -414,6 +418,11 @@ int main(int argc, char** argv)
     std::vector<std::string> session_commands;
 
     for (int index = 1; index < argc; ++index) {
+        if (strcmp(argv[index],"--audio-ramp-seconds")==0 && index+1<argc) {
+            char* end=nullptr;audio_ramp_seconds=strtod(argv[++index],&end);
+            if(!end||*end||!std::isfinite(audio_ramp_seconds)||audio_ramp_seconds<0||audio_ramp_seconds>60)return 1;
+            continue;
+        }
         if (strcmp(argv[index], "--audit-scene-view") == 0 && index+1<argc) {
             audit_scene_view_path=argv[++index];continue;
         }
@@ -773,6 +782,12 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    if(run_sdl||run_turn||run_session) {
+        auto catalog=std::make_shared<liminal::AmbienceCatalog>();std::string why;
+        if(liminal::LoadAmbienceCatalog(liminal::ResourcePath("assets/sfx/ambience_features.json"),catalog.get(),&why))
+            headless_turn_config.ambience_catalog=std::move(catalog);
+        else fprintf(stderr,"[audio] Catalog unavailable; continuing without ambience: %s\n",why.c_str());
+    }
     liminal::Scene scene;
     liminal::SessionState pending_saved_session;
     bool have_pending_save=false;
@@ -1030,6 +1045,7 @@ int main(int argc, char** argv)
         }
 
         liminal::SessionState final_session_state;
+        sdl_config.audio_ramp_seconds=audio_ramp_seconds;
         if (!liminal::RunSdlFrontend(sdl_config, session_state, &final_session_state, error_buffer, sizeof(error_buffer))) {
             fprintf(stderr, "%s\n", error_buffer[0] ? error_buffer : "SDL frontend failed.");
             liminal::ShutdownLlmRuntime();

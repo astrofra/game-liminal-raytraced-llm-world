@@ -2906,6 +2906,8 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         {"facts",json::parse(facts,nullptr,false)},{"current_title",discovery_constraints?"":*title},{"base_description",discovery_constraints?"":*summary},
         {"orientation_rule","Write sensory prose without cardinal directions or a claim about the way back. The engine appends open routes and the return direction from the accepted exit map. Describe the actual destination geometry in facts; origin geometry is only a comparison."},
         {"objects",object_context},
+        {"ambience",config.ambience_catalog?json::parse(AmbiencePrompt(*config.ambience_catalog,state.audio_targets,
+            config.audio_current_known?&config.audio_current_gains:nullptr)):json(nullptr)},
         {"resolved_object_action",result->authorized_object_action.empty()?json(nullptr):json{
             {"action",result->authorized_object_action},{"name",ObjectName(object_view,result->authorized_object_id)},
             {"completed_fact",ObjectActionText(object_view,result->authorized_object_action,result->authorized_object_id)},
@@ -2935,6 +2937,10 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     cfg.json_schema=R"({"type":"object","properties":{"title":{"type":"string"},"summary":{"type":"string"},"narration":{"type":"string"},"thermal":{"type":"object","properties":{"external_temperature_c":{"type":"integer"},"body_temperature_c":{"type":"number"},"reason":{"type":"string"}},"required":["external_temperature_c","body_temperature_c","reason"],"additionalProperties":false},"exits":{"type":"object","properties":{"north":{"type":"boolean"},"east":{"type":"boolean"},"south":{"type":"boolean"},"west":{"type":"boolean"}},"required":["north","east","south","west"],"additionalProperties":false}},"required":["title","summary","narration","thermal","exits"],"additionalProperties":false})";
     // Mirror mechanical bounds in decoding; the independent validator remains authoritative.
     auto schema=json::parse(cfg.json_schema);
+    if(config.ambience_catalog) {
+        schema["properties"]["audio_mix"]=json::parse(AudioMixSchema(*config.ambience_catalog));
+        schema["required"].push_back("audio_mix");
+    }
     if(has_dynamic_objects) {
         schema["properties"]["deposited_ids"]={{"type","array"},{"items",{{"type","string"}}},{"maxItems",32}};
         schema["required"].push_back("deposited_ids");
@@ -3128,6 +3134,10 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             *narration+=" "+presence;presence_completed=faithful;
         }
     }
+    if(config.ambience_catalog) {
+        result->audio_mix=ValidateAudioMix(generation.response_text,*config.ambience_catalog);
+        if(!reason.empty()) {result->audio_mix.valid=false;result->audio_mix.reason="narrative_fallback: "+reason;}
+    }
     if(reason.empty()&&result->turn_result.intent=="perceive_accepted_scene")
         result->accepted_observation=ConstrainNarrationText(proposal.narration,1100,7);
     result->narrative_metrics_json=json({{"purpose",cfg.purpose},{"success",reason.empty()},
@@ -3306,6 +3316,10 @@ void UpdateSessionStateFromTurn(
 
     if(session_state->objects.revision!=turn_result.initial_object_revision||
        session_state->hard_state.turn_number!=turn_result.initial_hard_state.turn_number)return;
+    if(turn_result.audio_mix.valid) {
+        session_state->audio_targets=turn_result.audio_mix.targets;
+        session_state->audio_catalog_version=turn_result.audio_mix.catalog_version;
+    }
     session_state->hard_state = turn_result.updated_hard_state;
     if(turn_result.objects_prepared)session_state->objects=turn_result.updated_objects;
     EnsureObjectRegistry(session_state);
@@ -4305,7 +4319,11 @@ bool RunHeadlessTurnFromState(
     size_t error_buffer_size)
 {
     // A caller may reuse its last accepted result when cancellation arrives early.
-    if (result) *result = HeadlessTurnResult();
+    if (result) {
+        *result = HeadlessTurnResult();
+        result->audio_mix.previous_targets=initial_session_state.audio_targets;
+        if(config.ambience_catalog)result->audio_mix.catalog_version=config.ambience_catalog->version;
+    }
     struct CancellationGate {
         HeadlessTurnStreamCallback callback;
         void* user_data;
@@ -4334,6 +4352,11 @@ bool RunHeadlessTurnFromState(
     const LlmRuntimeTotals before = QueryLlmRuntimeTotals();
     bool success = RunHeadlessTurnFromStateImpl(initial_session_state, player_command, guarded,
                                                      result, error_buffer, error_buffer_size);
+    if(result) {
+        result->audio_mix.previous_targets=initial_session_state.audio_targets;
+        if(result->audio_mix.catalog_version.empty()&&config.ambience_catalog)
+            result->audio_mix.catalog_version=config.ambience_catalog->version;
+    }
     if(success&&result&&result->traversal_requested&&result->updated_place_id!=result->initial_place_id) {
         std::map<std::string,bool> exits;
         for(const auto* direction:{"north","east","south","west"})

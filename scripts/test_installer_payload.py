@@ -29,7 +29,7 @@ class InstallerPayloadTest(unittest.TestCase):
             "build/_deps/sdl3_ttf-src/external/plutosvg/LICENSE",
             "build/_deps/sdl3_ttf-src/external/plutovg/LICENSE",
             "assets/fonts/Zilla_Slab/OFL.txt", "assets/fonts/Zilla_Slab_Highlight/OFL.txt",
-            "cuda/LICENSE", "cuda/EULA.txt",
+            "cuda/LICENSE", "cuda/EULA.txt", "vendor/stb/VORBIS-LICENSE",
         ]
         for name in files:
             path = root / name
@@ -60,6 +60,7 @@ class InstallerPayloadTest(unittest.TestCase):
         self.assertFalse(self.model.exists())
         self.assertEqual(list(self.stage.rglob("*.gguf")), [])
         self.assertFalse(self.manifest()["model_embedded"])
+        self.assertTrue((self.stage / "licenses/third-party/stb-vorbis-LICENSE.txt").is_file())
         self.assertTrue(self.manifest()["model"]["downloaded_during_installation"])
 
         self.model.parent.mkdir(parents=True)

@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include "object_state.h"
+#include "ambience.h"
 
 namespace liminal {
 
@@ -335,6 +336,8 @@ struct InvisibleBarrier {
 };
 
 struct SessionState {
+    AudioGains audio_targets{};
+    std::string audio_catalog_version;
     ObjectState objects;
     GameLanguage language;
     HardState hard_state;

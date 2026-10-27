@@ -1,4 +1,6 @@
 #include "resource_paths.h"
+#include "ambience_audio.h"
+#include "nlohmann/json.hpp"
 #include "narrative_language.h"
 #include "sdl_frontend.h"
 
@@ -2211,6 +2213,18 @@ bool RunSdlFrontend(
         return false;
     }
 
+    AmbienceAudio audio;
+    if(config.turn_config.ambience_catalog) {
+        std::string why;
+        if(audio.Open(*config.turn_config.ambience_catalog,&why)) {
+            audio.SetTargets(current_session_state.audio_targets,config.audio_ramp_seconds);
+            archive_ok=archive.AudioEvent(audio.SnapshotJson("started"))&&archive_ok;
+        } else {
+            fprintf(stderr,"[audio] Playback unavailable: %s\n",why.c_str());
+            archive_ok=archive.AudioEvent(nlohmann::json{{"event","unavailable"},{"error",why},
+                {"catalog_version",config.turn_config.ambience_catalog->version}}.dump())&&archive_ok;
+        }
+    }
     std::vector<unsigned char> texture_rgba_pixels;
     UploadSceneTexture(
         active_animated_view.images[0].pixels,
@@ -2460,6 +2474,8 @@ bool RunSdlFrontend(
                 }
                 worker_shared_state.stop_requested.store(false);
                 SdlFrontendConfig request_config=config;
+                request_config.turn_config.audio_current_known=audio.Active();
+                request_config.turn_config.audio_current_gains=audio.Current();
                 request_config.turn_config.generation_config.seed += 104729u * command_sequence++;
                 worker_thread = std::thread(
                     RunTurnWorker,
@@ -2737,6 +2753,13 @@ bool RunSdlFrontend(
         }
 
         if (turn_completed) {
+            if(audio.Active()&&last_turn_result.audio_mix.valid) {
+                archive_ok=archive.AudioEvent(audio.SnapshotJson("before_target"))&&archive_ok;
+                audio.SetTargets(current_session_state.audio_targets,config.audio_ramp_seconds);
+                auto audio_event=nlohmann::json::parse(audio.SnapshotJson("target_committed"));
+                audio_event["ramp_seconds"]=config.audio_ramp_seconds;
+                archive_ok=archive.AudioEvent(audio_event.dump())&&archive_ok;
+            }
             persistent_hint.clear();
         } else if (turn_failed) {
             persistent_hint.clear();
@@ -2865,6 +2888,8 @@ bool RunSdlFrontend(
     }
     if (archive.Pending())
         archive_ok = archive.Failure("Closed during turn; not committed.",worker_shared_state.turn_result) && archive_ok;
+    if(audio.Active())archive_ok=archive.AudioEvent(audio.SnapshotJson("stopped"))&&archive_ok;
+    audio.Close();
     archive_ok = archive.Close(current_session_state) && archive_ok;
 
     SDL_DestroyTexture(visor_texture);

@@ -19,6 +19,11 @@ Les formulations libres sont interprétées par le LLM ; le moteur vérifie puis
 la proposition. Les raccourcis exacts d'inventaire et de boussole restent directs.
 Consulter l'inventaire conserve la vue et l'animation déjà calculées.
 
+Quatre boucles d'ambiance OGG accompagnent le parcours. Le modèle propose leurs
+niveaux dans l'appel narratif ; le moteur les valide et effectue une transition
+continue de cinq secondes. Le jeu démarre silencieux jusqu'à la première
+proposition acceptée. Voir le [guide audio et le diagnostic de mixage](documentation/AUDIO_AMBIENCE.md).
+
 Gemma 4 E4B Q4_K_M tourne dans le processus via **llama.cpp intégré**. Aucun
 service, serveur, compte ou accès Internet n'est nécessaire pour jouer après installation.
 L'installeur télécharge le modèle en dernière phase, puis le jeu fonctionne hors ligne.

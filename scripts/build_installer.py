@@ -320,6 +320,7 @@ def copy_distribution_payload(version: str, *, include_model: bool = False) -> N
         raise RuntimeError("CUDA_PATH is required to package the CUDA redistribution notices.")
     cuda_root = Path(cuda_path_value)
     third_party_licenses = [
+        (PROJECT_ROOT / "vendor" / "stb" / "VORBIS-LICENSE", "stb-vorbis-LICENSE.txt"),
         (PACKAGING_DIR / "Gemma-LICENSE.txt", "Gemma-LICENSE.txt"),
         (PROJECT_ROOT / "vendor" / "llama.cpp" / "LICENSE", "llama.cpp-LICENSE.txt"),
         (BUILD_DIR / "_deps" / "sdl3-src" / "LICENSE.txt", "SDL3-LICENSE.txt"),

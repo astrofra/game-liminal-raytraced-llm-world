@@ -1,0 +1,723 @@
+{
+  "catalog_version": "e7b93ed9cd3d344231e9a72d4135efad548923615c9f727d102e4346d1ee0615",
+  "config": {
+    "bands": {
+      "edges_hz": [
+        0.0,
+        250.0,
+        2000.0,
+        8000.0
+      ],
+      "note": "Band shares use summed power over half-open ranges low [0,250), mid [250,2000), high [2000,8000), very_high [8000, analysed Nyquist]. The denominator is restricted to the source Nyquist. A band is null when it has no bins below that limit; coverage records the fraction of the nominal band width that was actually analysed. The exact source Nyquist bin belongs to the last available band only."
+    },
+    "config_version": 1,
+    "description": {
+      "busy_peak_rate_hz": 2.0,
+      "diffuse_flatness": 0.4,
+      "dominant_band_share": 0.5,
+      "junction_delta_db": 1.0,
+      "marked_crest_db": 12.0,
+      "moderate_spread_db": 9.0,
+      "mono_correlation": 0.5,
+      "note": "Absolute thresholds for the deterministic acoustic sheet. No track is ranked against another and no source identifier contributes vocabulary. When a measurement is unavailable the corresponding qualifier is omitted or stated as not measurable.",
+      "opposition_correlation": -0.1,
+      "quiet_peak_rate_hz": 0.2,
+      "stable_spread_db": 3.0,
+      "tonal_flatness": 0.1
+    },
+    "flux": {
+      "note": "Per-frame flux is the sum of positive changes of the L1-normalised magnitude spectrum. Flux of the first frame is zero. A peak is counted on an interior frame when flux is at least peak_threshold, strictly greater than the previous frame and at least the next frame. Rate is peaks divided by analysed duration in seconds.",
+      "peak_threshold": 0.02
+    },
+    "loudness": {
+      "enabled": true,
+      "note": "Optional integrated loudness (LUFS) and true peak (dBTP) measured by ffmpeg loudnorm input_i/input_tp. Failures and silence leave both values null with a reason; they never abort extraction.",
+      "timeout_seconds": 120.0
+    },
+    "playback": {
+      "max_gain": 1.0,
+      "note": "Playback metadata copied to every track. trim_db is authored in the annotations file and must be finite and within [-24, 6]; a non-zero trim also requires trim_validated true. max_gain caps any future target gain; this is not automatic loudness compensation.",
+      "trim_db_max": 6.0,
+      "trim_db_min": -24.0
+    },
+    "silence": {
+      "note": "A source is silent when its full-signal native RMS is at or below this threshold. Silence is detected before any spectral or temporal qualification; every derived measurement is then null with a reason.",
+      "rms_dbfs": -70.0
+    },
+    "spectrum": {
+      "block_frames": 64,
+      "epsilon": 1e-06,
+      "hop_size": 512,
+      "note": "Native float32 samples are decoded once. Levels use the native rate; the spectrum uses resample_poly at sample_rate_hz. Hann is periodic (0.5 - 0.5*cos(2*pi*n/N)). The final frame is zero padded and FFT work is bounded to block_frames frames. Spectral statistics only use bins up to the lower of the source Nyquist and the analysed Nyquist. Channel powers are averaged before magnitude is derived, so anti-phase channels cannot cancel. Frames at or below the silence threshold are excluded from spectral statistics. Flatness uses a relative epsilon times mean bin power. Zero-energy frames use rms_floor_dbfs in the RMS percentiles. Config numbers are consumed at six-decimal precision.",
+      "rms_floor_dbfs": -120.0,
+      "rolloff_fraction": 0.85,
+      "sample_rate_hz": 48000,
+      "window": "hann_periodic",
+      "window_size": 2048
+    }
+  },
+  "config_sha256": "0a5e9e0f34456d70f9aee104adac08eda02b059e3cdf690a8a0068dd3097e7ac",
+  "schema_version": 1,
+  "script_version": "1.1.0",
+  "tools": {
+    "ffmpeg": "ffmpeg version 7.0.2-essentials_build-www.gyan.dev Copyright (c) 2000-2024 the FFmpeg developers",
+    "ffprobe": "ffprobe version 7.0.2-essentials_build-www.gyan.dev Copyright (c) 2007-2024 the FFmpeg developers",
+    "numpy": "2.0.2",
+    "python": "3.12.5",
+    "scipy": "1.14.1"
+  },
+  "tracks": [
+    {
+      "analysis": {
+        "bands": {
+          "analysed_limit_hz": 22050.0,
+          "coverage": {
+            "high": 1.0,
+            "low": 1.0,
+            "mid": 1.0,
+            "very_high": 0.878125
+          },
+          "edges_hz": [
+            0.0,
+            250.0,
+            2000.0,
+            8000.0
+          ],
+          "method": "Summed FFT power over all frames. Each band is restricted to bins below the source Nyquist; unavailable bands stay null with a reason.",
+          "reasons": {},
+          "share_sum": 1.0,
+          "shares": {
+            "high": 2.5e-05,
+            "low": 0.99362,
+            "mid": 0.006353,
+            "very_high": 1e-06
+          },
+          "source_nyquist_hz": 22050.0,
+          "units": {
+            "analysed_limit_hz": "Hz",
+            "coverage": "fraction of nominal band width actually analysed",
+            "edges_hz": "Hz",
+            "share_sum": "sum of available shares, expected 1",
+            "shares": "fraction of summed power below the analysed limit",
+            "source_nyquist_hz": "Hz"
+          }
+        },
+        "dynamics": {
+          "frame_rms_floor_dbfs": -120.0,
+          "method": "Per-frame RMS of the 48 kHz analysis signal, channels pooled by mean square, including the zero-padded final frame divided by its valid sample count. Zero-energy frames use the documented floor before percentiles.",
+          "reasons": {},
+          "rms_percentiles_dbfs": {
+            "p10": -12.516971,
+            "p50": -11.228489,
+            "p90": -8.464128
+          },
+          "spread_db": 4.052843,
+          "units": {
+            "frame_rms_floor_dbfs": "dBFS",
+            "rms_percentiles_dbfs": "dBFS",
+            "spread_db": "dB (p90 - p10)"
+          }
+        },
+        "junction": {
+          "channels": [
+            {
+              "amplitude_delta": -0.005282,
+              "delta_db": -0.342571,
+              "end_rms_dbfs": -7.832562,
+              "reasons": {},
+              "start_rms_dbfs": -7.489991
+            }
+          ],
+          "delta_db": -0.342571,
+          "end_rms_dbfs": -7.832562,
+          "method": "Unweighted RMS of the first and last 50 ms at the native rate, per channel and pooled over channels. The window is clamped to the signal length for sources shorter than 50 ms.",
+          "reasons": {},
+          "start_rms_dbfs": -7.489991,
+          "units": {
+            "amplitude_delta": "linear full-scale amplitude, first sample minus last, per channel",
+            "delta_db": "dB (end - start)",
+            "end_rms_dbfs": "dBFS",
+            "start_rms_dbfs": "dBFS",
+            "window_ms": "ms"
+          },
+          "window_ms": 50.0
+        },
+        "level": {
+          "crest_db": 8.985902,
+          "method": "Native sample domain, unweighted; RMS pools mean square across channels and samples; peak is the largest absolute sample.",
+          "peak_dbfs": -1.562812,
+          "reasons": {},
+          "rms_dbfs": -10.548714,
+          "units": {
+            "crest_db": "dB",
+            "peak_dbfs": "dBFS",
+            "rms_dbfs": "dBFS"
+          }
+        },
+        "loudness": {
+          "integrated_lufs": -16.4,
+          "method": "ffmpeg loudnorm input_i/input_tp, target -16 LUFS / -1.5 dBTP",
+          "reasons": {},
+          "true_peak_dbtp": -1.56,
+          "units": {
+            "integrated_lufs": "LUFS",
+            "true_peak_dbtp": "dBTP"
+          }
+        },
+        "silence": {
+          "detected": false,
+          "method": "full-signal native RMS, channels pooled; detected before qualifications",
+          "threshold_rms_dbfs": -70.0
+        },
+        "spectrum": {
+          "analysed_limit_hz": 22050.0,
+          "analysed_sample_rate_hz": 48000,
+          "centroid_hz": 221.252226,
+          "fft_bins_analysed": 941,
+          "flatness": 4e-06,
+          "flux_mean_positive": 0.079294,
+          "flux_peak_rate_hz": 28.928326,
+          "flux_peak_threshold": 0.02,
+          "frame_count": 937,
+          "hop_size": 512,
+          "method": "Native PCM is resampled once with scipy.signal.resample_poly; Hann periodic window and rfft in bounded blocks; per-channel powers summed before magnitude; statistics restricted to the lower of source and analysed Nyquist.",
+          "reasons": {},
+          "rolloff85_hz": 58.18103,
+          "rolloff_fraction": 0.85,
+          "source_nyquist_hz": 22050.0,
+          "units": {
+            "analysed_limit_hz": "Hz",
+            "analysed_sample_rate_hz": "Hz",
+            "centroid_hz": "Hz",
+            "flatness": "ratio in [0, 1]",
+            "flux_mean_positive": "mean L1-normalised positive magnitude change per frame",
+            "flux_peak_rate_hz": "detected peaks per second",
+            "flux_peak_threshold": "L1-normalised magnitude change",
+            "rolloff85_hz": "Hz",
+            "rolloff_fraction": "cumulative power fraction",
+            "source_nyquist_hz": "Hz"
+          },
+          "window": "hann_periodic",
+          "window_size": 2048
+        },
+        "stereo": {
+          "channels": 1,
+          "correlation": null,
+          "method": "Pearson correlation and side/mid energy measured on native samples. Side=(L-R)/2 and mid=(L+R)/2; null when the denominator is zero.",
+          "reasons": {
+            "correlation": "mono source",
+            "side_mid_ratio": "mono source"
+          },
+          "side_mid_ratio": null,
+          "units": {
+            "correlation": "Pearson r in [-1, 1]",
+            "side_mid_ratio": "side energy divided by mid energy"
+          }
+        }
+      },
+      "annotation": null,
+      "channels": 1,
+      "description": "Dominante grave; énergie assez stable; spectre concentré; variations rapides fréquentes; métriques stéréo non applicables; énergie proche aux extrémités ; jonction à écouter.",
+      "duration_seconds": 9.990204,
+      "id": "blade",
+      "path": "assets/sfx/blade-loop.ogg",
+      "playback": {
+        "max_gain": 1.0,
+        "trim_db": 0.0,
+        "trim_validated": false
+      },
+      "rule_version": "acoustic-description-2",
+      "sample_rate": 44100,
+      "sha256": "6a9fd7eb401e2c39e79fee235a76219c6a5cbb217ba37b8837bdabf5ab0eebda"
+    },
+    {
+      "analysis": {
+        "bands": {
+          "analysed_limit_hz": 22050.0,
+          "coverage": {
+            "high": 1.0,
+            "low": 1.0,
+            "mid": 1.0,
+            "very_high": 0.878125
+          },
+          "edges_hz": [
+            0.0,
+            250.0,
+            2000.0,
+            8000.0
+          ],
+          "method": "Summed FFT power over all frames. Each band is restricted to bins below the source Nyquist; unavailable bands stay null with a reason.",
+          "reasons": {},
+          "share_sum": 1.0,
+          "shares": {
+            "high": 0.012297,
+            "low": 0.765277,
+            "mid": 0.2203,
+            "very_high": 0.002126
+          },
+          "source_nyquist_hz": 22050.0,
+          "units": {
+            "analysed_limit_hz": "Hz",
+            "coverage": "fraction of nominal band width actually analysed",
+            "edges_hz": "Hz",
+            "share_sum": "sum of available shares, expected 1",
+            "shares": "fraction of summed power below the analysed limit",
+            "source_nyquist_hz": "Hz"
+          }
+        },
+        "dynamics": {
+          "frame_rms_floor_dbfs": -120.0,
+          "method": "Per-frame RMS of the 48 kHz analysis signal, channels pooled by mean square, including the zero-padded final frame divided by its valid sample count. Zero-energy frames use the documented floor before percentiles.",
+          "reasons": {},
+          "rms_percentiles_dbfs": {
+            "p10": -27.853002,
+            "p50": -19.362991,
+            "p90": -14.272848
+          },
+          "spread_db": 13.580154,
+          "units": {
+            "frame_rms_floor_dbfs": "dBFS",
+            "rms_percentiles_dbfs": "dBFS",
+            "spread_db": "dB (p90 - p10)"
+          }
+        },
+        "junction": {
+          "channels": [
+            {
+              "amplitude_delta": 0.034275,
+              "delta_db": -2.750117,
+              "end_rms_dbfs": -25.310011,
+              "reasons": {},
+              "start_rms_dbfs": -22.559894
+            }
+          ],
+          "delta_db": -2.750117,
+          "end_rms_dbfs": -25.310011,
+          "method": "Unweighted RMS of the first and last 50 ms at the native rate, per channel and pooled over channels. The window is clamped to the signal length for sources shorter than 50 ms.",
+          "reasons": {},
+          "start_rms_dbfs": -22.559894,
+          "units": {
+            "amplitude_delta": "linear full-scale amplitude, first sample minus last, per channel",
+            "delta_db": "dB (end - start)",
+            "end_rms_dbfs": "dBFS",
+            "start_rms_dbfs": "dBFS",
+            "window_ms": "ms"
+          },
+          "window_ms": 50.0
+        },
+        "level": {
+          "crest_db": 17.087488,
+          "method": "Native sample domain, unweighted; RMS pools mean square across channels and samples; peak is the largest absolute sample.",
+          "peak_dbfs": -0.896177,
+          "reasons": {},
+          "rms_dbfs": -17.983665,
+          "units": {
+            "crest_db": "dB",
+            "peak_dbfs": "dBFS",
+            "rms_dbfs": "dBFS"
+          }
+        },
+        "loudness": {
+          "integrated_lufs": -19.34,
+          "method": "ffmpeg loudnorm input_i/input_tp, target -16 LUFS / -1.5 dBTP",
+          "reasons": {},
+          "true_peak_dbtp": -0.8,
+          "units": {
+            "integrated_lufs": "LUFS",
+            "true_peak_dbtp": "dBTP"
+          }
+        },
+        "silence": {
+          "detected": false,
+          "method": "full-signal native RMS, channels pooled; detected before qualifications",
+          "threshold_rms_dbfs": -70.0
+        },
+        "spectrum": {
+          "analysed_limit_hz": 22050.0,
+          "analysed_sample_rate_hz": 48000,
+          "centroid_hz": 2082.280018,
+          "fft_bins_analysed": 941,
+          "flatness": 0.001462,
+          "flux_mean_positive": 0.213173,
+          "flux_peak_rate_hz": 31.652286,
+          "flux_peak_threshold": 0.02,
+          "frame_count": 4671,
+          "hop_size": 512,
+          "method": "Native PCM is resampled once with scipy.signal.resample_poly; Hann periodic window and rfft in bounded blocks; per-channel powers summed before magnitude; statistics restricted to the lower of source and analysed Nyquist.",
+          "reasons": {},
+          "rolloff85_hz": 376.495263,
+          "rolloff_fraction": 0.85,
+          "source_nyquist_hz": 22050.0,
+          "units": {
+            "analysed_limit_hz": "Hz",
+            "analysed_sample_rate_hz": "Hz",
+            "centroid_hz": "Hz",
+            "flatness": "ratio in [0, 1]",
+            "flux_mean_positive": "mean L1-normalised positive magnitude change per frame",
+            "flux_peak_rate_hz": "detected peaks per second",
+            "flux_peak_threshold": "L1-normalised magnitude change",
+            "rolloff85_hz": "Hz",
+            "rolloff_fraction": "cumulative power fraction",
+            "source_nyquist_hz": "Hz"
+          },
+          "window": "hann_periodic",
+          "window_size": 2048
+        },
+        "stereo": {
+          "channels": 1,
+          "correlation": null,
+          "method": "Pearson correlation and side/mid energy measured on native samples. Side=(L-R)/2 and mid=(L+R)/2; null when the denominator is zero.",
+          "reasons": {
+            "correlation": "mono source",
+            "side_mid_ratio": "mono source"
+          },
+          "side_mid_ratio": null,
+          "units": {
+            "correlation": "Pearson r in [-1, 1]",
+            "side_mid_ratio": "side energy divided by mid energy"
+          }
+        }
+      },
+      "annotation": null,
+      "channels": 1,
+      "description": "Dominante grave; fortes variations d'énergie; spectre concentré; variations rapides fréquentes; métriques stéréo non applicables; énergies différentes aux extrémités ; jonction à écouter; crêtes marquées.",
+      "duration_seconds": 49.822608,
+      "id": "bug",
+      "path": "assets/sfx/bug-loop.ogg",
+      "playback": {
+        "max_gain": 1.0,
+        "trim_db": 0.0,
+        "trim_validated": false
+      },
+      "rule_version": "acoustic-description-2",
+      "sample_rate": 44100,
+      "sha256": "f04ec6171d4ab9967e60491152e28dba25941047f52c8781b3eaf5c57d96482f"
+    },
+    {
+      "analysis": {
+        "bands": {
+          "analysed_limit_hz": 22050.0,
+          "coverage": {
+            "high": 1.0,
+            "low": 1.0,
+            "mid": 1.0,
+            "very_high": 0.878125
+          },
+          "edges_hz": [
+            0.0,
+            250.0,
+            2000.0,
+            8000.0
+          ],
+          "method": "Summed FFT power over all frames. Each band is restricted to bins below the source Nyquist; unavailable bands stay null with a reason.",
+          "reasons": {},
+          "share_sum": 1.0,
+          "shares": {
+            "high": 0.981825,
+            "low": 0.014995,
+            "mid": 0.00179,
+            "very_high": 0.00139
+          },
+          "source_nyquist_hz": 22050.0,
+          "units": {
+            "analysed_limit_hz": "Hz",
+            "coverage": "fraction of nominal band width actually analysed",
+            "edges_hz": "Hz",
+            "share_sum": "sum of available shares, expected 1",
+            "shares": "fraction of summed power below the analysed limit",
+            "source_nyquist_hz": "Hz"
+          }
+        },
+        "dynamics": {
+          "frame_rms_floor_dbfs": -120.0,
+          "method": "Per-frame RMS of the 48 kHz analysis signal, channels pooled by mean square, including the zero-padded final frame divided by its valid sample count. Zero-energy frames use the documented floor before percentiles.",
+          "reasons": {},
+          "rms_percentiles_dbfs": {
+            "p10": -17.004636,
+            "p50": -15.841384,
+            "p90": -14.640489
+          },
+          "spread_db": 2.364147,
+          "units": {
+            "frame_rms_floor_dbfs": "dBFS",
+            "rms_percentiles_dbfs": "dBFS",
+            "spread_db": "dB (p90 - p10)"
+          }
+        },
+        "junction": {
+          "channels": [
+            {
+              "amplitude_delta": 0.008163,
+              "delta_db": 1.016518,
+              "end_rms_dbfs": -15.845515,
+              "reasons": {},
+              "start_rms_dbfs": -16.862033
+            }
+          ],
+          "delta_db": 1.016518,
+          "end_rms_dbfs": -15.845515,
+          "method": "Unweighted RMS of the first and last 50 ms at the native rate, per channel and pooled over channels. The window is clamped to the signal length for sources shorter than 50 ms.",
+          "reasons": {},
+          "start_rms_dbfs": -16.862033,
+          "units": {
+            "amplitude_delta": "linear full-scale amplitude, first sample minus last, per channel",
+            "delta_db": "dB (end - start)",
+            "end_rms_dbfs": "dBFS",
+            "start_rms_dbfs": "dBFS",
+            "window_ms": "ms"
+          },
+          "window_ms": 50.0
+        },
+        "level": {
+          "crest_db": 14.967218,
+          "method": "Native sample domain, unweighted; RMS pools mean square across channels and samples; peak is the largest absolute sample.",
+          "peak_dbfs": -0.761754,
+          "reasons": {},
+          "rms_dbfs": -15.728972,
+          "units": {
+            "crest_db": "dB",
+            "peak_dbfs": "dBFS",
+            "rms_dbfs": "dBFS"
+          }
+        },
+        "loudness": {
+          "integrated_lufs": -12.54,
+          "method": "ffmpeg loudnorm input_i/input_tp, target -16 LUFS / -1.5 dBTP",
+          "reasons": {},
+          "true_peak_dbtp": -0.76,
+          "units": {
+            "integrated_lufs": "LUFS",
+            "true_peak_dbtp": "dBTP"
+          }
+        },
+        "silence": {
+          "detected": false,
+          "method": "full-signal native RMS, channels pooled; detected before qualifications",
+          "threshold_rms_dbfs": -70.0
+        },
+        "spectrum": {
+          "analysed_limit_hz": 22050.0,
+          "analysed_sample_rate_hz": 48000,
+          "centroid_hz": 4572.148129,
+          "fft_bins_analysed": 941,
+          "flatness": 0.002059,
+          "flux_mean_positive": 0.234519,
+          "flux_peak_rate_hz": 32.578962,
+          "flux_peak_threshold": 0.02,
+          "frame_count": 3695,
+          "hop_size": 512,
+          "method": "Native PCM is resampled once with scipy.signal.resample_poly; Hann periodic window and rfft in bounded blocks; per-channel powers summed before magnitude; statistics restricted to the lower of source and analysed Nyquist.",
+          "reasons": {},
+          "rolloff85_hz": 4455.808102,
+          "rolloff_fraction": 0.85,
+          "source_nyquist_hz": 22050.0,
+          "units": {
+            "analysed_limit_hz": "Hz",
+            "analysed_sample_rate_hz": "Hz",
+            "centroid_hz": "Hz",
+            "flatness": "ratio in [0, 1]",
+            "flux_mean_positive": "mean L1-normalised positive magnitude change per frame",
+            "flux_peak_rate_hz": "detected peaks per second",
+            "flux_peak_threshold": "L1-normalised magnitude change",
+            "rolloff85_hz": "Hz",
+            "rolloff_fraction": "cumulative power fraction",
+            "source_nyquist_hz": "Hz"
+          },
+          "window": "hann_periodic",
+          "window_size": 2048
+        },
+        "stereo": {
+          "channels": 1,
+          "correlation": null,
+          "method": "Pearson correlation and side/mid energy measured on native samples. Side=(L-R)/2 and mid=(L+R)/2; null when the denominator is zero.",
+          "reasons": {
+            "correlation": "mono source",
+            "side_mid_ratio": "mono source"
+          },
+          "side_mid_ratio": null,
+          "units": {
+            "correlation": "Pearson r in [-1, 1]",
+            "side_mid_ratio": "side energy divided by mid energy"
+          }
+        }
+      },
+      "annotation": null,
+      "channels": 1,
+      "description": "Dominante aiguë; énergie très stable; spectre concentré; variations rapides fréquentes; métriques stéréo non applicables; énergies différentes aux extrémités ; jonction à écouter; crêtes marquées.",
+      "duration_seconds": 39.411927,
+      "id": "night",
+      "path": "assets/sfx/night-loop.ogg",
+      "playback": {
+        "max_gain": 1.0,
+        "trim_db": 0.0,
+        "trim_validated": false
+      },
+      "rule_version": "acoustic-description-2",
+      "sample_rate": 44100,
+      "sha256": "9f80363e3f2a8bd261e70b726e52de14511d6aa2f54f41c572b7e4fb72a42e1d"
+    },
+    {
+      "analysis": {
+        "bands": {
+          "analysed_limit_hz": 22050.0,
+          "coverage": {
+            "high": 1.0,
+            "low": 1.0,
+            "mid": 1.0,
+            "very_high": 0.878125
+          },
+          "edges_hz": [
+            0.0,
+            250.0,
+            2000.0,
+            8000.0
+          ],
+          "method": "Summed FFT power over all frames. Each band is restricted to bins below the source Nyquist; unavailable bands stay null with a reason.",
+          "reasons": {},
+          "share_sum": 1.0,
+          "shares": {
+            "high": 0.061964,
+            "low": 0.253792,
+            "mid": 0.665835,
+            "very_high": 0.018409
+          },
+          "source_nyquist_hz": 22050.0,
+          "units": {
+            "analysed_limit_hz": "Hz",
+            "coverage": "fraction of nominal band width actually analysed",
+            "edges_hz": "Hz",
+            "share_sum": "sum of available shares, expected 1",
+            "shares": "fraction of summed power below the analysed limit",
+            "source_nyquist_hz": "Hz"
+          }
+        },
+        "dynamics": {
+          "frame_rms_floor_dbfs": -120.0,
+          "method": "Per-frame RMS of the 48 kHz analysis signal, channels pooled by mean square, including the zero-padded final frame divided by its valid sample count. Zero-energy frames use the documented floor before percentiles.",
+          "reasons": {},
+          "rms_percentiles_dbfs": {
+            "p10": -19.278304,
+            "p50": -18.442121,
+            "p90": -17.374739
+          },
+          "spread_db": 1.903565,
+          "units": {
+            "frame_rms_floor_dbfs": "dBFS",
+            "rms_percentiles_dbfs": "dBFS",
+            "spread_db": "dB (p90 - p10)"
+          }
+        },
+        "junction": {
+          "channels": [
+            {
+              "amplitude_delta": 0.100625,
+              "delta_db": -0.893927,
+              "end_rms_dbfs": -18.781541,
+              "reasons": {},
+              "start_rms_dbfs": -17.887613
+            }
+          ],
+          "delta_db": -0.893927,
+          "end_rms_dbfs": -18.781541,
+          "method": "Unweighted RMS of the first and last 50 ms at the native rate, per channel and pooled over channels. The window is clamped to the signal length for sources shorter than 50 ms.",
+          "reasons": {},
+          "start_rms_dbfs": -17.887613,
+          "units": {
+            "amplitude_delta": "linear full-scale amplitude, first sample minus last, per channel",
+            "delta_db": "dB (end - start)",
+            "end_rms_dbfs": "dBFS",
+            "start_rms_dbfs": "dBFS",
+            "window_ms": "ms"
+          },
+          "window_ms": 50.0
+        },
+        "level": {
+          "crest_db": 16.055269,
+          "method": "Native sample domain, unweighted; RMS pools mean square across channels and samples; peak is the largest absolute sample.",
+          "peak_dbfs": -2.251432,
+          "reasons": {},
+          "rms_dbfs": -18.306701,
+          "units": {
+            "crest_db": "dB",
+            "peak_dbfs": "dBFS",
+            "rms_dbfs": "dBFS"
+          }
+        },
+        "loudness": {
+          "integrated_lufs": -18.21,
+          "method": "ffmpeg loudnorm input_i/input_tp, target -16 LUFS / -1.5 dBTP",
+          "reasons": {},
+          "true_peak_dbtp": -2.22,
+          "units": {
+            "integrated_lufs": "LUFS",
+            "true_peak_dbtp": "dBTP"
+          }
+        },
+        "silence": {
+          "detected": false,
+          "method": "full-signal native RMS, channels pooled; detected before qualifications",
+          "threshold_rms_dbfs": -70.0
+        },
+        "spectrum": {
+          "analysed_limit_hz": 22050.0,
+          "analysed_sample_rate_hz": 48000,
+          "centroid_hz": 4400.296613,
+          "fft_bins_analysed": 941,
+          "flatness": 0.025253,
+          "flux_mean_positive": 0.189113,
+          "flux_peak_rate_hz": 32.405927,
+          "flux_peak_threshold": 0.02,
+          "frame_count": 935,
+          "hop_size": 512,
+          "method": "Native PCM is resampled once with scipy.signal.resample_poly; Hann periodic window and rfft in bounded blocks; per-channel powers summed before magnitude; statistics restricted to the lower of source and analysed Nyquist.",
+          "reasons": {},
+          "rolloff85_hz": 1234.466912,
+          "rolloff_fraction": 0.85,
+          "source_nyquist_hz": 22050.0,
+          "units": {
+            "analysed_limit_hz": "Hz",
+            "analysed_sample_rate_hz": "Hz",
+            "centroid_hz": "Hz",
+            "flatness": "ratio in [0, 1]",
+            "flux_mean_positive": "mean L1-normalised positive magnitude change per frame",
+            "flux_peak_rate_hz": "detected peaks per second",
+            "flux_peak_threshold": "L1-normalised magnitude change",
+            "rolloff85_hz": "Hz",
+            "rolloff_fraction": "cumulative power fraction",
+            "source_nyquist_hz": "Hz"
+          },
+          "window": "hann_periodic",
+          "window_size": 2048
+        },
+        "stereo": {
+          "channels": 1,
+          "correlation": null,
+          "method": "Pearson correlation and side/mid energy measured on native samples. Side=(L-R)/2 and mid=(L+R)/2; null when the denominator is zero.",
+          "reasons": {
+            "correlation": "mono source",
+            "side_mid_ratio": "mono source"
+          },
+          "side_mid_ratio": null,
+          "units": {
+            "correlation": "Pearson r in [-1, 1]",
+            "side_mid_ratio": "side energy divided by mid energy"
+          }
+        }
+      },
+      "annotation": null,
+      "channels": 1,
+      "description": "Dominante médium; énergie très stable; spectre concentré; variations rapides fréquentes; métriques stéréo non applicables; énergie proche aux extrémités ; jonction à écouter; crêtes marquées.",
+      "duration_seconds": 9.967302,
+      "id": "static",
+      "path": "assets/sfx/static-loop.ogg",
+      "playback": {
+        "max_gain": 1.0,
+        "trim_db": 0.0,
+        "trim_validated": false
+      },
+      "rule_version": "acoustic-description-2",
+      "sample_rate": 44100,
+      "sha256": "d8f233147d88aafcf03e39b33d88c67b02688e1ea9d26341aae3e6a372f0b2b5"
+    }
+  ]
+}
