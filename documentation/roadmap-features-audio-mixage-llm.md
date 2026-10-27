@@ -188,6 +188,54 @@ Commencer par AUDIO-01/02. Un mixer de diagnostic réglable manuellement permet 
 
 **Terminé pour le pilote :** un prétraitement Python reproductible produit les données et fiches des quatre pistes ; le LLM peut choisir leurs niveaux à partir de ces fiches ; le moteur assure les transitions et la lecture sans analyse audio pendant la partie.
 
+## 11. Prochaine itération — variété du mixage (À faire)
+
+**Constat observé.** Partie `run-20261027T072857Z-1411155189`, instantané des huit
+premiers tours d’une partie sans `closed.json` — donc pas la totalité d’une
+partie : cinq lieux découverts, six propositions LLM et deux commandes sans
+proposition (inventaire, consultation tablette). Trois mixes, ordre
+blade/bug/night/static : tour 1 `0,2/0,1/0,3/0,4` ; tours 2 à 7 `0,1/0/0,2/0,3` ;
+tour 8 `0,1/0,1/0,2/0,2`. Quatre des six propositions sont identiques ; le
+plateau dure 3 min 13 entre la publication du tour 2 et le tour 8 ; deux
+changements seulement après l’installation initiale. Le mixer n’a archivé aucune
+erreur et les gains précédents ont été atteints : l’absence de variété des
+propositions ne prouve pas une panne de lecture. Aucune mesure d’écoute humaine
+ni capture de sortie n’a été produite.
+
+**Hypothèses, non établies.** Fiches acoustiques trop similaires (toutes
+décrivent un spectre concentré et des variations fréquentes) ; inertie possible
+du mix courant dans le choix ; descriptions narratives répétitives. Trois titres
+identiques successifs ont été observés, sans preuve de causalité sonore. Les gains
+linéaires ne sont ni des probabilités ni des niveaux perçus égaux ; les trims
+restent à 0 dB et ne sont pas validés à l’écoute.
+
+**AUDIO-05 — fiches et écoute (À faire).** Produire des annotations humaines
+distinctives issues de l’écoute des vraies boucles, avec provenance. Calibrer
+seuils et trims par la mesure et l’écoute, sans source ni émotion inventée depuis
+les IDs et sans réécriture des OGG.
+
+**AUDIO-06 — choix expressifs (À faire).** Tester une consigne favorisant une
+dominante, le contraste, le retrait et le silence lorsque la situation le
+justifie, la conservation du mix restant possible. Écarter le changement forcé à
+chaque déplacement, les quotas, le hasard arbitraire, le mapping lieu → piste et
+tout parseur C++ de langage naturel. Conserver le même appel narratif et un
+schéma/validation/annulation/rampes cohérents. Ce lot documentaire ne modifie pas
+le runtime ; ces essais restent à réaliser.
+
+**AUDIO-07 — recette comparée (À faire).** Rejouer les mêmes scènes et commandes,
+avec les mêmes graines, avant et après, sur plusieurs parcours : nouvelles
+arrivées, revisites et actions stationnaires. Séparer les non-propositions des
+répétitions explicites. Compter les mixes distincts, la fréquence des répétitions,
+la durée des plateaux, les plages de gains et les changements de dominante ;
+distinguer variation de volume et équilibre. Archiver les cibles et les gains
+réellement atteints, les raisons de conservation ou d’erreur déjà disponibles, et
+écouter comparativement des passages reproductibles. Réussite : contrastes
+perceptibles et cohérents quand le contexte change, continuité lorsqu’elle est
+pertinente, sans seuil arbitraire de diversité.
+
+Le correctif immédiat de démarrage est traité séparément par Codex ; il ne fait
+pas partie de cette itération et n’est pas livré par ce document.
+
 ## Références techniques
 
 - [FFmpeg — filtres audio et mesures de sonie](https://www.ffmpeg.org/ffmpeg-filters.html).

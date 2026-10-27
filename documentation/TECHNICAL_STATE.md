@@ -28,6 +28,9 @@ réelles des limites de qualification restantes.
   narratif et publiés après acceptation du tour. Décodage stb_vorbis au chargement,
   sortie SDL3, boucles continues à gain nul, rampes par échantillon et marge sur
   les pics simultanés. Le jeu continue si l'audio est indisponible. Aucune
+  attente du premier tour pour le son : le seuil pré-scripté démarre avec les
+  cibles 0,1 / 0 / 0,2 / 0,3 par la même rampe de cinq secondes, dès le premier
+  écran de sélection de langue, sans appel LLM. Aucune
   dépendance Python/FFmpeg au runtime. Trims à 0 dB ; validation artistique des
   jonctions et de l'équilibre encore à effectuer par l'auteur.
 

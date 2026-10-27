@@ -2071,6 +2071,15 @@ bool RunSdlFrontend(
 {
     SessionState current_session_state = initial_session_state;
     RestoreAuthoritativeCanonicalTopology(&current_session_state);
+    const bool scripted_audio_start=config.turn_config.ambience_catalog&&current_session_state.history.empty()&&
+        current_session_state.current_place_id==BuildCanonicalPlaceId(kLocationQuarryThreshold)&&
+        current_session_state.audio_catalog_version.empty();
+    if(scripted_audio_start) {
+        const auto& catalog=*config.turn_config.ambience_catalog;
+        for(size_t i=0;i<kAmbienceTracks;++i)
+            current_session_state.audio_targets[i]=std::min(current_session_state.audio_targets[i],catalog.tracks[i].max_gain);
+        current_session_state.audio_catalog_version=catalog.version;
+    }
     ResearchArchive archive;
     if (!archive.Start(config.research_root,current_session_state,config.turn_config.generation_config,config.render_config)) {
         SetError(error_buffer,error_buffer_size,archive.Error().c_str());return false;
@@ -2218,7 +2227,10 @@ bool RunSdlFrontend(
         std::string why;
         if(audio.Open(*config.turn_config.ambience_catalog,&why)) {
             audio.SetTargets(current_session_state.audio_targets,config.audio_ramp_seconds);
-            archive_ok=archive.AudioEvent(audio.SnapshotJson("started"))&&archive_ok;
+            auto audio_start=nlohmann::json::parse(audio.SnapshotJson("started"));
+            audio_start["source"]=scripted_audio_start?"scripted_quarry_threshold":"session_targets";
+            audio_start["ramp_seconds"]=config.audio_ramp_seconds;
+            archive_ok=archive.AudioEvent(audio_start.dump())&&archive_ok;
         } else {
             fprintf(stderr,"[audio] Playback unavailable: %s\n",why.c_str());
             archive_ok=archive.AudioEvent(nlohmann::json{{"event","unavailable"},{"error",why},

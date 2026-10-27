@@ -1,5 +1,6 @@
 #include "player_action_fixture.h"
 #include "research_archive.h"
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -9,6 +10,8 @@ static void RequireAudio(bool ok,const char* why){if(!ok)throw std::runtime_erro
 void RunAudioTurnTests() {
     SessionState state;char error[1024]={};
     RequireAudio(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)),"audio initial state");
+    RequireAudio(std::any_of(state.audio_targets.begin(),state.audio_targets.end(),[](float v){return v>0;}),
+        "authored opening must have audible targets before any narrative call");
     state.language=kGameLanguageEnglish;state.audio_targets={.1f,.2f,.3f,.4f};
     HeadlessTurnConfig config;config.local_scenes=true;config.reuse_unchanged_view=true;
     config.interaction_completion=FixturePlayerCompletion;
@@ -66,4 +69,11 @@ void RunAudioTurnTests() {
     std::string saved;RequireAudio(SerializeSessionStateToJsonString(state,&saved),"audio snapshot serialization");
     SessionState restored;RequireAudio(ParseSessionStateFromJson(saved.c_str(),&restored,error,sizeof(error)),error);
     RequireAudio(restored.audio_targets==accepted&&restored.audio_catalog_version==catalog->version,"audio snapshot lost");
+    RequireAudio(RunHeadlessTurnFromState(state,"look",config,&turn,error,sizeof(error)),error);
+    RequireAudio(turn.audio_mix.valid,"explicit silence rejected");
+    UpdateSessionStateFromTurn("look",turn,&state);
+    RequireAudio(state.audio_targets==AudioGains{},"opening preset replaced requested silence");
+    RequireAudio(SerializeSessionStateToJsonString(state,&saved),"silent snapshot serialization");
+    RequireAudio(ParseSessionStateFromJson(saved.c_str(),&restored,error,sizeof(error)),error);
+    RequireAudio(restored.audio_targets==AudioGains{},"opening preset replaced saved silence");
 }

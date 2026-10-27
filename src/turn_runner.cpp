@@ -3258,6 +3258,10 @@ bool InitializeSessionState(
     session_state->hard_state.current_location_id = initial_location_id;
     session_state->origin_place_id = BuildCanonicalPlaceId(initial_location_id);
     session_state->current_place_id = BuildCanonicalPlaceId(initial_location_id);
+    // The authored opening has no narrative call to propose its first ambience.
+    // Seed its targets once; later silence remains a valid model decision.
+    if(initial_location_id==kLocationQuarryThreshold)
+        session_state->audio_targets={.1f,0.f,.2f,.3f};
     if (!BuildCanonicalSpatialState(initial_location_id, &session_state->spatial_state)) {
         SetError(error_buffer, error_buffer_size, "Cannot build canonical spatial state: %s", LocationIdToString(initial_location_id));
         return false;

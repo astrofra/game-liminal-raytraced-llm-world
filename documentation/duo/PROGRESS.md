@@ -5,6 +5,8 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-044 / AUDIO-05–07 | Roadmap intégrée ; prochaine itération à réaliser | [Revue](reviews/DUO-044.md) : bilan des huit premiers tours, fiches/écoute, choix expressifs et recette comparative ; lecture et audit Codex, une clarification à l'intégration. |
+| Démarrage audio | Correctif Codex livré et publié | [Bilan](../AUDIO_AMBIENCE.md) : mix du seuil dès le choix de langue, rampe de cinq secondes sans appel LLM ; 15 CTest passent, SDL réel sans commande vérifié, silence explicite et sauvegarde préservés. |
 | DUO-042 / AUDIO-01–02 | Livraison brute rejetée ; contenu repris et corrigé par Codex | [Revue](reviews/DUO-042.md) : timeout, lectures hors contrat et poursuite après échec d'outil ; deux défauts numériques constatés par tests. Extraction corrigée et reproductible, OGG inchangés. |
 | DUO-043 | Validé et intégré | [Revue](reviews/DUO-043.md) : un fichier, cinq régressions physiques ; outils/chemins conformes, 5/5 tests exécutés par Codex passent. |
 | AUDIO-03–04 | Binaire publié, recette technique effectuée | [Bilan](../AUDIO_AMBIENCE.md) : décodeur léger intégré, gains dans l'appel narratif, rampes et marges, annulation et erreurs ; 15 CTest et 114 Python passent, Gemma/SDL réels vérifiés. Écoute et validation artistique des trims/jonctions encore à effectuer par l'auteur. |

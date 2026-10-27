@@ -80,8 +80,23 @@ entièrement en flottants, convertis en stéréo 48 kHz par SDL3 et conservés e
 une empreinte incohérente ou un périphérique indisponible désactive la lecture
 avec diagnostic ; le jeu reste utilisable.
 
-Chaque piste boucle continuellement, y compris à gain nul. La partie commence
-avec quatre gains nuls ; le premier tour narratif accepté peut proposer le mix.
+Chaque piste boucle continuellement, y compris à gain nul. Le seuil initial
+possède un mix pré-scripté : blade=0,1, bug=0, night=0,2, static=0,3. Dès
+l'écran de choix de langue, le lecteur monte depuis zéro vers ces cibles,
+sans commande ni appel LLM. Elles sont bornées par les plafonds du catalogue et
+archivées avec la provenance `scripted_quarry_threshold`. Ce réglage de départ
+reste à qualifier artistiquement ; il ne constitue pas une annotation humaine
+des pistes. Les prochains tours narratifs peuvent librement modifier le mix,
+y compris le rendre silencieux ; le démarrage ne se réapplique pas aux revisites.
+
+Recette du correctif du 27 octobre 2026 : binaire recompilé et publié, 15 CTest
+réussis, dont démarrage non silencieux et conservation d'un silence explicite
+après un tour et une sauvegarde. Lancement SDL réel sans sélectionner de langue
+ni saisir de commande : 346 080 trames produites, cibles atteintes après la rampe,
+aucune erreur de callback et fermeture normale, zéro tour. Preuves hors dépôt :
+`C:/works/duo-runs/game-liminal-raytraced-llm-world/AUDIO-START-01/`.
+Cette recette vérifie l'alimentation du périphérique, pas une écoute humaine.
+
 Une rampe linéaire de cinq secondes est calculée par échantillon. Une nouvelle
 cible part du gain atteint ; une cible identique ne relance pas la rampe.
 `--audio-ramp-seconds 0..60` règle cette durée. Le callback utilise un tampon
