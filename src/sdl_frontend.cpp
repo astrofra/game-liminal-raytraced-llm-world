@@ -4,6 +4,7 @@
 #include "narrative_language.h"
 #include "sdl_frontend.h"
 #include "investigation.h"
+#include "known_barrier.h"
 
 #include <algorithm>
 #include <atomic>
@@ -1075,17 +1076,27 @@ static void DrawCompassDirectionCell(
     TTF_Font* font,
     const SDL_FRect& rect,
     const char* label,
-    bool open)
+    bool open,
+    bool known_barrier=false)
 {
     if (!renderer) {
         return;
     }
 
-    const SDL_Color phosphor = HudPhosphorColor(open);
-    const SDL_BlendMode blend_mode = SDL_BLENDMODE_ADD;
+    const SDL_Color phosphor = known_barrier ? SDL_Color{245, 191, 91, 255} : HudPhosphorColor(open);
+    const SDL_BlendMode blend_mode = known_barrier ? SDL_BLENDMODE_BLEND : SDL_BLENDMODE_ADD;
     SDL_SetRenderDrawBlendMode(renderer, blend_mode);
     SDL_SetRenderDrawColor(renderer, phosphor.r, phosphor.g, phosphor.b, phosphor.a);
     SDL_RenderRect(renderer, &rect);
+    if(known_barrier) {
+        // A crossed amber cell distinguishes a discovered obstruction from a
+        // merely closed architectural exit. Keep the direction legible.
+        SDL_SetRenderDrawColor(renderer,245,191,91,255);
+        SDL_RenderRect(renderer,&rect);
+        // Split the slash around the label so N/E/S/W remains readable.
+        SDL_RenderLine(renderer,rect.x+2,rect.y+rect.h-2,rect.x+7,rect.y+rect.h-7);
+        SDL_RenderLine(renderer,rect.x+rect.w-7,rect.y+7,rect.x+rect.w-2,rect.y+2);
+    }
     if (open) {
         const SDL_FRect one_pixel_rect = {rect.x - 1.0f, rect.y - 1.0f, rect.w + 2.0f, rect.h + 2.0f};
         const SDL_FRect two_pixel_rect = {rect.x - 2.0f, rect.y - 2.0f, rect.w + 4.0f, rect.h + 4.0f};
@@ -1153,25 +1164,29 @@ static void DrawExitCompass(
         fonts.regular,
         north_rect,
         LocalizedDirectionShortcut(kDirectionNorth,session_state.language),
-        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionNorth));
+        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionNorth)&&!HasKnownBarrier(session_state,kDirectionNorth),
+        HasKnownBarrier(session_state,kDirectionNorth));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         east_rect,
         LocalizedDirectionShortcut(kDirectionEast,session_state.language),
-        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionEast));
+        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionEast)&&!HasKnownBarrier(session_state,kDirectionEast),
+        HasKnownBarrier(session_state,kDirectionEast));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         south_rect,
         LocalizedDirectionShortcut(kDirectionSouth,session_state.language),
-        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionSouth));
+        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionSouth)&&!HasKnownBarrier(session_state,kDirectionSouth),
+        HasKnownBarrier(session_state,kDirectionSouth));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         west_rect,
         LocalizedDirectionShortcut(kDirectionWest,session_state.language),
-        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest));
+        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest)&&!HasKnownBarrier(session_state,kDirectionWest),
+        HasKnownBarrier(session_state,kDirectionWest));
 }
 
 static void DrawThermalIndicator(

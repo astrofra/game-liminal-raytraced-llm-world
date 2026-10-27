@@ -26,6 +26,10 @@ d'hypothèses. Les découvertes persistent ; déposer le cristal conserve sa tra
 Le LLM choisit la [répartition des indices](documentation/REPARTITION_INDICES_LLM.md)
 à la création de chaque lieu, y compris aucun indice ou plusieurs ensemble.
 Ces choix restent figés lors des retours.
+Après un premier contact, une [paroi transparente](documentation/PAROIS_REPEREES.md)
+matérialise l'obstruction dans la vue, du côté de l'approche. La direction
+correspondante devient ambrée et barrée sur la boussole. Le repère persiste
+lorsqu'on revient dans le lieu ; il n'apparaît pas avant la découverte.
 
 Quatre boucles d'ambiance OGG accompagnent le parcours. Le modèle propose leurs
 niveaux dans l'appel narratif ; le moteur les valide et effectue une transition

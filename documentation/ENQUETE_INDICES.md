@@ -73,6 +73,10 @@ Une barrière ne peut utiliser qu'une approche géométriquement dégagée, sans
 lien publié. Elle protège le retour et conserve une autre continuation dans
 le graphe exploré. Elle est enregistrée avant tout contact. Les soutiens de
 verre et les sorties simplement fermées ne constituent pas des preuves.
+Après un premier contact, la [paroi repérée](PAROIS_REPEREES.md) devient visible
+par transparence et la direction est barrée en ambre sur la boussole. Ce repère
+aide à relier le refus au lieu ; il n'établit ni une matière ni une origine
+pour l'obstruction et ne révèle rien avant le contact.
 Une sélection absente, incomplète ou incompatible rejette le lieu et le
 déplacement entiers, sans consommer les possibilités. Une sélection valide
 accompagnée d'une prose ou de températures invalides peut être publiée avec

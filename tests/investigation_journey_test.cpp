@@ -1,4 +1,5 @@
 #include "investigation.h"
+#include "known_barrier.h"
 #include "object_interactions.h"
 #include "turn_runner.h"
 #include "scene_design.h"
@@ -140,6 +141,43 @@ struct Harness {
         INV(observed);
     }
 };
+void BarrierContactView() {
+    SessionState s;char error[1024]={};INV(InitializeSessionState(kLocationQuarryThreshold,&s,error,sizeof(error)));
+    Harness h(0);h.schedule={{"invisible_obstruction"}};
+    const auto arrived=h.Turn(s,"north");
+    const auto opportunity=s.investigation.opportunities.front();
+    INV(opportunity.id=="invisible_obstruction");
+    CardinalDirection direction;INV(ParseCardinalDirection(opportunity.direction.c_str(),&direction));
+    INV(!HasKnownBarrier(s,direction)&&arrived.rendered_scene_text.find("known_obstruction_")==std::string::npos);
+    const auto place=s.current_place_id;const auto base=s.generated_rooms.back().scene_text;const auto moves=s.hard_state.move_count;
+    const auto before=Snapshot(s);HeadlessTurnResult cancelled;
+    h.delivered=false;h.cfg.stream_user_data=&h.delivered;
+    h.cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char*,void* p){return !*static_cast<bool*>(p);};
+    INV(!RunHeadlessTurnFromState(s,opportunity.direction.c_str(),h.cfg,&cancelled,error,sizeof(error)));
+    UpdateSessionStateFromTurn(opportunity.direction.c_str(),cancelled,&s);
+    INV(Snapshot(s)==before&&!cancelled.accepted&&cancelled.rendered_scene_text.empty());
+    h.cfg.stream_callback=nullptr;
+    const auto contact=h.Turn(s,opportunity.direction);
+    INV(contact.invisible_barrier_contact&&s.current_place_id==place&&s.hard_state.move_count==moves);
+    INV(HasKnownBarrier(s,direction)&&contact.rendered_scene_text.find("known_obstruction_")!=std::string::npos);
+    INV(s.generated_rooms.back().scene_text==base);
+    const auto evidence=SerializeInvestigation(s.investigation);
+    const auto again=h.Turn(s,opportunity.direction);
+    INV(again.rendered_scene_text==contact.rendered_scene_text&&SerializeInvestigation(s.investigation)==evidence);
+    const auto away=h.Turn(s,"south");
+    INV(s.current_place_id==s.origin_place_id&&away.rendered_scene_text.find("known_obstruction_")==std::string::npos);
+    const auto back=h.Turn(s,"north");
+    INV(s.current_place_id==place&&HasKnownBarrier(s,direction)&&back.rendered_scene_text==contact.rendered_scene_text);
+    const auto routes=back.turn_result.narration.find("Open passages: ");
+    INV(routes!=std::string::npos);
+    const auto route_text=back.turn_result.narration.substr(routes,back.turn_result.narration.find('.',routes)-routes);
+    INV(route_text.find(opportunity.direction)==std::string::npos);
+    INV(s.generated_rooms.back().scene_text==base&&SerializeInvestigation(s.investigation)==evidence);
+    SessionState restored;const auto saved=Snapshot(s);
+    INV(ParseSessionStateFromJson(saved.c_str(),&restored,error,sizeof(error)));
+    const auto inventory=h.Turn(restored,"inventory");
+    INV(inventory.rendered_scene_text==contact.rendered_scene_text);
+}
 void Journey(unsigned int seed) {
     SessionState s;char error[1024]={};INV(InitializeSessionState(kLocationQuarryThreshold,&s,error,sizeof(error)));Harness h(seed);
     const int score=s.hard_state.score;
@@ -296,4 +334,4 @@ void DistributionPublication() {
     }
 }
 }
-void RunInvestigationJourneyTests() {DistributionPublication();Journey(0);Journey(1);LastFrontier();}
+void RunInvestigationJourneyTests() {BarrierContactView();DistributionPublication();Journey(0);Journey(1);LastFrontier();}

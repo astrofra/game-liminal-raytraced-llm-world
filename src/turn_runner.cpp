@@ -1,6 +1,7 @@
 #include "glass_supports.h"
 #include "turn_runner.h"
 #include "investigation.h"
+#include "known_barrier.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -4571,6 +4572,11 @@ bool RunHeadlessTurnFromState(
         std::map<std::string,bool> exits;
         for(const auto* direction:{"north","east","south","west"})
             exits[direction]=std::find(result->updated_spatial_state.blocked_exits.begin(),result->updated_spatial_state.blocked_exits.end(),direction)==result->updated_spatial_state.blocked_exits.end();
+        // Arrival text and HUD both describe known accessibility, not only the
+        // immutable architectural openings. Hidden obstructions remain hidden.
+        for(const auto& barrier:initial_session_state.invisible_barriers)
+            if(barrier.discovered&&barrier.place_id==result->updated_place_id)
+                exits[CardinalDirectionToString(barrier.direction)]=false;
         result->turn_result.narration=ConstrainArrivalDirections(result->turn_result.narration,initial_session_state.language,
             exits,OppositeCardinalDirection(result->traversal_direction),true);
         result->updated_soft_state.rolling_summary=result->turn_result.narration;
@@ -4604,7 +4610,16 @@ bool RunHeadlessTurnFromState(
         if(!decisions_preserved||!ValidateObjectState(candidate,&why)||!ValidateInvestigation(candidate,&why)||
            (result->generated_room_created&&!ObjectPlacementsVisible(result->generated_rooms_to_add.back().scene_text,candidate,&why))) {
             success=false;SetError(error_buffer,error_buffer_size,"Candidate invariants: %s",why.c_str());
-        } else result->updated_hard_state.unresolved_threats=candidate.hard_state.unresolved_threats;
+        } else {
+            result->updated_hard_state.unresolved_threats=candidate.hard_state.unresolved_threats;
+            bool known=false;
+            for(const auto d:{kDirectionNorth,kDirectionEast,kDirectionSouth,kDirectionWest})known=known||HasKnownBarrier(candidate,d);
+            if(known&&!result->view_unchanged) {
+                success=BuildKnownBarrierScene(result->rendered_scene_text,candidate,
+                    &result->rendered_scene_text,&result->rendered_scene,&why);
+                if(!success)SetError(error_buffer,error_buffer_size,"Known obstruction rendering: %s",why.c_str());
+            }
+        }
     }
     const LlmRuntimeTotals after = QueryLlmRuntimeTotals();
     if (result) {

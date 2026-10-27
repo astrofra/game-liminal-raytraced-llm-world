@@ -35,6 +35,12 @@ réelles des limites de qualification restantes.
   Vey reste disparu ; aucune fin automatique. Recette Gemma et SDL en français
   effectuée, carnet défilant ; résultats et limites dans le bilan.
 
+- [Parois repérées](PAROIS_REPEREES.md) : après contact, couche de verre calculée
+  depuis les barrières découvertes du lieu et l'orientation d'origine. Face,
+  gauche et droite dans le rendu ; arrière hors champ. Boussole ambrée et barrée
+  pour toute direction concernée. Aucun nouveau fait, objet ou appel LLM ;
+  scène acceptée inchangée, recomposition après retour et sérialisation.
+
 - [Audio d'ambiance](AUDIO_AMBIENCE.md) : catalogue acoustique reproductible des
   quatre OGG, fiches et annotations distinctes, gains proposés dans le même appel
   narratif et publiés après acceptation du tour. Décodage stb_vorbis au chargement,
