@@ -7,8 +7,19 @@ void EnsureInvestigation(SessionState* state);
 bool ValidateInvestigation(const SessionState& state, std::string* error);
 std::string SerializeInvestigation(const InvestigationState& state);
 bool ParseInvestigation(const std::string& text, InvestigationState* state, std::string* error);
-std::string SelectInvestigationOpportunity(const SessionState& state, unsigned int seed);
-std::string InvestigationScenicBrief(const std::string& id);
+void PreserveLegacyInvestigationPlaces(SessionState* state);
+bool InvestigationDecisionsPreserved(const SessionState& before, const SessionState& after);
+struct InvestigationSite {
+    std::string id, kind;
+    ObjectPlacement placement;
+    CardinalDirection direction = kDirectionUnknown;
+};
+std::vector<std::string> AvailableInvestigationOpportunities(const SessionState& state);
+std::string InvestigationAuthoringContext(const SessionState& state, const std::vector<InvestigationSite>& sites);
+std::string InvestigationPlacementSchema(const SessionState& state, const std::vector<InvestigationSite>& sites);
+bool PrepareInvestigationDistribution(const SessionState& state, const std::string& new_place_id,
+    const std::vector<InvestigationSite>& sites, const std::string& proposal_json,
+    SessionState* candidate, std::string* error);
 // Caller supplies a newly accepted place and a validated mobile placement or
 // clear unlinked direction. This is candidate preparation, never publication.
 bool PrepareInvestigationOpportunity(const SessionState& state, const std::string& id,

@@ -4,7 +4,7 @@ Projet : **Within the Latent Walls / Entre les Murs Latents**
 Dépôt : <https://github.com/astrofra/game-liminal-raytraced-llm-world>  
 Date : **27 octobre 2026**  
 Base examinée : **`af9124c3377bc319586c3a8d6ace6c75a14914c2`**  
-Statut : proposition d’évolution ; les mécanismes décrits comme cibles restent à implémenter.
+Statut : implémentée le 27 octobre 2026 en duo Codex / DeepSeek. Voir le [bilan, les mesures et les limites](REPARTITION_INDICES_LLM.md). Les sections suivantes conservent le contrat de réalisation.
 
 ## 1. Intention
 

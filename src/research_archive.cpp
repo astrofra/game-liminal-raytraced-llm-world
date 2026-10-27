@@ -160,7 +160,10 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
         {"interaction",turn.interaction_metrics_json},{"objects_prepared",turn.objects_prepared},
         {"investigation",{{"before",json::parse(SerializeInvestigation(turn.initial_investigation))},
             {"candidate",json::parse(SerializeInvestigation(turn.updated_investigation))},
-            {"published",status=="accepted"&&turn.investigation_prepared},{"decision",turn.investigation_metrics_json}}},
+            {"published",status=="accepted"&&turn.investigation_prepared},
+            {"placement_rejected",turn.investigation_placement_rejected},
+            {"decision",json::parse(turn.investigation_metrics_json,nullptr,false).is_object()?
+                json::parse(turn.investigation_metrics_json):json(nullptr)}}},
         {"object_revision_before",turn.initial_object_revision},{"objects_after",json::parse(SerializeObjectState(turn.updated_objects))},
         {"raw_response",turn.raw_response_text},{"repair_response",turn.repair_response_text},
         {"narrative_metrics",turn.narrative_metrics_json},

@@ -1,6 +1,7 @@
 #include "player_action_fixture.h"
 #include "object_interactions.h"
 #include "inventory.h"
+#include "investigation.h"
 #include "turn_runner.h"
 #include "renderer.h"
 #include "research_archive.h"
@@ -32,6 +33,7 @@ SessionState Fixture() {
         r.arrival_narration=r.spatial_state.room_summary;s.generated_rooms.push_back(r);s.reference_descriptions[id]=r.arrival_narration;}
     RoomLink ab;ab.from_place_id=a;ab.to_place_id=b;ab.direction=kDirectionNorth;s.room_links.push_back(ab);
     RoomLink ba;ba.from_place_id=b;ba.to_place_id=a;ba.direction=kDirectionSouth;s.room_links.push_back(ba);
+    s.investigation.decisions.clear();PreserveLegacyInvestigationPlaces(&s);
     return s;
 }
 struct Harness {

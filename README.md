@@ -23,6 +23,9 @@ Une [enquête à indices](documentation/ENQUETE_INDICES.md) relie la disparition
 Vey, les obstructions invisibles et les cristaux. Examiner les traces, prélever
 un spécimen puis demander « faire le point » alimente un carnet de constats et
 d'hypothèses. Les découvertes persistent ; déposer le cristal conserve sa trace.
+Le LLM choisit la [répartition des indices](documentation/REPARTITION_INDICES_LLM.md)
+à la création de chaque lieu, y compris aucun indice ou plusieurs ensemble.
+Ces choix restent figés lors des retours.
 
 Quatre boucles d'ambiance OGG accompagnent le parcours. Le modèle propose leurs
 niveaux dans l'appel narratif ; le moteur les valide et effectue une transition

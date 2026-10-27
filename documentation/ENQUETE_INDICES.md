@@ -8,10 +8,13 @@ acceptés restent stables.
 
 ## Boucle jouable
 
-Les nouvelles scènes compatibles reçoivent au plus une possibilité chacune.
-La graine fait varier l'ordre du spécimen, de l'obstruction et de la première
-trace de Vey. Une seconde trace complète ces pistes. Une revisite ne distribue
-rien. Le pilote possède quatre possibilités uniques, sans récompense de collecte.
+Le LLM choisit zéro, une ou plusieurs possibilités dans chaque nouveau lieu,
+parmi quatre identités uniques et des emplacements offerts par le moteur.
+L'appel narratif de première arrivée effectue ce choix après la géométrie ;
+aucun appel de planification n'est ajouté. Il n'y a ni ordre imposé par la
+graine, ni délai garanti d'apparition. Une décision vide est persistante ;
+les revisites et réparations de texte ne distribuent rien.
+Voir le [bilan de répartition](REPARTITION_INDICES_LLM.md).
 
 | Possibilité | Geste requis | Ce qui est établi |
 |---|---|---|
@@ -20,7 +23,9 @@ rien. Le pilote possède quatre possibilités uniques, sans récompense de colle
 | Outil de prélèvement identifié | Examiner sa plaquette | Correspondance avec le matériel de Vey et résidu cristallin |
 | Plaquette de relevé | Examiner le relevé | Marque authentifiée de Vey, prélèvement consigné puis départ du point de prélèvement |
 
-Les deux traces soutiennent l'hypothèse de la prospection de Vey. Le relevé
+Le cristal et l’outil seuls ne soutiennent pas l’idée que Vey serait resté au
+point de prélèvement, même lorsqu’ils se trouvent ensemble. Cette hypothèse
+reste ouverte jusqu’au relevé qui la contredit. Les deux traces soutiennent l'hypothèse de la prospection de Vey. Le relevé
 contredit l'hypothèse qu'il serait resté au point de prélèvement. Les constats
 restent conservés lorsqu'une interprétation est contredite. Aucune de ces traces
 ne prouve une mort, une rencontre ou une origine extraterrestre.
@@ -42,15 +47,19 @@ résumé n'est ajouté.
 
 ## Autorité et publication
 
-`SessionState::investigation`, schéma 1, politique `eryx-clues-v1`, conserve
-opportunités, preuves, trois fils et deux hypothèses avec identifiants stables.
+`SessionState::investigation`, schéma 2, politique `eryx-clues-llm-v2`, conserve
+opportunités, preuves, trois fils, deux hypothèses et les décisions par lieu.
+Une décision porte son origine (`llm` ou `legacy_preserved`), les identités
+sélectionnées et le tour de publication. Elle reste immuable.
 Le fil `obstruction` résout la question de sa vérification après contact et
 examen ; sa nature reste inconnue. `vey` et `crystal` restent en cours après
 leurs premières preuves. La possession actuelle provient exclusivement du
 registre d'objets ; la preuve d'acquisition n'est jamais supprimée par un dépôt.
 
-Le moteur réserve une possibilité avant la composition, transmet son brief
-scénique, puis vérifie la représentation. Les petits marqueurs utilisent la
+Le moteur compose et audite la géométrie, offre des sites compatibles, puis
+valide la proposition `investigation_placement` du narrateur. Les objets sont
+préparés avant la vérification de leur présence dans la prose et les identités
+déclarées par le modèle. Les petits marqueurs utilisent la
 couche mobile, avec placement visible, sol et emprise contrôlés. Le spécimen
 est portable ; les deux traces de Vey servent à l'examen. Aucun mot « cristal »
 ou « Vey » dans un texte ordinaire ne suffit à créer une preuve.
@@ -64,8 +73,10 @@ Une barrière ne peut utiliser qu'une approche géométriquement dégagée, sans
 lien publié. Elle protège le retour et conserve une autre continuation dans
 le graphe exploré. Elle est enregistrée avant tout contact. Les soutiens de
 verre et les sorties simplement fermées ne constituent pas des preuves.
-Si le placement est incompatible, la possibilité reste disponible et le
-diagnostic indique son report ; aucune collision artificielle n'est créée.
+Une sélection absente, incomplète ou incompatible rejette le lieu et le
+déplacement entiers, sans consommer les possibilités. Une sélection valide
+accompagnée d'une prose ou de températures invalides peut être publiée avec
+un texte de secours qui conserve exactement ces choix.
 
 Les données sont préparées sur une copie. La publication dépend du tour
 complet, des invariants des objets et de l'enquête et de la dernière sonde
@@ -75,16 +86,22 @@ consultation peut porter une référence de focus valide sans créer de preuve.
 
 Les faits connus et les questions restent dans la partie obligatoire des
 contextes, indépendamment des six événements récents. Les conclusions cachées
-des traces non examinées sont absentes de ce contexte. Le générateur reçoit
-uniquement les contraintes scéniques nécessaires à la possibilité réservée.
+des traces non examinées sont absentes de ce contexte. Le générateur géométrique ne reçoit aucun indice réservé. Le narrateur de
+création reçoit un bloc d’écriture distinct : possibilités publiques, sites,
+décisions antérieures et rythme des lieux sans indice. Les contenus cachés
+des traces ne sont pas communiqués à l’arrivée.
 Le narrateur reçoit les effets validés, les indices accessibles et les
 incertitudes. Le budget existant réduit d'abord la mémoire récente.
 
 ## Compatibilité et archives
 
 Un état ancien sans `investigation` démarre avec trois fils ouverts et aucune
-preuve, en conservant ses lieux et objets. Les possibilités n'apparaissent que
-dans de futurs lieux. Les exports restent diagnostiques : aucune reprise de
+preuve. Un état v1 conserve ses opportunités et preuves ; les hypothèses sont
+recalculées selon leurs justifications admissibles. Les lieux existants et le
+seuil reçoivent une décision `legacy_preserved`, sans redistribution. Objets,
+liens et barrières sont conservés. Seuls de futurs lieux utilisent le nouveau
+contrat. Une mention littéraire liée à un objet déplacé conserve son identité
+et ne peut pas recréer cet objet dans son ancien lieu. Les exports restent diagnostiques : aucune reprise de
 sauvegarde dans SDL n'est ajoutée.
 
 `unresolved_threats` et `soft_state.active_hypotheses` sont des projections de
@@ -93,11 +110,14 @@ La chaîne historique du prélèvement disparaît après acquisition, même si l
 question plus large du rôle des cristaux reste ouverte.
 
 Les archives de tours contiennent l'enquête avant et candidate, le statut de
-publication et la décision de réservation/examen. La provenance de la scène
-conserve le brief scénaristique fourni ; une proposition rejetée n'est pas une
+publication, la demande d’écriture, la sélection proposée, sa préparation
+ou son rejet et la décision persistante. Une proposition rejetée n’est pas une
 découverte. Les identités et révisions figurent dans `state.json`.
 
-## Qualification
+## Qualification du premier pilote (avant répartition LLM)
+
+Les résultats ci-dessous concernent la politique v1. La qualification de la
+version actuelle figure dans [REPARTITION_INDICES_LLM.md](REPARTITION_INDICES_LLM.md).
 
 Le binaire compilé est publié dans `build/Release/liminal_cornell_renderer.exe` ;
 son empreinte correspond à celle de `build_native` et à `runtime-build.json`.

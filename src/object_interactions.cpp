@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cctype>
 #include <set>
+#include <tuple>
 #include <regex>
 #include <sstream>
 
@@ -23,7 +24,16 @@ void from_json(const json& node,ObjectSource& source) {
     node.at("allowed").get_to(source.allowed);node.at("remaining").get_to(source.remaining);
     source.material_source=node.value("material_source",false);
 }
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ObjectState, version, revision, next_id, instances, deposits, sources)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ObjectState::Mention, place_id, object_id, quote)
+void to_json(json& j,const ObjectState& s) {
+    j={{"version",s.version},{"revision",s.revision},{"next_id",s.next_id},{"instances",s.instances},
+       {"deposits",s.deposits},{"sources",s.sources},{"mentions",s.mentions}};
+}
+void from_json(const json& j,ObjectState& s) {
+    j.at("version").get_to(s.version);j.at("revision").get_to(s.revision);j.at("next_id").get_to(s.next_id);
+    j.at("instances").get_to(s.instances);j.at("deposits").get_to(s.deposits);j.at("sources").get_to(s.sources);
+    s.mentions=j.value("mentions",std::vector<ObjectState::Mention>());
+}
 
 namespace {
 bool Contains(const std::vector<std::string>& v, const std::string& id) {
@@ -156,6 +166,11 @@ bool ValidateObjectState(const SessionState& state,std::string* error) {
             return source.object_id==entry.first&&source.place_id==entry.second.origin_place&&source.quote==entry.second.source_quote;});
         if(found==state.objects.sources.end())return fail("missing_object_provenance");
     }
+    std::set<std::tuple<std::string,std::string,std::string>> mentions;
+    for(const auto& m:state.objects.mentions)
+        if(m.place_id.empty()||m.quote.empty()||!state.objects.instances.count(m.object_id)||
+           !mentions.emplace(m.place_id,m.object_id,m.quote).second||
+           ObjectEvidence(state,m.place_id).find(m.quote)==std::string::npos)return fail("invalid_object_mention");
     if(error)error->clear();return true;
 }
 std::string ObjectName(const SessionState& state,const std::string& id) {
@@ -199,6 +214,24 @@ bool PrepareObjectTransfer(const SessionState& state,const ObjectProposal& p,con
     if(p.verdict!="allow")return fail(p.verdict=="forbid"?"forbidden":"clarify");
     if(p.action!="take"&&p.action!="drop")return fail("unsupported_action");
     SessionState next=state;
+    // Bind retained descriptions to registry identities, not to player wording.
+    // Reconstruct old origin bindings lazily as well as recording new deposits.
+    for(const auto& entry:state.objects.instances) {
+        if(!entry.second.source_quote.empty())continue; // Literary sources already retain their identity.
+        std::set<std::string> places;
+        if(!entry.second.origin_place.empty())places.insert(entry.second.origin_place);
+        for(const auto& room:state.objects.deposits)for(const auto& placed:room.second)
+            if(placed.object_id==entry.first)places.insert(room.first);
+        for(const auto& place:places) {
+            const auto evidence=ObjectEvidence(state,place);
+            auto names=entry.second.aliases;names.push_back(entry.second.label);
+            for(const auto& name:names)if(!name.empty()&&evidence.find(name)!=std::string::npos) {
+                bool known=false;for(const auto& m:next.objects.mentions)
+                    if(m.place_id==place&&m.object_id==entry.first&&m.quote==name)known=true;
+                if(!known)next.objects.mentions.push_back({place,entry.first,name});
+            }
+        }
+    }
     auto& carried=next.hard_state.inventory_items;
     auto& deposited=next.objects.deposits[state.current_place_id];
     if(p.origin=="explicit") {
@@ -222,6 +255,16 @@ bool PrepareObjectTransfer(const SessionState& state,const ObjectProposal& p,con
         if(reference.find(p.quote)==std::string::npos)return fail("unattested_source");
         const auto quote=SourceSentence(reference,p.quote);
         if(!Word(NormalizeObjectText(quote),NormalizeObjectText(p.label))||UnsupportedSource(quote,p.label))return fail("unattested_source");
+        std::set<std::string> mentioned;
+        for(const auto& m:next.objects.mentions)if(m.place_id==state.current_place_id&&
+            quote.find(m.quote)!=std::string::npos&&Word(NormalizeObjectText(m.quote),NormalizeObjectText(p.label)))
+            mentioned.insert(m.object_id);
+        if(mentioned.size()>1)return fail("clarify");
+        if(mentioned.size()==1) {
+            ObjectProposal existing=p;existing.origin="explicit";existing.object_id=*mentioned.begin();
+            existing.quote.clear();existing.label.clear();
+            return PrepareObjectTransfer(state,existing,nullptr,candidate,reason);
+        }
         if(ForbiddenTarget(p.label))return fail("fixed_scenery");
         for(const auto* anchored:{"scelle","scellee","solidaire","encastre","encastree","attached","fixed","anchored","fest verankert"})
             if(Word(NormalizeObjectText(quote),anchored))return fail("fixed_scenery");
@@ -387,10 +430,16 @@ std::string ObjectContext(const SessionState& state,const std::string& focus) {
             if(!focus.empty()&&ObjectTargetGrounded(focus,*it))add(*it);
         for(auto it=retained->second.rbegin();it!=retained->second.rend();++it)add(*it);
     }
+    json mentions=json::array();
+    for(const auto& m:state.objects.mentions)if(m.place_id==state.current_place_id) {
+        bool here=false;if(room!=state.objects.deposits.end())for(const auto& p:room->second)if(p.object_id==m.object_id)here=true;
+        mentions.push_back({{"object_id",m.object_id},{"quoted_name",m.quote},{"deposited_here",here},
+            {"rule","This retained mention names an existing object, never a new literary source. Its actual location is authoritative."}});
+    }
     return json{{"revision",state.objects.revision},{"place_id",state.current_place_id},
         {"reference_description",reference==state.reference_descriptions.end()?state.spatial_state.room_summary:reference->second},
         {"observed_details",observations},
-        {"carried",carried},{"deposited",deposited},{"resolved_sources",sources}}.dump();
+        {"carried",carried},{"deposited",deposited},{"resolved_sources",sources},{"bound_mentions",mentions}}.dump();
 }
 std::string ObjectPresenceText(const SessionState& state,bool include_sources) {
     std::string text;auto room=state.objects.deposits.find(state.current_place_id);

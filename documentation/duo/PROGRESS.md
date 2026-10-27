@@ -5,6 +5,7 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-047 / répartition LLM | Livré et binaire publié ; recette effectuée | [Revue](reviews/DUO-047.md), [bilan](../REPARTITION_INDICES_LLM.md) ; six groupes DeepSeek corrigés, un glob hors périmètre signalé ; moteur Codex, 15 CTest et 114 Python passent, trois graines Gemma et 14 commandes SDL vérifiées, migrations préservées. Variété de rythme limitée dans cette série. |
 | DUO-046 / message de refus | Intégré et binaire publié | [Revue](reviews/DUO-046.md) : restriction de transport conservée, explication explicite dans six langues ; deux recherches hors périmètre de lecture signalées ; 15 CTest et reprise réelle de la commande avec Gemma validés. |
 | DUO-045 / enquête à indices | Pilote intégré et binaire publié, recette Gemma/SDL effectuée | [Contrat](tasks/DUO-045.md), [revue](reviews/DUO-045.md), [bilan](../ENQUETE_INDICES.md) ; six groupes DeepSeek, un écart de lecture signalé ; état et parcours Codex, 15 CTest et 114 Python passent, six faits réels et carnet défilant vérifiés. |
 | DUO-044 / AUDIO-05–07 | Roadmap intégrée ; prochaine itération à réaliser | [Revue](reviews/DUO-044.md) : bilan des huit premiers tours, fiches/écoute, choix expressifs et recette comparative ; lecture et audit Codex, une clarification à l'intégration. |

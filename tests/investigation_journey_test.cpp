@@ -2,6 +2,7 @@
 #include "object_interactions.h"
 #include "turn_runner.h"
 #include "scene_design.h"
+#include "exploration_policy.h"
 #include "narrative_language.h"
 #include "nlohmann/json.hpp"
 #include <algorithm>
@@ -47,8 +48,13 @@ struct Harness {
     HeadlessTurnConfig cfg;
     std::string action="review_investigation",clue,object;
     bool delivered=false,broken=false,stale=false;
-    int geometry_calls=0,interpretation_calls=0,narration_calls=0;
+    int geometry_calls=0,interpretation_calls=0,narration_calls=0,creation_calls=0;
+    std::vector<std::vector<std::string>> schedule;
+    std::string proposal_fault;
+    bool bad_prose=false,bad_thermal=false,unexpected=false;
     Harness(unsigned int seed) {
+        schedule=seed==0?std::vector<std::vector<std::string>>{{"crystal_sample"},{"invisible_obstruction"},{"vey_equipment"},{"vey_survey"}}:
+            std::vector<std::vector<std::string>>{{"vey_survey","vey_equipment"},{},{"crystal_sample","invisible_obstruction"}};
         cfg.local_scenes=true;cfg.generation_config.seed=seed;cfg.generation_config.n_ctx=16384;
         cfg.generation_config.prompt_token_counter=[](const std::vector<LlmPromptMessage>& messages,int* count,std::string*) {
             size_t n=0;for(const auto& m:messages)n+=m.content.size();*count=static_cast<int>(n/4);return true;};
@@ -74,8 +80,45 @@ struct Harness {
                 {"narration","You study the quiet space through the visor. Pale light settles on the stone edges beyond the open ground. Your breathing marks a pause before the distant masses, whose surfaces remain still beneath the broad Venusian sky."},
                 {"thermal",{{"external_temperature_c",p["temperature_external_c"]},{"body_temperature_c",p["temperature_body_c"]},{"reason","Steady exposure"}}},
                 {"exits",exits}});
+            if(p.contains("investigation_authoring")) {
+                INV(json::parse(c.json_schema)["properties"].contains("investigation_placement"));
+                const auto& author=p["investigation_authoring"];
+                const auto selected=creation_calls<static_cast<int>(schedule.size())?schedule[creation_calls]:std::vector<std::string>();
+                ++creation_calls;json placements=json::array();std::set<std::string> used;
+                std::map<std::string,bool> fixed=p["exit_proposal"]["fixed"].get<std::map<std::string,bool>>();
+                auto balance=p["exit_proposal"]["balance"];
+                for(const auto& id:selected) {
+                    for(const auto& option:author["available"])if(option["id"]==id) {
+                        std::string site;for(const auto& offered:option["sites"])if(!used.count(offered.get<std::string>())){site=offered;break;}
+                        INV(!site.empty());used.insert(site);
+                        placements.push_back({{"opportunity_id",id},{"site_id",site}});
+                        if(id=="invisible_obstruction") {
+                            for(const auto& offered:author["sites"])if(offered["id"]==site)fixed[offered["direction"].get<std::string>()]=true;
+                            if(!balance["allow_dead_end"].get<bool>())balance["target_open_exits"]=3;
+                        } else deposits.push_back(option["object_id"]);
+                    }
+                }
+                ExitBalancePolicy policy;policy.target_open_exits=balance["target_open_exits"];
+                policy.allow_dead_end=balance["allow_dead_end"];policy.selection_seed=balance["selection_seed"];
+                response["exits"]=BalanceExplorationExits(fixed,fixed,p["exit_proposal"]["geometrically_possible"].get<std::vector<std::string>>(),policy);
+                response["investigation_placement"]={{"revision",author["revision"]},{"placements",placements}};
+                if(proposal_fault=="missing")response.erase("investigation_placement");
+                else if(proposal_fault=="stale")response["investigation_placement"]["revision"]=author["revision"].get<int>()+1;
+                else if(proposal_fault=="invalid")response["investigation_placement"]["placements"].push_back({{"opportunity_id","fabricated"},{"site_id","ground_01"}});
+                else if(proposal_fault=="closed_barrier")for(const auto& entry:placements)if(entry["opportunity_id"]=="invisible_obstruction")
+                    for(const auto& site:author["sites"])if(site["id"]==entry["site_id"])response["exits"][site["direction"].get<std::string>()]=false;
+            } else {
+                INV(!json::parse(c.json_schema)["properties"].contains("investigation_placement"));
+                if(unexpected)response["investigation_placement"]={{"revision",0},{"placements",json::array()}};
+            }
+            if(bad_prose)response["narration"]="bad";
+            if(bad_thermal)response["thermal"]["body_temperature_c"]=90;
             if(json::parse(c.json_schema)["properties"].contains("deposited_ids"))response["deposited_ids"]=deposits;
-            r->response_text=response.dump();return true;};
+            if(proposal_fault=="invented_deposit")response["deposited_ids"]=json::array({"clue:crystal_sample"});
+            if(proposal_fault=="incomplete")r->reached_eog=false;
+            r->response_text=response.dump();
+            if(proposal_fault=="duplicate")r->response_text.insert(1,"\"investigation_placement\":{\"revision\":0,\"placements\":[]},");
+            return true;};
     }
     HeadlessTurnResult Turn(SessionState& s,const std::string& command) {
         const auto before=Snapshot(s);HeadlessTurnResult r;char error[1024]={};
@@ -107,6 +150,7 @@ void Journey(unsigned int seed) {
     h.cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char*,void* p){return !*static_cast<bool*>(p);};
     INV(!RunHeadlessTurnFromState(s,"north",h.cfg,&refused,error,sizeof(error)));UpdateSessionStateFromTurn("north",refused,&s);
     INV(!refused.accepted&&Snapshot(s)==baseline&&refused.updated_investigation.evidence.empty());h.cfg.stream_callback=nullptr;
+    h.creation_calls=0; // The discarded fixture response is not the next published scene.
     std::set<std::string> processed;std::string deposit_place;bool dropped=false;
     for(int step=0;step<30&&processed.size()<4;++step) {
         const auto command=NextStep(s);INV(!command.empty());const auto r=h.Turn(s,command);
@@ -175,8 +219,8 @@ void LastFrontier() {
     for(const auto direction:{kDirectionEast,kDirectionSouth}) {
         InvisibleBarrier b;b.place_id=s.current_place_id;b.direction=direction;s.invisible_barriers.push_back(b);
     }
-    Harness h(1);const auto result=h.Turn(s,"north");
-    INV(s.investigation.opportunities.size()==1);
+    Harness h(1);h.schedule={{"invisible_obstruction","crystal_sample","vey_survey"}};const auto result=h.Turn(s,"north");
+    INV(s.investigation.opportunities.size()==3);
     const auto& opportunity=s.investigation.opportunities.front();INV(opportunity.id=="invisible_obstruction");
     INV(s.spatial_state.blocked_exits.size()<=1);INV(!NextStep(s).empty());
     const auto provenance=json::parse(s.generated_rooms.back().scene_design_json);
@@ -189,5 +233,67 @@ void LastFrontier() {
     INV(!PrepareInvestigationOpportunity(linked,"invisible_obstruction",linked.current_place_id,kDirectionSouth,nullptr,&untouched,&why));
     INV(Snapshot(untouched)==before);
 }
+void DistributionPublication() {
+    SessionState initial;char error[1024]={};INV(InitializeSessionState(kLocationQuarryThreshold,&initial,error,sizeof(error)));
+    // Same geometry and seed; only the model's explicit selection changes.
+    for(const auto& selected:std::vector<std::vector<std::string>>{{},{"vey_survey"},{"crystal_sample","vey_equipment","vey_survey","invisible_obstruction"}}) {
+        auto state=initial;Harness h(0);h.schedule={selected};
+        const auto turn=h.Turn(state,"north");
+        INV(h.geometry_calls==1&&h.narration_calls==1&&h.interpretation_calls==0);
+        INV(state.investigation.decisions.back().opportunity_ids==selected);
+        INV(state.investigation.evidence.empty());
+        INV(state.objects.instances.size()==3+selected.size()-(selected.size()==4?1:0));
+        auto journal=state.investigation;h.Turn(state,"south");h.Turn(state,"north");
+        INV(h.creation_calls==1&&SerializeInvestigation(state.investigation)==SerializeInvestigation(journal));
+    }
+    for(const auto* fault:{"missing","stale","invalid","incomplete","closed_barrier","duplicate"}) {
+        auto state=initial;const auto before=Snapshot(state);Harness h(0);h.schedule={{"crystal_sample","invisible_obstruction"}};h.proposal_fault=fault;
+        HeadlessTurnResult turn;
+        INV(!RunHeadlessTurnFromState(state,"north",h.cfg,&turn,error,sizeof(error)));
+        UpdateSessionStateFromTurn("north",turn,&state);INV(Snapshot(state)==before);
+        INV(turn.investigation_placement_rejected&&!turn.accepted&&!turn.generated_room_created);
+    }
+    {
+        auto state=initial;Harness h(0);h.schedule={{}};h.proposal_fault="invented_deposit";
+        const auto turn=h.Turn(state,"north");
+        INV(turn.used_turn_fallback&&state.investigation.decisions.back().opportunity_ids.empty());
+        INV(state.objects.instances.size()==3);
+        INV(json::parse(turn.narrative_metrics_json)["fallback_reason"]=="dynamic_object_coverage");
+    }
+    for(const auto language:{kGameLanguageEnglish,kGameLanguageFrench,kGameLanguageNorwegian,
+                            kGameLanguageDanish,kGameLanguageGerman,kGameLanguageItalian}) {
+        auto state=initial;state.language=language;Harness h(0);h.schedule={{"crystal_sample","vey_survey"}};h.bad_prose=true;
+        const auto turn=h.Turn(state,"north");
+        INV(turn.used_turn_fallback&&!IsClearlyWrongNarrativeLanguage(turn.turn_result.narration,language));
+        INV(turn.turn_result.narration.find(InvestigationHint("crystal_sample",language))!=std::string::npos);
+        INV(turn.turn_result.narration.find(InvestigationHint("vey_survey",language))!=std::string::npos);
+        INV(state.investigation.evidence.empty());
+    }
+    for(bool thermal:{false,true}) {
+        auto state=initial;Harness h(0);h.schedule=thermal?std::vector<std::vector<std::string>>{{}}:
+            std::vector<std::vector<std::string>>{{"crystal_sample","vey_equipment"}};
+        h.bad_thermal=thermal;h.bad_prose=!thermal;
+        const auto turn=h.Turn(state,"north");INV(turn.used_turn_fallback);
+        const auto decision=SerializeInvestigation(state.investigation);
+        if(thermal)INV(state.generated_rooms.back().metadata_fallback_used);
+        else INV(turn.turn_result.narration.find("crystalline specimen")!=std::string::npos);
+        h.bad_thermal=false;h.bad_prose=false;h.action="perceive";
+        h.Turn(state,"describe the place again");
+        INV(!state.generated_rooms.back().metadata_fallback_used);
+        INV(h.creation_calls==1&&SerializeInvestigation(state.investigation)==decision);
+        h.unexpected=true;h.Turn(state,"look again");
+        INV(SerializeInvestigation(state.investigation)==decision);
+    }
+    {
+        auto state=initial;Harness h(0);h.schedule={{"crystal_sample","vey_equipment","invisible_obstruction"}};
+        h.delivered=false;h.cfg.stream_user_data=&h.delivered;
+        h.cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char*,void* p){return !*static_cast<bool*>(p);};
+        const auto before=Snapshot(state);HeadlessTurnResult turn;
+        INV(!RunHeadlessTurnFromState(state,"north",h.cfg,&turn,error,sizeof(error)));
+        UpdateSessionStateFromTurn("north",turn,&state);INV(Snapshot(state)==before);
+        INV(!turn.investigation_prepared&&!turn.objects_prepared&&h.creation_calls==1);
+        INV(json::parse(turn.investigation_metrics_json)["prepared"]==true); // Prepared then cancelled, not a missing selection.
+    }
 }
-void RunInvestigationJourneyTests() {Journey(0);Journey(1);LastFrontier();}
+}
+void RunInvestigationJourneyTests() {DistributionPublication();Journey(0);Journey(1);LastFrontier();}

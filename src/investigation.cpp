@@ -12,7 +12,18 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InvestigationThread, id, status, evidence_ids
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InvestigationEvidence, id, kind, place_id, object_id, direction, source_event, fact, thread_ids, turn)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InvestigationHypothesis, id, proposition, status, supporting_evidence, contradicting_evidence)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InvestigationOpportunity, id, kind, place_id, object_id, direction, status, turn)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InvestigationState, schema_version, revision, policy, threads, evidence, hypotheses, opportunities)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InvestigationDecision, place_id, origin, opportunity_ids, committed_turn)
+void to_json(json& j,const InvestigationState& s) {
+    j={{"schema_version",s.schema_version},{"revision",s.revision},{"policy",s.policy},{"threads",s.threads},
+       {"evidence",s.evidence},{"hypotheses",s.hypotheses},{"opportunities",s.opportunities},{"decisions",s.decisions}};
+}
+void from_json(const json& j,InvestigationState& s) {
+    j.at("schema_version").get_to(s.schema_version);j.at("revision").get_to(s.revision);j.at("policy").get_to(s.policy);
+    j.at("threads").get_to(s.threads);j.at("evidence").get_to(s.evidence);j.at("hypotheses").get_to(s.hypotheses);
+    j.at("opportunities").get_to(s.opportunities);
+    if(s.schema_version==2)j.at("decisions").get_to(s.decisions);
+    else s.decisions.clear();
+}
 namespace {
 template<class T> const T* Find(const std::vector<T>& entries, const std::string& id) {
     for(const auto& entry:entries)if(entry.id==id)return &entry;
@@ -45,7 +56,7 @@ std::vector<std::string> ThreadsFor(const std::string& id) {
 std::string KindFor(const std::string& id) {
     return id=="crystal_acquired"?"acquisition":id=="obstruction_contact"?"contact":"observation";
 }
-void Derive(InvestigationState* s) {
+void Derive(InvestigationState* s,bool legacy=false) {
     s->threads.clear();
     for(const auto* id:{"vey","obstruction","crystal"}) {
         InvestigationThread t;t.id=id;
@@ -59,11 +70,11 @@ void Derive(InvestigationState* s) {
     s->hypotheses.clear();
     for(const auto* id:{"vey_prospecting","vey_stayed_at_sample"}) {
         InvestigationHypothesis h;h.id=id;h.proposition=InvestigationHypothesisText(id,kGameLanguageEnglish);
-        if(Find(s->evidence,"vey_equipment"))h.supporting_evidence.push_back("vey_equipment");
+        if((legacy||h.id=="vey_prospecting")&&Find(s->evidence,"vey_equipment"))h.supporting_evidence.push_back("vey_equipment");
         if(h.id=="vey_prospecting") {
             if(Find(s->evidence,"vey_survey"))h.supporting_evidence.push_back("vey_survey");
         } else {
-            if(Find(s->evidence,"crystal_acquired")&&Find(s->evidence,"vey_equipment"))
+            if(legacy&&Find(s->evidence,"crystal_acquired")&&Find(s->evidence,"vey_equipment"))
                 h.supporting_evidence.push_back("crystal_acquired");
             if(Find(s->evidence,"vey_survey"))h.contradicting_evidence.push_back("vey_survey");
         }
@@ -113,7 +124,31 @@ bool Fail(std::string* error,const char* message) {if(error)*error=message;retur
 
 void EnsureInvestigation(SessionState* state) {
     if(!state)return;
+    if(state->investigation.schema_version==1) {
+        state->investigation.schema_version=2;state->investigation.policy="eryx-clues-llm-v2";
+        PreserveLegacyInvestigationPlaces(state);
+    }
     Derive(&state->investigation);Projection(state);
+}
+void PreserveLegacyInvestigationPlaces(SessionState* state) {
+    std::vector<std::string> places={state->origin_place_id};
+    for(const auto& room:state->generated_rooms)places.push_back(room.room_id);
+    for(const auto& place:places) {
+        if(place.empty())continue;
+        bool found=false;for(const auto& d:state->investigation.decisions)if(d.place_id==place)found=true;
+        if(found)continue;
+        InvestigationDecision d;d.place_id=place;d.origin="legacy_preserved";d.committed_turn=state->hard_state.turn_number;
+        for(const auto& o:state->investigation.opportunities)if(o.place_id==place)d.opportunity_ids.push_back(o.id);
+        state->investigation.decisions.push_back(d);
+    }
+}
+bool InvestigationDecisionsPreserved(const SessionState& before,const SessionState& after) {
+    for(const auto& old:before.investigation.decisions) {
+        bool found=false;for(const auto& d:after.investigation.decisions)
+            if(d.place_id==old.place_id&&json(d)==json(old))found=true;
+        if(!found)return false;
+    }
+    return true;
 }
 std::string SerializeInvestigation(const InvestigationState& state) {return json(state).dump();}
 bool ParseInvestigation(const std::string& text,InvestigationState* state,std::string* error) {
@@ -127,15 +162,20 @@ bool ParseInvestigation(const std::string& text,InvestigationState* state,std::s
         for(const auto* collection:{"evidence","opportunities"})for(const auto& entry:document.at(collection))
             if(!integer(entry.at("turn")))return Fail(error,"evidence turn must be a bounded integer");
         auto parsed=document.get<InvestigationState>();
-        if(parsed.schema_version!=1||parsed.revision<0||parsed.policy!="eryx-clues-v1"||
+        if((parsed.schema_version!=1&&parsed.schema_version!=2)||parsed.revision<0||
+           parsed.policy!=(parsed.schema_version==1?"eryx-clues-v1":"eryx-clues-llm-v2")||
            parsed.opportunities.size()>4||parsed.evidence.size()>6||parsed.threads.size()!=3||parsed.hypotheses.size()!=2)
             return Fail(error,"invalid investigation version or bounds");
+        if(parsed.schema_version==2)for(const auto& d:document.at("decisions"))
+            if(!integer(d.at("committed_turn")))return Fail(error,"invalid decision turn");
         *state=std::move(parsed);return true;
     } catch(const std::exception& e) {if(error)*error=e.what();return false;}
 }
 bool ValidateInvestigation(const SessionState& state,std::string* error) {
     const auto& s=state.investigation;
-    if(s.schema_version!=1||s.revision<0||s.policy!="eryx-clues-v1"||s.opportunities.size()>4||s.evidence.size()>6)
+    const bool legacy=s.schema_version==1;
+    if((s.schema_version!=1&&s.schema_version!=2)||s.revision<0||
+       s.policy!=(legacy?"eryx-clues-v1":"eryx-clues-llm-v2")||s.opportunities.size()>4||s.evidence.size()>6)
         return Fail(error,"invalid investigation header");
     std::set<std::string> ids;
     for(const auto& o:s.opportunities) {
@@ -173,26 +213,26 @@ bool ValidateInvestigation(const SessionState& state,std::string* error) {
         bool found=false;for(const auto& e:s.evidence)if(OpportunityForEvidence(e.id)==o.id)found=true;
         if(!found)return Fail(error,"discovered opportunity without evidence");
     }
-    auto derived=s;Derive(&derived);
+    if(!legacy) {
+        std::set<std::string> places,assigned;
+        for(const auto& d:s.decisions) {
+            if(!KnownPlace(state,d.place_id)||!places.insert(d.place_id).second||
+               (d.origin!="llm"&&d.origin!="legacy_preserved")||d.committed_turn<0||d.committed_turn>state.hard_state.turn_number||
+               (d.place_id==state.origin_place_id&&d.origin!="legacy_preserved"))return Fail(error,"invalid placement decision");
+            for(const auto& id:d.opportunity_ids) {
+                const auto* o=Find(s.opportunities,id);
+                if(!o||o->place_id!=d.place_id||!assigned.insert(id).second||
+                   (d.origin=="llm"&&o->turn!=d.committed_turn))return Fail(error,"decision disagrees with opportunity");
+            }
+        }
+        if(!places.count(state.origin_place_id)||assigned.size()!=s.opportunities.size())return Fail(error,"missing placement decision");
+        for(const auto& room:state.generated_rooms)if(!places.count(room.room_id))return Fail(error,"undecided accepted place");
+    }
+    auto derived=s;Derive(&derived,legacy);
     if(json(derived.threads)!=json(s.threads)||json(derived.hypotheses)!=json(s.hypotheses))return Fail(error,"unjustified conclusion");
     return true;
 }
 
-std::string SelectInvestigationOpportunity(const SessionState& state,unsigned int seed) {
-    // Rotate three independent leads; a fourth opportunity corroborates Vey.
-    const char* first[]={"crystal_sample","invisible_obstruction","vey_equipment"};
-    for(unsigned int i=0;i<3;++i) {
-        const std::string id=first[(i+seed%3)%3];
-        if(!Find(state.investigation.opportunities,id))return id;
-    }
-    return Find(state.investigation.opportunities,"vey_survey")?"":"vey_survey";
-}
-std::string InvestigationScenicBrief(const std::string& id) {
-    if(id.empty())return {};
-    if(id=="invisible_obstruction")return "A scenario opportunity is reserved, not a discovery: leave a visibly clear approach besides the return and, where possible, another onward approach. An invisible obstruction may be registered there by the engine. Do not draw a wall or glass for it. Do not reveal a contact or an explanation.";
-    return "A scenario opportunity is reserved, not a discovery: "+InvestigationHint(id,kGameLanguageEnglish)+
-        " Leave visible accessible ground near the viewpoint for a small mobile marker supplied separately by the engine. Compose freely; no mandatory architectural type. Do not draw or duplicate the marker in the base geometry. Its hidden identification is not known to the explorer.";
-}
 bool PrepareInvestigationOpportunity(const SessionState& state,const std::string& id,const std::string& place,
     CardinalDirection direction,const ObjectPlacement* placement,SessionState* candidate,std::string* error) {
     if(!candidate||!KnownOpportunity(id)||Find(state.investigation.opportunities,id)||!KnownPlace(state,place))

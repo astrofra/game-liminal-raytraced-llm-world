@@ -45,6 +45,8 @@ std::string ObjectPresenceText(const SessionState& state, bool include_sources =
 std::string ObjectActionText(const SessionState& state, const std::string& action, const std::string& id);
 std::string ObjectRefusalText(GameLanguage language, const std::string& reason);
 bool FindObjectPlacement(const Scene& scene, const SessionState& state, ObjectPlacement* placement);
+std::vector<ObjectPlacement> FindObjectPlacements(const Scene& scene, const SessionState& state, size_t maximum);
+bool ObjectPlacementsVisible(const std::string& base, const SessionState& state, std::string* error);
 bool BuildObjectScene(const std::string& base, const SessionState& state,
     std::string* composed, Scene* scene, std::string* error);
 } // namespace liminal

@@ -57,6 +57,7 @@ struct HeadlessTurnConfig {
 struct HeadlessTurnResult {
     InvestigationState initial_investigation, updated_investigation;
     bool investigation_prepared = false;
+    bool investigation_placement_rejected = false;
     std::string investigation_metrics_json;
     AudioMixDecision audio_mix;
     ObjectState updated_objects;

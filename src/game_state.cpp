@@ -1589,12 +1589,14 @@ bool ParseSessionStateFromJson(
                 if(!IsKnownPlaceIdInSession(*state,source.place_id)||ObjectEvidence(*state,source.place_id).find(source.quote)==std::string::npos)
                     throw std::runtime_error("Object source has no retained literary reference");
             }
+            for(const auto& mention:state->objects.mentions)if(!IsKnownPlaceIdInSession(*state,mention.place_id))
+                throw std::runtime_error("Object mention references an unknown place");
         } else EnsureObjectRegistry(state);
         if(root.contains("investigation")) {
             std::string why;
             if(!ParseInvestigation(root.at("investigation").dump(),&state->investigation,&why)||
                !ValidateInvestigation(*state,&why))throw std::runtime_error(why);
-        }
+        } else PreserveLegacyInvestigationPlaces(state);
         EnsureInvestigation(state);
         return true;
     } catch (const std::exception& exception) {

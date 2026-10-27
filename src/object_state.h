@@ -28,5 +28,8 @@ struct ObjectState {
     std::map<std::string, ObjectInstance> instances;
     std::map<std::string, std::vector<ObjectPlacement>> deposits;
     std::vector<ObjectSource> sources;
+    // Attested noun spans tied to an explicit identity, even after relocation.
+    struct Mention { std::string place_id, object_id, quote; };
+    std::vector<Mention> mentions;
 };
 } // namespace liminal

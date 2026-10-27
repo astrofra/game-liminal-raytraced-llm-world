@@ -116,4 +116,26 @@ bool BuildObjectScene(const std::string& base,const SessionState& state,std::str
     if(!LoadSceneFromSceneText("objects.scene",text.c_str(),scene,buffer,sizeof(buffer))){if(error)*error=buffer;return false;}
     if(composed)*composed=text;return true;
 }
+std::vector<ObjectPlacement> FindObjectPlacements(const Scene& scene,const SessionState& state,size_t maximum) {
+    std::vector<ObjectPlacement> result;auto occupied=state;
+    while(result.size()<maximum) {
+        ObjectPlacement p;if(!FindObjectPlacement(scene,occupied,&p))break;
+        occupied.objects.deposits[state.current_place_id].push_back(p);result.push_back(p);
+    }
+    return result;
+}
+bool ObjectPlacementsVisible(const std::string& base,const SessionState& state,std::string* error) {
+    const auto found=state.objects.deposits.find(state.current_place_id);
+    if(found==state.objects.deposits.end())return true;
+    for(const auto& target:found->second) {
+        auto others=state;auto& deposits=others.objects.deposits[state.current_place_id];
+        deposits.erase(std::remove_if(deposits.begin(),deposits.end(),[&](const ObjectPlacement& p){return p.object_id==target.object_id;}),deposits.end());
+        Scene composed;std::string program;
+        if(!BuildObjectScene(base,others,&program,&composed,error))return false;
+        if(!Visible(composed,Vec3(target.x,target.y+.10f,target.z))) {
+            if(error)*error="selected objects occlude one another";return false;
+        }
+    }
+    return true;
+}
 } // namespace liminal

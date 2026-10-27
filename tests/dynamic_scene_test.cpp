@@ -1,3 +1,4 @@
+#include "investigation.h"
 #include "player_action_fixture.h"
 #include "narrative_language.h"
 #include "dynamic_scene.h"
@@ -283,6 +284,7 @@ static void PersistenceAndNavigation() {
     state.invisible_barriers.clear();state.next_generated_room_index=900001;
     GeneratedRoom original;original.room_id=state.current_place_id;original.spatial_state=state.spatial_state;original.scene_text=program;
     state.generated_rooms.push_back(original);
+    state.investigation.decisions.clear();PreserveLegacyInvestigationPlaces(&state);
     std::string before;CHECK(SerializeSessionStateToJsonString(state,&before));
     HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.dynamic_scenes=true;cfg.request_candidate_scene=false;int calls=0;
     cfg.dynamic_scene_config.completion=Completion(&calls,10);
@@ -1260,7 +1262,8 @@ static void CoplanarSupportJourney() {
 int main() {
     extern void RunInvestigationContractTests();
     extern void RunInvestigationJourneyTests();
+    extern void RunInvestigationDistributionTests();
     RunAudioTurnTests();
-    try {RunInvestigationContractTests();RunInvestigationJourneyTests();RunObjectSemanticTests();RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
+    try {RunInvestigationDistributionTests();RunInvestigationContractTests();RunInvestigationJourneyTests();RunObjectSemanticTests();RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

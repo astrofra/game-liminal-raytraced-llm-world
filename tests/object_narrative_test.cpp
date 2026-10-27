@@ -1,3 +1,4 @@
+#include "investigation.h"
 #include "player_action_fixture.h"
 #include "object_interactions.h"
 #include "turn_runner.h"
@@ -69,6 +70,7 @@ SessionState Fixture() {
     room.arrival_narration = room.spatial_state.room_summary;
     state.generated_rooms.push_back(room);
     state.reference_descriptions[kPlace] = room.arrival_narration;
+    state.investigation.decisions.clear();liminal::PreserveLegacyInvestigationPlaces(&state);
     return state;
 }
 

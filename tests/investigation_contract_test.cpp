@@ -51,6 +51,7 @@ void AddPlace(SessionState& state, const std::string& id, const std::string& tit
     room.spatial_state.location_id = kLocationUnknown;
     room.scene_text = title;
     state.generated_rooms.push_back(room);
+    PreserveLegacyInvestigationPlaces(&state);
 }
 
 void SetCurrentPlace(SessionState& state, const std::string& id) {
@@ -178,8 +179,13 @@ bool PrepareOpportunity(const SessionState& source, const std::string& id,
                         const ObjectPlacement* placement, SessionState* candidate,
                         std::string* error) {
     *candidate = source;
-    return PrepareInvestigationOpportunity(
-        source, id, place, direction, placement, candidate, error);
+    if(!PrepareInvestigationOpportunity(source,id,place,direction,placement,candidate,error))return false;
+    // This historical fixture directly authors a preserved world, outside runtime distribution.
+    for(auto& decision:candidate->investigation.decisions)if(decision.place_id==place) {
+        decision.opportunity_ids.clear();
+        for(const auto& o:candidate->investigation.opportunities)if(o.place_id==place)decision.opportunity_ids.push_back(o.id);
+    }
+    return true;
 }
 
 bool PrepareObservation(const SessionState& source, const std::string& id, int revision,

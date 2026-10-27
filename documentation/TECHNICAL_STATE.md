@@ -24,7 +24,10 @@ réelles des limites de qualification restantes.
 ## Jeu et recherche
 
 - [Enquête à indices](ENQUETE_INDICES.md) : état versionné et révisé, quatre
-  possibilités distribuées dans les nouveaux lieux compatibles, cristal lié
+  possibilités dont la [répartition est choisie par le LLM](REPARTITION_INDICES_LLM.md)
+  dans l'appel narratif de création, après la géométrie. Schéma 2,
+  décisions persistantes par lieu, choix vides et regroupements autorisés,
+  aucune rotation C++ ni quota ; cristal lié
   au registre d'objets, contact invisible effectif et deux traces de Vey.
   Preuves et hypothèses distinctes, bilan interprété par le LLM puis restitué
   depuis l'état validé, six langues, publication atomique et migration sans
