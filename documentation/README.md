@@ -9,6 +9,7 @@ Les archives de recherche ne servent jamais à reprendre une partie.
 - [État technique actuel](TECHNICAL_STATE.md)
 - [Partie, génération et archives](SINGLE_START_RESEARCH.md)
 - [Continuité des scènes : implémentation et recette](CONTINUITE_SCENES.md)
+- [Note : influence possible du scénario sur la qualité des scènes](NOTE_SCENARIO_ET_QUALITE_SCENES.md)
 - [Correction des faces coplanaires avant le verre](CORRECTION_COPLANAIRE.md)
 - [Soutiens de verre : implémentation, comparaisons et limites](SOUTIENS_VERRE.md)
 - [Runtime autonome : livraison et preuves](BILAN_RUNTIME_AUTONOME.md)
