@@ -37,7 +37,7 @@ continue de cinq secondes. Le seuil initial possède un mix pré-scripté, audib
 dès le premier écran par cette même montée progressive, sans attendre une commande.
 Voir le [guide audio et le diagnostic de mixage](documentation/AUDIO_AMBIENCE.md).
 
-Gemma 4 E4B Q4_K_M tourne dans le processus via **llama.cpp intégré**. Aucun
+Sous Windows, Gemma 4 E4B Q4_K_M tourne dans le processus via **llama.cpp intégré**. Aucun
 service, serveur, compte ou accès Internet n'est nécessaire pour jouer après installation.
 L'installeur télécharge le modèle en dernière phase, puis le jeu fonctionne hors ligne.
 Le modèle est vérifié au premier appel et reste chargé jusqu'à la fermeture.
@@ -56,6 +56,22 @@ Tous les lieux restent en mémoire pendant la partie ; seul l'extrait d'historiq
 envoyé au modèle est réduit selon son budget de tokens.
 Descriptions, `.scene`, images et résultats sont archivés sous
 `%LOCALAPPDATA%/WithinTheLatentWalls/research/`, sans réutilisation au lancement suivant.
+
+## macOS Apple Silicon
+
+Le portage macOS utilise **MLX / Apple Metal** pour Gemma 4 E4B, avec un worker
+local lancé par le jeu, sans serveur ni connexion après préparation.
+
+```sh
+python3.12 scripts/setup_macos.py
+python3 scripts/build_macos.py --test --publish
+./play_within_the_latent_walls.command
+```
+
+macOS 14+, Python 3.12, Xcode Command Line Tools, CMake et Ninja sont requis.
+Le bundle local est `output/macos/Within the Latent Walls.app` ; il utilise
+l'environnement Python et les poids du dépôt. Voir le [guide macOS](documentation/MACOS.md)
+pour les prérequis, les archives, les limites et la recette.
 
 ## Construire
 

@@ -40,3 +40,5 @@ Les anciens bilans, contrats et revues décrivent les résultats de leur date.
 Ils ne définissent ni le backend actuel ni les commandes de construction.
 Les rapports retirés et leurs images sont conservés dans l'archive de recherche.
 Le [suivi du duo](duo/PROGRESS.md) est distinct du runtime livré au joueur.
+
+- [Portage macOS Apple Silicon / MLX](MACOS.md) : préparation, bundle local et qualification.

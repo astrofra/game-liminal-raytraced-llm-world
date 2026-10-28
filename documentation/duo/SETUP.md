@@ -72,3 +72,13 @@ Les restrictions du kit limitent les outils à `view`, `glob`, `grep`, `create`,
 - [Installation officielle Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli).
 - [Fournisseurs personnalisés Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-byok-models).
 - [Connexion Ollama Cloud](https://docs.ollama.com/cloud).
+
+## Machine macOS du portage — 28 octobre 2026
+
+Kit demandé par l'utilisateur : `/Users/fra/dev/duo-codex-copilot-ollama`.
+Worktrees : `/Users/fra/dev/duo-worktrees/game-liminal-raytraced-llm-world/`.
+Journaux et profils privés : `/Users/fra/dev/duo-runs/game-liminal-raytraced-llm-world/`.
+Doctor réussi : Python 3.14.7, Copilot 1.0.95, modèle exact
+`deepseek-v4.1-flash:cloud`. Lots réels et revus : MAC-001 et MAC-003R1.
+Le Python du duo est distinct du Python 3.12 du runtime MLX du jeu.
+Les chemins Windows ci-dessus restent l'implantation historique.

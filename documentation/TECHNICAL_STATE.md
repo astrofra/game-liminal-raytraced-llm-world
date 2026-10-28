@@ -1,11 +1,20 @@
-# État technique — 27 octobre 2026
+# État technique — 28 octobre 2026
 
 ## Runtime actuel
 
-C++17, SDL3/SDL_ttf, raytracer CPU et llama.cpp lié dans le processus.
+C++17, SDL3/SDL_ttf et raytracer CPU. Sous Windows, llama.cpp est lié dans le processus.
 Gemma 4 E4B Instruct Q4_K_M, artefact unique défini par `scripts/models.json`.
 Vendor épinglé : `620d2225cc436ab0b001e3200e590e3b286ef9ab`.
 Aucun service d'inférence n'est nécessaire au jeu.
+
+Sur la branche `macos-port`, Apple Silicon utilise MLX-LM 0.32.2 / MLX 0.32.4
+avec Gemma 4 E4B Safetensors 4 bits, manifeste séparé `scripts/models_mlx.json`.
+Un worker Python local persistant communique par canal privé ; aucun serveur
+ni téléchargement au runtime. Les requêtes sont indépendantes et annulables,
+le tokenizer réel compte le contexte, le JSON est contraint puis intégralement
+validé. Le moteur garde la même autorité. Build arm64 et bundle local `.app` :
+[guide macOS](MACOS.md), [recette](duo/reviews/MAC-002.md).
+Les paragraphes llama.cpp ci-dessous décrivent le backend Windows.
 
 Les poids sont vérifiés par SHA-256 au premier chargement, puis conservés
 jusqu'à la fermeture. Les appels sont sérialisés ; contexte, cache KV, sampler
