@@ -24,7 +24,7 @@ def main():
     out.mkdir(parents=True, exist_ok=False)
     prompt = out / 'prompt.json'
     prompt.write_text(json.dumps([{'role': 'user', 'content': 'Return exactly {"ok":false,"extra":123}.'}]))
-    schema = out / 'schema.json'
+    schema = out / 'constraint.json'
     schema.write_text(json.dumps({'type': 'object', 'properties': {'ok': {'const': True}},
                                  'required': ['ok'], 'additionalProperties': False}))
     manifest = json.loads((ROOT / 'scripts/models_mlx_cpp.json').read_text())
@@ -49,6 +49,7 @@ def main():
     base = [str(exe), '--llm-probe', str(prompt), '--llm-probe-schema', str(schema), '--llm-predict', '128']
     for name, flags, expected in cases:
         target = out / (name + '.json')
+        assert target not in (prompt, schema), 'Probe output must never overwrite an input'
         with (out / (name + '.log')).open('wb') as log:
             process = subprocess.run([*base, '--llm-probe-output', str(target), *flags],
                                      stdout=log, stderr=log, timeout=300, cwd=out)
