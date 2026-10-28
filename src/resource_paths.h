@@ -32,6 +32,10 @@ inline std::filesystem::path ResourceRoot() {
         if (length > 0) executable = std::string(buffer, static_cast<size_t>(length));
 #endif
         const auto base = executable.parent_path();
+#if defined(__APPLE__)
+        const auto resources = base.parent_path() / "Resources";
+        if (std::filesystem::is_regular_file(resources / "assets/scenes/eryx_quarry_threshold.scene")) return resources;
+#endif
         auto candidate = base;
         for (int depth=0; depth<4 && !candidate.empty(); ++depth) {
             if (std::filesystem::is_regular_file(candidate / "assets/scenes/eryx_quarry_threshold.scene")) return candidate;

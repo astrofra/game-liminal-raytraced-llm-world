@@ -34,6 +34,9 @@ std::string Number(unsigned int value) {
     std::ostringstream out;out<<std::setw(5)<<std::setfill('0')<<value;return out.str();
 }
 std::filesystem::path DefaultRoot() {
+#if defined(__APPLE__)
+    if(const char* home=std::getenv("HOME"))return std::filesystem::u8path(home)/"Library"/"Application Support"/"WithinTheLatentWalls"/"research";
+#endif
     if(const char* local=std::getenv("LOCALAPPDATA"))return std::filesystem::u8path(local)/"WithinTheLatentWalls"/"research";
     if(const char* data=std::getenv("XDG_DATA_HOME"))return std::filesystem::u8path(data)/"within-the-latent-walls"/"research";
     if(const char* home=std::getenv("HOME"))return std::filesystem::u8path(home)/".local"/"share"/"within-the-latent-walls"/"research";

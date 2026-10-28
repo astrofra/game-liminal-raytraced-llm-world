@@ -21,3 +21,8 @@ __pycache__/
 /build_noomp
 /build_functional
 /%TEMP%
+
+# Local macOS inference environment and weights
+.venv-mlx/
+models/mlx/
+output/macos/

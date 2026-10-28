@@ -41,3 +41,14 @@ revues restent des traces datées, pas des instructions de lancement actuelles.
 Aucun commit ni push effectué par Codex.
 
 Précision produit du 26 octobre 2026, traitée directement par Codex car elle modifie la sémantique : la roadmap distingue désormais les cibles implicites issues de la description littéraire et les objets explicitement déposés. Une reprise retire l'entrée de la liste de la pièce ; une première prise implicite matérialise l'objet et mémorise son retrait. Lots et recette adaptés ; aucun code changé ni nouveau run DeepSeek.
+
+## Portage macOS — 28 octobre 2026
+
+| Lot | État | Résultat |
+|---|---|---|
+| MAC-001 | Validé (audit statique) | [Revue](reviews/MAC-001.md), audit DeepSeek réel, intégré sélectivement |
+| MAC-002 | En cours (Codex) | Backend MLX, build arm64 et qualification locale |
+
+Branche `macos-port`, commits autorisés par l'utilisateur avec le nom Astrofra ; aucun push.
+Kit macOS : `/Users/fra/dev/duo-codex-copilot-ollama`. Journaux hors dépôt :
+`/Users/fra/dev/duo-runs/game-liminal-raytraced-llm-world/`.
