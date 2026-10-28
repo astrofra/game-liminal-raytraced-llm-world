@@ -73,6 +73,7 @@ static void PrintUsage()
     printf("  --sdl-smoke-test-ms <n> Auto-select a language and close SDL cleanly after n milliseconds\n");
     printf("  --sdl-smoke-command <text> Inject text and Return during the timed SDL smoke test\n");
     printf("  --write-initial-state <json> Export canonical initial state without inference\n");
+    printf("  --llm-backend <name>     LLM runtime: llama, native, cpu-ref (default from LIMINAL_LLM_BACKEND)\n");
     printf("  --llm-profile <name>     gemma-4-e4b-q4\n");
     printf("  --llm-context <n>        Fixed context limit (default 8192)\n");
     printf("  --continuity-memory-tokens <n>  Recent memory cap (default 1024; output reserve unchanged)\n");
@@ -639,6 +640,11 @@ int main(int argc, char** argv)
         }
         if (strcmp(argv[index], "--sdl-smoke-command") == 0 && index + 1 < argc) {
             sdl_smoke_test_command = argv[++index];
+            continue;
+        }
+        if (strcmp(argv[index], "--llm-backend") == 0 && index + 1 < argc) {
+            std::string error;
+            if (!liminal::SelectLlmBackend(argv[++index], &error)) { fprintf(stderr, "%s\n", error.c_str()); return 1; }
             continue;
         }
         if (strcmp(argv[index], "--llm-profile") == 0 && index + 1 < argc) {

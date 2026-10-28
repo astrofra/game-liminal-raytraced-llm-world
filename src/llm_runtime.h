@@ -104,6 +104,8 @@ LlmRuntimeTotals QueryLlmRuntimeTotals();
 typedef bool (*LlmStreamCallback)(const char* accumulated_text, const char* delta_text, void* user_data);
 
 bool ConfigureLlmProfile(const std::string& name, LlmGenerationConfig* config, std::string* error);
+// Overrides LIMINAL_LLM_BACKEND (llama by default); unloads a model resident in another backend.
+bool SelectLlmBackend(const std::string& name, std::string* error);
 bool InitializeLlmRuntime();
 void ShutdownLlmRuntime();
 bool QueryLlmRuntimeInfo(LlmRuntimeInfo* info);
