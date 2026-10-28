@@ -76,8 +76,8 @@ SYSTEM_DLLS = {
     "version.dll",
     "winmm.dll",
     "ws2_32.dll",
-    # NVIDIA's driver DLL is supplied by the installed graphics driver.
-    "nvcuda.dll",
+    # The Vulkan loader ships with every GPU driver; the LLM engine opens it at run time.
+    "vulkan-1.dll",
 }
 
 
@@ -161,12 +161,6 @@ def find_dumpbin() -> Path:
 
 def find_runtime_directories() -> list[tuple[str, Path]]:
     directories: list[tuple[str, Path]] = []
-
-    cuda_path = os.environ.get("CUDA_PATH")
-    if cuda_path:
-        cuda_bin = Path(cuda_path) / "bin"
-        if cuda_bin.is_dir():
-            directories.append(("NVIDIA CUDA runtime", cuda_bin.resolve()))
 
     vs_roots = [
         Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
@@ -291,9 +285,8 @@ def copy_distribution_payload(version: str, *, include_model: bool = False) -> N
         raise RuntimeError("Release executable differs from its recorded build")
     if provenance.get("model_manifest_sha256") != sha256_file(PROJECT_ROOT / "scripts/models.json"):
         raise RuntimeError("Model manifest differs from the native build; rebuild before packaging")
-    expected_commit = (PROJECT_ROOT / "vendor/llama.cpp/VENDORED_COMMIT.txt").read_text().strip()
-    if provenance.get("llama_cpp_commit") != expected_commit:
-        raise RuntimeError("Native build and packaged vendor revision differ")
+    if not provenance.get("engine_commit"):
+        raise RuntimeError("Build provenance has no engine commit; rebuild with scripts/build_native.py")
     model_source = PROJECT_ROOT / MODEL_RELATIVE_PATH
     if include_model and (not model_source.is_file() or model_source.stat().st_size != MODEL_SIZE or sha256_file(model_source) != MODEL_SHA256):
         raise RuntimeError("The pinned Gemma model is missing or invalid; run download_gemma.bat before packaging")
@@ -315,14 +308,16 @@ def copy_distribution_payload(version: str, *, include_model: bool = False) -> N
 
     license_dir = STAGE_DIR / "licenses" / "third-party"
     license_dir.mkdir(parents=True)
-    cuda_path_value = os.environ.get("CUDA_PATH", "").strip()
-    if not cuda_path_value:
-        raise RuntimeError("CUDA_PATH is required to package the CUDA redistribution notices.")
-    cuda_root = Path(cuda_path_value)
     third_party_licenses = [
         (PROJECT_ROOT / "vendor" / "stb" / "VORBIS-LICENSE", "stb-vorbis-LICENSE.txt"),
         (PACKAGING_DIR / "Gemma-LICENSE.txt", "Gemma-LICENSE.txt"),
-        (PROJECT_ROOT / "vendor" / "llama.cpp" / "LICENSE", "llama.cpp-LICENSE.txt"),
+        (PROJECT_ROOT / "engine" / "licenses" / "llama.cpp-LICENSE.txt", "llama.cpp-LICENSE.txt"),
+        (PROJECT_ROOT / "engine" / "licenses" / "nlohmann-json-LICENSE.txt", "nlohmann-json-LICENSE.txt"),
+        (PROJECT_ROOT / "engine" / "licenses" / "picojson-LICENSE.txt", "picojson-LICENSE.txt"),
+        (PROJECT_ROOT / "engine" / "THIRD_PARTY_NOTICES.md", "LLM-engine-NOTICES.md"),
+        (BUILD_DIR / "_deps" / "xgrammar-src" / "LICENSE", "xgrammar-LICENSE.txt"),
+        (BUILD_DIR / "_deps" / "xgrammar-src" / "NOTICE", "xgrammar-NOTICE.txt"),
+        (BUILD_DIR / "_deps" / "xgrammar-src" / "3rdparty" / "dlpack" / "LICENSE", "dlpack-LICENSE.txt"),
         (BUILD_DIR / "_deps" / "sdl3-src" / "LICENSE.txt", "SDL3-LICENSE.txt"),
         (BUILD_DIR / "_deps" / "sdl3_ttf-src" / "LICENSE.txt", "SDL3_ttf-LICENSE.txt"),
         (
@@ -346,8 +341,6 @@ def copy_distribution_payload(version: str, *, include_model: bool = False) -> N
             PROJECT_ROOT / "assets" / "fonts" / "Zilla_Slab_Highlight" / "OFL.txt",
             "Zilla-Slab-Highlight-OFL.txt",
         ),
-        (cuda_root / "LICENSE", "NVIDIA-CUDA-LICENSE.txt"),
-        (cuda_root / "EULA.txt", "NVIDIA-CUDA-EULA.txt"),
     ]
     for source, destination_name in third_party_licenses:
         if not source.is_file():
@@ -376,7 +369,7 @@ def copy_distribution_payload(version: str, *, include_model: bool = False) -> N
         "version": version,
         "executable": STAGED_EXE_NAME,
         "model_embedded": include_model,
-        "llama_cpp_commit": (PROJECT_ROOT / "vendor/llama.cpp/VENDORED_COMMIT.txt").read_text().strip(),
+        "engine_commit": provenance["engine_commit"],
         "model": {
             "profile": MODEL_PROFILE_NAME,
             "repository": MODEL_REPOSITORY,
@@ -402,12 +395,12 @@ def copy_distribution_payload(version: str, *, include_model: bool = False) -> N
 def smoke_test_staged_executable() -> None:
     executable = STAGE_DIR / STAGED_EXE_NAME
     print("Running staged executable smoke test...")
-    result = subprocess.run([str(executable), "--llama-info"], cwd=INSTALLER_ROOT,
+    result = subprocess.run([str(executable), "--llm-info"], cwd=INSTALLER_ROOT,
                             capture_output=True, text=True, check=True)
     print(result.stdout, end="")
-    expected_commit = (PROJECT_ROOT / "vendor/llama.cpp/VENDORED_COMMIT.txt").read_text().strip()
-    if f"llama.cpp vendored commit: {expected_commit}" not in result.stdout:
-        raise RuntimeError("Staged binary and packaged llama.cpp source revision differ")
+    provenance = json.loads((STAGE_DIR / "runtime-build.json").read_text(encoding="utf-8"))
+    if f"LLM engine commit: {provenance['engine_commit']}" not in result.stdout:
+        raise RuntimeError("Staged binary and recorded engine revision differ")
 
 
 def download_verified(url: str, expected_sha256: str, destination: Path) -> None:
@@ -540,12 +533,17 @@ def iter_source_files() -> list[tuple[Path, Path]]:
         (PROJECT_ROOT / "scripts", Path("scripts")),
         (PROJECT_ROOT / "tests", Path("tests")),
         (PROJECT_ROOT / "packaging", Path("packaging")),
+        (PROJECT_ROOT / "engine", Path("engine")),
+        (PROJECT_ROOT / "cmake", Path("cmake")),
         (PROJECT_ROOT / "vendor" / "stb", Path("vendor/stb")),
-        (PROJECT_ROOT / "vendor" / "llama.cpp", Path("vendor/llama.cpp")),
+        (PROJECT_ROOT / "vendor" / "nlohmann", Path("vendor/nlohmann")),
+        (PROJECT_ROOT / "vendor" / "hash", Path("vendor/hash")),
+        # Patched by cmake/patch_xgrammar.cmake; usable as FETCHCONTENT_SOURCE_DIR_XGRAMMAR.
+        (BUILD_DIR / "_deps" / "xgrammar-src", Path("external-build-sources/xgrammar")),
         (BUILD_DIR / "_deps" / "sdl3-src", Path("external-build-sources/SDL")),
         (BUILD_DIR / "_deps" / "sdl3_ttf-src", Path("external-build-sources/SDL_ttf")),
     ]
-    excluded_parts = {".git", "__pycache__", ".cache", "CMakeFiles", "node_modules", "build", "build-cuda"}
+    excluded_parts = {".git", "__pycache__", ".cache", "CMakeFiles", "node_modules", "build"}
     for source_root, archive_root in source_trees:
         if not source_root.is_dir():
             raise FileNotFoundError(f"Corresponding-source directory is missing: {source_root}")
@@ -553,8 +551,7 @@ def iter_source_files() -> list[tuple[Path, Path]]:
             parts = source.relative_to(source_root).parts
             if not source.is_file() or any(part in excluded_parts for part in parts[:-1]):
                 continue
-            # llama.cpp ships vocabulary fixtures as GGUF. They are not source code,
-            # are not required to build the game, and must not blur the no-weights rule.
+            # Model files are not source code and must not blur the no-weights rule.
             if source.suffix.lower() == ".gguf":
                 continue
             relative = archive_root / source.relative_to(source_root)

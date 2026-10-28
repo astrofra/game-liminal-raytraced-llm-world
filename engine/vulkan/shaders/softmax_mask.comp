@@ -1,0 +1,46 @@
+#version 450
+// Prefill attention probabilities in place: row (head, query i) of `len`
+// scores for keys key_start.. ; causal and, with window > 0, sliding masks.
+#include "common.glsl"
+layout(local_size_x = 256) in;
+layout(std430, binding = 0) buffer S { float s[]; };
+layout(push_constant) uniform P { uint n; uint len; uint p0; uint key_start; uint window; } p;
+shared float scratch[256];
+
+void main()
+{
+    const uint row = gl_WorkGroupID.x;
+    const uint tid = gl_LocalInvocationID.x;
+    const uint qpos = p.p0 + row % p.n;
+    const uint base = row * p.len;
+    float m = kNegInf;
+    for (uint j = tid; j < p.len; j += 256) {
+        const uint kpos = p.key_start + j;
+        const bool ok = kpos <= qpos && (p.window == 0 || qpos - kpos < p.window);
+        if (ok) m = max(m, s[base + j]);
+    }
+    scratch[tid] = m;
+    barrier();
+    for (uint st = 128; st > 0; st >>= 1) {
+        if (tid < st) scratch[tid] = max(scratch[tid], scratch[tid + st]);
+        barrier();
+    }
+    m = scratch[0];
+    barrier();
+    float sum = 0.0;
+    for (uint j = tid; j < p.len; j += 256) {
+        const uint kpos = p.key_start + j;
+        const bool ok = kpos <= qpos && (p.window == 0 || qpos - kpos < p.window);
+        const float e = ok ? exp(s[base + j] - m) : 0.0;
+        s[base + j] = e;
+        sum += e;
+    }
+    scratch[tid] = sum;
+    barrier();
+    for (uint st = 128; st > 0; st >>= 1) {
+        if (tid < st) scratch[tid] += scratch[tid + st];
+        barrier();
+    }
+    const float inv = 1.0 / scratch[0];
+    for (uint j = tid; j < p.len; j += 256) s[base + j] *= inv;
+}

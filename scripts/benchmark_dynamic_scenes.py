@@ -35,12 +35,11 @@ def load_corpus(path):
             raise ValueError(f"{where}: trois textes d'attendus requis")
         clean.append({key: case[key] for key in ("id", "split", "brief", "entry_direction", "motif", "expectations")})
     return hashlib.sha256(raw).hexdigest(), clean
-def build_cmd(exe, case, method, seed, profile, outdir, gpu_layers=99):
+def build_cmd(exe, case, method, seed, profile, outdir):
     return [str(exe), "--generate-dynamic-scene", str(outdir / "brief.txt"), "--scene-method", method,
             "--scene-entry", case["entry_direction"], "--scene-artifacts", str(outdir / "scene"), "--output", str(outdir / "image.png"),
             "--width", "512", "--height", "256", "--samples", "8", "--llm-profile", profile,
-            "--llm-temperature", "0.6", "--llm-seed", str(seed), "--seed", str(seed), "--scene-timeout-ms", "900000",
-            "--llm-gpu-layers", str(gpu_layers)]
+            "--llm-temperature", "0.6", "--llm-seed", str(seed), "--seed", str(seed), "--scene-timeout-ms", "900000"]
 def metrics_issue(metrics, method, seed):
     if not isinstance(metrics, dict): return "métriques invalides: objet JSON attendu"
     missing = [key for key in METRIC_KEYS if key not in metrics]
@@ -56,14 +55,14 @@ def metrics_issue(metrics, method, seed):
     if metrics["seed"] != seed: return f"métriques incohérentes: seed {metrics['seed']} != {seed}"
     if metrics["method"] != ("local-fixed-v1" if method == "local" else method): return f"métriques incohérentes: method {metrics['method']!r} != {method!r}"
     return None
-def execute(root, exe, case, method, seed, profile, record, gpu_layers=99):
+def execute(root, exe, case, method, seed, profile, record):
     outdir = root / case["id"] / method / str(seed)
     outdir.mkdir(parents=True, exist_ok=True)
     (outdir / "brief.txt").write_text(case["brief"], encoding="utf-8")
     start, returncode, timed_out = time.monotonic(), None, False
     try:
         with open(outdir / "stdout.log", "w", encoding="utf-8", errors="replace") as out, open(outdir / "stderr.log", "w", encoding="utf-8", errors="replace") as err:
-            returncode = subprocess.run(build_cmd(exe, case, method, seed, profile, outdir, gpu_layers), cwd=Path(__file__).resolve().parents[1], stdout=out, stderr=err, timeout=RUN_TIMEOUT, shell=False).returncode
+            returncode = subprocess.run(build_cmd(exe, case, method, seed, profile, outdir), cwd=Path(__file__).resolve().parents[1], stdout=out, stderr=err, timeout=RUN_TIMEOUT, shell=False).returncode
     except subprocess.TimeoutExpired:
         timed_out, record["error"] = True, f"timeout après {RUN_TIMEOUT} s"
     except OSError as exc:
@@ -158,12 +157,10 @@ def main():
     parser.add_argument("--seeds", type=int, nargs="+", default=[77, 1337])
     parser.add_argument("--methods", nargs="+", choices=METHODS, default=list(METHODS))
     parser.add_argument("--profile", default="gemma-4-e4b-q4")
-    parser.add_argument("--gpu-layers", type=int, default=99)
     parser.add_argument("--limit", type=int, default=3)
     parser.add_argument("--split", choices=("calibration", "holdout", "all"), default="calibration")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    if not 0 <= args.gpu_layers <= 999: parser.error("--gpu-layers hors plage 0..999")
     if len(set(args.seeds)) != len(args.seeds) or len(set(args.methods)) != len(args.methods):
         parser.error("Graines et méthodes doivent être uniques")
     if any(seed < 0 or seed > 2147483647 for seed in args.seeds): parser.error("Graines hors plage 0..2147483647")
@@ -177,13 +174,13 @@ def main():
     config = {"exe": str(exe), "output": str(root), "corpus": str(Path(args.corpus).expanduser().resolve()),
               "seeds": args.seeds, "methods": args.methods, "profile": args.profile, "limit": args.limit,
               "split": args.split, "dry_run": args.dry_run, "timeout_seconds": RUN_TIMEOUT,
-              "width": 512, "height": 256, "samples": 8, "scene_timeout_ms": 900000, "temperature": 0.6, "gpu_layers": args.gpu_layers}
+              "width": 512, "height": 256, "samples": 8, "scene_timeout_ms": 900000, "temperature": 0.6}
     if args.dry_run:
         for case in selected:
             for method in args.methods:
                 for seed in args.seeds:
                     outdir = root / case["id"] / method / str(seed)
-                    print(f"[dry-run] output={outdir}"); print("  " + subprocess.list2cmdline(build_cmd(exe, case, method, seed, args.profile, outdir, args.gpu_layers)))
+                    print(f"[dry-run] output={outdir}"); print("  " + subprocess.list2cmdline(build_cmd(exe, case, method, seed, args.profile, outdir)))
         print("[dry-run] aucune exécution, aucun résultat, aucun score."); return 0
     if root.exists() and not root.is_dir(): print(f"Erreur: --output n'est pas un répertoire: {root}", file=sys.stderr); return 2
     for case in selected:
@@ -201,7 +198,7 @@ def main():
                               "returncode": None, "duration_s": None, "error": None, "image": None,
                               "metrics": None, "metrics_error": None}
                     records.append(record)
-                    try: execute(root, exe, case, method, seed, args.profile, record, args.gpu_layers)
+                    try: execute(root, exe, case, method, seed, args.profile, record)
                     except Exception as exc: record["status"], record["error"] = "failure", f"erreur du pilote: {exc!r}"
                     print(f"{record['status']}: {case['id']} / {method} / {seed}", file=sys.stderr)
     except KeyboardInterrupt:

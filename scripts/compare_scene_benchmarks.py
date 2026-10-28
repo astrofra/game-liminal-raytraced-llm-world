@@ -1,6 +1,7 @@
 """Compare saved runs without regenerating or altering their evidence."""
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -8,7 +9,14 @@ import pathlib
 import statistics
 
 from scene_benchmark_quality import audit_camera
-from scene_benchmark_protocol import sha256_file
+
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(16 * 1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def percentile95(values):

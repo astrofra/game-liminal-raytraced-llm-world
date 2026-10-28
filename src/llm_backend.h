@@ -21,7 +21,6 @@ struct LlmLiveness {
 };
 
 struct LlmBackendModel {
-    int offloaded_layers = -1;
     int total_layers = -1;
     std::string device;
 };
@@ -54,8 +53,8 @@ struct LlmBackend {
     void (*close)(LlmBackendSession* session);
 };
 
-const LlmBackend* LlamaLlmBackend();  // nullptr when llama.cpp is not compiled in
-// Dedicated E4B engine; device "cpu-ref" forces the scalar oracle. nullptr when not compiled in.
+// Dedicated E4B engine; device "mlx", "vulkan" or "cpu-ref" (scalar oracle) forces a
+// device, anything else picks the best one. nullptr when not compiled in.
 const LlmBackend* NativeLlmBackend(const std::string& device);
 
 }  // namespace liminal

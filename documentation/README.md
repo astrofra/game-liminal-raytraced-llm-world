@@ -1,6 +1,6 @@
 # Documentation — Within the Latent Walls
 
-État au 27 octobre 2026. Le jeu utilise Gemma dans llama.cpp intégré, avec
+État au 28 octobre 2026. Le jeu utilise Gemma dans son moteur d'inférence dédié (`engine/`), avec
 un runtime autonome après téléchargement du modèle en fin d'installation.
 Les archives de recherche ne servent jamais à reprendre une partie.
 

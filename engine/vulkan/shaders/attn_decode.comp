@@ -1,0 +1,101 @@
+#version 450
+// Decode attention for one query position, split over the key axis (flash
+// decoding). Workgroup (split, kv head) serves the 4 query heads sharing that
+// KV head over keys [split * 64, +64) clipped to the causal/sliding range, in
+// tiles of 16 keys: 4 threads per (head, key) score, then an online softmax and
+// V accumulation where thread t owns HD/64 dimensions of head t / 64. Writes
+// the unnormalized partial output and its (max, sum). Attention scale is 1.
+#include "common.glsl"
+layout(local_size_x = 256) in;
+layout(constant_id = 0) const uint HD = 256;
+layout(constant_id = 1) const uint WINDOW = 0;
+layout(std430, binding = 0) readonly buffer Q { float q[]; };
+layout(std430, binding = 1) readonly buffer KC { float16_t kc[]; };
+layout(std430, binding = 2) readonly buffer VC { float16_t vc[]; };
+layout(std430, binding = 3) writeonly buffer PO { float po[]; };
+layout(std430, binding = 4) writeonly buffer PML { float pml[]; };
+layout(push_constant) uniform P { uint pos; uint cap; uint first_split; uint n_splits; } p;
+
+const uint SPLIT = 64;
+const uint TILE = 16;
+const uint PART = HD / 4;
+const uint DPT = HD / 64;
+shared float qs[4 * HD];
+shared float red[256];
+shared float score[64];
+shared float weight[64];
+shared float corr[4];
+shared float m_run[4];
+shared float l_run[4];
+
+void main()
+{
+    const uint split = gl_WorkGroupID.x;
+    const uint kv = gl_WorkGroupID.y;
+    const uint tid = gl_LocalInvocationID.x;
+    const uint head = tid / 64;
+    for (uint i = tid; i < 4 * HD; i += 256) qs[i] = q[kv * 4 * HD + i];
+    if (tid < 4) { m_run[tid] = kNegInf; l_run[tid] = 0.0; }
+    const int pos = int(p.pos);
+    const int first_key = WINDOW > 0 ? max(0, pos - int(WINDOW) + 1) : 0;
+    int begin = int((p.first_split + split) * SPLIT);
+    const int end = min(begin + int(SPLIT), pos + 1);
+    begin = max(begin, first_key);
+    const uint s_key = (tid % 64) / 4;
+    const uint s_part = tid % 4;
+    const uint v_dim = (tid % 64) * DPT;
+    float acc[DPT];
+    [[unroll]] for (uint j = 0; j < DPT; ++j) acc[j] = 0.0;
+    barrier();
+    for (int t0 = begin; t0 < end; t0 += int(TILE)) {
+        const int key = t0 + int(s_key);
+        float s = 0.0;
+        if (key < end) {
+            const uint kb = (kv * p.cap + uint(key)) * HD + s_part * PART;
+            const uint qb = head * HD + s_part * PART;
+            for (uint i = 0; i < PART; ++i) s += qs[qb + i] * float(kc[kb + i]);
+        }
+        red[tid] = s;
+        barrier();
+        if (tid < 64) {
+            const uint h = tid / 16;
+            const uint kk = tid % 16;
+            const uint r = h * 64 + kk * 4;
+            score[tid] = t0 + int(kk) < end ? red[r] + red[r + 1] + red[r + 2] + red[r + 3] : kNegInf;
+        }
+        barrier();
+        if (tid < 4) {
+            float mt = kNegInf;
+            for (uint kk = 0; kk < TILE; ++kk) mt = max(mt, score[tid * 16 + kk]);
+            const float m_old = m_run[tid];
+            const float m_new = max(m_old, mt);
+            const float c = m_old == kNegInf ? 0.0 : exp(m_old - m_new);
+            float sum = 0.0;
+            for (uint kk = 0; kk < TILE; ++kk) {
+                const float sc = score[tid * 16 + kk];
+                const float w = sc == kNegInf ? 0.0 : exp(sc - m_new);
+                weight[tid * 16 + kk] = w;
+                sum += w;
+            }
+            l_run[tid] = l_run[tid] * c + sum;
+            m_run[tid] = m_new;
+            corr[tid] = c;
+        }
+        barrier();
+        const float c = corr[head];
+        [[unroll]] for (uint j = 0; j < DPT; ++j) acc[j] *= c;
+        for (uint kk = 0; kk < TILE; ++kk) {
+            if (t0 + int(kk) >= end) break;
+            const float w = weight[head * 16 + kk];
+            const uint vb = (kv * p.cap + uint(t0) + kk) * HD + v_dim;
+            [[unroll]] for (uint j = 0; j < DPT; ++j) acc[j] += w * float(vc[vb + j]);
+        }
+        barrier();
+    }
+    const uint slot = (kv * 4 + head) * p.n_splits + split;
+    [[unroll]] for (uint j = 0; j < DPT; ++j) po[slot * HD + v_dim + j] = acc[j];
+    if (tid % 64 == 0) {
+        pml[slot * 2] = m_run[head];
+        pml[slot * 2 + 1] = l_run[head];
+    }
+}

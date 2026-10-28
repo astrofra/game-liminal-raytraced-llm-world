@@ -15,6 +15,7 @@ enum class EngineDevice {
     kDefault,       // best compiled device for this platform
     kCpuReference,  // scalar f32 oracle; slow, for tests and parity
     kMlx,           // MLX/Metal (macOS)
+    kVulkan,        // native Vulkan (Windows, Linux; MoltenVK for development)
 };
 
 struct EngineMessage {

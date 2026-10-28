@@ -1,0 +1,36 @@
+#version 450
+// Expands Q4_K rows to f16 [rows, cols] for the prefill GEMM; one thread per
+// 32-value subblock.
+#include "common.glsl"
+layout(local_size_x = 256) in;
+layout(std430, binding = 0) readonly buffer W8 { uint8_t w8[]; };
+layout(std430, binding = 0) readonly buffer W16 { uint16_t w16[]; };
+layout(std430, binding = 1) writeonly buffer O { float16_t o[]; };
+layout(push_constant) uniform P { uint rows; uint row_bytes; } p;
+
+void main()
+{
+    const uint index = flat_group() * 256 + gl_LocalInvocationID.x;
+    const uint cols = p.row_bytes / 144 * 256;
+    const uint row = index / (cols / 32);
+    if (row >= p.rows) return;
+    const uint k_base = (index % (cols / 32)) * 32;
+    const uint blk = row * p.row_bytes + (k_base / 256) * 144;
+    const uint sub = (k_base % 256) / 32;
+    const uint sc = blk + 4;
+    uint scale, minimum;
+    if (sub < 4) {
+        scale = uint(w8[sc + sub]) & 63u;
+        minimum = uint(w8[sc + sub + 4]) & 63u;
+    } else {
+        scale = (uint(w8[sc + sub + 4]) & 15u) | ((uint(w8[sc + sub - 4]) >> 6) << 4);
+        minimum = (uint(w8[sc + sub + 4]) >> 4) | ((uint(w8[sc + sub]) >> 6) << 4);
+    }
+    const vec2 dm = unpackHalf2x16(uint(w16[blk / 2]) | (uint(w16[blk / 2 + 1]) << 16));
+    const float d = dm.x * float(scale);
+    const float m = dm.y * float(minimum);
+    const uint packed = blk + 16 + (sub / 2) * 32;
+    const uint shift = (sub & 1u) * 4;
+    const uint dst = row * cols + k_base;
+    [[unroll]] for (uint i = 0; i < 32; ++i) o[dst + i] = float16_t(d * float((uint(w8[packed + i]) >> shift) & 15u) - m);
+}

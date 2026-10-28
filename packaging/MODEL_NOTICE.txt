@@ -2,7 +2,7 @@ WITHIN THE LATENT WALLS - MODEL NOTICE
 =====================================
 
 This game uses Gemma 4 E4B Instruct, quantized Q4_K_M by ggml-org.
-Inference runs locally through the integrated llama.cpp runtime.
+Inference runs locally through the game's dedicated Gemma 4 E4B engine.
 The standard installer downloads the pinned model in its final phase and
 verifies its size and SHA-256. The complete portable build includes the model.
 No account or model server is required. Playing after installation is offline;

@@ -1,0 +1,36 @@
+#version 450
+// out[r] = W[r] . x for f16 rows (per_layer_model_proj); 2 rows per 32-thread group.
+#include "common.glsl"
+layout(local_size_x = 64) in;
+layout(std430, binding = 0) readonly buffer W { float16_t w[]; };
+layout(std430, binding = 1) readonly buffer X { float x[]; };
+layout(std430, binding = 2) writeonly buffer O { float o[]; };
+layout(push_constant) uniform P { uint rows; uint cols; uint x_off; uint o_off; float scale; } p;
+shared float red[2][64];
+
+void main()
+{
+    const uint tid = gl_LocalInvocationID.x;
+    const uint lane = tid % 32;
+    const uint grp = tid / 32;
+    const uint first_row = (flat_group() * 2 + grp) * 2;
+    if (flat_group() * 4 >= p.rows) return;
+    float s0 = 0.0;
+    float s1 = 0.0;
+    for (uint k = lane; k < p.cols; k += 32) {
+        const float xv = x[p.x_off + k];
+        s0 += xv * float(w[first_row * p.cols + k]);
+        s1 += xv * float(w[(first_row + 1) * p.cols + k]);
+    }
+    red[0][tid] = s0;
+    red[1][tid] = s1;
+    barrier();
+    [[unroll]] for (uint s = 16; s > 0; s >>= 1) {
+        if (lane < s) {
+            red[0][tid] += red[0][tid + s];
+            red[1][tid] += red[1][tid + s];
+        }
+        barrier();
+    }
+    if (lane < 2) o[p.o_off + first_row + lane] = red[lane][grp * 32] * p.scale;
+}

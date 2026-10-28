@@ -3,7 +3,7 @@
 ## Projet
 
 - Lire `README.md` et `documentation/TECHNICAL_STATE.md` avant un changement produit.
-- Le jeu utilise C++17, CMake, SDL3 et llama.cpp. Le moteur conserve l'autorité sur l'état et la navigation.
+- Le jeu utilise C++17, CMake, SDL3 et un moteur d'inférence dédié à Gemma 4 E4B (`engine/` : Vulkan sous Windows/Linux, MLX sous macOS, oracle CPU). Le moteur de jeu conserve l'autorité sur l'état et la navigation.
 - Le LLM interprète les formulations libres du joueur (intention, cible, pronoms, synonymes). Ne pas ajouter de parseur C++ de langage naturel. Le C++ valide et exécute les propositions structurées ; les raccourcis exacts d'inventaire et de boussole restent directs.
 - Préserver les modifications locales et indexées existantes. Ne pas modifier les dépendances vendored pour un lot documentaire.
 - Le duo de développement est distinct du runtime LLM du jeu ; sa configuration ne change pas les modèles du jeu.

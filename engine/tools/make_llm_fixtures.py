@@ -1,4 +1,10 @@
-"""Freeze small llama.cpp goldens into tests/data/llm so parity tests outlive llama.cpp.
+"""Froze the llama.cpp (620d2225) goldens into tests/data/llm before llama.cpp was
+removed; kept as the record of how the fixtures were produced. The goldens came
+from the former engine/tools/llama_golden.cpp.
+
+- vocab, tokenizer and chat-template cases, one prompt per purpose (prompts.json);
+- golden/<record>.json: prompt tokens and the first 64 greedy steps with llama's
+  top-8 logits, for `liminal_engine_cli parity` (per-layer dumps are left out).
 
 Usage: python engine/tools/make_llm_fixtures.py <golden_dir> <capture_dir>
 """
@@ -41,6 +47,14 @@ def main():
                         "json_schema": source.get("json_schema", ""),
                         "greedy": record["greedy"]["tokens"], "greedy_stop": record["greedy"]["stop"]})
     (OUT / "prompts.json").write_text(json.dumps(prompts, ensure_ascii=False), encoding="utf-8")
+    (OUT / "golden").mkdir(exist_ok=True)
+    for path in sorted(golden.glob("*-*.json")):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        greedy = record["greedy"]
+        compact = {"purpose": record["purpose"], "record": record["record"], "tokens": record["tokens"],
+                   "greedy": {"tokens": greedy["tokens"][:64], "top": greedy["top"][:64],
+                              "stop": greedy["stop"], "constrained": greedy["constrained"]}}
+        (OUT / "golden" / path.name).write_text(json.dumps(compact, separators=(",", ":")), encoding="utf-8")
     print(f"wrote {len(prompts)} prompts, {len(runs)} attr runs to {OUT}")
 
 

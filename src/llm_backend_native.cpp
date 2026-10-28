@@ -39,10 +39,9 @@ static void Shutdown() { UnloadModel(); }
 
 static void Describe(LlmRuntimeInfo* info)
 {
-    info->vendored_commit = LIMINAL_ENGINE_COMMIT;
-    info->gpu_offload_supported = false;
-    info->system_info = std::string("Dedicated Gemma 4 E4B engine, device ") +
-        (g_engine ? eng::EngineDeviceName(g_engine) : "not loaded");
+    info->engine_commit = LIMINAL_ENGINE_COMMIT;
+    info->device = g_engine ? eng::EngineDeviceName(g_engine) : "not loaded";
+    info->system_info = "Dedicated Gemma 4 E4B engine";
 }
 
 static bool LoadModel(const LlmGenerationConfig& config, LlmLiveness live, LlmBackendModel* model, std::string* error)
@@ -55,7 +54,6 @@ static bool LoadModel(const LlmGenerationConfig& config, LlmLiveness live, LlmBa
     }
     model->device = eng::EngineDeviceName(g_engine);
     model->total_layers = eng::EngineLayerCount(g_engine);
-    model->offloaded_layers = 0;
     return true;
 }
 
@@ -133,6 +131,7 @@ const LlmBackend* NativeLlmBackend(const std::string& device)
 {
     if (device == "cpu-ref") g_requested_device = eng::EngineDevice::kCpuReference;
     else if (device == "mlx") g_requested_device = eng::EngineDevice::kMlx;
+    else if (device == "vulkan") g_requested_device = eng::EngineDevice::kVulkan;
     else g_requested_device = eng::EngineDevice::kDefault;
     return &kNativeBackend;
 }

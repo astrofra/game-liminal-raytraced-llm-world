@@ -3,7 +3,8 @@
 // The engine runs exactly this model: binding asserts every hyper-parameter and
 // tensor shape, so another checkpoint is rejected instead of misinterpreted.
 //
-// Forward pass (reference: vendor/llama.cpp/src/models/gemma4.cpp at 620d2225):
+// Forward pass (reference: llama.cpp src/models/gemma4.cpp at 620d2225,
+// https://github.com/ggml-org/llama.cpp/blob/620d2225cc436ab0b001e3200e590e3b286ef9ab/src/models/gemma4.cpp):
 //   x   = deq(token_embd[t]) * sqrt(2560)
 //   pt  = deq(per_layer_token_embd[t]) as [42][256] * sqrt(256)
 //   pp  = (per_layer_model_proj . x) / sqrt(2560) as [42][256]

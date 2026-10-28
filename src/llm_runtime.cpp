@@ -17,6 +17,8 @@
 #if defined(_WIN32)
 #include <windows.h>
 #include <bcrypt.h>
+#elif defined(__APPLE__)
+#include <CommonCrypto/CommonDigest.h>
 #endif
 #include <vector>
 
@@ -25,7 +27,7 @@
 namespace liminal {
 
 namespace {
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(__APPLE__)
 #include "sha256/sha256.c"
 #endif
 
@@ -34,7 +36,6 @@ static const LlmBackend* g_backend = nullptr;
 static bool g_backend_initialized = false;
 static const LlmBackend* g_model_backend = nullptr;
 static std::string g_model_path, g_model_digest;
-static int g_model_gpu_layers = 0;
 static LlmBackendModel g_model_info;
 static uintmax_t g_model_size = 0;
 static std::filesystem::file_time_type g_model_modified;
@@ -44,12 +45,7 @@ static double ElapsedMs(Clock::time_point start) { return std::chrono::duration<
 
 static bool ResolveBackend(const std::string& name, const LlmBackend** backend, std::string* error)
 {
-    if (name.empty() || name == "llama" || name == "llama.cpp") {
-        *backend = LlamaLlmBackend();
-        if (!*backend) { *error = "llama.cpp support is not compiled into this binary"; return false; }
-        return true;
-    }
-    if (name == "native" || name == "cpu-ref" || name == "mlx") {
+    if (name.empty() || name == "native" || name == "cpu-ref" || name == "mlx" || name == "vulkan") {
         *backend = NativeLlmBackend(name);
         if (*backend) return true;
     }
@@ -57,7 +53,7 @@ static bool ResolveBackend(const std::string& name, const LlmBackend** backend, 
     return false;
 }
 
-// Process default: LIMINAL_LLM_BACKEND, else llama.cpp. Returns nullptr with an error when unavailable.
+// Process default: LIMINAL_LLM_BACKEND, else the native engine on its best device. Returns nullptr with an error when unavailable.
 static const LlmBackend* ActiveBackend(std::string* error)
 {
     if (!g_backend) {
@@ -67,8 +63,8 @@ static const LlmBackend* ActiveBackend(std::string* error)
     return g_backend;
 }
 
-// LIMINAL_LLM_CAPTURE_DIR records every real call so a native backend can be
-// compared against the same prompts; the game itself never reads it back.
+// LIMINAL_LLM_CAPTURE_DIR records every real call so the engine can be replayed
+// on the same prompts (liminal_engine_cli replay); the game never reads it back.
 static void CaptureCall(const LlmGenerationConfig& config, const std::vector<LlmPromptMessage>& messages,
     const LlmGenerationResult& result, const char* backend)
 {
@@ -138,7 +134,7 @@ struct GenerationTrace {
                 {"profile", config.profile_name}, {"model_path", config.model_path}, {"purpose", config.purpose},
                 {"backend", backend_name}, {"device", g_model_info.device}, {"model_sha256",config.model_sha256},
                 {"temperature", config.temperature}, {"seed", config.seed}, {"n_ctx", config.n_ctx},
-                {"n_batch", config.n_batch}, {"n_ubatch", config.n_ubatch}, {"jinja", true},
+                {"n_batch", config.n_batch},
                 {"reasoning", false}, {"model_reused",result->model_reused}, {"final_budget", config.n_predict},
                 {"grammar", config.use_json_grammar ? "sampling" : "off"},
                 {"prompt_tokens", result->prompt_tokens}, {"generated_tokens", result->generated_tokens},
@@ -147,7 +143,7 @@ struct GenerationTrace {
                 {"load_time_ms", result->load_time_ms}, {"wall_time_ms", result->wall_time_ms},
                 {"prompt_time_ms",result->prompt_time_ms},{"generation_time_ms",result->generation_time_ms},
                 {"inference_time_ms", result->inference_time_ms}, {"stop_reason", result->stop_reason},
-                {"success", result->success}, {"offloaded_layers", result->offloaded_layers},
+                {"success", result->success},
                 {"total_layers", result->total_layers}, {"error", result->error_message},
                 {"runtime_commit", backend ? backend->commit : "none"}
             };
@@ -178,6 +174,9 @@ static bool HashModelFile(const std::filesystem::path& model_path, GenerationTra
         BCryptCreateHash(hash.algorithm, &hash.hash, nullptr, 0, nullptr, 0, 0) < 0) {
         *reason = "model_read_error"; *error = "Cannot initialize model verification"; return false;
     }
+#elif defined(__APPLE__)
+    CC_SHA256_CTX hash;
+    CC_SHA256_Init(&hash);
 #else
     sha256_t hash;
     sha256_init(&hash);
@@ -192,6 +191,8 @@ static bool HashModelFile(const std::filesystem::path& model_path, GenerationTra
         if (BCryptHashData(hash.hash, buffer.data(), static_cast<ULONG>(file.gcount()), 0) < 0) {
             *reason = "model_read_error"; *error = "Cannot hash model file"; return false;
         }
+#elif defined(__APPLE__)
+        CC_SHA256_Update(&hash, buffer.data(), static_cast<CC_LONG>(file.gcount()));
 #else
         sha256_update(&hash, buffer.data(), static_cast<size_t>(file.gcount()));
 #endif
@@ -202,6 +203,8 @@ static bool HashModelFile(const std::filesystem::path& model_path, GenerationTra
     if (BCryptFinishHash(hash.hash, digest, sizeof(digest), 0) < 0) {
         *reason = "model_read_error"; *error = "Cannot finalize model verification"; return false;
     }
+#elif defined(__APPLE__)
+    CC_SHA256_Final(digest, &hash);
 #else
     sha256_final(&hash, digest);
 #endif
@@ -216,10 +219,10 @@ static bool HashModelFile(const std::filesystem::path& model_path, GenerationTra
 LlmRuntimeTotals QueryLlmRuntimeTotals() { return g_generation_totals; }
 
 LlmGenerationConfig::LlmGenerationConfig()
-    : n_ctx(8192), n_batch(512), n_ubatch(128),
+    : n_ctx(8192), n_batch(512),
       timeout_ms(180000), top_k(40), top_p(0.95f),
-      purpose("turn"), n_threads(0), n_threads_batch(0), n_predict(768), n_gpu_layers(-1),
-      seed(42u), temperature(0.0f), flash_attention(true), use_json_grammar(false)
+      purpose("turn"), n_predict(768),
+      seed(42u), temperature(0.0f), use_json_grammar(false)
 {
     ConfigureLlmProfile(kLiminalDefaultProfile, this, nullptr);
 }
@@ -286,10 +289,7 @@ bool QueryLlmRuntimeInfo(LlmRuntimeInfo* info)
         return false;
     }
 
-    info->compiled_with_llama = LlamaLlmBackend() != nullptr;
-    info->gpu_offload_supported = false;
-    info->vendored_commit = "not-vendored";
-    info->system_info.clear();
+    *info = LlmRuntimeInfo();
 
     std::string error;
     const LlmBackend* backend = ActiveBackend(&error);
@@ -297,8 +297,19 @@ bool QueryLlmRuntimeInfo(LlmRuntimeInfo* info)
         info->system_info = error.empty() ? "LLM backend initialization failed." : error;
         return false;
     }
+    info->backend = backend->name;
     backend->describe(info);
     return true;
+}
+
+std::string LlmRuntimeLabel()
+{
+    std::lock_guard<std::recursive_timed_mutex> lock(g_runtime_mutex);
+    std::string error;
+    const LlmBackend* backend = ActiveBackend(&error);
+    if (!backend) return "none";
+    if (g_model_backend == backend && !g_model_info.device.empty()) return std::string(backend->name) + ":" + g_model_info.device;
+    return backend->name;
 }
 
 static bool ChatCompletionInternal(
@@ -323,7 +334,7 @@ static bool ChatCompletionInternal(
     };
     try {
         if (messages.empty()) return fail("error", "No messages provided");
-        if (config.n_ctx < 128 || config.n_ctx > 32768 || config.n_batch < 1 || config.n_ubatch < 1 ||
+        if (config.n_ctx < 128 || config.n_ctx > 32768 || config.n_batch < 1 ||
             config.n_predict < 1 || config.n_predict > 16384 || config.timeout_ms < 1 ||
             !std::isfinite(config.temperature) || config.temperature < 0 ||
             config.top_k < 1 || !std::isfinite(config.top_p) || config.top_p < 0 || config.top_p > 1) {
@@ -344,7 +355,7 @@ static bool ChatCompletionInternal(
         const auto model_size = std::filesystem::file_size(model_path);
         const auto model_modified = std::filesystem::last_write_time(model_path);
         const bool reusable = g_model_backend == backend && g_model_path == model_path.u8string() &&
-            g_model_gpu_layers == config.n_gpu_layers && g_model_size == model_size && g_model_modified == model_modified;
+            g_model_size == model_size && g_model_modified == model_modified;
         if (!reusable) {
             backend->unload_model();
             g_model_backend = nullptr;
@@ -364,7 +375,6 @@ static bool ChatCompletionInternal(
             if (!loaded) return fail("model_load_error", message);
             g_model_backend = backend;
             g_model_path = model_path.u8string();
-            g_model_gpu_layers = config.n_gpu_layers;
             g_model_size = model_size;
             g_model_modified = model_modified;
         }
@@ -372,7 +382,6 @@ static bool ChatCompletionInternal(
             return fail("model_corrupt", "Resident model differs from the selected manifest");
         config.model_sha256 = g_model_digest;
         result->model_reused = reusable;
-        result->offloaded_layers = g_model_info.offloaded_layers;
         result->total_layers = g_model_info.total_layers;
         std::string error;
         SessionCloser session{backend, backend->open(messages, &result->prompt_text, &result->prompt_tokens, &error)};
@@ -405,7 +414,7 @@ static bool ChatCompletionInternal(
             int32_t token = 0;
             bool eog = false;
             std::string piece;
-            if (!backend->sample(session.session, &token, &eog, &piece, &error)) { result->error_message = error; return false; }
+            if (!backend->sample(session.session, &token, &eog, &piece, &error)) return fail("error", error);
             if (eog) { result->reached_eog = true; break; }
             if (generated == reserve) return fail("token_limit", "Total generation budget exhausted");
             result->raw_text += piece;
@@ -486,9 +495,9 @@ void PrintLlmRuntimeInfo(FILE* stream)
     LlmRuntimeInfo info;
     QueryLlmRuntimeInfo(&info);
 
-    fprintf(out, "llama.cpp compiled in: %s\n", info.compiled_with_llama ? "yes" : "no");
-    fprintf(out, "llama.cpp vendored commit: %s\n", info.vendored_commit ? info.vendored_commit : "unknown");
-    fprintf(out, "GPU offload available: %s\n", info.gpu_offload_supported ? "yes" : "no");
+    fprintf(out, "LLM backend: %s\n", info.backend.empty() ? "unavailable" : info.backend.c_str());
+    fprintf(out, "LLM engine commit: %s\n", info.engine_commit.empty() ? "unknown" : info.engine_commit.c_str());
+    fprintf(out, "LLM device: %s\n", info.device.empty() ? "unknown" : info.device.c_str());
 
     if (!info.system_info.empty()) {
         fprintf(out, "System info: %s\n", info.system_info.c_str());

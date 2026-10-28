@@ -1,0 +1,66 @@
+#version 450
+// C[z][m, n] = alpha * sum_k A[z][m, k] * B[z / b_div][n, k]
+// A f32 with contiguous k, B f16 with arbitrary (n, k) strides, C f32 with
+// contiguous n. 64x64 output tile per workgroup, 16-deep k slices staged in
+// shared memory, 4x4 outputs per thread, f32 accumulation. Serves the prefill
+// projections (B = dequantized weights) and attention (B = the KV cache).
+#include "common.glsl"
+layout(local_size_x = 256) in;
+layout(std430, binding = 0) readonly buffer A { float a[]; };
+layout(std430, binding = 1) readonly buffer B { float16_t b[]; };
+layout(std430, binding = 2) writeonly buffer C { float c[]; };
+layout(push_constant) uniform P {
+    uint m, n, k;
+    uint a_off, a_sm, a_bs;
+    uint b_off, b_sn, b_sk, b_bs, b_div;
+    uint c_off, c_sm, c_bs;
+    float alpha;
+} p;
+shared float as_[16][64];
+shared float bs_[16][64];
+
+void main()
+{
+    const uint tid = gl_LocalInvocationID.x;
+    const uint z = gl_WorkGroupID.z;
+    const uint n0 = gl_WorkGroupID.x * 64;
+    const uint m0 = gl_WorkGroupID.y * 64;
+    const uint tx = tid % 16;
+    const uint ty = tid / 16;
+    const uint a_base = p.a_off + z * p.a_bs;
+    const uint b_base = p.b_off + (z / p.b_div) * p.b_bs;
+    float acc[4][4];
+    [[unroll]] for (uint i = 0; i < 4; ++i) [[unroll]] for (uint j = 0; j < 4; ++j) acc[i][j] = 0.0;
+    for (uint k0 = 0; k0 < p.k; k0 += 16) {
+        [[unroll]] for (uint e4 = 0; e4 < 4; ++e4) {
+            const uint e = tid + e4 * 256;
+            const uint mm = e / 16;
+            const uint kk = e % 16;
+            const uint gm = m0 + mm;
+            const uint gk = k0 + kk;
+            as_[kk][mm] = gm < p.m && gk < p.k ? a[a_base + gm * p.a_sm + gk] : 0.0;
+            // Coalesce B reads along whichever axis is contiguous.
+            const uint nn = p.b_sk == 1 ? e / 16 : e % 64;
+            const uint bk = p.b_sk == 1 ? e % 16 : e / 64;
+            const uint gn = n0 + nn;
+            const uint gbk = k0 + bk;
+            bs_[bk][nn] = gn < p.n && gbk < p.k ? float(b[b_base + gn * p.b_sn + gbk * p.b_sk]) : 0.0;
+        }
+        barrier();
+        [[unroll]] for (uint kk = 0; kk < 16; ++kk) {
+            vec4 av = vec4(as_[kk][ty * 4 + 0], as_[kk][ty * 4 + 1], as_[kk][ty * 4 + 2], as_[kk][ty * 4 + 3]);
+            vec4 bv = vec4(bs_[kk][tx * 4 + 0], bs_[kk][tx * 4 + 1], bs_[kk][tx * 4 + 2], bs_[kk][tx * 4 + 3]);
+            [[unroll]] for (uint i = 0; i < 4; ++i) [[unroll]] for (uint j = 0; j < 4; ++j) acc[i][j] += av[i] * bv[j];
+        }
+        barrier();
+    }
+    const uint c_base = p.c_off + z * p.c_bs;
+    [[unroll]] for (uint i = 0; i < 4; ++i) {
+        const uint gm = m0 + ty * 4 + i;
+        if (gm >= p.m) continue;
+        [[unroll]] for (uint j = 0; j < 4; ++j) {
+            const uint gn = n0 + tx * 4 + j;
+            if (gn < p.n) c[c_base + gm * p.c_sm + gn] = acc[i][j] * p.alpha;
+        }
+    }
+}

@@ -21,20 +21,15 @@ struct LlmGenerationConfig {
     std::string model_sha256;
     std::string json_schema; // Optional schema for constrained final JSON; no effect on ordinary calls.
     int n_ctx;
-    int n_batch;
-    int n_ubatch;
+    int n_batch;  // prompt tokens evaluated per prefill step (cancellation granularity)
     int timeout_ms;
     int top_k;
     float top_p;
     std::string profile_name;
     std::string purpose;
-    int n_threads;
-    int n_threads_batch;
     int n_predict;
-    int n_gpu_layers;
     unsigned int seed;
     float temperature;
-    bool flash_attention;
     bool use_json_grammar;
 
     LlmGenerationConfig();
@@ -50,7 +45,6 @@ struct LlmGenerationResult {
     std::string stop_reason;
     int reasoning_tokens = 0;
     int final_tokens = 0;
-    int offloaded_layers = -1;
     int total_layers = -1;
     bool model_reused = false;
     double load_time_ms = 0.0;
@@ -74,17 +68,10 @@ struct LlmGenerationResult {
 };
 
 struct LlmRuntimeInfo {
-    bool compiled_with_llama;
-    bool gpu_offload_supported;
-    const char* vendored_commit;
+    std::string backend;        // "native"
+    std::string engine_commit;  // source revision of the engine build
+    std::string device;         // device of the resident model, or the requested one
     std::string system_info;
-
-    LlmRuntimeInfo()
-        : compiled_with_llama(false)
-        , gpu_offload_supported(false)
-        , vendored_commit("not-vendored")
-    {
-    }
 };
 
 struct LlmRuntimeTotals {
@@ -104,11 +91,14 @@ LlmRuntimeTotals QueryLlmRuntimeTotals();
 typedef bool (*LlmStreamCallback)(const char* accumulated_text, const char* delta_text, void* user_data);
 
 bool ConfigureLlmProfile(const std::string& name, LlmGenerationConfig* config, std::string* error);
-// Overrides LIMINAL_LLM_BACKEND (llama by default); unloads a model resident in another backend.
+// Overrides LIMINAL_LLM_BACKEND: native (best device), mlx, vulkan or cpu-ref; unloads a
+// model resident with another choice.
 bool SelectLlmBackend(const std::string& name, std::string* error);
 bool InitializeLlmRuntime();
 void ShutdownLlmRuntime();
 bool QueryLlmRuntimeInfo(LlmRuntimeInfo* info);
+// "backend:device" of the resident model (backend name alone before loading), for archives.
+std::string LlmRuntimeLabel();
 bool GenerateChatCompletion(
     const LlmGenerationConfig& config,
     const std::vector<LlmPromptMessage>& messages,

@@ -1,0 +1,23 @@
+#version 450
+// Per-layer embeddings: ple[t][l] = (rms(pp[t][l] * pp_scale) * w + pt[t][l]) / sqrt(2)
+// with pt already scaled on the CPU. One workgroup per (layer, token).
+#include "common.glsl"
+layout(local_size_x = 256) in;
+layout(std430, binding = 0) readonly buffer PP { float pp[]; };
+layout(std430, binding = 1) readonly buffer PT { float pt[]; };
+layout(std430, binding = 2) readonly buffer W { float w[]; };
+layout(std430, binding = 3) writeonly buffer O { float o[]; };
+layout(push_constant) uniform P { uint pt_off; float pp_scale; } p;
+shared float scratch[256];
+#include "reduce.glsl"
+
+void main()
+{
+    const uint l = gl_WorkGroupID.x;
+    const uint t = gl_WorkGroupID.y;
+    const uint d = gl_LocalInvocationID.x;
+    const uint i = (t * 42 + l) * 256 + d;
+    const float v = pp[i] * p.pp_scale;
+    const float inv = inversesqrt(workgroup_sum(v * v) / 256.0 + 1e-6);
+    o[i] = (v * inv * w[d] + pt[p.pt_off + i]) * 0.7071067811865476;
+}

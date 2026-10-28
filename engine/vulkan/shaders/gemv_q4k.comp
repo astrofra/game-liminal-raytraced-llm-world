@@ -1,0 +1,88 @@
+#version 450
+// out[r] = W[r] . x for Q4_K rows; port of ggml-metal's kernel_mul_mv_q4_K_f32
+// (MIT). A workgroup is two 32-thread groups, each owning 2 consecutive rows;
+// the host guarantees rows % 4 == 0. Optional softcap epilogue for the LM head.
+#include "common.glsl"
+layout(local_size_x = 64) in;
+layout(std430, binding = 0) readonly buffer W8 { uint8_t w8[]; };
+layout(std430, binding = 0) readonly buffer W16 { uint16_t w16[]; };
+layout(std430, binding = 1) readonly buffer X { float x[]; };
+layout(std430, binding = 2) writeonly buffer O { float o[]; };
+layout(push_constant) uniform P { uint rows; uint row_bytes; uint x_off; uint o_off; float softcap; } p;
+shared float red[2][64];
+
+void main()
+{
+    const uint tid = gl_LocalInvocationID.x;
+    const uint lane = tid % 32;
+    const uint grp = tid / 32;
+    const uint first_row = (flat_group() * 2 + grp) * 2;
+    if (flat_group() * 4 >= p.rows) return;
+    const uint nb = p.row_bytes / 144;
+    const uint ix = lane / 8;
+    const uint it = lane % 8;
+    const uint iq = it / 4;
+    const uint ir = it % 4;
+    float sumf[2] = {0.0, 0.0};
+    uint y4 = p.x_off + ix * 256 + 64 * iq + 8 * ir;
+    for (uint ib = ix; ib < nb; ib += 4) {
+        float yl[16];
+        float yh[16];
+        vec4 sumy = vec4(0.0);
+        [[unroll]] for (uint i = 0; i < 8; ++i) {
+            yl[i + 0] = x[y4 + i + 0]; sumy[0] += yl[i + 0];
+            yl[i + 8] = x[y4 + i + 32]; sumy[1] += yl[i + 8];
+            yh[i + 0] = x[y4 + i + 128]; sumy[2] += yh[i + 0];
+            yh[i + 8] = x[y4 + i + 160]; sumy[3] += yh[i + 8];
+        }
+        [[unroll]] for (uint row = 0; row < 2; ++row) {
+            const uint blk = ((first_row + row) * p.row_bytes + ib * 144) / 2;  // in uint16 units
+            const uint sc0 = uint(w16[blk + 2 + iq]);
+            const uint sc2 = uint(w16[blk + 2 + iq + 2]);
+            const uint sc4 = uint(w16[blk + 2 + iq + 4]);
+            const uint s0 = sc0 & 0x3f3fu;
+            const uint s1 = sc2 & 0x3f3fu;
+            const uint s2 = ((sc4 >> 0) & 0x0f0fu) | ((sc0 & 0xc0c0u) >> 2);
+            const uint s3 = ((sc4 >> 4) & 0x0f0fu) | ((sc2 & 0xc0c0u) >> 2);
+            const uint q1 = blk + 8 + 16 * iq + 4 * ir;
+            const uint q2 = q1 + 32;
+            vec4 acc1 = vec4(0.0);
+            vec4 acc2 = vec4(0.0);
+            [[unroll]] for (uint i = 0; i < 4; ++i) {
+                const uint a = uint(w16[q1 + i]);
+                const uint b = uint(w16[q2 + i]);
+                acc1[0] += yl[2 * i + 0] * float(a & 0x000Fu);
+                acc1[1] += yl[2 * i + 1] * float(a & 0x0F00u);
+                acc1[2] += yl[2 * i + 8] * float(a & 0x00F0u);
+                acc1[3] += yl[2 * i + 9] * float(a & 0xF000u);
+                acc2[0] += yh[2 * i + 0] * float(b & 0x000Fu);
+                acc2[1] += yh[2 * i + 1] * float(b & 0x0F00u);
+                acc2[2] += yh[2 * i + 8] * float(b & 0x00F0u);
+                acc2[3] += yh[2 * i + 9] * float(b & 0xF000u);
+            }
+            const vec2 dm = unpackHalf2x16(uint(w16[blk]) | (uint(w16[blk + 1]) << 16));
+            sumf[row] += dm.x * ((acc1[0] + 1.0 / 256.0 * acc1[1]) * float(s0 & 0xffu) +
+                                 (acc1[2] + 1.0 / 256.0 * acc1[3]) * float(s0 >> 8) * (1.0 / 16.0) +
+                                 (acc2[0] + 1.0 / 256.0 * acc2[1]) * float(s2 & 0xffu) +
+                                 (acc2[2] + 1.0 / 256.0 * acc2[3]) * float(s2 >> 8) * (1.0 / 16.0)) -
+                         dm.y * (sumy[0] * float(s1 & 0xffu) + sumy[1] * float(s1 >> 8) +
+                                 sumy[2] * float(s3 & 0xffu) + sumy[3] * float(s3 >> 8));
+        }
+        y4 += 4 * 256;
+    }
+    red[0][tid] = sumf[0];
+    red[1][tid] = sumf[1];
+    barrier();
+    [[unroll]] for (uint s = 16; s > 0; s >>= 1) {
+        if (lane < s) {
+            red[0][tid] += red[0][tid + s];
+            red[1][tid] += red[1][tid + s];
+        }
+        barrier();
+    }
+    if (lane < 2) {
+        float v = red[lane][grp * 32];
+        if (p.softcap > 0.0) v = p.softcap * tanh(v / p.softcap);
+        o[p.o_off + first_row + lane] = v;
+    }
+}

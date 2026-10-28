@@ -73,11 +73,10 @@ static void PrintUsage()
     printf("  --sdl-smoke-test-ms <n> Auto-select a language and close SDL cleanly after n milliseconds\n");
     printf("  --sdl-smoke-command <text> Inject text and Return during the timed SDL smoke test\n");
     printf("  --write-initial-state <json> Export canonical initial state without inference\n");
-    printf("  --llm-backend <name>     LLM runtime: llama, native, cpu-ref (default from LIMINAL_LLM_BACKEND)\n");
+    printf("  --llm-backend <name>     LLM device: native (best), mlx, vulkan, cpu-ref (default from LIMINAL_LLM_BACKEND)\n");
     printf("  --llm-profile <name>     gemma-4-e4b-q4\n");
     printf("  --llm-context <n>        Fixed context limit (default 8192)\n");
     printf("  --continuity-memory-tokens <n>  Recent memory cap (default 1024; output reserve unchanged)\n");
-    printf("  --llm-gpu-layers <n>     Offloaded model layers; 0 isolates CPU qualification\n");
     printf("  --llm-timeout-ms <n>     Per-call deadline including model load\n");
     printf("  --llm-seed <n>           Sampling seed\n");
     printf("  --llm-probe <json>       Isolated diagnostic completion (role/content array)\n");
@@ -88,8 +87,8 @@ static void PrintUsage()
     printf("  --model <path>           GGUF model path for --run-turn\n");
     printf("  --llm-temperature <f>    Sampling temperature for --run-turn\n");
     printf("  --llm-predict <n>        Maximum generated tokens for --run-turn\n");
-    printf("  --use-json-grammar       Enable llama.cpp JSON grammar for --run-turn\n");
-    printf("  --no-json-grammar        Disable llama.cpp JSON grammar for --run-turn\n");
+    printf("  --use-json-grammar       Enable the JSON-schema constraint for --run-turn\n");
+    printf("  --no-json-grammar        Disable the JSON-schema constraint for --run-turn\n");
     printf("  --command <text>         Player command; may be repeated for --run-session\n");
     printf("  --command-file <path>    Read one player command per non-empty line\n");
     printf("  --load-state <path>      Load session state JSON before --run-turn or --run-session\n");
@@ -103,7 +102,7 @@ static void PrintUsage()
     printf("  --dump-generated-room-prompt Print the generated-room JSON prompt and exit\n");
     printf("  --generated-room-direction <dir> Direction used with --dump-generated-room-prompt (north, east, south, west)\n");
     printf("  --dump-scene-audit-prompt Print the direct .scene audit prompt and exit\n");
-    printf("  --llama-info             Print llama.cpp runtime information and exit\n");
+    printf("  --llm-info               Print LLM runtime information and exit\n");
 }
 
 static bool ReadInt(const char* text, int* value)
@@ -367,7 +366,7 @@ int main(int argc, char** argv)
     const char* output_path = "output/liminal_service_corridor.png";
     const char* player_command = "look around";
     liminal::RenderConfig config;
-    bool print_llama_info_only = false;
+    bool print_llm_info_only = false;
     const char* initial_state_output = nullptr;
     const char* llm_probe_path = nullptr;
     const char* llm_probe_output = nullptr;
@@ -685,11 +684,6 @@ int main(int argc, char** argv)
         if (strcmp(argv[index], "--llm-timeout-ms") == 0 && index + 1 < argc) {
             if (!ReadInt(argv[++index], &headless_turn_config.generation_config.timeout_ms)) return 1; continue;
         }
-        if (strcmp(argv[index], "--llm-gpu-layers") == 0 && index + 1 < argc) {
-            if(!ReadInt(argv[++index],&headless_turn_config.generation_config.n_gpu_layers) ||
-               headless_turn_config.generation_config.n_gpu_layers<0 || headless_turn_config.generation_config.n_gpu_layers>999)return 1;
-            continue;
-        }
         if (strcmp(argv[index], "--model") == 0 && index + 1 < argc) {
             headless_turn_config.generation_config.model_path = argv[++index];
             headless_turn_config.generation_config.profile_name = "custom";
@@ -774,8 +768,8 @@ int main(int argc, char** argv)
         if (strcmp(argv[index], "--research-dir") == 0 && index + 1 < argc) {
             research_root = argv[++index];continue;
         }
-        if (strcmp(argv[index], "--llama-info") == 0) {
-            print_llama_info_only = true;
+        if (strcmp(argv[index], "--llm-info") == 0) {
+            print_llm_info_only = true;
             continue;
         }
         if (strcmp(argv[index], "--help") == 0 || strcmp(argv[index], "-h") == 0) {
@@ -938,7 +932,7 @@ int main(int argc, char** argv)
             {"thought",result.reasoning_text},{"prompt",result.prompt_text},{"stop_reason",result.stop_reason},
             {"error",result.error_message},{"stream_final",stream.final},{"stream_leaked_marker",stream.leaked},
             {"reasoning_tokens",result.reasoning_tokens},{"final_tokens",result.final_tokens},
-            {"wall_time_ms",result.wall_time_ms},{"offloaded_layers",result.offloaded_layers}};
+            {"wall_time_ms",result.wall_time_ms}};
         output["model_reused"] = result.model_reused;
         output["load_time_ms"] = result.load_time_ms;
         output["prompt_time_ms"] = result.prompt_time_ms;
@@ -951,7 +945,7 @@ int main(int argc, char** argv)
         printf("%s\n", output.dump(2).c_str());
         return all_ok ? 0 : 2;
     }
-    if (print_llama_info_only) {
+    if (print_llm_info_only) {
         liminal::PrintLlmRuntimeInfo(stdout);
         liminal::ShutdownLlmRuntime();
         return 0;

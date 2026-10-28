@@ -205,7 +205,7 @@ Inference latency may be presented as visible machine activity rather than hidde
 
 ### 7.2 Narrative generation
 
-- Use `Gemma 4 E4B Instruct` in GGUF format through `llama.cpp` as the current target.
+- Use `Gemma 4 E4B Instruct` in GGUF format through the dedicated in-process engine (`engine/`) as the current target.
 - Generate short-form prose during active play.
 - Maintain recurring locations, objects, named entities, and discoveries through external state.
 - Optimize for playable coherence rather than maximal literary flourish.
@@ -262,7 +262,7 @@ Invisible barriers belong to traversal and collision semantics. Optional diagnos
 ### 7.6 Runtime and distribution
 
 - Distribute a native desktop build.
-- Use in-process `llama.cpp`; do not require an external model service.
+- Use the in-process engine; do not require an external model service.
 - On Windows, distribute the game and its application-local runtime libraries through the project installer.
 - The standard Windows installer contains no model weights. After copying the game files, download the pinned Gemma Q4_K_M GGUF and verify its exact size and SHA-256. Reuse an existing model only after validation. Keep the complete offline portable folder as an explicit developer packaging option.
 - Run offline after setup.
@@ -287,7 +287,7 @@ Record at least:
 Preferred direction:
 
 - native C++ desktop executable
-- `llama.cpp` embedded or linked directly
+- dedicated E4B inference engine linked directly (Vulkan, MLX, CPU reference)
 - renderer in the same runtime
 - `SDL3` for windowing, input, audio, and framebuffer presentation
 - project-specific UI for transcript, command input, viewport, state, and diagnostics
@@ -300,8 +300,8 @@ Assume:
 
 - model: `Gemma 4 E4B Instruct`
 - preferred artifact: GGUF `Q4_K_M`
-- runtime: `llama.cpp`
-- primary development acceleration: CUDA
+- runtime: dedicated E4B engine (`engine/`), llama.cpp parity goldens in `tests/data/llm/`
+- primary acceleration: Vulkan (Windows/Linux), MLX/Metal (macOS)
 - optional CPU and other supported hardware backends where practical
 
 The application owns model loading, prompt assembly, generation, cancellation, and output validation.
@@ -470,7 +470,7 @@ For the active Windows distribution, model weights are downloaded during the fin
 
 ### Phase A — Preserve and baseline the current runtime
 
-- retain the working `llama.cpp`, SDL3, state, compiler, raytracer, save/load, and benchmark paths
+- retain the working LLM engine, SDL3, state, compiler, raytracer, save/load, and benchmark paths
 - keep historical fixtures and benchmarks as technical baselines
 - verify factual documentation without renaming runtime identifiers prematurely
 
