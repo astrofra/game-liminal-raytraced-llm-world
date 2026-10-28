@@ -4,6 +4,9 @@
 #if defined(LIMINAL_HAVE_MLX)
 #include "mlx_runtime.h"
 #endif
+#if defined(LIMINAL_HAVE_MLX_CPP)
+#include "mlx_cpp_runtime.h"
+#endif
 #include <cstdlib>
 #include "model_profiles.generated.h"
 #include "nlohmann/json.hpp"
@@ -48,7 +51,10 @@ static std::recursive_timed_mutex g_runtime_mutex;
 #if defined(LIMINAL_HAVE_LLAMA_CPP)
 static bool g_llama_backend_initialized = false;
 #endif
-#if defined(LIMINAL_HAVE_MLX)
+#if defined(LIMINAL_HAVE_MLX_CPP)
+constexpr const char* kBackend = "mlx-cpp";
+constexpr const char* kRuntimeRevision = "mlx 0.32.4 / native Gemma E4B";
+#elif defined(LIMINAL_HAVE_MLX)
 constexpr const char* kBackend = "mlx";
 constexpr const char* kRuntimeRevision = "mlx-lm 0.32.2 / mlx 0.32.4";
 #else
@@ -187,6 +193,15 @@ bool ConfigureLlmProfile(const std::string& name, LlmGenerationConfig* config, s
         return true;
     }
 #endif
+#if defined(LIMINAL_HAVE_MLX_CPP)
+    if (config && (name == "gemma-4-e4b-mlx-cpp-4bit" || name == kLiminalDefaultProfile)) {
+        config->profile_name = "gemma-4-e4b-mlx-cpp-4bit";
+        config->model_path = ResourcePath("models/mlx/gemma-4-e4b-it-4bit");
+        config->model_sha256.clear(); // Embedded per-file native MLX manifest.
+        config->temperature = 0.0f; config->top_k = 40; config->top_p = 0.95f;
+        return true;
+    }
+#endif
     for (const auto& profile : kLiminalModelProfiles) {
         if (name == profile.name && config) {
             config->profile_name = name;
@@ -231,6 +246,9 @@ void ShutdownLlmRuntime()
 #if defined(LIMINAL_HAVE_MLX)
     ShutdownMlxRuntime();
 #endif
+#if defined(LIMINAL_HAVE_MLX_CPP)
+    ShutdownMlxCppRuntime();
+#endif
 #if defined(LIMINAL_HAVE_LLAMA_CPP)
     if (g_llama_backend_initialized) {
         g_model.reset();
@@ -258,6 +276,13 @@ bool QueryLlmRuntimeInfo(LlmRuntimeInfo* info)
         return false;
     }
 
+#if defined(LIMINAL_HAVE_MLX_CPP)
+    info->compiled_with_mlx = true;
+    info->compiled_with_llama = true; // Tokenization, Jinja and JSON grammar only.
+    info->gpu_offload_supported = true;
+    info->system_info = "MLX C++ 0.32.4 / Apple Metal; no Python runtime";
+    return true;
+#endif
     info->compiled_with_llama = true;
     info->gpu_offload_supported = llama_supports_gpu_offload();
 
@@ -299,7 +324,22 @@ static bool ChatCompletionInternal(
         result->response_text.clear();
         return false;
     };
-#if defined(LIMINAL_HAVE_LLAMA_CPP)
+#if defined(LIMINAL_HAVE_MLX_CPP)
+    if (messages.empty() || config.n_ctx < 128 || config.n_ctx > 32768 ||
+        config.n_batch < 1 || config.n_batch > 32768 || config.n_predict < 1 || config.n_predict > 16384 ||
+        config.timeout_ms < 1 || !std::isfinite(config.temperature) || config.temperature < 0 ||
+        config.top_k < 1 || !std::isfinite(config.top_p) || config.top_p < 0 || config.top_p > 1)
+        return fail("error", "Invalid generation bounds");
+    if (config.n_gpu_layers != -1) return fail("error", "Native MLX uses Metal; --llm-gpu-layers is llama.cpp-only");
+    std::unique_lock<std::recursive_timed_mutex> runtime_lock(g_runtime_mutex, std::defer_lock);
+    while (!runtime_lock.try_lock_for(std::chrono::milliseconds(20))) {
+        if (!trace.loading_alive()) return fail(trace.cancelled ? "cancelled" : "timeout", "Stopped while waiting for inference");
+    }
+    if (!trace.loading_alive()) return fail(trace.cancelled ? "cancelled" : "timeout", "Stopped before inference");
+    if (!InitializeLlmRuntime()) return fail("error", "Cannot initialize native tokenization");
+    config.timeout_ms = std::max(1, config.timeout_ms - static_cast<int>(ElapsedMs(trace.started)));
+    return GenerateMlxCppCompletion(config, messages, stream_callback, stream_user_data, result, count_only);
+#elif defined(LIMINAL_HAVE_LLAMA_CPP)
     try {
         if (messages.empty()) return fail("error", "No messages provided");
         if (config.n_ctx < 128 || config.n_ctx > 32768 || config.n_batch < 1 || config.n_ubatch < 1 ||

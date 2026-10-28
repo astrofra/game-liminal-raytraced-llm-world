@@ -73,7 +73,9 @@ static void PrintUsage()
     printf("  --sdl-smoke-test-ms <n> Auto-select a language and close SDL cleanly after n milliseconds\n");
     printf("  --sdl-smoke-command <text> Inject text and Return during the timed SDL smoke test\n");
     printf("  --write-initial-state <json> Export canonical initial state without inference\n");
-    #if defined(LIMINAL_HAVE_MLX)
+    #if defined(LIMINAL_HAVE_MLX_CPP)
+    printf("  --llm-profile <name>     gemma-4-e4b-mlx-cpp-4bit (native MLX / Metal)\n");
+#elif defined(LIMINAL_HAVE_MLX)
     printf("  --llm-profile <name>     gemma-4-e4b-mlx-4bit (MLX / Apple Metal)\n");
 #else
     printf("  --llm-profile <name>     gemma-4-e4b-q4\n");
