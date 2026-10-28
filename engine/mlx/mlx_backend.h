@@ -25,4 +25,8 @@ int MlxStatePast(const MlxState* state);
 bool MlxForward(MlxModel* model, MlxState* state, const int32_t* tokens, int n,
     std::vector<float>* logits, std::string* error);
 
+// Developer microbenchmark: every decode GEMV of the model in one graph,
+// reported as effective weight bandwidth.
+void MlxBenchGemv(MlxModel* model, int repeats);
+
 }  // namespace liminal::engine

@@ -50,6 +50,8 @@ target_include_directories(liminal_llm_engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR
 target_compile_features(liminal_llm_engine PUBLIC cxx_std_17)
 target_include_directories(liminal_llm_engine PRIVATE "${LIMINAL_VENDOR_DIR}")
 target_link_libraries(liminal_llm_engine PRIVATE xgrammar)
+# grammar.cpp uses xgrammar's schema-to-EBNF converter from its source tree.
+target_include_directories(liminal_llm_engine PRIVATE "${xgrammar_SOURCE_DIR}/cpp")
 target_compile_definitions(liminal_llm_engine PRIVATE LIMINAL_ENGINE_HAVE_XGRAMMAR=1)
 if (LIMINAL_ENABLE_MLX)
     target_link_libraries(liminal_llm_engine PUBLIC liminal_llm_engine_mlx)

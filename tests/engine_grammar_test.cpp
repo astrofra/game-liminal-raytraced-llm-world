@@ -78,6 +78,14 @@ int main()
     any.push_back(tokenizer.eos);
     Check(Walk(grammar, "", any, &error) < 0, "empty schema accepts any object");
     Check(Walk(grammar, "", Tokenize(tokenizer, "[1]", false, false), &error) >= 0, "empty schema rejects a top-level array");
+    // Whitespace follows llama.cpp's space rule: one space, or 1-2 newlines and
+    // up to 20 spaces/tabs, between tokens.
+    std::vector<int32_t> spaced = Tokenize(tokenizer, "{\n  \"ok\": true\n\n}", false, false);
+    spaced.push_back(tokenizer.eos);
+    Check(Walk(grammar, schema, spaced, &error) < 0, "llama-style indentation accepted");
+    Check(Walk(grammar, schema, Tokenize(tokenizer, "{\"ok\": true\n\n\n}", false, false), &error) >= 0,
+        "runs of three or more newlines refused");
+    Check(Walk(grammar, schema, Tokenize(tokenizer, "{\"ok\":  true}", false, false), &error) >= 0, "two spaces without a newline refused");
     const auto control = Tokenize(tokenizer, "{\"a\":\"<|turn>\"}", false, true);
     Check(Walk(grammar, R"({"type":"object","properties":{"a":{"type":"string"}}})", control, &error) >= 0, "control tokens refused inside strings");
 

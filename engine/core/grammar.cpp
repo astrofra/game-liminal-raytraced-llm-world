@@ -2,8 +2,11 @@
 
 #include "nlohmann/json.hpp"
 #include <xgrammar/xgrammar.h>
+// Internal header of the pinned xgrammar: the schema-to-EBNF converter.
+#include "json_schema_converter.h"
 
 #include <mutex>
+#include <stdexcept>
 #include <thread>
 
 namespace liminal::engine {
@@ -30,6 +33,26 @@ static void NormalizeSchema(json* node)
         (type->is_array() && std::find(type->begin(), type->end(), "object") != type->end()));
     if ((object || node->contains("properties")) && !node->contains("additionalProperties"))
         (*node)["additionalProperties"] = !node->contains("properties");
+}
+
+// xgrammar spells every whitespace run of an any-whitespace schema as
+// [ \n\t]{0,N}. llama.cpp's json-schema-to-grammar uses
+//   space ::= | " " | "\n"{1,2} [ \t]{0,20}
+// so a sentinel count marks those runs and each one is replaced by that rule.
+static std::string SchemaToEbnf(const std::string& schema)
+{
+    constexpr int kSentinel = 977;
+    std::string ebnf = xgrammar::JSONSchemaToEBNF(schema, true, std::nullopt, std::nullopt, false, kSentinel);
+    const std::string run = "[ \\n\\t]{0," + std::to_string(kSentinel) + "}";
+    const std::string space = "(\"\" | \" \" | \"\\n\" [ \\t]{0,20} | \"\\n\\n\" [ \\t]{0,20})";
+    size_t replaced = 0;
+    for (size_t at = ebnf.find(run); at != std::string::npos; at = ebnf.find(run, at + space.size())) {
+        ebnf.replace(at, run.size(), space);
+        ++replaced;
+    }
+    if (replaced == 0 || ebnf.find(std::to_string(kSentinel)) != std::string::npos)
+        throw std::runtime_error("unexpected whitespace rule in xgrammar's schema grammar");
+    return ebnf;
 }
 
 }  // namespace
@@ -80,8 +103,7 @@ JsonConstraint* JsonConstraintBegin(GrammarContext* context, const std::string& 
         json schema = schema_text.empty() ? json{{"type", "object"}} : json::parse(schema_text);
         NormalizeSchema(&schema);
         std::lock_guard<std::mutex> lock(context->mutex);
-        // llama.cpp's space rule allows up to two newlines and 20 indentation characters.
-        const auto compiled = context->compiler.CompileJSONSchema(schema.dump(), true, std::nullopt, std::nullopt, false, 22);
+        const auto compiled = context->compiler.CompileGrammar(xgrammar::Grammar::FromEBNF(SchemaToEbnf(schema.dump())));
         auto* constraint = new JsonConstraint{context, xgrammar::GrammarMatcher(compiled), {}, {}, {}};
         const int vocab = context->info.GetVocabSize();
         constraint->bitmask.assign(static_cast<size_t>(xgrammar::GetBitmaskSize(vocab)), 0);
