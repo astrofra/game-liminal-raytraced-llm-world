@@ -47,7 +47,9 @@ Précision produit du 26 octobre 2026, traitée directement par Codex car elle m
 | Lot | État | Résultat |
 |---|---|---|
 | MAC-001 | Validé (audit statique) | [Revue](reviews/MAC-001.md), audit DeepSeek réel, intégré sélectivement |
-| MAC-002 | En cours (Codex) | Backend MLX, build arm64 et qualification locale |
+| MAC-002 | En cours (Codex) | Backend MLX intégré, 16 CTest + 126 tests Python validés ; recette des parcours en cours |
+| MAC-003 | Refus préflight | Checkout pas encore terminé ; aucun appel DeepSeek |
+| MAC-003R1 | Validé | [Revue](reviews/MAC-003R1.md), 10 tests livrés par DeepSeek et exécutés par Codex |
 
 Branche `macos-port`, commits autorisés par l'utilisateur avec le nom Astrofra ; aucun push.
 Kit macOS : `/Users/fra/dev/duo-codex-copilot-ollama`. Journaux hors dépôt :

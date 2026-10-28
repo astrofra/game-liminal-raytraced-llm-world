@@ -48,8 +48,10 @@ static bool g_llama_backend_initialized = false;
 #endif
 #if defined(LIMINAL_HAVE_MLX)
 constexpr const char* kBackend = "mlx";
+constexpr const char* kRuntimeRevision = "mlx-lm 0.32.2 / mlx 0.32.4";
 #else
 constexpr const char* kBackend = "llama.cpp";
+constexpr const char* kRuntimeRevision = LIMINAL_LLAMA_VENDORED_COMMIT;
 #endif
 #if defined(LIMINAL_HAVE_LLAMA_CPP)
 static std::unique_ptr<llama_model, decltype(&llama_model_free)> g_model(nullptr, llama_model_free);
@@ -67,7 +69,7 @@ struct GenerationTrace {
     LlmGenerationResult* result;
     const LlmGenerationConfig& config;
     Clock::time_point started = Clock::now();
-    Clock::time_point inference_started;
+    Clock::time_point inference_started{};
     bool inferring = false;
     bool cancelled = false;
     LlmStreamCallback callback = nullptr;
@@ -107,7 +109,7 @@ struct GenerationTrace {
                 {"inference_time_ms", result->inference_time_ms}, {"stop_reason", result->stop_reason},
                 {"success", result->success}, {"offloaded_layers", result->offloaded_layers},
                 {"total_layers", result->total_layers}, {"error", result->error_message},
-                {"runtime_commit", LIMINAL_LLAMA_VENDORED_COMMIT}
+                {"runtime_commit", kRuntimeRevision}
             };
             fprintf(stderr, "LIMINAL_LLM_METRIC %s\n", data.dump().c_str());
         } catch (...) { fprintf(stderr, "LLM metric serialization failed\n"); }

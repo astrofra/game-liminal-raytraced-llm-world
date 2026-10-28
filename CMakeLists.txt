@@ -329,3 +329,12 @@ if(MSVC)
     target_compile_options(liminal_narrative_language_test PRIVATE /utf-8)
 endif()
 add_test(NAME narrative_language COMMAND liminal_narrative_language_test)
+
+if(LIMINAL_ENABLE_MLX)
+    add_executable(liminal_mlx_transport_test tests/mlx_transport_test.cpp src/llm_runtime.cpp src/mlx_runtime.cpp "${MODEL_HEADER}")
+    target_include_directories(liminal_mlx_transport_test PRIVATE src "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    target_compile_definitions(liminal_mlx_transport_test PRIVATE LIMINAL_HAVE_MLX=1
+        LIMINAL_MLX_PYTHON="${LIMINAL_MLX_PYTHON}" LIMINAL_MLX_MODEL_DIR="${LIMINAL_MLX_MODEL_DIR}"
+        LIMINAL_TEST_PEER="${CMAKE_CURRENT_SOURCE_DIR}/tests/mlx_fake_python.py")
+    add_test(NAME mlx_transport COMMAND liminal_mlx_transport_test)
+endif()

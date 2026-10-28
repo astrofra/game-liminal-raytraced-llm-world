@@ -40,9 +40,29 @@ def verify_model(directory, manifest_path):
     return manifest
 
 
+def token_vocabulary(tokenizer):
+    """Preserve aliases and byte fallback tokens (Gemma has both '3' and <0x33>).
+
+    Overwriting aliases discards ordinary digit/punctuation tokens and corrupts
+    sampling probabilities, even though the decoded JSON remains syntactic.
+    """
+    vocabulary = {}
+    special = set(tokenizer.all_special_ids)
+    for token, token_id in tokenizer.get_vocab().items():
+        if token_id in special:
+            continue
+        if len(token) == 6 and token.startswith('<0x') and token.endswith('>'):
+            piece = bytes([int(token[3:5], 16)])
+        else:
+            piece = tokenizer.convert_tokens_to_string([token]).encode('utf-8')
+        if piece:
+            vocabulary.setdefault(piece, []).append(token_id)
+    return vocabulary
+
+
 class Runtime:
     def __init__(self):
-        self.model = self.tokenizer = self.grammar_backend = None
+        self.model = self.tokenizer = self.vocabulary = None
         self.path = None
         self.indexes = {}
         self.fingerprint = None
@@ -68,7 +88,7 @@ class Runtime:
             verify_model(path, manifest_path)
             if not mx.metal.is_available():
                 raise WorkerError('unavailable', 'MLX Metal device unavailable')
-            self.model = self.tokenizer = self.grammar_backend = None
+            self.model = self.tokenizer = self.vocabulary = None
             self.indexes.clear()
             self.model, self.tokenizer = load(str(path), tokenizer_config={'trust_remote_code': False})
             mx.eval(self.model.parameters())
@@ -98,18 +118,19 @@ class Runtime:
         processors = None
         schema = None
         if request['use_json_grammar']:
-            from outlines import from_mlxlm
-            from outlines.backends.outlines_core import OutlinesCoreBackend, OutlinesCoreLogitsProcessor
+            from outlines_core import Index, Vocabulary, outlines_core
+            from outlines.backends.outlines_core import OutlinesCoreLogitsProcessor
             schema_text = request['json_schema'] or '{"type":"object"}'
             schema = json.loads(schema_text)
             Draft202012Validator.check_schema(schema)
-            if self.grammar_backend is None:
-                self.grammar_backend = OutlinesCoreBackend(from_mlxlm(self.model, self.tokenizer))
+            if self.vocabulary is None:
+                self.vocabulary = Vocabulary(self.tokenizer.eos_token_id, token_vocabulary(self.tokenizer))
             if schema_text not in self.indexes:
                 # Bound memory: retain at most eight compiled schemas, never mutable guide state.
                 if len(self.indexes) >= 8:
                     self.indexes.clear()
-                self.indexes[schema_text] = self.grammar_backend.get_json_schema_logits_processor(schema_text).index
+                regex = outlines_core.json_schema.build_regex_from_schema(schema_text)
+                self.indexes[schema_text] = Index(regex, self.vocabulary)
             processor = OutlinesCoreLogitsProcessor(self.indexes[schema_text], 'mlx')
             # Outlines' Metal bitmask kernel mixes -INFINITY with logits. Use
             # float32 to avoid its bfloat16 compilation failure on macOS 14.
