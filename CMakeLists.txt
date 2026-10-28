@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(liminal_raytraced_renderer LANGUAGES CXX)
 
-option(LIMINAL_ENABLE_MLX "Use local MLX worker for Apple Silicon inference" ${APPLE})
+option(LIMINAL_ENABLE_MLX "Build the historical Python/MLX development reference" OFF)
 if(LIMINAL_ENABLE_MLX)
     if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
         message(FATAL_ERROR "MLX requires native Apple Silicon macOS")

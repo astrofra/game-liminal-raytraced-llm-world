@@ -17,6 +17,8 @@
 #include <fstream>
 #if defined(_WIN32)
 #include <bcrypt.h>
+#elif defined(__APPLE__)
+#include <CommonCrypto/CommonDigest.h>
 #endif
 #include <thread>
 #include <vector>
@@ -166,7 +168,7 @@ LlmGenerationConfig::LlmGenerationConfig()
       purpose("turn"), n_threads(0), n_threads_batch(0), n_predict(768), n_gpu_layers(-1),
       seed(42u), temperature(0.0f), flash_attention(true), use_json_grammar(false)
 {
-    #if defined(LIMINAL_HAVE_MLX)
+#if defined(LIMINAL_HAVE_MLX)
     ConfigureLlmProfile("gemma-4-e4b-mlx-4bit", this, nullptr);
 #else
     ConfigureLlmProfile(kLiminalDefaultProfile, this, nullptr);
@@ -332,6 +334,9 @@ static bool ChatCompletionInternal(
             if (BCryptOpenAlgorithmProvider(&hash.algorithm, BCRYPT_SHA256_ALGORITHM, nullptr, 0) < 0 ||
                 BCryptCreateHash(hash.algorithm, &hash.hash, nullptr, 0, nullptr, 0, 0) < 0)
                 return fail("model_read_error", "Cannot initialize model verification");
+#elif defined(__APPLE__)
+            CC_SHA256_CTX hash;
+            CC_SHA256_Init(&hash);
 #else
             sha256_t hash;
             sha256_init(&hash);
@@ -343,6 +348,8 @@ static bool ChatCompletionInternal(
 #if defined(_WIN32)
                 if (BCryptHashData(hash.hash, buffer.data(), static_cast<ULONG>(file.gcount()), 0) < 0)
                     return fail("model_read_error", "Cannot hash model file");
+#elif defined(__APPLE__)
+                CC_SHA256_Update(&hash, buffer.data(), static_cast<CC_LONG>(file.gcount()));
 #else
                 sha256_update(&hash, buffer.data(), static_cast<size_t>(file.gcount()));
 #endif
@@ -352,6 +359,8 @@ static bool ChatCompletionInternal(
 #if defined(_WIN32)
             if (BCryptFinishHash(hash.hash, digest, sizeof(digest), 0) < 0)
                 return fail("model_read_error", "Cannot finalize model verification");
+#elif defined(__APPLE__)
+            CC_SHA256_Final(digest, &hash);
 #else
             sha256_final(&hash, digest);
 #endif
