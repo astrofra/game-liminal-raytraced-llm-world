@@ -49,6 +49,8 @@ Précision produit du 26 octobre 2026, traitée directement par Codex car elle m
 | MAC-001 | Validé (audit statique) | [Revue](reviews/MAC-001.md), audit DeepSeek réel, intégré sélectivement |
 | MAC-002 | Validé localement | [Revue](reviews/MAC-002.md) : MLX GPU, 16 CTest + 126 tests Python, SDL français, exploration/retour ; bundle local |
 | MAC-003 | Refus préflight | Checkout pas encore terminé ; aucun appel DeepSeek |
+| MAC-006 | MLX C++ retenu, autonome qualifié localement | [Revue](reviews/MAC-006.md) : deux backends C++ comparés ; MLX C++ 16,3 s contre llama.cpp 22,6 s, 15 CTest, 143 Python, 12 cas runtime et SDL confiné |
+| MAC-007 | Tests intégrés avec écart de lecture documenté | [Revue](reviews/MAC-007.md), 10 tests DeepSeek réels relus et exécutés par Codex |
 | MAC-005 | Natif qualifié localement, parité de vitesse non atteinte | [Revue](reviews/MAC-005.md) : C++/Metal, bundle autonome déplacé/confiné, 15 CTest, 133 Python, 11 cas de protocole et SDL français |
 | MAC-004 | Rejeté, non intégré | [Revue](reviews/MAC-004.md), audit réel ; poursuite après échec d’outil contraire au contrat |
 | MAC-003R1 | Validé | [Revue](reviews/MAC-003R1.md), 10 tests livrés par DeepSeek et exécutés par Codex |

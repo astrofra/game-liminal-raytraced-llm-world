@@ -105,7 +105,8 @@ def copy_notices(resources, build, libraries):
     notices = resources / 'licenses'
     notices.mkdir()
     shutil.copy2(ROOT / 'LICENSE', resources / 'LICENSE.txt')
-    shutil.copy2(ROOT / 'packaging/MODEL_NOTICE.txt', resources / 'MODEL_NOTICE.txt')
+    notice = (ROOT / 'packaging/MODEL_NOTICE.txt').read_text().replace('licenses/third-party/', 'licenses/')
+    (resources / 'MODEL_NOTICE.txt').write_text(notice)
     # CMake records the actual SDL_ttf source, including a supplied FetchContent source.
     cache = (build / 'CMakeCache.txt').read_text()
     match = re.search(r'^SDL3_ttf_SOURCE_DIR:STATIC=(.+)$', cache, re.M)
@@ -136,16 +137,24 @@ def copy_notices(resources, build, libraries):
         shutil.copy2(source, notices / name)
 
 
-def package(build, destination):
+def package(build, destination, backend='native'):
     from model_profiles import get_profile
     from download_gemma import validate_gguf
-    profile = get_profile()
+    native_mlx = backend == 'mlx-cpp'
+    profile = json.loads((ROOT / 'scripts/models_mlx_cpp.json').read_text()) if native_mlx else get_profile()
     source_model = ROOT / profile['relative_path']
-    validate_gguf(source_model)
+    if native_mlx:
+        from prepare_mlx_cpp import verified
+        for name, spec in profile['files'].items():
+            if not verified(source_model / name, spec):
+                raise RuntimeError(f'Native MLX artifact missing or corrupt: {name}')
+    else:
+        validate_gguf(source_model)
     source_executable = build / 'liminal_cornell_renderer'
     info = output([source_executable, '--llama-info'])
-    if 'llama.cpp compiled in: yes' not in info or 'MLX compiled in: no' not in info or 'GPU offload available: yes' not in info:
-        raise RuntimeError('Publishing requires the native llama.cpp/Metal build')
+    expected = 'MLX C++ 0.32.4' if native_mlx else 'MLX compiled in: no'
+    if 'llama.cpp compiled in: yes' not in info or expected not in info or 'GPU offload available: yes' not in info:
+        raise RuntimeError('Publishing requires the selected native C++/Metal build')
     destination.parent.mkdir(parents=True, exist_ok=True)
     # Assemble beside the destination; a failed package never replaces the previous app.
     with tempfile.TemporaryDirectory(prefix='.native-stage-', dir=destination.parent) as temporary:
@@ -160,11 +169,26 @@ def package(build, destination):
         shutil.copytree(ROOT / 'assets', resources / 'assets', ignore=shutil.ignore_patterns('.DS_Store'))
         model = resources / profile['relative_path']
         model.parent.mkdir(parents=True)
-        shutil.copy2(source_model, model)
-        validate_gguf(model)
+        if native_mlx:
+            model.mkdir()
+            for name, spec in profile['files'].items():
+                shutil.copy2(source_model / name, model / name)
+                if not verified(model / name, spec):
+                    raise RuntimeError(f'Packaged MLX artifact failed verification: {name}')
+            mlx_library = next(source for source in libraries if source.name == 'libmlx.dylib')
+            shutil.copy2(mlx_library.parent / 'mlx.metallib', resources / 'mlx.metallib')
+        else:
+            shutil.copy2(source_model, model)
+            validate_gguf(model)
         copy_notices(resources, build, libraries)
+        if native_mlx:
+            shutil.copy2(ROOT / 'packaging/MODEL_NOTICE_MLX_CPP.txt', resources / 'MODEL_NOTICE.txt')
+            for name in ('MLX-LICENSE.txt', 'MLX-LM-LICENSE.txt'):
+                shutil.copy2(ROOT / 'packaging' / name, resources / 'licenses' / name)
         provenance = json.loads((build / 'runtime-build.json').read_text())
         provenance['model'] = profile
+        if native_mlx:
+            provenance['mlx_metallib_sha256'] = hashlib.sha256((resources / 'mlx.metallib').read_bytes()).hexdigest()
         plist = dict(CFBundleName='Within the Latent Walls', CFBundleDisplayName='Within the Latent Walls',
                      CFBundleIdentifier='org.astrofra.within-the-latent-walls',
                      CFBundleExecutable='WithinTheLatentWalls', CFBundlePackageType='APPL',

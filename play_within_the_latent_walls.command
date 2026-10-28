@@ -2,9 +2,14 @@
 # Finder double-click or Terminal; resource resolution is independent of cwd.
 set -eu
 project_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-app_binary="$project_dir/output/macos-native/Within the Latent Walls.app/Contents/MacOS/WithinTheLatentWalls"
-if [ -x "$app_binary" ]; then
-    exec "$app_binary" "$@"
+for backend_dir in macos-mlx-cpp macos-native; do
+    app_binary="$project_dir/output/$backend_dir/Within the Latent Walls.app/Contents/MacOS/WithinTheLatentWalls"
+    if [ -x "$app_binary" ]; then
+        exec "$app_binary" "$@"
+    fi
+done
+if [ -x "$project_dir/build_macos_mlx_cpp/liminal_cornell_renderer" ]; then
+    exec "$project_dir/build_macos_mlx_cpp/liminal_cornell_renderer" "$@"
 fi
 if [ ! -x "$project_dir/build_macos_native/liminal_cornell_renderer" ]; then
     echo 'Build first: python3 scripts/setup_macos.py && python3 scripts/build_macos.py --publish'

@@ -1,0 +1,26 @@
+WITHIN THE LATENT WALLS - NATIVE MLX MODEL NOTICE
+================================================
+
+This macOS application evaluates Gemma 4 E4B Instruct locally with MLX C++/Metal.
+It contains the pinned affine 4-bit Safetensors checkpoint from mlx-community.
+Only text tensors are evaluated. No interpreter, account or server is required.
+All model artifacts are checked against the embedded SHA-256 manifest before use.
+
+Weights repository: https://huggingface.co/mlx-community/gemma-4-e4b-it-4bit
+Revision: 475b9088d29754a3379866cf5aeb6b41acd313c2
+File: model.safetensors
+Size: 5,146,800,534 bytes
+SHA-256: 932b8271fc3fe65adcc78b96c10c6268bbfb13e8f67d1358727c0d6ee97e1eff
+
+llama.cpp supplies tokenization, chat templating and JSON grammar sampling.
+The vocabulary-only tokenizer.gguf contains metadata, no GGUF weight tensors.
+It is derived from the pinned ggml-org Gemma 4 E4B Q4_K_M artifact:
+https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF/tree/51db8454ac67b58ed848e54d4111be2ad16ba4bf
+Derived tokenizer size: 15,780,704 bytes
+Derived tokenizer SHA-256: 81203f8dc2113e03ad235c1c8b5d8a1c3c388a02f59559997a0171deceeb30c0
+
+Original model: https://huggingface.co/google/gemma-4-E4B-it
+The publisher's model license is supplied in licenses/Gemma-LICENSE.txt.
+MLX and the adapted MLX-LM graph carry their MIT notices in licenses/MLX-LICENSE.txt
+and licenses/MLX-LM-LICENSE.txt. The model is separate from the game's GPL source.
+The complete artifact manifest and build provenance are in runtime-build.json.

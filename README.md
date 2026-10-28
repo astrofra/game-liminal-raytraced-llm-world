@@ -59,8 +59,9 @@ Descriptions, `.scene`, images et résultats sont archivés sous
 
 ## macOS Apple Silicon
 
-Le portage macOS utilise **C++ / llama.cpp / Apple Metal**, sans Python au runtime.
+Le portage macOS utilise **MLX C++ / Apple Metal**, sans Python au runtime.
 Le bundle autonome embarque le modèle et toutes les bibliothèques non système.
+llama.cpp/Metal reste disponible comme alternative native.
 
 ```sh
 python3 scripts/setup_macos.py
@@ -70,7 +71,7 @@ python3 scripts/build_macos.py --test --publish
 
 Le joueur a besoin d'un Mac Apple Silicon sous macOS 14+ seulement.
 Python, Xcode Command Line Tools, CMake et Ninja servent à construire le jeu.
-Copier ou ouvrir `output/macos-native/Within the Latent Walls.app` (environ 5 Go).
+Copier ou ouvrir `output/macos-mlx-cpp/Within the Latent Walls.app` (environ 5 Go).
 Voir le [guide macOS](documentation/MACOS.md) pour les prérequis de build,
 les mesures, la signature locale et la référence MLX historique.
 

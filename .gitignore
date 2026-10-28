@@ -31,3 +31,6 @@ output/macos/
 output/macos-native/
 models/**/.cache/
 models/**/*.partial
+
+.venv-mlx-cpp/
+output/macos-mlx-cpp/

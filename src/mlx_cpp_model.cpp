@@ -18,11 +18,7 @@ struct MlxCppModel::Impl {
     int offset = 0;
     array freqs = array(0.f);
     std::function<std::vector<array>(const std::vector<array> &)> gelu, geglu, cap;
-    Impl(const std::string &path, const std::string &metallib) {
-        if (std::filesystem::is_regular_file(metallib))
-            metal::set_metallib_path(metallib);
-        set_default_device(Device::gpu);
-        set_cache_limit(256 * 1024 * 1024);
+    explicit Impl(const std::string &path) {
         auto tensors = load_safetensors(path).first;
         const std::string prefix = "language_model.model.";
         for (auto &[k, v] : tensors)
@@ -150,8 +146,14 @@ struct MlxCppModel::Impl {
     }
 };
 
-MlxCppModel::MlxCppModel(const std::string &weights, const std::string &metallib)
-    : impl_(new Impl(weights, metallib)) {}
+MlxCppModel::MlxCppModel(const std::string &weights, const std::string &metallib) {
+    // Configure the resource path before Impl's scalar arrays initialize Metal.
+    if (std::filesystem::is_regular_file(metallib))
+        metal::set_metallib_path(metallib);
+    set_default_device(Device::gpu);
+    set_cache_limit(256 * 1024 * 1024);
+    impl_ = std::make_unique<Impl>(weights);
+}
 MlxCppModel::~MlxCppModel() = default;
 void MlxCppModel::reset() {
     impl_->reset();

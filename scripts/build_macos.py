@@ -45,7 +45,7 @@ def publish_mlx_reference(build):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build-dir', type=Path)
-    parser.add_argument('--backend', choices=('native', 'mlx-python'), default='native')
+    parser.add_argument('--backend', choices=('mlx-cpp', 'native', 'mlx-python'), default='mlx-cpp')
     parser.add_argument('--skip-build', action='store_true', help='Publish an already built binary')
     parser.add_argument('--parallel', type=int, default=min(8, os.cpu_count() or 4))
     parser.add_argument('--publish', action='store_true')
@@ -61,16 +61,23 @@ def main():
     python = ROOT / '.venv-mlx/bin/python'
     if args.backend == 'mlx-python' and not python.exists():
         parser.error('Run python3.12 scripts/setup_macos.py --backend mlx-python first.')
-    build = (args.build_dir or ROOT / ('build_macos_native' if args.backend == 'native' else 'build_macos')).resolve()
+    build = (args.build_dir or ROOT / {'mlx-cpp': 'build_macos_mlx_cpp', 'native': 'build_macos_native', 'mlx-python': 'build_macos'}[args.backend]).resolve()
     command = ['cmake', '-S', str(ROOT), '-B', str(build), '-G', 'Ninja',
                '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_OSX_ARCHITECTURES=arm64',
                '-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0',
-               f'-DLIMINAL_ENABLE_MLX={"OFF" if args.backend == "native" else "ON"}',
-               f'-DLIMINAL_ENABLE_LLAMA_CPP={"ON" if args.backend == "native" else "OFF"}',
-               '-DLIMINAL_ENABLE_LLAMA_CUDA=OFF', '-DGGML_METAL=ON',
+               f'-DLIMINAL_ENABLE_MLX={"ON" if args.backend == "mlx-python" else "OFF"}',
+               f'-DLIMINAL_ENABLE_LLAMA_CPP={"OFF" if args.backend == "mlx-python" else "ON"}',
+               f'-DLIMINAL_ENABLE_MLX_CPP={"ON" if args.backend == "mlx-cpp" else "OFF"}',
+               '-DLIMINAL_ENABLE_LLAMA_CUDA=OFF', f'-DGGML_METAL={"OFF" if args.backend == "mlx-cpp" else "ON"}',
                '-DGGML_METAL_EMBED_LIBRARY=ON', '-DGGML_ACCELERATE=ON',
                f'-DLIMINAL_MLX_PYTHON={python}',
                f'-DLIMINAL_MLX_MODEL_DIR={ROOT / "models/mlx/gemma-4-e4b-it-4bit"}']
+    if args.backend == 'mlx-cpp':
+        sdk = next((path for environment in ('.venv-mlx-cpp', '.venv-mlx')
+                    for path in sorted((ROOT / environment / 'lib').glob('python*/site-packages/mlx/share/cmake/MLX'))), None)
+        if sdk is None:
+            parser.error('Run python3 scripts/setup_macos.py first (native MLX SDK missing).')
+        command.append(f'-DMLX_DIR={sdk}')
     # Apple Clang needs explicit libomp discovery. Optional: builds remain valid without it.
     libomp = Path('/opt/homebrew/opt/libomp')
     if (libomp / 'lib/libomp.dylib').exists():
@@ -85,23 +92,24 @@ def main():
         subprocess.run(['ctest', '--test-dir', str(build), '--output-on-failure'], check=True)
     provenance_path = build / 'runtime-build.json'
     binary_sha256 = hashlib.sha256((build / 'liminal_cornell_renderer').read_bytes()).hexdigest()
-    backend = 'llama.cpp-metal' if args.backend == 'native' else 'mlx-python'
+    backend = {'mlx-cpp': 'mlx-cpp-metal', 'native': 'llama.cpp-metal', 'mlx-python': 'mlx-python'}[args.backend]
     if args.skip_build:
         provenance = json.loads(provenance_path.read_text())
         if provenance.get('source_binary_sha256') != binary_sha256 or provenance.get('backend') != backend:
             parser.error('Binary provenance does not match; rerun without --skip-build.')
     else:
         provenance = {'architecture': platform.machine(), 'macos': platform.mac_ver()[0],
-                      'backend': 'llama.cpp-metal' if args.backend == 'native' else 'mlx-python',
+                      'backend': backend,
                       'source_binary_sha256': binary_sha256,
                       'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                       'llama_cpp_commit': (ROOT / 'vendor/llama.cpp/VENDORED_COMMIT.txt').read_text().strip(),
-                      'model_manifest': json.loads((ROOT / 'scripts' / ('models.json' if args.backend == 'native' else 'models_mlx.json')).read_text())}
+                      'model_manifest': json.loads((ROOT / 'scripts' / {'mlx-cpp': 'models_mlx_cpp.json', 'native': 'models.json', 'mlx-python': 'models_mlx.json'}[args.backend]).read_text())}
         provenance_path.write_text(json.dumps(provenance, indent=2) + '\n')
     if args.publish:
-        if args.backend == 'native':
+        if args.backend != 'mlx-python':
             from package_macos import package
-            package(build, ROOT / 'output/macos-native/Within the Latent Walls.app')
+            directory = 'macos-mlx-cpp' if args.backend == 'mlx-cpp' else 'macos-native'
+            package(build, ROOT / 'output' / directory / 'Within the Latent Walls.app', backend=args.backend)
         else:
             publish_mlx_reference(build)
 
