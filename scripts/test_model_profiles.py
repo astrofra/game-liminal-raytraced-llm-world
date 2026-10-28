@@ -40,7 +40,7 @@ class ProfilesTest(unittest.TestCase):
             def fetch(**kwargs):
                 self.assertEqual(kwargs["revision"], profile["revision"])
                 self.assertEqual(kwargs["repo_id"], profile["repo_id"])
-                self.assertEqual(kwargs["local_dir"], path.parent)
+                self.assertEqual(kwargs["local_dir"], path.parent.resolve())
                 path.write_bytes(data)
                 return str(path)
             with patch.multiple(download, FILENAME=path.name, EXPECTED_SIZE=len(data), EXPECTED_SHA256=profile["sha256"]), patch.object(

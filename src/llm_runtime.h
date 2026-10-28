@@ -74,6 +74,7 @@ struct LlmGenerationResult {
 };
 
 struct LlmRuntimeInfo {
+    bool compiled_with_mlx = false;
     bool compiled_with_llama;
     bool gpu_offload_supported;
     const char* vendored_commit;

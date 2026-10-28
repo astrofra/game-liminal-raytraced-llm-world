@@ -73,10 +73,14 @@ static void PrintUsage()
     printf("  --sdl-smoke-test-ms <n> Auto-select a language and close SDL cleanly after n milliseconds\n");
     printf("  --sdl-smoke-command <text> Inject text and Return during the timed SDL smoke test\n");
     printf("  --write-initial-state <json> Export canonical initial state without inference\n");
+    #if defined(LIMINAL_HAVE_MLX)
+    printf("  --llm-profile <name>     gemma-4-e4b-mlx-4bit (MLX / Apple Metal)\n");
+#else
     printf("  --llm-profile <name>     gemma-4-e4b-q4\n");
+#endif
     printf("  --llm-context <n>        Fixed context limit (default 8192)\n");
     printf("  --continuity-memory-tokens <n>  Recent memory cap (default 1024; output reserve unchanged)\n");
-    printf("  --llm-gpu-layers <n>     Offloaded model layers; 0 isolates CPU qualification\n");
+    printf("  --llm-gpu-layers <n>     llama.cpp only: offloaded layers; 0 selects CPU\n");
     printf("  --llm-timeout-ms <n>     Per-call deadline including model load\n");
     printf("  --llm-seed <n>           Sampling seed\n");
     printf("  --llm-probe <json>       Isolated diagnostic completion (role/content array)\n");
@@ -84,11 +88,11 @@ static void PrintUsage()
     printf("  --llm-probe-schema <json> Diagnostic JSON Schema constraint\n");
     printf("  --llm-probe-output <json> Save probe channels and diagnostics\n");
     printf("  --llm-cancel-after <n>   Probe cancellation after n final chunks\n");
-    printf("  --model <path>           GGUF model path for --run-turn\n");
+    printf("  --model <path>           Model path (GGUF file or verified MLX directory)\n");
     printf("  --llm-temperature <f>    Sampling temperature for --run-turn\n");
     printf("  --llm-predict <n>        Maximum generated tokens for --run-turn\n");
-    printf("  --use-json-grammar       Enable llama.cpp JSON grammar for --run-turn\n");
-    printf("  --no-json-grammar        Disable llama.cpp JSON grammar for --run-turn\n");
+    printf("  --use-json-grammar       Enable constrained JSON decoding for --run-turn\n");
+    printf("  --no-json-grammar        Disable constrained JSON decoding for --run-turn\n");
     printf("  --command <text>         Player command; may be repeated for --run-session\n");
     printf("  --command-file <path>    Read one player command per non-empty line\n");
     printf("  --load-state <path>      Load session state JSON before --run-turn or --run-session\n");

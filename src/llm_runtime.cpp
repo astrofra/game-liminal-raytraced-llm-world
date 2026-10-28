@@ -1,6 +1,10 @@
 #include "resource_paths.h"
 #include "llm_runtime.h"
 #include "llm_channels.h"
+#if defined(LIMINAL_HAVE_MLX)
+#include "mlx_runtime.h"
+#endif
+#include <cstdlib>
 #include "model_profiles.generated.h"
 #include "nlohmann/json.hpp"
 #include <algorithm>
@@ -39,7 +43,14 @@ namespace {
 #endif
 
 static std::recursive_timed_mutex g_runtime_mutex;
+#if defined(LIMINAL_HAVE_LLAMA_CPP)
 static bool g_llama_backend_initialized = false;
+#endif
+#if defined(LIMINAL_HAVE_MLX)
+constexpr const char* kBackend = "mlx";
+#else
+constexpr const char* kBackend = "llama.cpp";
+#endif
 #if defined(LIMINAL_HAVE_LLAMA_CPP)
 static std::unique_ptr<llama_model, decltype(&llama_model_free)> g_model(nullptr, llama_model_free);
 static std::string g_model_path, g_model_digest;
@@ -84,7 +95,7 @@ struct GenerationTrace {
         try {
             nlohmann::json data = {
                 {"profile", config.profile_name}, {"model_path", config.model_path}, {"purpose", config.purpose},
-                {"backend","llama.cpp"},{"model_sha256",config.model_sha256},
+                {"backend",kBackend},{"model_sha256",config.model_sha256},
                 {"temperature", config.temperature}, {"seed", config.seed}, {"n_ctx", config.n_ctx},
                 {"n_batch", config.n_batch}, {"n_ubatch", config.n_ubatch}, {"jinja", true},
                 {"reasoning", false}, {"model_reused",result->model_reused}, {"final_budget", config.n_predict},
@@ -153,11 +164,25 @@ LlmGenerationConfig::LlmGenerationConfig()
       purpose("turn"), n_threads(0), n_threads_batch(0), n_predict(768), n_gpu_layers(-1),
       seed(42u), temperature(0.0f), flash_attention(true), use_json_grammar(false)
 {
+    #if defined(LIMINAL_HAVE_MLX)
+    ConfigureLlmProfile("gemma-4-e4b-mlx-4bit", this, nullptr);
+#else
     ConfigureLlmProfile(kLiminalDefaultProfile, this, nullptr);
+#endif
 }
 
 bool ConfigureLlmProfile(const std::string& name, LlmGenerationConfig* config, std::string* error)
 {
+#if defined(LIMINAL_HAVE_MLX)
+    if (config && (name == "gemma-4-e4b-mlx-4bit" || name == kLiminalDefaultProfile)) {
+        config->profile_name = "gemma-4-e4b-mlx-4bit";
+        const char* path = std::getenv("LIMINAL_MLX_MODEL");
+        config->model_path = path ? path : LIMINAL_MLX_MODEL_DIR;
+        config->model_sha256.clear(); // MLX verifies every file against models_mlx.json.
+        config->temperature = 0.0f; config->top_k = 40; config->top_p = 0.95f;
+        return true;
+    }
+#endif
     for (const auto& profile : kLiminalModelProfiles) {
         if (name == profile.name && config) {
             config->profile_name = name;
@@ -189,6 +214,8 @@ bool InitializeLlmRuntime()
         g_llama_backend_initialized = true;
     }
     return true;
+#elif defined(LIMINAL_HAVE_MLX)
+    return true; // Lazy worker start on the first request.
 #else
     return false;
 #endif
@@ -197,6 +224,9 @@ bool InitializeLlmRuntime()
 void ShutdownLlmRuntime()
 {
     std::lock_guard<std::recursive_timed_mutex> lock(g_runtime_mutex);
+#if defined(LIMINAL_HAVE_MLX)
+    ShutdownMlxRuntime();
+#endif
 #if defined(LIMINAL_HAVE_LLAMA_CPP)
     if (g_llama_backend_initialized) {
         g_model.reset();
@@ -234,6 +264,12 @@ bool QueryLlmRuntimeInfo(LlmRuntimeInfo* info)
 
     return true;
 #else
+#if defined(LIMINAL_HAVE_MLX)
+    info->compiled_with_mlx = true;
+    info->gpu_offload_supported = true;
+    info->system_info = "MLX-LM / Apple Metal; local worker, availability checked at first inference";
+    return true;
+#endif
     info->system_info = "llama.cpp support is not compiled into this binary.";
     return false;
 #endif
@@ -485,6 +521,21 @@ static bool ChatCompletionInternal(
     } catch (const std::exception& error) {
         return fail("error", error.what());
     }
+#elif defined(LIMINAL_HAVE_MLX)
+    if (messages.empty() || config.n_ctx < 128 || config.n_ctx > 32768 ||
+        config.n_batch < 1 || config.n_batch > 32768 || config.n_predict < 1 || config.n_predict > 16384 ||
+        config.timeout_ms < 1 || !std::isfinite(config.temperature) || config.temperature < 0 ||
+        config.top_k < 1 || !std::isfinite(config.top_p) || config.top_p < 0 || config.top_p > 1)
+        return fail("error", "Invalid generation bounds");
+    if (config.n_gpu_layers != -1)
+        return fail("error", "--llm-gpu-layers is llama.cpp-only; MLX uses Apple Metal");
+    std::unique_lock<std::recursive_timed_mutex> runtime_lock(g_runtime_mutex, std::defer_lock);
+    while (!runtime_lock.try_lock_for(std::chrono::milliseconds(20))) {
+        if (!trace.loading_alive()) return fail(trace.cancelled ? "cancelled" : "timeout", "Stopped while waiting for inference");
+    }
+    if (!trace.loading_alive()) return fail(trace.cancelled ? "cancelled" : "timeout", "Stopped before MLX inference");
+    config.timeout_ms = std::max(1, config.timeout_ms - static_cast<int>(ElapsedMs(trace.started)));
+    return GenerateMlxCompletion(config, messages, stream_callback, stream_user_data, result, count_only);
 #else
     (void) messages; (void) stream_callback; (void) stream_user_data;
     return fail("unavailable", "llama.cpp support is not compiled into this binary");
@@ -520,6 +571,7 @@ void PrintLlmRuntimeInfo(FILE* stream)
     LlmRuntimeInfo info;
     QueryLlmRuntimeInfo(&info);
 
+    fprintf(out, "MLX compiled in: %s\n", info.compiled_with_mlx ? "yes" : "no");
     fprintf(out, "llama.cpp compiled in: %s\n", info.compiled_with_llama ? "yes" : "no");
     fprintf(out, "llama.cpp vendored commit: %s\n", info.vendored_commit ? info.vendored_commit : "unknown");
     fprintf(out, "GPU offload available: %s\n", info.gpu_offload_supported ? "yes" : "no");
