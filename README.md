@@ -59,19 +59,20 @@ Descriptions, `.scene`, images et résultats sont archivés sous
 
 ## macOS Apple Silicon
 
-Le portage macOS utilise **MLX / Apple Metal** pour Gemma 4 E4B, avec un worker
-local lancé par le jeu, sans serveur ni connexion après préparation.
+Le portage macOS utilise **C++ / llama.cpp / Apple Metal**, sans Python au runtime.
+Le bundle autonome embarque le modèle et toutes les bibliothèques non système.
 
 ```sh
-python3.12 scripts/setup_macos.py
+python3 scripts/setup_macos.py
 python3 scripts/build_macos.py --test --publish
 ./play_within_the_latent_walls.command
 ```
 
-macOS 14+, Python 3.12, Xcode Command Line Tools, CMake et Ninja sont requis.
-Le bundle local est `output/macos/Within the Latent Walls.app` ; il utilise
-l'environnement Python et les poids du dépôt. Voir le [guide macOS](documentation/MACOS.md)
-pour les prérequis, les archives, les limites et la recette.
+Le joueur a besoin d'un Mac Apple Silicon sous macOS 14+ seulement.
+Python, Xcode Command Line Tools, CMake et Ninja servent à construire le jeu.
+Copier ou ouvrir `output/macos-native/Within the Latent Walls.app` (environ 5 Go).
+Voir le [guide macOS](documentation/MACOS.md) pour les prérequis de build,
+les mesures, la signature locale et la référence MLX historique.
 
 ## Construire
 

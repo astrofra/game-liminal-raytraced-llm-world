@@ -26,3 +26,8 @@ __pycache__/
 .venv-mlx/
 models/mlx/
 output/macos/
+
+# Standalone macOS builds and model download cache
+output/macos-native/
+models/**/.cache/
+models/**/*.partial

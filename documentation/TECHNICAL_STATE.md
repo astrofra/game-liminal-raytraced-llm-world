@@ -7,14 +7,13 @@ Gemma 4 E4B Instruct Q4_K_M, artefact unique défini par `scripts/models.json`.
 Vendor épinglé : `620d2225cc436ab0b001e3200e590e3b286ef9ab`.
 Aucun service d'inférence n'est nécessaire au jeu.
 
-Sur la branche `macos-port`, Apple Silicon utilise MLX-LM 0.32.2 / MLX 0.32.4
-avec Gemma 4 E4B Safetensors 4 bits, manifeste séparé `scripts/models_mlx.json`.
-Un worker Python local persistant communique par canal privé ; aucun serveur
-ni téléchargement au runtime. Les requêtes sont indépendantes et annulables,
-le tokenizer réel compte le contexte, le JSON est contraint puis intégralement
-validé. Le moteur garde la même autorité. Build arm64 et bundle local `.app` :
-[guide macOS](MACOS.md), [recette](duo/reviews/MAC-002.md).
-Les paragraphes llama.cpp ci-dessous décrivent le backend Windows.
+Sur la branche `macos-port`, Apple Silicon utilise désormais llama.cpp/Metal
+natif dans le processus C++, avec le même artefact GGUF épinglé que Windows.
+Le bundle autonome inclut poids, ressources, dylibs et shaders ; Python est
+uniquement un outil de développement. Le backend Python/MLX reste disponible
+explicitement comme référence historique, pas dans la livraison native.
+Voir le [guide macOS](MACOS.md) et la [recette native](duo/reviews/MAC-005.md).
+Les paragraphes llama.cpp ci-dessous s'appliquent aussi au runtime macOS.
 
 Les poids sont vérifiés par SHA-256 au premier chargement, puis conservés
 jusqu'à la fermeture. Les appels sont sérialisés ; contexte, cache KV, sampler
