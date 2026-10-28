@@ -1,0 +1,8 @@
+nlohmann/json 3.12.0 single-header, unmodified.
+Copied from vendor/llama.cpp/vendor/nlohmann at llama.cpp 620d2225cc436ab0b001e3200e590e3b286ef9ab
+so that the game no longer depends on the llama.cpp tree for JSON.
+Upstream: https://github.com/nlohmann/json
+SHA256 json.hpp: 08f19bbcc66ff3082f5caf58867b1232987dba98d82e2b29d870722fce42776b
+SHA256 json_fwd.hpp: fb6aa70cbece087f37ab4685c182b287c53be54f785f981b9db9d30d2d028b37
+License: MIT (SPDX header in json.hpp).
+Copied: 2026-10-27.

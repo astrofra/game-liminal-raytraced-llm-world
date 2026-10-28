@@ -1,18 +1,29 @@
-# État technique — 27 octobre 2026
+# État technique — 28 octobre 2026
 
 ## Runtime actuel
 
-C++17, SDL3/SDL_ttf, raytracer CPU et llama.cpp lié dans le processus.
-Gemma 4 E4B Instruct Q4_K_M, artefact unique défini par `scripts/models.json`.
-Vendor épinglé : `620d2225cc436ab0b001e3200e590e3b286ef9ab`.
+C++17, SDL3/SDL_ttf, raytracer CPU et un moteur d'inférence dédié lié dans le
+processus (`engine/`). Gemma 4 E4B Instruct Q4_K_M, artefact unique défini par
+`scripts/models.json`, exécuté tel quel (blocs Q4_K/Q6_K du GGUF).
 Aucun service d'inférence n'est nécessaire au jeu.
+
+Le moteur n'exécute que ce modèle : `e4b_spec` refuse tout autre GGUF. Devices :
+MLX/Metal sous macOS, Vulkan natif sous Windows et Linux (chargeur ouvert à
+l'exécution), oracle CPU f32 pour les tests ; `LIMINAL_LLM_BACKEND` ou
+`--llm-backend` force `mlx`, `vulkan` ou `cpu-ref`. Sans GPU Vulkan utilisable,
+le choix par défaut retombe sur l'oracle CPU, jouable mais très lent. Tokenizer,
+template de chat, échantillonneur et contrainte JSON (xgrammar, règle d'espaces
+de llama.cpp) reproduisent llama.cpp `620d2225`, qui a été retiré du dépôt : ses
+références figées (`tests/data/llm/`) vérifient la parité en ctest (`engine_parity_*`).
+Notices : `engine/THIRD_PARTY_NOTICES.md`.
 
 Les poids sont vérifiés par SHA-256 au premier chargement, puis conservés
 jusqu'à la fermeture. Les appels sont sérialisés ; contexte, cache KV, sampler
 et parseur sont recréés à chaque requête. Il n'y a donc pas de reprise implicite
 d'historique entre requêtes ou parties. Le template Gemma demande une réponse
 sans réflexion ; le parseur amont et un garde empêchent d'afficher des canaux privés.
-Les propositions structurées utilisent un JSON Schema converti en grammaire.
+Les propositions structurées utilisent un JSON Schema compilé en grammaire,
+compilée pendant la lecture du prompt.
 Annulation coopérative, délais, budgets de tokens et de contexte restent bornés.
 
 Le démarrage sans argument ouvre SDL, demande la langue puis lance directement
@@ -140,7 +151,7 @@ du jeu, Inno Setup télécharge Gemma à la révision épinglée et vérifie son
 Un modèle existant est réutilisé seulement après contrôle de taille 64 bits et SHA.
 Le jeu fonctionne ensuite hors ligne. `--portable-only` reste une option explicite
 de fabrication d'un dossier complet avec GGUF ; le Setup standard n'en dépend pas.
-Un changement de packaging se construit avec `--skip-build`, sans rebuild CUDA.
+Un changement de packaging se construit avec `--skip-build`, sans recompilation.
 
 Les anciens transports d'inférence et profils concurrents ont été supprimés.
 Le téléchargement final de l'installeur reste distinct du runtime local.

@@ -104,7 +104,7 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
             {"success",success},{"cancelled",gate.cancelled},{"timeout",gate.expired},
             {"repairs",result->repairs},{"calls",calls},{"seed",model.seed},{"profile",model.profile_name},{"temperature",model.temperature},
             {"model_path",model.model_path},
-            {"backend","llama.cpp"},{"model_sha256",model.model_sha256},
+            {"backend",LlmRuntimeLabel()},{"model_sha256",model.model_sha256},
             {"removed_code_wrappers",removed_wrappers},
             {"program_patch_repairs",patch_repairs},
             {"audit_ms",audit_ms},{"preview_ms",preview_ms},
@@ -190,7 +190,7 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
             {"prompt_sha256",SceneTextHash(generation.prompt_text)},
             {"stop_reason",generation.stop_reason},{"prompt_tokens",generation.prompt_tokens},
             {"generated_tokens",generation.generated_tokens},{"reasoning_tokens",generation.reasoning_tokens},
-            {"final_tokens",generation.final_tokens},{"offloaded_layers",generation.offloaded_layers},{"load_ms",generation.load_time_ms},
+            {"final_tokens",generation.final_tokens},{"load_ms",generation.load_time_ms},
             {"inference_ms",generation.inference_time_ms},{"wall_ms",generation.wall_time_ms}});
         *text=generation.response_text.empty()?gate.last_final:generation.response_text;
         const std::string generated_text=*text;

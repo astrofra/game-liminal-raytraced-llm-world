@@ -1,0 +1,19 @@
+#version 450
+// out[row] = rms(x[row]) * w, one workgroup per row of `cols` values.
+#include "common.glsl"
+layout(local_size_x = 256) in;
+layout(std430, binding = 0) readonly buffer X { float x[]; };
+layout(std430, binding = 1) readonly buffer W { float w[]; };
+layout(std430, binding = 2) writeonly buffer O { float o[]; };
+layout(push_constant) uniform P { uint cols; } p;
+shared float scratch[256];
+#include "reduce.glsl"
+
+void main()
+{
+    const uint base = gl_WorkGroupID.x * p.cols;
+    float ss = 0.0;
+    for (uint i = gl_LocalInvocationID.x; i < p.cols; i += 256) ss += x[base + i] * x[base + i];
+    const float inv = inversesqrt(workgroup_sum(ss) / float(p.cols) + 1e-6);
+    for (uint i = gl_LocalInvocationID.x; i < p.cols; i += 256) o[base + i] = x[base + i] * inv * w[i];
+}

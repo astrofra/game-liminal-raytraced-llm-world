@@ -37,7 +37,9 @@ continue de cinq secondes. Le seuil initial possède un mix pré-scripté, audib
 dès le premier écran par cette même montée progressive, sans attendre une commande.
 Voir le [guide audio et le diagnostic de mixage](documentation/AUDIO_AMBIENCE.md).
 
-Gemma 4 E4B Q4_K_M tourne dans le processus via **llama.cpp intégré**. Aucun
+Gemma 4 E4B Q4_K_M tourne dans le processus via un **moteur d'inférence dédié**
+à ce modèle (`engine/`) : Vulkan sous Windows et Linux, MLX/Metal sous macOS.
+Il exécute directement les blocs Q4_K/Q6_K du GGUF. Aucun
 service, serveur, compte ou accès Internet n'est nécessaire pour jouer après installation.
 L'installeur télécharge le modèle en dernière phase, puis le jeu fonctionne hors ligne.
 Le modèle est vérifié au premier appel et reste chargé jusqu'à la fermeture.
@@ -59,9 +61,12 @@ Descriptions, `.scene`, images et résultats sont archivés sous
 
 ## Construire
 
-Windows : C++17, CMake, Ninja, MSVC compatible CUDA, Python pour les outils,
-CUDA Toolkit pour construire la version GPU. SDL3/SDL_ttf sont liés statiquement ;
-llama.cpp est épinglé au commit `620d2225cc436ab0b001e3200e590e3b286ef9ab`.
+Windows : C++17, CMake, Ninja, MSVC (VS 2022 ou plus récent), Python pour les outils,
+[Vulkan SDK](https://vulkan.lunarg.com) pour les en-têtes et `glslc` du moteur LLM.
+SDL3/SDL_ttf sont liés statiquement ; xgrammar (`1c9556dd`) est récupéré par CMake.
+
+macOS (Apple Silicon) : CMake, libomp de Homebrew ; MLX (`v0.32.0`) est récupéré
+par CMake et la cible de déploiement est fixée à macOS 26.2.
 
 ```powershell
 python scripts/build_native.py --publish
@@ -72,7 +77,8 @@ python scripts/download_gemma.py --verify-only
 
 Le manifeste unique est `scripts/models.json`. Les modèles ne sont pas suivis dans Git.
 Le dossier de build par défaut est `build_native/` ; le lanceur utilise le binaire
-publié dans `build/Release/`. `--with-cli` construit aussi l'outil de diagnostic amont.
+publié dans `build/Release/`. `liminal_engine_cli` (parité, rejeu d'appels capturés,
+mesures) est construit avec le jeu.
 
 ## Distribution Windows
 
@@ -81,12 +87,13 @@ python scripts/build_installer.py --skip-build --version 3.0.1
 ```
 
 L'installeur unique et l'archive des sources sont dans `output/installer/dist/`.
-Le Setup contient le jeu, ses ressources et ses DLL, sans modèle ni volumes `.bin`.
+Le Setup contient le jeu, ses ressources et ses DLL, sans modèle ni volumes `.bin` ;
+le `vulkan-1.dll` vient du pilote graphique du joueur.
 Après leur copie, il télécharge les 5,34 Go de Gemma dans le dossier du jeu et
 vérifie son SHA-256. Un modèle déjà présent et valide est conservé. Aucune
-installation de Python, CUDA Toolkit ou d'un service d'inférence chez le joueur.
+installation de Python, de Vulkan SDK ou d'un service d'inférence chez le joueur.
 La fabrication standard n'exige pas de GGUF local et `--skip-build` réutilise le
-binaire publié sans recompiler CUDA.
+binaire publié sans recompiler.
 
 Pour préparer explicitement un dossier portable complet hors ligne, utiliser
 `python scripts/build_installer.py --skip-build --portable-only` avec le GGUF local
@@ -103,7 +110,8 @@ python scripts/verify_native_llm.py --exe build/Release/liminal_cornell_renderer
 ```
 
 `--help` expose les diagnostics : rendu, génération de scène, sessions headless,
-annulation et sondes du modèle. `--llm-gpu-layers 0` sélectionne le CPU pour une recette.
+annulation et sondes du modèle. `--llm-backend cpu-ref` (ou `LIMINAL_LLM_BACKEND`)
+force l'oracle CPU, très lent, pour une recette ; `mlx` et `vulkan` forcent un device.
 Le jeu normal n'affiche aucun sélecteur de backend ou de mode de scène.
 
 - [État technique](documentation/TECHNICAL_STATE.md)

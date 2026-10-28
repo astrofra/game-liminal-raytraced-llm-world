@@ -15,9 +15,9 @@ runs directly through WithinTheLatentWalls.exe without an installation download.
 
 Windows 10 x64 version 1809 or newer is required. Allow at least 8 GB of free
 disk space for a fresh installation, plus space for research archives. The
-smaller Setup does not reduce the installed model's size. An NVIDIA GPU with a current driver
-is recommended; the CPU backend can run with sufficient system RAM.
-CUDA Toolkit, Python and compilation tools are not required on the player PC.
+smaller Setup does not reduce the installed model's size. A GPU whose current driver supports
+Vulkan 1.2 (NVIDIA, AMD or Intel) is required for playable response times.
+Vulkan SDK, Python and compilation tools are not required on the player PC.
 
 Choose your language on launch. Every launch starts a fresh exploration.
 Only the first place is predefined. Research descriptions, scene programs and

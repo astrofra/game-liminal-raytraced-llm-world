@@ -126,7 +126,7 @@ bool ResearchArchive::Start(const std::string& root,const SessionState& state,
         std::filesystem::create_directory(path_/"places");std::filesystem::create_directory(path_/"turns");
         Write("manifest.json",json({{"schema",1},{"started_utc",UtcTime()},{"status","running"},
             {"new_game",true},{"llm_seed",model.seed},{"model",model.model_path},
-            {"backend","llama.cpp"},{"width",render.width},{"height",render.height},
+            {"backend",LlmRuntimeLabel()},{"width",render.width},{"height",render.height},
             {"samples",render.samples_per_pixel},{"render_seed",render.seed},
             {"scene_system_prompt",LocalSceneSystemPrompt()},{"repair_prefix",LocalSceneRepairPrefix()},
             {"image_kind","first displayed frame, post-processing included, without HUD"}}).dump(2)+"\n");

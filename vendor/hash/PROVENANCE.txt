@@ -1,0 +1,6 @@
+sha256 (Igor Pavlov, public domain) and rotate-bits (MIT), unmodified.
+Copied from vendor/llama.cpp/vendor/hash at llama.cpp 620d2225cc436ab0b001e3200e590e3b286ef9ab
+so that model verification no longer depends on the llama.cpp tree.
+SHA256 sha256/sha256.c: ba7a8ea69ad125385db28ef17e77be4a09dfdc30bb9532c30b259baaf670129c
+Licenses: sha256/LICENSE, rotate-bits/LICENSE.md.
+Copied: 2026-10-27.

@@ -55,7 +55,7 @@ def summarize(label, folder):
         "reasoning_enabled_calls": sum(bool(call.get("reasoning")) for call in calls) if calls else None,
         "calls_with_reasoning_tokens": sum(call["reasoning_tokens"] > 0 for call in calls) if calls else None,
         "final_tokens": sum(call["final_tokens"] for call in calls) if calls else None,
-        "offload": sorted({f"{call['offloaded_layers']}/{call['total_layers']}" for call in calls}),
+        "devices": sorted({f"{call.get('backend', '?')}:{call.get('device', '?')}" for call in calls}),
         "failures": [{"id": row["id"], "errors": row["invariant_errors"], "returncode": row["returncode"]}
                      for row in rows if not passed(row)],
         "narrative_review": "pending",
@@ -93,7 +93,7 @@ def main():
                      f"{run['generation_metadata_from_model']} / {run['generation_metadata_fallback']} | {latency} |")
     for run in runs:
         lines.extend(["", f"## {run['label']}", "", f"Preuves : `{run['directory']}`.", "",
-                      f"Arrêts des appels : `{run['call_stops']}`. Offload observé : `{run['offload']}`.", ""])
+                      f"Arrêts des appels : `{run['call_stops']}`. Device observé : `{run['devices']}`.", ""])
         for failure in run["failures"]:
             lines.append(f"- `{failure['id']}` : {'; '.join(failure['errors'])} (code {failure['returncode']}).")
     for path in (args.json, args.markdown):

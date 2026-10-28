@@ -1,0 +1,40 @@
+#version 450
+// x = (x + rms(y) * w) * scale in place and, with HAS_NEXT, h = rms(x) * wn:
+// the residual update of a block fused with the next block's input norm.
+// One workgroup per row of 2560 values.
+#include "common.glsl"
+layout(local_size_x = 256) in;
+layout(constant_id = 0) const bool HAS_NEXT = false;
+layout(std430, binding = 0) buffer X { float x[]; };
+layout(std430, binding = 1) readonly buffer Y { float y[]; };
+layout(std430, binding = 2) readonly buffer W { float w[]; };
+layout(std430, binding = 3) readonly buffer WN { float wn[]; };
+layout(std430, binding = 4) writeonly buffer H { float h[]; };
+layout(push_constant) uniform P { float scale; } p;
+shared float scratch[256];
+#include "reduce.glsl"
+
+const uint E = 2560;
+const uint PER = E / 256;
+
+void main()
+{
+    const uint base = gl_WorkGroupID.x * E;
+    const uint tid = gl_LocalInvocationID.x;
+    float yv[PER];
+    float ss = 0.0;
+    [[unroll]] for (uint j = 0; j < PER; ++j) { yv[j] = y[base + tid + j * 256]; ss += yv[j] * yv[j]; }
+    const float inv = inversesqrt(workgroup_sum(ss) / float(E) + 1e-6);
+    float xv[PER];
+    float ss2 = 0.0;
+    [[unroll]] for (uint j = 0; j < PER; ++j) {
+        const uint i = tid + j * 256;
+        xv[j] = (x[base + i] + yv[j] * inv * w[i]) * p.scale;
+        x[base + i] = xv[j];
+        ss2 += xv[j] * xv[j];
+    }
+    if (HAS_NEXT) {
+        const float inv2 = inversesqrt(workgroup_sum(ss2) / float(E) + 1e-6);
+        [[unroll]] for (uint j = 0; j < PER; ++j) h[base + tid + j * 256] = xv[j] * inv2 * wn[tid + j * 256];
+    }
+}

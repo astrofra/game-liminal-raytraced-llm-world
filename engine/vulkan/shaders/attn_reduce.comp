@@ -1,0 +1,29 @@
+#version 450
+// Combines the split partials of attn_decode: out[h * HD + d] for 8 heads.
+#include "common.glsl"
+layout(local_size_x = 256) in;
+layout(constant_id = 0) const uint HD = 256;
+layout(std430, binding = 0) readonly buffer PO { float po[]; };
+layout(std430, binding = 1) readonly buffer PML { float pml[]; };
+layout(std430, binding = 2) writeonly buffer O { float o[]; };
+layout(push_constant) uniform P { uint n_splits; } p;
+
+void main()
+{
+    const uint head = gl_WorkGroupID.x;
+    float m = kNegInf;
+    for (uint s = 0; s < p.n_splits; ++s) m = max(m, pml[(head * p.n_splits + s) * 2]);
+    float l = 0.0;
+    for (uint s = 0; s < p.n_splits; ++s) {
+        const float ms = pml[(head * p.n_splits + s) * 2];
+        if (ms != kNegInf) l += pml[(head * p.n_splits + s) * 2 + 1] * exp(ms - m);
+    }
+    for (uint d = gl_LocalInvocationID.x; d < HD; d += 256) {
+        float acc = 0.0;
+        for (uint s = 0; s < p.n_splits; ++s) {
+            const float ms = pml[(head * p.n_splits + s) * 2];
+            if (ms != kNegInf) acc += po[(head * p.n_splits + s) * HD + d] * exp(ms - m);
+        }
+        o[head * HD + d] = acc / l;
+    }
+}

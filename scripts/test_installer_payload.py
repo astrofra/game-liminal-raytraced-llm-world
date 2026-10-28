@@ -1,7 +1,6 @@
 """Packaging regressions: Setup must build without local weights and exclude them."""
 import hashlib
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -21,15 +20,18 @@ class InstallerPayloadTest(unittest.TestCase):
         self.weights = b"GGUFfixture weights"
         files = [
             "build/Release/liminal_cornell_renderer.exe", "scripts/models.json",
-            "vendor/llama.cpp/VENDORED_COMMIT.txt", "vendor/llama.cpp/LICENSE", "LICENSE", "README.md",
+            "engine/licenses/llama.cpp-LICENSE.txt", "engine/licenses/nlohmann-json-LICENSE.txt",
+            "engine/licenses/picojson-LICENSE.txt", "engine/THIRD_PARTY_NOTICES.md", "LICENSE", "README.md",
             "packaging/MODEL_NOTICE.txt", "packaging/INSTALLATION_README.txt", "packaging/Gemma-LICENSE.txt",
             "build/_deps/sdl3-src/LICENSE.txt", "build/_deps/sdl3_ttf-src/LICENSE.txt",
             "build/_deps/sdl3_ttf-src/external/freetype/LICENSE.TXT",
             "build/_deps/sdl3_ttf-src/external/harfbuzz/COPYING",
             "build/_deps/sdl3_ttf-src/external/plutosvg/LICENSE",
             "build/_deps/sdl3_ttf-src/external/plutovg/LICENSE",
+            "build/_deps/xgrammar-src/LICENSE", "build/_deps/xgrammar-src/NOTICE",
+            "build/_deps/xgrammar-src/3rdparty/dlpack/LICENSE",
             "assets/fonts/Zilla_Slab/OFL.txt", "assets/fonts/Zilla_Slab_Highlight/OFL.txt",
-            "cuda/LICENSE", "cuda/EULA.txt", "vendor/stb/VORBIS-LICENSE",
+            "vendor/stb/VORBIS-LICENSE",
         ]
         for name in files:
             path = root / name
@@ -38,14 +40,13 @@ class InstallerPayloadTest(unittest.TestCase):
         exe = root / files[0]
         provenance = {"artifacts": {exe.name: installer.sha256_file(exe)},
                       "model_manifest_sha256": installer.sha256_file(root / "scripts/models.json"),
-                      "llama_cpp_commit": "fixture"}
+                      "engine_commit": "fixture"}
         (exe.parent / "runtime-build.json").write_text(json.dumps(provenance), encoding="utf-8")
         patches = [
             patch.multiple(installer, PROJECT_ROOT=root, BUILD_DIR=root / "build", SOURCE_EXE=exe,
                            INSTALLER_ROOT=root / "output/installer", STAGE_DIR=self.stage,
                            DIST_DIR=root / "output/installer/dist", PACKAGING_DIR=root / "packaging",
                            MODEL_SIZE=len(self.weights), MODEL_SHA256=hashlib.sha256(self.weights).hexdigest()),
-            patch.dict(os.environ, {"CUDA_PATH": str(root / "cuda")}),
             patch.object(installer, "copy_runtime_dependencies", return_value=[]),
         ]
         for item in patches:

@@ -15,8 +15,9 @@ Avec un binaire publié à jour :
 python scripts/build_installer.py --skip-build --version 3.0.1
 ```
 
-`--skip-build` évite toute compilation C++/CUDA. Le packaging contrôle la provenance
-du binaire, l'identité du manifeste et du vendor, puis copie les dépendances.
+`--skip-build` évite toute compilation C++. Le packaging contrôle la provenance
+du binaire (dont le commit du moteur, vérifié par `--llm-info`) et l'identité du
+manifeste, puis copie les dépendances.
 Le GGUF local n'est ni requis, ni lu, ni copié pour le Setup standard.
 
 - `output/installer/stage/` : jeu et DLL sans modèle, zone de fabrication du Setup.
@@ -64,11 +65,13 @@ Le compilateur refuse de produire un Setup à partir d'un stage contenant des GG
 
 ## Conditions et qualification
 
-Windows x64 10 version 1809 ou plus récent, suffisamment de RAM et un pilote NVIDIA
-pour CUDA. Les DLL CUDA et Microsoft requises sont copiées auprès du jeu ; CUDA
-Toolkit n'est pas nécessaire chez le joueur. Prévoir au moins 8 Go libres pour
+Windows x64 10 version 1809 ou plus récent, suffisamment de RAM et un GPU dont
+le pilote fournit Vulkan 1.2 (NVIDIA, AMD ou Intel récents) : le moteur charge le
+`vulkan-1.dll` du pilote et place environ 3 Go de poids et 0,5 Go de cache KV en
+mémoire vidéo. Les DLL Microsoft requises sont copiées auprès du jeu ; ni Vulkan
+SDK ni CUDA ne sont nécessaires chez le joueur. Prévoir au moins 8 Go libres pour
 une installation neuve, puis de la place pour les archives de recherche. Le
-diagnostic CPU utilise `--llm-gpu-layers 0` ; ses performances se qualifient séparément.
+diagnostic CPU utilise `--llm-backend cpu-ref` ; il est très lent et ne sert qu'aux recettes.
 
 Les archives sont écrites dans Local AppData et conservées à la désinstallation.
 Chaque lancement commence une nouvelle partie. `MODEL_NOTICE.txt` identifie le

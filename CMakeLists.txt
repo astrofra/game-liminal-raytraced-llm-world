@@ -1,14 +1,16 @@
 cmake_minimum_required(VERSION 3.20)
 
+# MLX v0.32 kernels target Metal 4.0: macOS 26.2 enables the M5 neural-accelerator
+# (NAX) kernels, while a newer host default would select Metal 4.1, which they reject.
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "26.2" CACHE STRING "Minimum macOS version" FORCE)
+endif()
+
 project(liminal_raytraced_renderer LANGUAGES CXX)
 
-option(LIMINAL_ENABLE_LLAMA_CPP "Build with vendorized llama.cpp runtime support" ON)
-option(LIMINAL_ENABLE_LLAMA_CUDA "Enable CUDA backend in vendorized llama.cpp build" ON)
 option(LIMINAL_ENABLE_OPENMP "Enable OpenMP render parallelism when available" ON)
 option(LIMINAL_ENABLE_SDL3_FRONTEND "Build the SDL3 interactive frontend" ON)
-option(LIMINAL_BUILD_LLAMA_TOOLS "Expose llama-cli qualification target" OFF)
-
-set(LIMINAL_LLAMA_CPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp" CACHE PATH "Path to the vendorized llama.cpp tree")
+set(LIMINAL_VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,6 +25,7 @@ set(LIMINAL_SOURCES
     src/investigation_text.cpp
     src/known_barrier.cpp
     src/llm_runtime.cpp
+    src/llm_backend_native.cpp
     src/continuity.cpp
     src/research_archive.cpp
     src/scene_design.cpp
@@ -67,7 +70,7 @@ add_custom_command(OUTPUT "${SCENE_GUIDE_HEADER}"
     VERBATIM)
 add_executable(liminal_cornell_renderer ${LIMINAL_SOURCES} "${MODEL_HEADER}" "${SCENE_GUIDE_HEADER}")
 add_library(liminal_ambience STATIC src/ambience.cpp)
-target_include_directories(liminal_ambience PUBLIC src PRIVATE "${LIMINAL_LLAMA_CPP_DIR}/vendor")
+target_include_directories(liminal_ambience PUBLIC src PRIVATE "${LIMINAL_VENDOR_DIR}")
 if(MSVC)
     target_compile_options(liminal_ambience PRIVATE /W4 /utf-8)
 endif()
@@ -78,7 +81,7 @@ target_include_directories(liminal_llm_channels_test PRIVATE src)
 enable_testing()
 add_executable(liminal_ambience_test tests/ambience_test.cpp src/place_proposal.cpp)
 target_link_libraries(liminal_ambience_test PRIVATE liminal_ambience)
-target_include_directories(liminal_ambience_test PRIVATE "${LIMINAL_LLAMA_CPP_DIR}/vendor")
+target_include_directories(liminal_ambience_test PRIVATE "${LIMINAL_VENDOR_DIR}")
 if(MSVC)
     target_compile_options(liminal_ambience_test PRIVATE /W4 /utf-8)
 endif()
@@ -89,7 +92,7 @@ add_executable(liminal_glass_supports src/glass_supports_cli.cpp src/glass_suppo
 add_executable(liminal_glass_supports_test tests/glass_supports_test.cpp src/glass_supports.cpp src/scene.cpp)
 add_executable(liminal_glass_supports_geometry_test tests/glass_supports_geometry_test.cpp src/glass_supports.cpp src/scene.cpp src/renderer.cpp)
 foreach(target liminal_glass_supports liminal_glass_supports_test liminal_glass_supports_geometry_test)
-    target_include_directories(${target} PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor")
+    target_include_directories(${target} PRIVATE src vendor/stb "${LIMINAL_VENDOR_DIR}")
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /wd4996 /utf-8)
     endif()
@@ -101,7 +104,7 @@ add_executable(liminal_coplanar_cleanup src/coplanar_cleanup_cli.cpp src/coplana
 add_executable(liminal_coplanar_cleanup_test tests/coplanar_cleanup_test.cpp src/coplanar_cleanup.cpp src/scene_hash.cpp src/glass_supports.cpp src/scene.cpp)
 add_executable(liminal_coplanar_cleanup_geometry_test tests/coplanar_cleanup_geometry_test.cpp src/coplanar_cleanup.cpp src/scene_hash.cpp src/glass_supports.cpp src/scene.cpp src/animated_view.cpp)
 foreach(target liminal_coplanar_cleanup liminal_coplanar_cleanup_test liminal_coplanar_cleanup_geometry_test)
-    target_include_directories(${target} PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash")
+    target_include_directories(${target} PRIVATE src vendor/stb "${LIMINAL_VENDOR_DIR}" "${LIMINAL_VENDOR_DIR}/hash")
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /wd4996 /utf-8)
     endif()
@@ -120,18 +123,18 @@ add_executable(liminal_dynamic_scene_test tests/dynamic_scene_test.cpp tests/obj
     tests/audio_turn_test.cpp tests/investigation_contract_test.cpp tests/investigation_journey_test.cpp tests/investigation_distribution_test.cpp tests/known_barrier_test.cpp
     src/investigation.cpp src/investigation_distribution.cpp src/investigation_text.cpp src/known_barrier.cpp
     src/scene_design.cpp src/scene_validation.cpp src/scene_normalization.cpp src/dynamic_scene.cpp src/scene.cpp src/renderer.cpp
-    src/game_state.cpp src/object_interactions.cpp src/object_resolution.cpp src/object_render.cpp src/place_proposal.cpp src/exploration_policy.cpp src/inventory.cpp src/narrative_language.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp
+    src/game_state.cpp src/object_interactions.cpp src/object_resolution.cpp src/object_render.cpp src/place_proposal.cpp src/exploration_policy.cpp src/inventory.cpp src/narrative_language.cpp src/scene_compiler.cpp src/turn_runner.cpp src/turn_contract.cpp src/llm_runtime.cpp src/llm_backend_native.cpp
     src/research_archive.cpp src/continuity.cpp src/glass_supports.cpp src/coplanar_cleanup.cpp src/scene_hash.cpp src/animated_view.cpp
     "${MODEL_HEADER}" "${SCENE_GUIDE_HEADER}")
-target_include_directories(liminal_dynamic_scene_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor"
-    "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash" "${CMAKE_CURRENT_BINARY_DIR}/generated")
+target_include_directories(liminal_dynamic_scene_test PRIVATE src vendor/stb "${LIMINAL_VENDOR_DIR}"
+    "${LIMINAL_VENDOR_DIR}/hash" "${CMAKE_CURRENT_BINARY_DIR}/generated")
 if(MSVC)
     target_compile_options(liminal_dynamic_scene_test PRIVATE /W4 /wd4996 /utf-8)
 endif()
 add_test(NAME dynamic_scene COMMAND liminal_dynamic_scene_test)
 target_link_libraries(liminal_dynamic_scene_test PRIVATE liminal_ambience)
 add_executable(liminal_continuity_test tests/continuity_test.cpp src/continuity.cpp)
-target_include_directories(liminal_continuity_test PRIVATE src "${LIMINAL_LLAMA_CPP_DIR}/vendor")
+target_include_directories(liminal_continuity_test PRIVATE src "${LIMINAL_VENDOR_DIR}")
 if(MSVC)
     target_compile_options(liminal_continuity_test PRIVATE /W4 /utf-8)
 endif()
@@ -142,7 +145,7 @@ if(WIN32)
     target_link_libraries(liminal_cornell_renderer PRIVATE shell32 bcrypt)
 endif()
 
-target_include_directories(liminal_cornell_renderer PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash")
+target_include_directories(liminal_cornell_renderer PRIVATE src vendor/stb "${LIMINAL_VENDOR_DIR}" "${LIMINAL_VENDOR_DIR}/hash")
 
 if (LIMINAL_ENABLE_OPENMP)
     find_package(OpenMP)
@@ -176,14 +179,14 @@ if (LIMINAL_ENABLE_SDL3_FRONTEND)
 
     if (TARGET SDL3::SDL3)
         add_library(liminal_ambience_audio STATIC src/ambience_audio.cpp src/scene_hash.cpp)
-        target_include_directories(liminal_ambience_audio PRIVATE vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash")
+        target_include_directories(liminal_ambience_audio PRIVATE vendor/stb "${LIMINAL_VENDOR_DIR}" "${LIMINAL_VENDOR_DIR}/hash")
         target_link_libraries(liminal_ambience_audio PUBLIC liminal_ambience SDL3::SDL3)
         if(MSVC)
             target_compile_options(liminal_ambience_audio PRIVATE /W4 /wd4996 /utf-8)
         endif()
         target_link_libraries(liminal_cornell_renderer PRIVATE liminal_ambience_audio)
         add_executable(liminal_audio_diagnostic src/ambience_cli.cpp)
-        target_include_directories(liminal_audio_diagnostic PRIVATE "${LIMINAL_LLAMA_CPP_DIR}/vendor")
+        target_include_directories(liminal_audio_diagnostic PRIVATE "${LIMINAL_VENDOR_DIR}")
         target_link_libraries(liminal_audio_diagnostic PRIVATE liminal_ambience_audio)
         if(MSVC)
             target_compile_options(liminal_audio_diagnostic PRIVATE /W4 /utf-8)
@@ -218,54 +221,58 @@ if (LIMINAL_ENABLE_SDL3_FRONTEND)
     endif()
 endif()
 
-if (DEFINED MATH_LIBRARY AND "${MATH_LIBRARY}" MATCHES "NOTFOUND$")
-    unset(MATH_LIBRARY CACHE)
-    unset(MATH_LIBRARY)
-endif()
-
-set(LIMINAL_LLAMA_VENDORED_COMMIT "not-vendored")
-if (EXISTS "${LIMINAL_LLAMA_CPP_DIR}/VENDORED_COMMIT.txt")
-    file(READ "${LIMINAL_LLAMA_CPP_DIR}/VENDORED_COMMIT.txt" LIMINAL_LLAMA_VENDORED_COMMIT_RAW)
-    string(STRIP "${LIMINAL_LLAMA_VENDORED_COMMIT_RAW}" LIMINAL_LLAMA_VENDORED_COMMIT)
-endif()
-
-if (LIMINAL_ENABLE_LLAMA_CPP)
-    if (EXISTS "${LIMINAL_LLAMA_CPP_DIR}/CMakeLists.txt")
-        # A vendored tree belongs to the application's Git repository; upstream's
-        # git discovery would otherwise report the application revision.
-        set(LLAMA_BUILD_COMMIT "${LIMINAL_LLAMA_VENDORED_COMMIT}")
-        set(LLAMA_BUILD_NUMBER 0)
-        set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
-        set(LLAMA_BUILD_COMMON ON CACHE BOOL "Build llama.cpp common helpers" FORCE)
-        set(LLAMA_BUILD_TESTS OFF CACHE BOOL "Build llama.cpp tests" FORCE)
-        set(LLAMA_BUILD_TOOLS ${LIMINAL_BUILD_LLAMA_TOOLS} CACHE BOOL "Build llama.cpp tools" FORCE)
-        set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "Build llama.cpp examples" FORCE)
-        set(LLAMA_BUILD_SERVER ${LIMINAL_BUILD_LLAMA_TOOLS} CACHE BOOL "Build llama.cpp server helpers required by CLI" FORCE)
-        set(LLAMA_BUILD_APP OFF CACHE BOOL "Build llama.cpp app" FORCE)
-        set(LLAMA_BUILD_UI OFF CACHE BOOL "Build llama.cpp embedded UI" FORCE)
-        set(LLAMA_OPENSSL OFF CACHE BOOL "Enable OpenSSL support in llama.cpp" FORCE)
-        if (LIMINAL_ENABLE_LLAMA_CUDA)
-            set(GGML_CUDA ON CACHE BOOL "Enable CUDA backend for ggml" FORCE)
-        else()
-            set(GGML_CUDA OFF CACHE BOOL "Enable CUDA backend for ggml" FORCE)
-        endif()
-
-        add_subdirectory("${LIMINAL_LLAMA_CPP_DIR}" "${CMAKE_BINARY_DIR}/vendor-llama.cpp" EXCLUDE_FROM_ALL)
-        target_link_libraries(liminal_cornell_renderer PRIVATE llama llama-common)
-        target_compile_definitions(liminal_cornell_renderer PRIVATE LIMINAL_HAVE_LLAMA_CPP=1)
-    else()
-        message(WARNING "LIMINAL_ENABLE_LLAMA_CPP is ON but no vendorized llama.cpp tree was found at ${LIMINAL_LLAMA_CPP_DIR}")
+# Revision reported as the LLM runtime commit (metrics, --llm-info, installer).
+set(LIMINAL_ENGINE_COMMIT "unknown")
+find_package(Git QUIET)
+if (GIT_FOUND)
+    execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse --short=12 HEAD
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" OUTPUT_VARIABLE LIMINAL_ENGINE_COMMIT_RAW
+        RESULT_VARIABLE LIMINAL_ENGINE_COMMIT_STATUS ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if (LIMINAL_ENGINE_COMMIT_STATUS EQUAL 0)
+        set(LIMINAL_ENGINE_COMMIT "${LIMINAL_ENGINE_COMMIT_RAW}")
     endif()
 endif()
-
-target_compile_definitions(
-    liminal_cornell_renderer
-    PRIVATE LIMINAL_LLAMA_VENDORED_COMMIT="${LIMINAL_LLAMA_VENDORED_COMMIT}")
+target_compile_definitions(liminal_cornell_renderer PRIVATE LIMINAL_ENGINE_COMMIT="${LIMINAL_ENGINE_COMMIT}")
 
 if(MSVC)
     target_compile_options(liminal_cornell_renderer PRIVATE /W4 /wd4996 /utf-8)
 else()
     target_compile_options(liminal_cornell_renderer PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+# The dedicated Gemma 4 E4B engine is the game's only LLM runtime.
+add_subdirectory(engine)
+add_executable(liminal_engine_tokenizer_test tests/engine_tokenizer_test.cpp)
+target_include_directories(liminal_engine_tokenizer_test PRIVATE "${LIMINAL_VENDOR_DIR}")
+target_link_libraries(liminal_engine_tokenizer_test PRIVATE liminal_llm_engine)
+target_compile_definitions(liminal_engine_tokenizer_test PRIVATE LIMINAL_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+if(MSVC)
+    target_compile_options(liminal_engine_tokenizer_test PRIVATE /utf-8)
+endif()
+add_test(NAME engine_tokenizer COMMAND liminal_engine_tokenizer_test)
+target_link_libraries(liminal_cornell_renderer PRIVATE liminal_llm_engine)
+target_compile_definitions(liminal_cornell_renderer PRIVATE LIMINAL_HAVE_NATIVE_LLM=1)
+set_tests_properties(engine_tokenizer PROPERTIES SKIP_RETURN_CODE 77)
+add_executable(liminal_engine_grammar_test tests/engine_grammar_test.cpp)
+target_include_directories(liminal_engine_grammar_test PRIVATE "${LIMINAL_VENDOR_DIR}")
+target_link_libraries(liminal_engine_grammar_test PRIVATE liminal_llm_engine)
+target_compile_definitions(liminal_engine_grammar_test PRIVATE LIMINAL_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+add_test(NAME engine_grammar COMMAND liminal_engine_grammar_test)
+set_tests_properties(engine_grammar PROPERTIES SKIP_RETURN_CODE 77)
+# Greedy agreement of the platform's GPU device with the frozen llama.cpp goldens.
+if (LIMINAL_ENABLE_MLX)
+    set(LIMINAL_PARITY_DEVICE mlx)
+elseif (LIMINAL_ENABLE_VULKAN_LLM)
+    set(LIMINAL_PARITY_DEVICE vulkan)
+endif()
+if (LIMINAL_PARITY_DEVICE)
+    foreach(golden 1793137373113-0000-player_interpretation_v2 1793137373113-0002-scene_program_v1)
+        add_test(NAME engine_parity_${golden} COMMAND liminal_engine_cli parity
+            --model "${CMAKE_CURRENT_SOURCE_DIR}/models/gemma-4-e4b/gemma-4-E4B-it-Q4_K_M.gguf"
+            --golden "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/llm/golden/${golden}.json"
+            --steps 64 --device ${LIMINAL_PARITY_DEVICE})
+        set_tests_properties(engine_parity_${golden} PROPERTIES SKIP_RETURN_CODE 77)
+    endforeach()
 endif()
 
 add_executable(liminal_scene_normalization_test tests/scene_normalization_test.cpp src/scene_normalization.cpp)
@@ -274,14 +281,14 @@ add_test(NAME scene_normalization COMMAND liminal_scene_normalization_test)
 
 add_executable(liminal_scene_visibility_test tests/scene_visibility_test.cpp
     src/scene_validation.cpp src/scene_design.cpp src/scene_hash.cpp src/continuity.cpp src/scene.cpp src/renderer.cpp "${SCENE_GUIDE_HEADER}")
-target_include_directories(liminal_scene_visibility_test PRIVATE src vendor/stb "${LIMINAL_LLAMA_CPP_DIR}/vendor" "${LIMINAL_LLAMA_CPP_DIR}/vendor/hash" "${CMAKE_CURRENT_BINARY_DIR}/generated")
+target_include_directories(liminal_scene_visibility_test PRIVATE src vendor/stb "${LIMINAL_VENDOR_DIR}" "${LIMINAL_VENDOR_DIR}/hash" "${CMAKE_CURRENT_BINARY_DIR}/generated")
 if(MSVC)
     target_compile_options(liminal_scene_visibility_test PRIVATE /utf-8)
 endif()
 add_test(NAME scene_visibility COMMAND liminal_scene_visibility_test)
 
 add_executable(liminal_place_proposal_test tests/place_proposal_test.cpp src/place_proposal.cpp)
-target_include_directories(liminal_place_proposal_test PRIVATE src "${LIMINAL_LLAMA_CPP_DIR}/vendor")
+target_include_directories(liminal_place_proposal_test PRIVATE src "${LIMINAL_VENDOR_DIR}")
 add_test(NAME place_proposal COMMAND liminal_place_proposal_test)
 
 add_executable(liminal_exploration_policy_test tests/exploration_policy_test.cpp src/exploration_policy.cpp)
