@@ -46,6 +46,8 @@ public:
     const AudioGains& Targets() const { return target_; }
     const std::array<size_t, kAmbienceTracks>& Positions() const { return position_; }
     uint64_t Frames() const { return frames_; }
+    uint64_t RampFrames() const { return ramp_frames_; }
+    uint64_t RampPosition() const { return ramp_position_; }
     float MasterGain() const { return master_; }
 private:
     std::array<std::vector<float>, kAmbienceTracks> pcm_;

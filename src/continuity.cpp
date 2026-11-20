@@ -1,4 +1,5 @@
 #include "continuity.h"
+#include "game_state.h"
 #include "nlohmann/json.hpp"
 #include <algorithm>
 #include <set>
@@ -31,7 +32,7 @@ static bool FirstSentence(json& value) {
 bool FitContinuityPrompt(const ContinuityContextV1& original,int context_tokens,int output_tokens,
                          int memory_tokens,const ContinuityPromptBuilder& build,
                          const ContinuityTokenCounter& count,std::vector<LlmPromptMessage>* messages,
-                         std::string* metrics,std::string* error) {
+                         std::string* metrics,std::string* error,bool allow_empty_memory) {
     constexpr int margin=32;
     const auto started=std::chrono::steady_clock::now();
     ContinuityContextV1 selected=original;
@@ -94,8 +95,25 @@ bool FitContinuityPrompt(const ContinuityContextV1& original,int context_tokens,
                 shortened.push_back("origin.description");
             selected.core_json=root.dump();continue;
         }
+        if(allow_empty_memory && !selected.events_json.empty()) {
+            selected.events_json.clear();
+            continue;
+        }
         *error="context_limit: mandatory continuity, latest useful result and reserved output do not fit";
         return finish(false);
     }
+}
+
+ContinuityContextV1 DialogueContext(const SessionState& state) {
+    ContinuityContextV1 context;
+    const size_t first=state.history.size()>12?state.history.size()-12:0;
+    for(size_t i=first;i<state.history.size();++i) {
+        const auto& event=state.history[i];
+        context.events_json.push_back(json{{"id","exchange-"+std::to_string(i+1)},
+            {"place_id",event.place_id},{"command",event.player_command},{"intent",event.intent},
+            {"outcome",event.engine_outcome},{"object_reference",event.object_reference},
+            {"description",event.narration}}.dump());
+    }
+    return context;
 }
 }

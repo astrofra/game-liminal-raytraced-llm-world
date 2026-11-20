@@ -45,7 +45,7 @@ struct Harness {
         cfg.dynamic_scene_config.completion=[](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult*)->bool{
             throw std::runtime_error("Object action composed a room");};
         cfg.interaction_completion=[this](const LlmGenerationConfig& config,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback,void*,LlmGenerationResult* r) {
-            ++interpretations;REQUIRE(config.purpose=="player_interpretation_v2");const auto context=json::parse(messages[1].content);
+            ++interpretations;REQUIRE(config.purpose=="player_interpretation_v4");const auto context=json::parse(messages[1].content);
             r->success=true;r->reached_eog=true;
             if(mode=="malformed"){r->response_text="{}";return true;}
             auto p=FixturePlayerAction(context,proposal);r->response_text=FixtureWireAction(p,context).dump();return true;

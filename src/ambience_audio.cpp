@@ -95,9 +95,10 @@ std::string AmbienceAudio::SnapshotJson(const std::string& event) {
     if(!stream_||!SDL_LockAudioStream(stream_))return json{{"event",event},{"active",false},{"catalog_version",version_}}.dump();
     const auto current=mixer_.Current(),targets=mixer_.Targets();const auto positions=mixer_.Positions();
     const auto frames=mixer_.Frames();const auto master=mixer_.MasterGain();const auto failed=callback_failed_;
+    const auto ramp_frames=mixer_.RampFrames(), ramp_position=mixer_.RampPosition();
     SDL_UnlockAudioStream(stream_);
     return json{{"event",event},{"active",true},{"catalog_version",version_},{"sample_rate",kRate},{"frames",frames},
         {"positions",positions},{"current",json::parse(AudioGainsJson(current))},{"targets",json::parse(AudioGainsJson(targets))},
-        {"master_gain",master},{"callback_failed",failed}}.dump();
+        {"master_gain",master},{"callback_failed",failed},{"ramp_frames",ramp_frames},{"ramp_position",ramp_position}}.dump();
 }
 }

@@ -10,6 +10,8 @@ struct ObjectResolution {
     bool handled = false, changed = false, clarified = false;
     std::string action, object_id, reason, metrics;
     std::string investigation_id;
+    std::string reply_topic, paraphrase;
+    std::vector<std::string> clarification_candidates;
     int investigation_revision = -1;
 };
 ObjectResolution ResolveObjectAction(const SessionState& state, const std::string& command,

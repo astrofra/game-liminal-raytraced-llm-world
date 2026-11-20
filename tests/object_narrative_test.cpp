@@ -156,7 +156,7 @@ struct Harness {
                 void*, LlmGenerationResult* result) {
                 ++interpretations;
                 REQUIRE_NARRATIVE(interpretation_config.purpose ==
-                    "player_interpretation_v2");
+                    "player_interpretation_v4");
                 REQUIRE_NARRATIVE(messages.size() > 1);
                 const json context = json::parse(messages[1].content);
                 json proposal = FixturePlayerAction(context);

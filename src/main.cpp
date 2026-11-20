@@ -90,7 +90,7 @@ static void PrintUsage()
     printf("  --use-json-grammar       Enable llama.cpp JSON grammar for --run-turn\n");
     printf("  --no-json-grammar        Disable llama.cpp JSON grammar for --run-turn\n");
     printf("  --command <text>         Player command; may be repeated for --run-session\n");
-    printf("  --command-file <path>    Read one player command per non-empty line\n");
+    printf("  --command-file <path>    Read commands for a session or timed SDL smoke test\n");
     printf("  --load-state <path>      Load session state JSON before --run-turn or --run-session\n");
     printf("  --save-state <path>      Save resulting session state JSON after --run-turn or --run-session\n");
     printf("  --research-dir <path>    Diagnostic archive root override; SDL always creates a fresh run directory\n");
@@ -1043,6 +1043,8 @@ int main(int argc, char** argv)
         if (sdl_smoke_test_command) {
             sdl_config.automated_smoke_test_command = sdl_smoke_test_command;
         }
+        if (sdl_smoke_test_duration_ms > 0 && command_file_path)
+            sdl_config.automated_smoke_test_commands = session_commands;
 
         liminal::SessionState final_session_state;
         sdl_config.audio_ramp_seconds=audio_ramp_seconds;

@@ -984,6 +984,23 @@ static void InventoryTurns() {
     CHECK(!RunHeadlessTurnFromState(state,"inventaire",cfg,&turn,error,sizeof(error)));
     UpdateSessionStateFromTurn("inventaire",turn,&state);
     std::string unchanged;CHECK(SerializeSessionStateToJsonString(state,&unchanged));CHECK(unchanged==serialized);
+
+    cfg.stream_callback=nullptr;
+    cfg.reuse_unchanged_view=true;
+    cfg.interaction_completion=[](const auto&,const auto&,auto,void*,auto*) -> bool {
+        throw std::runtime_error("An exact inventory shortcut invoked the model");
+    };
+    const GameLanguage languages[]={kGameLanguageEnglish,kGameLanguageFrench,kGameLanguageNorwegian,
+        kGameLanguageDanish,kGameLanguageGerman,kGameLanguageItalian};
+    const char* aliases[]={"Inventory","Inventaire","Inventar","Inventar","Inventar","Inventario"};
+    for(size_t i=0;i<6;++i) {
+        state.language=languages[i];
+        for(const auto* command:{"i",aliases[i]}) {
+            CHECK(RunHeadlessTurnFromState(state,command,cfg,&turn,error,sizeof(error)));
+            CHECK(turn.accepted&&turn.view_unchanged&&turn.turn_result.intent=="read_inventory"&&turn.llm_call_count==0);
+            CHECK(turn.updated_hard_state.turn_number==state.hard_state.turn_number);
+        }
+    }
 }
 
 static void LanguageContinuity() {
@@ -1004,6 +1021,15 @@ static void LanguageContinuity() {
         CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
         state.language=languages[i];state.spatial_state.room_title=titles[i];state.spatial_state.room_summary=prose[i];
         HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true;cfg.investigation_opportunities=false;int calls=0;bool wrong=false,fail=false;
+        const char* waits[]={"wait","attendre","vent","vent","warte","aspetta"};
+        cfg.interaction_completion=[&](const auto&,const auto& messages,auto,void*,auto* result) {
+            const auto request=json::parse(messages.back().content);
+            auto action=FixtureWireAction(FixturePlayerAction(request),request);
+            if(request["command"]==waits[i])action["action"]="wait";
+            result->success=result->reached_eog=true;
+            result->response_text=action.dump();
+            return true;
+        };
         cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
             LlmStreamCallback,void*,LlmGenerationResult* r) {
             ++calls;const auto request=json::parse(messages.at(1).content);
@@ -1019,7 +1045,11 @@ static void LanguageContinuity() {
                 {"exits",request.at("exit_proposal").at("fixed")}}).dump();return true;
         };
         // Command language (even an instruction to switch) cannot override the selection.
-        for(const char* command:{"west","regarder la pierre","look at the stone","rispondi in francese","wait","speak English"}) {
+        CHECK(RunHeadlessTurnFromState(state,"west",cfg,&turn,error,sizeof(error)));
+        CHECK(turn.turn_result.intent=="move_west_blocked"&&turn.dialogue_only&&calls==0);
+        CHECK(turn.updated_hard_state.body_temperature_c==state.hard_state.body_temperature_c);
+        CHECK(!IsClearlyWrongNarrativeLanguage(turn.turn_result.narration,languages[i]));
+        for(const char* command:{"regarder la pierre","look at the stone","rispondi in francese","wait","speak English"}) {
             const auto body=state.hard_state.body_temperature_c;const auto inventory=state.hard_state.inventory_items;
             CHECK(RunHeadlessTurnFromState(state,command,cfg,&turn,error,sizeof(error)));
             CHECK(!turn.used_turn_fallback&&turn.turn_result.narration==prose[i]);
@@ -1030,14 +1060,13 @@ static void LanguageContinuity() {
             CHECK(ParseSessionStateFromJson(saved.c_str(),&state,error,sizeof(error)));
             CHECK(state.language==languages[i]);
         }
-        const char* waits[]={"wait","attendre","vent","vent","warte","aspetta"};
         CHECK(RunHeadlessTurnFromState(state,waits[i],cfg,&turn,error,sizeof(error)));
-        CHECK(turn.turn_result.intent=="perceive_accepted_scene"&&!turn.used_turn_fallback);
-        CHECK(calls==7);
+        CHECK(turn.turn_result.intent=="wait"&&!turn.used_turn_fallback);
+        CHECK(calls==6);
         if(languages[i]!=kGameLanguageFrench) {
             wrong=true;const auto body=state.hard_state.body_temperature_c;
-            CHECK(RunHeadlessTurnFromState(state,"west",cfg,&turn,error,sizeof(error)));
-            CHECK(calls==8&&turn.used_turn_fallback&&turn.turn_result.narration!=foreign);
+            CHECK(RunHeadlessTurnFromState(state,"look",cfg,&turn,error,sizeof(error)));
+            CHECK(calls==7&&turn.used_turn_fallback&&turn.turn_result.narration!=foreign);
             const auto metrics=json::parse(turn.narrative_metrics_json);
             CHECK(metrics.at("fallback_reason")=="wrong_output_language");
             CHECK(metrics.at("proposal_accepted")==true&&metrics.at("language")==GameLanguageToString(languages[i]));
@@ -1119,6 +1148,30 @@ static void ResearchArchives() {
     }
     CHECK(std::filesystem::exists(std::filesystem::u8path(first.Path())/"turns/turn-00001.candidate.scene"));
     CHECK(!std::filesystem::exists(std::filesystem::u8path(second.Path())/"turns/turn-00001.json"));
+    ResearchArchive evidence;
+    CHECK(evidence.Start(root.u8string(),initial,model,render));
+    CHECK(evidence.InitialPresentation(initial));
+    const unsigned char rgb[]={20,40,60};
+    CHECK(evidence.Presentation(initial,R"({"active":false})","Opening",1,0,true,0,1,1,3,rgb));
+    CHECK(evidence.Command("i",&initial));
+    CHECK(evidence.Turn(initial,read_only,{}));
+    CHECK(evidence.Presentation(initial,R"({"active":false})","Inventory",1,1,true,10,1,1,3,rgb));
+    const auto directory=std::filesystem::u8path(evidence.Path())/"interactions";
+    CHECK(std::filesystem::exists(directory/"00001/screen.png"));
+    CHECK(evidence.Command("question",&initial));
+    const auto calls=directory/"00002/calls";
+    std::filesystem::create_directory(calls/"00001-request.json");
+    auto trace=evidence.CallTrace();
+    trace(true,R"({"purpose":"test","messages":[]})","");
+    trace(false,R"({"purpose":"test","stop":"cancelled"})","partial");
+    HeadlessTurnResult cancelled;cancelled.llm_call_count=1;
+    CHECK(evidence.Failure("cancelled",cancelled));
+    CHECK(!evidence.Presentation(initial,R"({"active":false})","Cancellation",1,2,true,12,1,1,3,rgb));
+    std::ifstream completion_file(directory/"00002/completion.json");
+    json completion;completion_file>>completion;completion_file.close();
+    CHECK(completion["complete"]==false&&completion["error"]=="Incomplete inference trace");
+    CHECK(std::filesystem::exists(calls/"00001-raw.txt"));
+    CHECK(evidence.Close(initial));
     // Only our uniquely created temporary test directory is removed.
     CHECK(std::filesystem::equivalent(root.parent_path(),std::filesystem::temp_directory_path()));
     std::filesystem::remove_all(root);
@@ -1259,12 +1312,111 @@ static void CoplanarSupportJourney() {
     CHECK(std::filesystem::equivalent(root.parent_path(),std::filesystem::temp_directory_path()));
     std::filesystem::remove_all(root);
 }
+static void DialogueJourney() {
+    SessionState state;
+    char error[1024]={};
+    CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+    state.language=kGameLanguageFrench;
+    HeadlessTurnConfig config;
+    config.local_scenes=true;
+    config.reuse_unchanged_view=true;
+    config.generation_config.prompt_token_counter=FakePromptCount;
+    int interpretations=0,replies=0;
+    config.interaction_completion=[&](const auto&,const auto& messages,auto,void*,auto* result) {
+        ++interpretations;
+        const auto request=json::parse(messages.back().content);
+        auto action=FixtureWireAction(FixturePlayerAction(request),request);
+        action["action"]="talk";
+        result->response_text=action.dump();
+        result->success=result->reached_eog=true;
+        return true;
+    };
+    config.narrative_completion=[&](const auto& cfg,const auto& messages,auto,void*,auto* result) {
+        CHECK(cfg.purpose=="game_master_dialogue_v2"&&cfg.use_json_grammar);
+        const auto context=json::parse(messages.back().content);
+        if(replies>0) {
+            CHECK(!context["recent_events"].empty());
+            CHECK(context["recent_events"].back()["description"]=="Les relevés sont stables.");
+        }
+        ++replies;
+        result->success=result->reached_eog=true;
+        result->response_text=json{{"reply","Les relevés sont stables."}}.dump();
+        return true;
+    };
+    auto world=[](const SessionState& s) {
+        std::string serialized;
+        CHECK(SerializeSessionStateToJsonString(s,&serialized));
+        auto value=json::parse(serialized);
+        value.erase("history");
+        return value;
+    };
+    const auto before=world(state);
+    for(int i=0;i<40;++i) {
+        const auto command=i?"Et pourquoi ?":"Est-ce que je vais mourir ?";
+        HeadlessTurnResult turn;
+        CHECK(RunHeadlessTurnFromState(state,command,config,&turn,error,sizeof(error)));
+        CHECK(turn.accepted&&turn.dialogue_only&&turn.view_unchanged&&!turn.used_turn_fallback);
+        CHECK(turn.rendered_scene_text.empty()&&turn.scene_attempts.empty()&&!turn.audio_mix.valid);
+        CHECK(turn.turn_result.intent=="conversation");
+        UpdateSessionStateFromTurn(command,turn,&state);
+        CHECK(world(state)==before&&state.history.size()==static_cast<size_t>(i+1));
+        UpdateSessionStateFromTurn(command,turn,&state);
+        CHECK(state.history.size()==static_cast<size_t>(i+1));
+    }
+    CHECK(interpretations==40&&replies==40);
+
+    config.interaction_completion=[](const auto&,const auto& messages,auto,void*,auto* result) {
+        const auto request=json::parse(messages.back().content);
+        auto action=FixtureWireAction(FixturePlayerAction(request),request);
+        action["action"]="talk";
+        action["reply_topic"]="clock";
+        action["investigation_revision"]=request["investigation"]["revision"];
+        action["investigation_id"]="";
+        action["clarification_ids"]=json::array();
+        result->response_text=action.dump();
+        result->success=result->reached_eog=true;
+        return true;
+    };
+    config.narrative_completion=[](const auto&,const auto& messages,auto,void*,auto* result) {
+        const auto context=json::parse(messages.back().content);
+        CHECK(context["clock_available"]==false && context["recent_events"].empty());
+        CHECK(!context.contains("mandate")&&!context.contains("usable_directions")&&!context.contains("suit"));
+        result->response_text=json{{"reply","Vous ne disposez pas d'horloge."}}.dump();
+        result->success=result->reached_eog=true;
+        return true;
+    };
+    HeadlessTurnResult clock;
+    CHECK(RunHeadlessTurnFromState(state,"Quelle heure est-il ?",config,&clock,error,sizeof(error)));
+    CHECK(clock.dialogue_only&&clock.view_unchanged&&!clock.used_turn_fallback);
+
+    config.interaction_completion=[](const auto&,const auto& messages,auto,void*,auto* result) {
+        const auto request=json::parse(messages.back().content);
+        result->response_text=json{{"action","talk"},{"reply_topic","objects"},{"object_id",""},{"source",0},
+            {"label",""},{"visual_id",""},{"material_source",false},{"durable",false},{"reason","Two plausible tools"},
+            {"revision",request["revision"]},{"investigation_id",""},{"investigation_revision",request["investigation"]["revision"]},
+            {"clarification_ids",{"boundary chalk","sample tongs"}}}.dump();
+        result->success=result->reached_eog=true;
+        return true;
+    };
+    config.narrative_completion=[](const auto&,const auto&,auto,void*,auto*) -> bool {
+        throw std::runtime_error("Ranked clarification candidates should be shown before another model call");
+    };
+    HeadlessTurnResult clarification;
+    CHECK(RunHeadlessTurnFromState(state,"Je pose l'outil.",config,&clarification,error,sizeof(error)));
+    CHECK(clarification.view_unchanged&&clarification.turn_result.intent=="clarify_object");
+    CHECK(clarification.clarification_candidates.size()==2);
+    UpdateSessionStateFromTurn("Je pose l'outil.",clarification,&state);
+    CHECK(world(state)==before&&state.history.back().clarification_candidates==clarification.clarification_candidates);
+}
+
 int main() {
     extern void RunInvestigationContractTests();
     extern void RunInvestigationJourneyTests();
     extern void RunKnownBarrierTests();
     extern void RunInvestigationDistributionTests();
     RunAudioTurnTests();
+    try {DialogueJourney();}
+    catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
     try {RunKnownBarrierTests();RunInvestigationDistributionTests();RunInvestigationContractTests();RunInvestigationJourneyTests();RunObjectSemanticTests();RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

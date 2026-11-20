@@ -17,6 +17,8 @@ struct LlmGenerationConfig {
     int continuity_memory_tokens = 1024;
     // Deterministic tokenizer seam for tests. Production uses the resident model/template.
     std::function<bool(const std::vector<LlmPromptMessage>&, int*, std::string*)> prompt_token_counter;
+    // Receives request/response JSON and the exact raw bytes of a response.
+    std::function<void(bool, const std::string&, const std::string&)> research_trace;
     std::string model_path;
     std::string model_sha256;
     std::string json_schema; // Optional schema for constrained final JSON; no effect on ordinary calls.

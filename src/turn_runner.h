@@ -37,6 +37,7 @@ struct HeadlessTurnConfig {
     bool local_scenes = false; // Generate persistent places along open cardinal exits.
     bool investigation_opportunities = true; // Disable only for isolated geometry diagnostics/fixtures.
     bool reuse_unchanged_view = false; // Frontend owns the existing image; headless exports still render.
+    std::shared_ptr<const Scene> current_view_scene;
     DynamicSceneConfig dynamic_scene_config;
     SceneCompletion narrative_completion; // Optional deterministic seam for fiction tests.
     SceneCompletion interaction_completion; // Structured free-command interpretation, independently testable.
@@ -65,9 +66,13 @@ struct HeadlessTurnResult {
     int initial_object_revision = 0;
     std::string interaction_metrics_json;
     std::string authorized_object_action, authorized_object_id;
+    std::string conversation_topic;
+    std::vector<std::string> clarification_candidates;
+    size_t initial_history_size = 0;
+    bool dialogue_only = false; // Publish the transcript without advancing simulation.
     std::string accepted_observation;
     bool accepted = false; // Set only after the full turn and last cancellation poll succeed.
-    bool view_unchanged = false; // Read-only inventory response, no scene or pixels supplied.
+    bool view_unchanged = false; // No replacement scene or pixels supplied to the frontend.
     int llm_call_count = 0;
     int reasoning_tokens = 0;
     int final_tokens = 0;

@@ -48,6 +48,12 @@ sur une carte différente, sans appel LLM supplémentaire.
 
 ## Archives automatiques de recherche
 
+Le [dialogue du maître du jeu](DIALOGUE_MAITRE_DU_JEU.md) ajoute
+`interactions/` aux archives SDL. Chaque dossier relie la capture de
+l'interface, le texte présenté, l'état avant et après, la scène réellement
+utilisée, l'audio et les appels du modèle. Le tableau ci-dessous décrit aussi
+les fichiers par lieu et par tour utilisés dans les recettes précédentes.
+
 Sous Windows, chaque partie écrit un dossier unique dans :
 
 ```text

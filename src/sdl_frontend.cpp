@@ -2102,6 +2102,9 @@ bool RunSdlFrontend(
         SetError(error_buffer,error_buffer_size,archive.Error().c_str());return false;
     }
     bool archive_ok = true;
+    bool initial_presented = false;
+    size_t smoke_command_index = 0;
+    Uint64 command_submitted_at = 0;
     unsigned int command_sequence = 0;
     std::vector<std::string> command_history;
     for (size_t index = 0; index < current_session_state.history.size(); ++index) {
@@ -2118,6 +2121,7 @@ bool RunSdlFrontend(
         SetError(error_buffer, error_buffer_size, local_error[0] ? local_error : "Cannot compile initial scene.");
         return false;
     }
+    auto interpretation_scene=std::make_shared<const Scene>(initial_scene);
 
     const std::chrono::steady_clock::time_point initial_render_start = std::chrono::steady_clock::now();
     std::vector<unsigned char> rgb_pixels;
@@ -2439,7 +2443,7 @@ bool RunSdlFrontend(
                 bool busy = false;
                 {
                     std::lock_guard<std::mutex> lock(worker_shared_state.mutex);
-                    busy = worker_shared_state.busy || worker_shared_state.result_ready;
+                    busy = worker_shared_state.busy || worker_shared_state.result_ready || archive.Pending();
                 }
                 if (busy) {
                     worker_shared_state.stop_requested.store(true);
@@ -2455,6 +2459,7 @@ bool RunSdlFrontend(
                 continue;
             }
             if (key == SDLK_RETURN) {
+                if (!initial_presented) continue;
                 console_scroll=0;
                 const std::string raw_command = TrimCommandText(input_text);
                 if (raw_command.empty()) {
@@ -2470,7 +2475,7 @@ bool RunSdlFrontend(
                 bool busy = false;
                 {
                     std::lock_guard<std::mutex> lock(worker_shared_state.mutex);
-                    busy = worker_shared_state.busy || worker_shared_state.result_ready;
+                    busy = worker_shared_state.busy || worker_shared_state.result_ready || archive.Pending();
                 }
                 if (busy) {
                     ui_message = UiText(
@@ -2497,7 +2502,8 @@ bool RunSdlFrontend(
                 }
 
                 pending_command = command;
-                archive_ok = archive.Command(command) && archive_ok;
+                command_submitted_at=SDL_GetTicks();
+                archive_ok = archive.Command(command,&current_session_state) && archive_ok;
                 persistent_hint.clear();
                 input_text.clear();
                 input_cursor = 0;
@@ -2518,7 +2524,9 @@ bool RunSdlFrontend(
                 SdlFrontendConfig request_config=config;
                 request_config.turn_config.audio_current_known=audio.Active();
                 request_config.turn_config.audio_current_gains=audio.Current();
+                request_config.turn_config.current_view_scene=interpretation_scene;
                 request_config.turn_config.generation_config.seed += 104729u * command_sequence++;
+                request_config.turn_config.generation_config.research_trace = archive.CallTrace();
                 worker_thread = std::thread(
                     RunTurnWorker,
                     request_config,
@@ -2532,14 +2540,18 @@ bool RunSdlFrontend(
             }
         }
 
+        if (!running) break;
         const Uint64 smoke_test_elapsed_ticks = SDL_GetTicks() - smoke_test_start_ticks;
-        if (!config.automated_smoke_test_command.empty() && !smoke_test_text_pushed &&
+        const auto& smoke_commands=config.automated_smoke_test_commands;
+        const auto& smoke_command=smoke_command_index<smoke_commands.size()?
+            smoke_commands[smoke_command_index]:config.automated_smoke_test_command;
+        if (initial_presented && !smoke_command.empty() && !smoke_test_text_pushed &&
             smoke_test_elapsed_ticks >= 250u) {
             SDL_Event text_event;
             SDL_zero(text_event);
             text_event.type = SDL_EVENT_TEXT_INPUT;
             text_event.text.windowID = SDL_GetWindowID(window);
-            text_event.text.text = config.automated_smoke_test_command.c_str();
+            text_event.text.text = smoke_command.c_str();
             SDL_PushEvent(&text_event);
             smoke_test_text_pushed = true;
         }
@@ -2653,6 +2665,7 @@ bool RunSdlFrontend(
                 animation_shared_state.active_generation_id.store(replacement_view.generation_id);
                 animation_shared_state.stop_requested.store(true);
                 active_animated_view = std::move(replacement_view);
+                interpretation_scene=std::make_shared<const Scene>(active_animated_view.scene_snapshot);
                 current_session_state = std::move(completed_session_state);
                 last_turn_result = std::move(completed_turn_result);
                 have_last_turn = true;
@@ -2923,7 +2936,40 @@ bool RunSdlFrontend(
             cursor_x,
             input_rect.y + input_rect.h - 8.0f);
 
-        SDL_RenderPresent(renderer);
+        const bool capture = running && (!initial_presented || turn_completed || turn_failed);
+        if (capture && !initial_presented)
+            archive_ok=archive.InitialPresentation(current_session_state) && archive_ok;
+        // SDL readback must happen before Present invalidates the backbuffer.
+        // Write the evidence only once the same frame has been presented.
+        SDL_Surface* screen=capture?SDL_RenderReadPixels(renderer,nullptr):nullptr;
+        std::string capture_error;
+        if (capture && !screen) capture_error=SDL_GetError();
+        SDL_Surface* rgb=screen?SDL_ConvertSurface(screen,SDL_PIXELFORMAT_RGB24):nullptr;
+        if (screen && !rgb) capture_error=SDL_GetError();
+        if (screen) SDL_DestroySurface(screen);
+        const bool presented=SDL_RenderPresent(renderer);
+        if (capture) {
+            if (!presented) capture_error=SDL_GetError();
+            const std::string displayed=turn_completed?last_turn_result.turn_result.narration:
+                turn_failed?display_message:InvestigationMandate(current_session_state.language);
+            auto audio_snapshot=nlohmann::json::parse(audio.SnapshotJson("presentation"));
+            if (turn_completed || turn_failed) {
+                const auto& turn=turn_completed?last_turn_result:completed_turn_result;
+                audio_snapshot["decision"]=nlohmann::json::parse(AudioDecisionJson(turn.audio_mix,turn_completed));
+            }
+            archive_ok=archive.Presentation(current_session_state,audio_snapshot.dump(),displayed,
+                active_animated_view.generation_id,uploaded_image_index,presented,
+                initial_presented?SDL_GetTicks()-command_submitted_at:0,
+                rgb?rgb->w:0,rgb?rgb->h:0,rgb?rgb->pitch:0,rgb?rgb->pixels:nullptr,capture_error) && archive_ok;
+            initial_presented=true;
+            if ((turn_completed || turn_failed) && !smoke_commands.empty()) {
+                ++smoke_command_index;
+                smoke_test_text_pushed=false;
+                smoke_test_return_pushed=false;
+                if (smoke_command_index>=smoke_commands.size()) running=false;
+            }
+        }
+        if (rgb) SDL_DestroySurface(rgb);
         SDL_Delay(16);
     }
 
@@ -2939,8 +2985,11 @@ bool RunSdlFrontend(
     if (final_session_state) {
         *final_session_state = current_session_state;
     }
-    if (archive.Pending())
+    if (archive.Pending()) {
         archive_ok = archive.Failure("Closed during turn; not committed.",worker_shared_state.turn_result) && archive_ok;
+        archive.Presentation(current_session_state,audio.SnapshotJson("closed"),"",0,-1,
+            false,SDL_GetTicks()-command_submitted_at,0,0,0,nullptr,"Window closed before a result frame was presented");
+    }
     if(audio.Active())archive_ok=archive.AudioEvent(audio.SnapshotJson("stopped"))&&archive_ok;
     audio.Close();
     archive_ok = archive.Close(current_session_state) && archive_ok;

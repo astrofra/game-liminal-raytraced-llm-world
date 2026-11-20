@@ -1,8 +1,8 @@
 # Roadmap — un maître du jeu pour un dialogue fluide
 
-20 novembre 2026 — **proposition à implémenter**, issue du retour de partie.
-Ce lot livre une roadmap, sans changement du runtime ni nouvelle qualification
-du jeu. Référence examinée : `c6b0467`, complétée par lecture du code courant.
+20 novembre 2026. Feuille de route issue du retour de partie. Le
+[bilan d'implémentation](DIALOGUE_MAITRE_DU_JEU.md) décrit le comportement livré
+et les recettes observées. La référence de conception était `c6b0467`.
 
 ## 1. Expérience recherchée
 

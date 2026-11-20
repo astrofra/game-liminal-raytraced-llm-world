@@ -24,6 +24,7 @@ struct SdlFrontendConfig {
     int automated_smoke_test_duration_ms;
     GameLanguage automated_smoke_test_language;
     std::string automated_smoke_test_command;
+    std::vector<std::string> automated_smoke_test_commands;
     std::string research_root;
 
     SdlFrontendConfig()

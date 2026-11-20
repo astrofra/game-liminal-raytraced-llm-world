@@ -55,6 +55,7 @@ static double ElapsedMs(Clock::time_point start) { return std::chrono::duration<
 struct GenerationTrace {
     LlmGenerationResult* result;
     const LlmGenerationConfig& config;
+    const std::vector<LlmPromptMessage>& messages;
     Clock::time_point started = Clock::now();
     Clock::time_point inference_started;
     bool inferring = false;
@@ -62,6 +63,24 @@ struct GenerationTrace {
     LlmStreamCallback callback = nullptr;
     void* callback_data = nullptr;
     bool count_only = false;
+    bool request_recorded = false;
+    void RecordRequest(const std::string& grammar = {}) noexcept {
+        if (count_only || request_recorded || !config.research_trace) return;
+        request_recorded = true;
+        try {
+            using nlohmann::json;
+            auto input = json::array();
+            for (const auto& message : messages)
+                input.push_back({{"role",message.role},{"content",message.content}});
+            config.research_trace(true, json{{"purpose",config.purpose},{"messages",input},
+                {"formatted_prompt",result->prompt_text},{"model",config.model_path},{"sha256",config.model_sha256},
+                {"seed",config.seed},{"temperature",config.temperature},{"top_k",config.top_k},{"top_p",config.top_p},
+                {"n_ctx",config.n_ctx},{"n_predict",config.n_predict},{"timeout_ms",config.timeout_ms},
+                {"n_batch",config.n_batch},{"n_ubatch",config.n_ubatch},{"gpu_layers",config.n_gpu_layers},
+                {"json_schema",config.json_schema},{"grammar",grammar},{"prompt_tokens",result->prompt_tokens}}
+                .dump(2,' ',false,json::error_handler_t::replace), {});
+        } catch (...) { fprintf(stderr,"Cannot record LLM research request\n"); }
+    }
     bool expired() const { return ElapsedMs(started) >= config.timeout_ms; }
     bool loading_alive() {
         if (expired() || cancelled) return false;
@@ -81,6 +100,20 @@ struct GenerationTrace {
         g_generation_totals.inference_time_ms += result->inference_time_ms;
         g_generation_totals.wall_time_ms += result->wall_time_ms;
         g_active_generation = nullptr;
+        RecordRequest();
+        if (config.research_trace) {
+            try {
+                using nlohmann::json;
+                config.research_trace(false, json{{"purpose",config.purpose},{"final",result->response_text},
+                    {"stop",result->stop_reason},{"error",result->error_message},{"success",result->success},
+                    {"reached_eog",result->reached_eog},{"prompt_tokens",result->prompt_tokens},
+                    {"generated_tokens",result->generated_tokens},{"final_tokens",result->final_tokens},
+                    {"wall_ms",result->wall_time_ms},{"load_ms",result->load_time_ms},
+                    {"inference_ms",result->inference_time_ms},{"prompt_ms",result->prompt_time_ms},
+                    {"generation_ms",result->generation_time_ms},{"model_reused",result->model_reused}}
+                    .dump(2,' ',false,json::error_handler_t::replace), result->raw_text);
+            } catch (...) { fprintf(stderr,"Cannot record LLM research response\n"); }
+        }
         try {
             nlohmann::json data = {
                 {"profile", config.profile_name}, {"model_path", config.model_path}, {"purpose", config.purpose},
@@ -249,7 +282,7 @@ static bool ChatCompletionInternal(
     if (!result) return false;
     *result = LlmGenerationResult();
     LlmGenerationConfig config = requested;
-    GenerationTrace trace{result, config};
+    GenerationTrace trace{result, config, messages};
     trace.count_only=count_only;
     trace.callback = stream_callback;
     trace.callback_data = stream_user_data;
@@ -408,6 +441,7 @@ static bool ChatCompletionInternal(
         std::unique_ptr<common_sampler, decltype(&common_sampler_free)> sampler(
             common_sampler_init(model, sampling), common_sampler_free);
         if (!sampler) return fail("error", "Failed to create sampler");
+        trace.RecordRequest(sampling.grammar.grammar);
         trace.inference_started = Clock::now();
         trace.inferring = true;
         struct InferenceEnd {

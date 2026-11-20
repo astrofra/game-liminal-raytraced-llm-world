@@ -1,0 +1,153 @@
+{
+  "questions_fr": [
+    {
+      "input": "Est-ce que je vais mourir ?",
+      "criterion": "Répond à l'inquiétude en s'appuyant sur le scaphandre et les dangers connus, sans créer de dommage, de danger ni de verdict de mort."
+    },
+    {
+      "input": "Qu'est-ce que je dois faire ?",
+      "criterion": "Propose au moins une piste liée au seuil ou aux issues praticables, sans imposer une solution unique ni dévoiler l'inconnu."
+    },
+    {
+      "input": "Quelle heure est-il ?",
+      "criterion": "Répond sur un repère temporel diégétique ou sur son absence, sans inventer d'heure persistante ni lire l'horloge du système."
+    },
+    {
+      "input": "Tu me conseilles quoi, là, tout de suite ?",
+      "criterion": "Donne un conseil court et prudent lié à la situation au seuil, sans exécuter d'action ni promettre un résultat."
+    },
+    {
+      "input": "Et si j'allais vers le nord, tu crois que ce serait dangereux ?",
+      "criterion": "Traite la phrase comme une hypothèse et répond à partir de ce qui est connu du nord, sans déplacement ni nouvelle paroi."
+    },
+    {
+      "input": "Je ne veux pas aller vers le nord, c'est trop risqué pour moi. Tu comprends ?",
+      "criterion": "Reconnaît la négation et la crainte, sans déclencher de déplacement vers le nord."
+    },
+    {
+      "input": "Ne prends pas la dague, d'accord ?",
+      "criterion": "Confirme la consigne sans prendre ni déplacer d'objet et sans ajouter de dague au monde."
+    },
+    {
+      "input": "Si je te dis « prends la dague », qu'est-ce que tu fais ?",
+      "criterion": "Traite la commande comme une citation, explique la réaction attendue sans exécuter la prise."
+    },
+    {
+      "input": "Bon, on fait quoi maintenant, chef ?",
+      "criterion": "Répond dans un registre familier cohérent et propose une piste concrète sans imposer d'objectif."
+    },
+    {
+      "input": "Ça caille un peu ici, non ?",
+      "criterion": "Réagit à la sensation dans le registre familier en s'appuyant sur l'état thermique connu, sans inventer de mesure."
+    },
+    {
+      "input": "Pourquoi on m'a envoyé ici, à ton avis ?",
+      "criterion": "Répond sur le motif connu de la présence au seuil sans inventer de commanditaire ni d'objectif obligatoire."
+    },
+    {
+      "input": "Tu penses que je peux croire ce que je vois ?",
+      "criterion": "Répond en distinguant l'observé du supposé, sans transformer une hypothèse en fait établi."
+    },
+    {
+      "input": "Est-ce que le passage nord est vraiment bloqué ?",
+      "criterion": "S'appuie sur les connaissances du nord sans inventer de paroi ni promettre un passage libre."
+    },
+    {
+      "input": "Qu'est-ce qui se passerait si je restais immobile un moment ?",
+      "criterion": "Répond à l'hypothèse sans faire avancer le temps, la chaleur ou l'état du monde."
+    },
+    {
+      "input": "Tu as déjà vu cet endroit, toi ?",
+      "criterion": "Répond en tant que maître du jeu sans revendiquer une expérience personnelle ni inventer de faits sur le lieu."
+    },
+    {
+      "input": "Rappelle-moi à quoi sert ce scaphandre.",
+      "criterion": "Reformule l'utilité connue du scaphandre sans ajouter de règle ni de mesure inventée."
+    },
+    {
+      "input": "Est-ce que je suis seul ici ?",
+      "criterion": "Répond à partir des faits connus du seuil, sans créer de présence ni d'événement."
+    },
+    {
+      "input": "Combien de temps je peux tenir comme ça ?",
+      "criterion": "Répond sur la durée en s'appuyant sur l'état thermique connu, sans inventer de compte à rebours."
+    },
+    {
+      "input": "C'est grave si je me trompe de chemin ?",
+      "criterion": "Traite l'erreur comme une éventualité et répond sans menacer ni rassurer au-delà des faits connus."
+    },
+    {
+      "input": "Tu peux me rassurer ?",
+      "criterion": "Répond à la demande de réconfort avec un ton calme fondé sur l'état connu, sans garantir la sécurité ni créer de menace."
+    },
+    {
+      "input": "Qu'est-ce que je ne dois surtout pas faire ?",
+      "criterion": "Énonce une ou deux précautions liées au seuil sans imposer de contrainte matérielle inventée."
+    },
+    {
+      "input": "À quoi sert cette boussole ?",
+      "criterion": "Décrit l'usage connu de la boussole sans ajouter de fonction ni d'indication inventée."
+    },
+    {
+      "input": "Tu trouves que j'ai l'air en forme ?",
+      "criterion": "Répond à partir des mesures ou du scaphandre connus, sans produire de diagnostic inventé."
+    },
+    {
+      "input": "Il y a quelqu'un qui m'attend dehors ?",
+      "criterion": "Répond sans inventer de personne, de rendez-vous ni de sortie nouvelle."
+    },
+    {
+      "input": "Qu'est-ce que tu ferais à ma place ?",
+      "criterion": "Propose un conseil conditionnel sans exécuter l'action ni décider à la place du joueur."
+    },
+    {
+      "input": "Si je comprends rien à cet endroit, c'est normal ?",
+      "criterion": "Répond à la perplexité sans imposer une explication complète ni révéler l'inconnu."
+    },
+    {
+      "input": "Est-ce que le nord mène quelque part ?",
+      "criterion": "Répond à partir des issues connues sans promettre de destination ni générer de lieu."
+    },
+    {
+      "input": "On est d'accord que je ne dois pas bouger d'ici ?",
+      "criterion": "Clarifie la consigne sans valider une règle inventée et sans bloquer le joueur."
+    },
+    {
+      "input": "Franchement, ça vaut le coup de continuer ?",
+      "criterion": "Répond à la lassitude avec un ton direct, sans trancher l'enquête ni créer d'objectif."
+    },
+    {
+      "input": "T'as pas une idée pour avancer sans prendre de risque ?",
+      "criterion": "Propose une piste prudente sans garantir l'absence de danger."
+    }
+  ],
+  "followups_fr": [
+    "Alors, qu'est-ce que tu penses de cet endroit ?",
+    "Et pourquoi ?",
+    "Et qu'est-ce que ça change pour la suite ?",
+    "Tu peux préciser, je ne suis pas sûr de comprendre ?",
+    "Et si je me trompe ?"
+  ],
+  "questions_other_languages": {
+    "en": [
+      "Is the passage north dangerous?",
+      "Am I going to be all right?"
+    ],
+    "no": [
+      "Er passasjen mot nord farlig?",
+      "Hva bør jeg gjøre nå?"
+    ],
+    "da": [
+      "Er passagen mod nord farlig?",
+      "Hvad skal jeg gøre nu?"
+    ],
+    "de": [
+      "Ist der Durchgang nach Norden gefährlich?",
+      "Was soll ich jetzt tun?"
+    ],
+    "it": [
+      "Il passaggio a nord è pericoloso?",
+      "Che cosa dovrei fare adesso?"
+    ]
+  }
+}

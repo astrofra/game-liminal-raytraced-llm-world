@@ -33,6 +33,27 @@ std::string UtcTime() {
 std::string Number(unsigned int value) {
     std::ostringstream out;out<<std::setw(5)<<std::setfill('0')<<value;return out.str();
 }
+void WriteNewFile(const std::filesystem::path& path, const std::string& bytes) {
+    auto temporary = path;
+    temporary += ".tmp";
+    {
+        std::ofstream file(temporary, std::ios::binary | std::ios::trunc);
+        file.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+        file.close();
+        if (!file) throw std::runtime_error("Cannot write " + path.u8string());
+    }
+    std::filesystem::rename(temporary, path);
+}
+
+std::string EncodePng(int width, int height, int pitch, const void* pixels) {
+    std::string png;
+    auto append = [](void* context, void* bytes, int count) {
+        static_cast<std::string*>(context)->append(static_cast<const char*>(bytes), count);
+    };
+    if (!stbi_write_png_to_func(append, &png, width, height, 3, pixels, pitch))
+        throw std::runtime_error("Cannot encode research image");
+    return png;
+}
 std::filesystem::path DefaultRoot() {
     if(const char* local=std::getenv("LOCALAPPDATA"))return std::filesystem::u8path(local)/"WithinTheLatentWalls"/"research";
     if(const char* data=std::getenv("XDG_DATA_HOME"))return std::filesystem::u8path(data)/"within-the-latent-walls"/"research";
@@ -83,6 +104,10 @@ void ResearchArchive::Place(const SessionState& state) {
         if(brief.is_object())description+="\n\nBrief de composition :\n"+brief.value("brief",std::string());
     }
     Write(stem+".scene",scene);
+    if (effective_scene_reference_.empty()) {
+        effective_scene_reference_ = stem+".scene";
+        effective_scene_hash_ = SceneTextHash(scene);
+    }
     Write(stem+".txt",title+"\n\n"+description+"\n");
     Write(stem+".json",json({{"place_id",state.current_place_id},{"title",title},
         {"description",state.spatial_state.room_summary},{"scene_sha256",SceneTextHash(scene)},
@@ -102,15 +127,9 @@ void ResearchArchive::WriteImage(const SessionState& state,const std::vector<uns
     if(pixels.size()!=static_cast<size_t>(render_.width)*render_.height*3)
         throw std::runtime_error("Invalid research image dimensions");
     // Encode in memory so Windows Unicode paths are handled by std::filesystem.
-    std::vector<char> png;
-    auto append=[](void* context,void* bytes,int count) {
-        auto& data=*static_cast<std::vector<char>*>(context);const auto* begin=static_cast<const char*>(bytes);
-        data.insert(data.end(),begin,begin+count);
-    };
-    if(!stbi_write_png_to_func(append,&png,render_.width,render_.height,3,pixels.data(),render_.width*3))
-        throw std::runtime_error("Cannot encode research image");
-    if(first)Write(found->second+".png",std::string(png.begin(),png.end()));
-    if(objects)Write("turns/turn-"+Number(command_index_)+".png",std::string(png.begin(),png.end()));
+    const auto png = EncodePng(render_.width,render_.height,render_.width*3,pixels.data());
+    if(first)Write(found->second+".png",png);
+    if(objects)Write("turns/turn-"+Number(command_index_)+".png",png);
 }
 bool ResearchArchive::Start(const std::string& root,const SessionState& state,
                             const LlmGenerationConfig& model,const RenderConfig& render) {
@@ -124,7 +143,8 @@ bool ResearchArchive::Start(const std::string& root,const SessionState& state,
         }
         if(!created)throw std::runtime_error("Cannot allocate a unique research archive");
         std::filesystem::create_directory(path_/"places");std::filesystem::create_directory(path_/"turns");
-        Write("manifest.json",json({{"schema",1},{"started_utc",UtcTime()},{"status","running"},
+        std::filesystem::create_directory(path_/"interactions");
+        Write("manifest.json",json({{"schema",2},{"run_id",path_.filename().u8string()},{"started_utc",UtcTime()},{"status","running"},
             {"new_game",true},{"llm_seed",model.seed},{"model",model.model_path},
             {"backend","llama.cpp"},{"width",render.width},{"height",render.height},
             {"samples",render.samples_per_pixel},{"render_seed",render.seed},
@@ -143,11 +163,108 @@ bool ResearchArchive::Start(const std::string& root,const SessionState& state,
 bool ResearchArchive::Image(const SessionState& state,const std::vector<unsigned char>& pixels) {
     return Guard([&]{WriteImage(state,pixels);});
 }
-bool ResearchArchive::Command(const std::string& command) {
-    return Guard([&]{++command_index_;command_=command;pending_=true;
+std::string ResearchArchive::InteractionPath() const {
+    return "interactions/" + Number(command_index_) + "/";
+}
+void ResearchArchive::InteractionState(const std::string& name, const SessionState& state) {
+    std::string serialized;
+    if (!SerializeSessionStateToJsonString(state,&serialized))
+        throw std::runtime_error("Cannot serialize interaction state");
+    WriteNewFile(path_/(InteractionPath()+name),serialized);
+}
+bool ResearchArchive::Command(const std::string& command, const SessionState* before) {
+    interaction_ok_=Guard([&]{++command_index_;command_=command;pending_=true;
+        record_presentation_=before!=nullptr;
+        interaction_status_.clear();
+        expected_calls_=0;
+        recorded_calls_.store(0);
+        calls_ok_.store(true);
+        if (before) {
+            std::filesystem::create_directories(path_/(InteractionPath()+"calls"));
+            WriteNewFile(path_/(InteractionPath()+"input.json"),
+                json{{"run_id",path_.filename().u8string()},{"interaction_id",command_index_},
+                     {"utc",UtcTime()},{"command",command},{"language",GameLanguageEnglishName(before->language)},
+                     {"place",before->current_place_id},{"object_revision",before->objects.revision}}.dump(2));
+            InteractionState("state-before.json",*before);
+        }
         Write("events.jsonl",json({{"event","command"},{"utc",UtcTime()},
             {"index",command_index_},{"command",command}}).dump()+"\n",true);
     });
+    return interaction_ok_;
+}
+decltype(LlmGenerationConfig::research_trace) ResearchArchive::CallTrace() {
+    if (!record_presentation_) return {};
+    const auto folder = path_/(InteractionPath()+"calls");
+    const auto interaction=command_index_;
+    const auto run=path_.filename().u8string();
+    return [this, folder, interaction, run, call=0u](bool request, const std::string& entry, const std::string& raw) mutable {
+        try {
+            // The runtime copies its configuration for token counts and each call.
+            // Allocate the number on the worker, rather than in an individual copy.
+            if (request) call=static_cast<unsigned int>(recorded_calls_.fetch_add(1)+1);
+            const auto stem=Number(call);
+            auto data=json::parse(entry);
+            data["run_id"]=run;
+            data["interaction_id"]=interaction;
+            data["call_id"]=call;
+            data["utc"]=UtcTime();
+            WriteNewFile(folder/(stem+(request?"-request.json":"-response.json")),data.dump(2));
+            if (!request) WriteNewFile(folder/(stem+"-raw.txt"),raw);
+        } catch (const std::exception& error) {
+            calls_ok_.store(false);
+            std::fprintf(stderr,"Research call trace: %s\n",error.what());
+        }
+    };
+}
+bool ResearchArchive::InitialPresentation(const SessionState& state) {
+    record_presentation_=true;
+    interaction_status_="initial";
+    interaction_ok_=Guard([&] {
+        std::filesystem::create_directories(path_/(InteractionPath()+"calls"));
+        WriteNewFile(path_/(InteractionPath()+"input.json"),
+            json{{"kind","startup"},{"utc",UtcTime()},{"language",GameLanguageEnglishName(state.language)}}.dump(2));
+        InteractionState("state-before.json",state);
+    });
+    return interaction_ok_;
+}
+bool ResearchArchive::Presentation(const SessionState& state, const std::string& audio_snapshot,
+                                   const std::string& displayed, uint64_t generation, int frame,
+                                   bool presented, uint64_t elapsed_ms, int width, int height, int pitch, const void* rgb,
+                                   const std::string& capture_error) {
+    if (!record_presentation_) return true;
+    record_presentation_=false;
+    const auto directory=path_/InteractionPath();
+    const auto started=std::chrono::steady_clock::now();
+    std::string error=capture_error;
+    const bool artifacts=Guard([&] {
+        InteractionState("state-after.json",state);
+        auto audio=json::parse(audio_snapshot);
+        audio["published_targets"]=json::parse(AudioGainsJson(state.audio_targets));
+        WriteNewFile(directory/"audio.json",audio.dump(2));
+        const auto base=places_.at(state.current_place_id)+".scene";
+        WriteNewFile(directory/"scene.json",json{{"place",state.current_place_id},{"base",base},
+            {"effective",effective_scene_reference_},{"effective_sha256",effective_scene_hash_},
+            {"object_revision",state.objects.revision},{"investigation_revision",state.investigation.revision}}.dump(2));
+        WriteNewFile(directory/"presentation.json",json{{"utc",UtcTime()},{"presented",presented},
+            {"text",displayed},{"width",width},{"height",height},{"generation",generation},{"frame",frame},
+            {"submission_to_present_ms",elapsed_ms}}.dump(2));
+        if (rgb && presented) WriteNewFile(directory/"screen.png",EncodePng(width,height,pitch,rgb));
+    });
+    if (!artifacts) error=error_;
+    if (!calls_ok_.load() || expected_calls_!=recorded_calls_.load()) error="Incomplete inference trace";
+    if (!interaction_ok_) error="Incomplete interaction artifacts";
+    if ((!presented || !rgb) && error.empty()) error="No presented SDL frame captured";
+    const bool complete=error.empty();
+    const bool marked=Guard([&] {
+        WriteNewFile(directory/"completion.json",json{{"run_id",path_.filename().u8string()},
+            {"interaction_id",command_index_},{"utc",UtcTime()},{"outcome",interaction_status_},
+            {"turn",command_index_==0?"":"turns/turn-"+Number(command_index_)+".json"},
+            {"complete",complete},{"error",error},{"llm_calls",recorded_calls_.load()},
+            {"presentation_archive_ms",std::chrono::duration<double,std::milli>(
+                std::chrono::steady_clock::now()-started).count()}}.dump(2));
+    });
+    if (!complete && marked) error_=error;
+    return complete && marked;
 }
 void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult& turn,const std::string& error) {
     const std::string stem="turns/turn-"+Number(command_index_);
@@ -155,6 +272,11 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
         {"from",turn.initial_place_id},{"to",turn.updated_place_id},{"description",turn.turn_result.narration},
         {"generated_room",turn.generated_room_created},{"prompt",turn.prompt_text},{"intent",turn.turn_result.intent},
         {"request",turn.request_text},{"engine_outcome",turn.engine_outcome},
+        {"effects",{{"published",status=="accepted"},{"dialogue_only",turn.dialogue_only},
+            {"moved",status=="accepted"&&turn.initial_place_id!=turn.updated_place_id},
+            {"simulation_turn_before",turn.initial_hard_state.turn_number},
+            {"simulation_turn_after",status=="accepted"?turn.updated_hard_state.turn_number:turn.initial_hard_state.turn_number},
+            {"raytrace_required",status=="accepted"&&!turn.view_unchanged}}},
         {"view_reused",turn.view_unchanged},{"visual_reference",last_visual_reference_},
         {"inventory_before",turn.initial_hard_state.inventory_items},{"inventory_after",turn.updated_hard_state.inventory_items},
         {"interaction",turn.interaction_metrics_json},{"objects_prepared",turn.objects_prepared},
@@ -170,7 +292,15 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
         {"audio",json::parse(AudioDecisionJson(turn.audio_mix,status=="accepted"))},
         {"scene_provenance",turn.dynamic_scene_design_json},{"scene_metrics",turn.dynamic_scene_metrics_json},
         {"thermal_prompt",turn.thermal_prompt_text},{"thermal_response",turn.thermal_response_text}}).dump(2)+"\n");
-    if(!turn.rendered_scene_text.empty())Write(stem+".scene",turn.rendered_scene_text);
+    if(!turn.rendered_scene_text.empty()) {
+        Write(stem+".scene",turn.rendered_scene_text);
+        if(status=="accepted" && !turn.view_unchanged) {
+            effective_scene_reference_=stem+".scene";
+            effective_scene_hash_=SceneTextHash(turn.rendered_scene_text);
+        }
+    }
+    expected_calls_=turn.llm_call_count;
+    interaction_status_=status;
     if(status=="accepted"&&turn.updated_objects.revision>0&&!turn.rendered_scene.triangles.empty()) {
         // Recompute from the composed revision; never reuse the architecture's
         // visibility/depth evidence after a mobile object changes.
@@ -230,11 +360,17 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
 }
 bool ResearchArchive::Turn(const SessionState& state,const HeadlessTurnResult& turn,
                            const std::vector<unsigned char>& pixels) {
-    return Guard([&]{Place(state);if(!turn.view_unchanged)WriteImage(state,pixels);
+    const bool ok=Guard([&]{Place(state);if(!turn.view_unchanged)WriteImage(state,pixels);
         Snapshot(state);Result("accepted",turn,"");});
+    interaction_ok_=interaction_ok_ && ok;
+    pending_=false;
+    return ok;
 }
 bool ResearchArchive::Failure(const std::string& error,const HeadlessTurnResult& turn) {
-    return Guard([&]{Result("not_committed",turn,error);});
+    const bool ok=Guard([&]{Result("not_committed",turn,error);});
+    interaction_ok_=interaction_ok_ && ok;
+    pending_=false;
+    return ok;
 }
 bool ResearchArchive::Close(const SessionState& state) {
     return Guard([&]{Snapshot(state);Write("closed.json",json({{"ended_utc",UtcTime()},

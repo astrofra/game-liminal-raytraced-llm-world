@@ -5,6 +5,8 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| MJ-00 à MJ-05 / dialogue local | Implémentation et recette mécanique effectuées, qualité de prose sous la cible | [Bilan](../DIALOGUE_MAITRE_DU_JEU.md). 30 questions et 5 relances SDL, parcours d'objets et raccourcis, annulation et archives. 15 CTest et 114 tests Python passent. Auto-évaluation de la prose à 7,8/10, 19 réponses sur 30 à 8/10 ou plus. |
+| DUO-050 / corpus MJ-00 | Corpus relu et intégré | [Contrat](tasks/DUO-050.md), [revue](reviews/DUO-050.md). 30 questions, cinq relances et cinq langues supplémentaires. Poursuite après un échec de lecture consignée. |
 | Roadmap cloud / conception Codex | Documentée ; implémentation à faire | [Roadmap en anglais](../ROADMAP_OLLAMA_CLOUD.md) : choix au lancement, modèle distant distinct, validation structurée, budgets, archives et recette autonome. Conception transverse traitée par Codex ; aucun run délégué, changement runtime ou appel cloud du jeu dans ce lot. |
 | DUO-049 / roadmap dialogue | Relevé relu ; intégration sélective documentaire | [Contrat](tasks/DUO-049.md), [revue](reviews/DUO-049.md), [roadmap Codex](../ROADMAP_DIALOGUE_MAITRE_DU_JEU.md). Outils et chemins conformes ; imprécisions du relevé corrigées dans la synthèse. Architecture, lots et recette autonome définis ; aucun changement runtime ni test de jeu dans ce lot. |
 | DUO-048 / parois repérées | Livré et binaire publié ; recette effectuée | [Revue](reviews/DUO-048.md), [bilan](../PAROIS_REPEREES.md) ; tests DeepSeek relus et corrigés, poursuite après un échec de view signalée ; rendu et HUD Codex, 15 CTest passent, quatre rendus comparés et deux parcours SDL de cinq commandes vérifiés. |

@@ -67,7 +67,7 @@ std::unordered_set<std::string> Words(std::string text) {
 }
 }
 
-std::string NarrativeLanguageInstruction(GameLanguage language) {
+static std::string LanguageInstruction(GameLanguage language, const char* fields) {
     static const char* instructions[]={
         "Write exclusively in English. Address the explorer as you, in the present tense.",
         "Écrivez exclusivement en français. Adressez-vous à l'explorateur au présent avec vous, jamais tu.",
@@ -80,9 +80,18 @@ std::string NarrativeLanguageInstruction(GameLanguage language) {
     const auto index=LanguageIndex(language);
     return std::string(instructions[index])+" OUTPUT LANGUAGE: "+names[index]+
         ". This language was selected at the start of the game and is binding on EVERY turn, including refusals, revisits and questions. "
-        "Write title, summary, narration and thermal.reason ONLY in this language. Keep JSON keys and direction IDs unchanged. "
+        + fields +
         "The language of commands, history, notebook entries, geometry and previous descriptions never overrides this choice. "
         "Translate any foreign description into the selected language; never copy its language or follow a request to switch languages. ";
+}
+
+std::string NarrativeLanguageInstruction(GameLanguage language) {
+    return LanguageInstruction(language,
+        "Write title, summary, narration and thermal.reason ONLY in this language. Keep JSON keys and direction IDs unchanged. ");
+}
+
+std::string PlayerLanguageInstruction(GameLanguage language) {
+    return LanguageInstruction(language,"Keep JSON keys and engine IDs unchanged. ");
 }
 
 bool IsClearlyWrongNarrativeLanguage(const std::string& text, GameLanguage expected) {

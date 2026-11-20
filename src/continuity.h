@@ -5,6 +5,7 @@
 #include <functional>
 
 namespace liminal {
+struct SessionState;
 // Structured data, never instructions. Only published engine events enter history.
 struct ContinuityContextV1 {
     std::string core_json = "{}";
@@ -18,6 +19,7 @@ std::string SerializeContinuityContext(const ContinuityContextV1& context);
 bool FitContinuityPrompt(const ContinuityContextV1& context, int context_tokens, int output_tokens,
                          int memory_tokens, const ContinuityPromptBuilder& build,
                          const ContinuityTokenCounter& count, std::vector<LlmPromptMessage>* messages,
-                         std::string* metrics, std::string* error);
+                         std::string* metrics, std::string* error, bool allow_empty_memory = false);
+ContinuityContextV1 DialogueContext(const SessionState& state);
 }
 #endif

@@ -254,6 +254,9 @@ static json MakeSessionHistoryJson(const std::vector<SessionTurnRecord>& history
         item["place_id"]=record.place_id;
         item["engine_outcome"]=record.engine_outcome;
         item["place_description"]=record.place_description;
+        if (!record.object_reference.empty()) item["object_reference"]=record.object_reference;
+        if (!record.conversation_topic.empty()) item["conversation_topic"]=record.conversation_topic;
+        if (!record.clarification_candidates.empty()) item["clarification_candidates"]=record.clarification_candidates;
         node.push_back(item);
     }
     return node;
@@ -428,6 +431,12 @@ static void ParseHistoryNode(const json& node, std::vector<SessionTurnRecord>* h
         record.place_id=ReadStringNode(node[index],"place_id");
         record.engine_outcome=ReadStringNode(node[index],"engine_outcome");
         record.place_description=ReadStringNode(node[index],"place_description");
+        record.object_reference=ReadStringNode(node[index],"object_reference");
+        record.conversation_topic=ReadStringNode(node[index],"conversation_topic");
+        if (node[index].contains("clarification_candidates") && node[index]["clarification_candidates"].is_array())
+            for (const auto& id : node[index]["clarification_candidates"])
+                if (id.is_string() && record.clarification_candidates.size()<4)
+                    record.clarification_candidates.push_back(id.get<std::string>());
         history->push_back(record);
     }
 }

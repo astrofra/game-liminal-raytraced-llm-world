@@ -19,6 +19,11 @@ Les formulations libres sont interprétées par le LLM ; le moteur vérifie puis
 la proposition. Les raccourcis exacts d'inventaire et de boussole restent directs.
 Consulter l'inventaire conserve la vue et l'animation déjà calculées.
 
+Parler au maître du jeu conserve aussi la vue. Posez une question sur votre
+situation, demandez un conseil ou reprenez le fil avec « Et pourquoi ? ». Le
+modèle s'appuie sur les faits de la partie et les échanges récents, et la
+conversation laisse les températures et les objets en place.
+
 Une [enquête à indices](documentation/ENQUETE_INDICES.md) relie la disparition de
 Vey, les obstructions invisibles et les cristaux. Examiner les traces, prélever
 un spécimen puis demander « faire le point » alimente un carnet de constats et
@@ -107,6 +112,7 @@ annulation et sondes du modèle. `--llm-gpu-layers 0` sélectionne le CPU pour u
 Le jeu normal n'affiche aucun sélecteur de backend ou de mode de scène.
 
 - [État technique](documentation/TECHNICAL_STATE.md)
+- [Dialogue et recette du maître du jeu](documentation/DIALOGUE_MAITRE_DU_JEU.md)
 - [Prendre, déposer et retrouver les objets](documentation/INTERACTIONS_ENVIRONNEMENT.md)
 - [Continuité des scènes et recette](documentation/CONTINUITE_SCENES.md)
 - [Correction des faces coplanaires avant le verre](documentation/CORRECTION_COPLANAIRE.md)

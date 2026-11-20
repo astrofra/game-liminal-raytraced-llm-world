@@ -1,4 +1,4 @@
-# État technique — 27 octobre 2026
+# État technique — 20 novembre 2026
 
 ## Runtime actuel
 
@@ -22,6 +22,13 @@ Le [bilan de migration](BILAN_RUNTIME_AUTONOME.md) distingue les vérifications
 réelles des limites de qualification restantes.
 
 ## Jeu et recherche
+
+- [Dialogue du maître du jeu](DIALOGUE_MAITRE_DU_JEU.md). Le modèle route les
+  formulations libres vers la conversation, l'observation ou une action. Les
+  questions utilisent une réponse courte et une mémoire d'échanges bornée en
+  tokens. Le moteur conserve l'état de simulation et la vue courante pendant
+  le dialogue. Les interactions SDL disposent d'une capture après composition
+  du HUD, des états avant et après et des traces par appel LLM.
 
 - [Enquête à indices](ENQUETE_INDICES.md) : état versionné et révisé, quatre
   possibilités dont la [répartition est choisie par le LLM](REPARTITION_INDICES_LLM.md)

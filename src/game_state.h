@@ -267,6 +267,8 @@ struct TurnResult {
 
 struct SessionTurnRecord {
     std::string origin_place_id, place_id, engine_outcome, place_description;
+    std::string object_reference, conversation_topic;
+    std::vector<std::string> clarification_candidates;
     int turn_number;
     LocationId location_id;
     std::string location_label;
