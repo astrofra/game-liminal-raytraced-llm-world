@@ -13,6 +13,7 @@ Les archives de recherche ne servent jamais à reprendre une partie.
 - [Correction des faces coplanaires avant le verre](CORRECTION_COPLANAIRE.md)
 - [Soutiens de verre : implémentation, comparaisons et limites](SOUTIENS_VERRE.md)
 - [Runtime autonome : livraison et preuves](BILAN_RUNTIME_AUTONOME.md)
+- [Roadmap: optional Ollama Cloud inference](ROADMAP_OLLAMA_CLOUD.md) — English proposal: local/cloud startup selection and comparative testing.
 - [Distribution Windows et téléchargement final du modèle](WINDOWS_DISTRIBUTION.md)
 - [Conservation des étapes antérieures](HISTORIQUE_RECHERCHE.md)
 

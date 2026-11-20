@@ -5,6 +5,7 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| Roadmap cloud / conception Codex | Documentée ; implémentation à faire | [Roadmap en anglais](../ROADMAP_OLLAMA_CLOUD.md) : choix au lancement, modèle distant distinct, validation structurée, budgets, archives et recette autonome. Conception transverse traitée par Codex ; aucun run délégué, changement runtime ou appel cloud du jeu dans ce lot. |
 | DUO-049 / roadmap dialogue | Relevé relu ; intégration sélective documentaire | [Contrat](tasks/DUO-049.md), [revue](reviews/DUO-049.md), [roadmap Codex](../ROADMAP_DIALOGUE_MAITRE_DU_JEU.md). Outils et chemins conformes ; imprécisions du relevé corrigées dans la synthèse. Architecture, lots et recette autonome définis ; aucun changement runtime ni test de jeu dans ce lot. |
 | DUO-048 / parois repérées | Livré et binaire publié ; recette effectuée | [Revue](reviews/DUO-048.md), [bilan](../PAROIS_REPEREES.md) ; tests DeepSeek relus et corrigés, poursuite après un échec de view signalée ; rendu et HUD Codex, 15 CTest passent, quatre rendus comparés et deux parcours SDL de cinq commandes vérifiés. |
 | DUO-047 / répartition LLM | Livré et binaire publié ; recette effectuée | [Revue](reviews/DUO-047.md), [bilan](../REPARTITION_INDICES_LLM.md) ; six groupes DeepSeek corrigés, un glob hors périmètre signalé ; moteur Codex, 15 CTest et 114 Python passent, trois graines Gemma et 14 commandes SDL vérifiées, migrations préservées. Variété de rythme limitée dans cette série. |
