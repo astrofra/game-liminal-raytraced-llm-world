@@ -2854,6 +2854,31 @@ static ContinuityContextV1 BuildContinuityContext(const SessionState& state,cons
     return context;
 }
 
+static std::string ReadStreamedString(const char* text, const char* field)
+{
+    if (!text || !*text) return {};
+    std::string decoded;
+    bool target = false;
+    // Appending a quote can finish a valid string prefix. The parser reports the
+    // value even when the outer object or a subsequent field is still incomplete.
+    // Incomplete escapes and UTF-8 sequences do not yield a string value.
+    (void)json::parse(std::string(text) + '"', [&](int depth, json::parse_event_t event, json& value) {
+        if (depth != 1) return true;
+        if (event == json::parse_event_t::key) target = value == field;
+        if (event == json::parse_event_t::value && target && value.is_string() && decoded.empty())
+            decoded = value.get<std::string>();
+        return true;
+    }, false);
+    return decoded;
+}
+
+static bool NarrationPreviewAllowed(const SessionState& state, const std::string& text)
+{
+    return !text.empty() && text.front() != '#' && text.find('\0') == std::string::npos &&
+        !IsClearlyWrongNarrativeLanguage(text, state.language) &&
+        ObjectNarrationAllowed(state, text, "", "", nullptr);
+}
+
 static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& config,
                           const std::string& facts,const std::string& command,const std::string& outcome,
                           bool arrival,HeadlessTurnResult* result,std::string* title,std::string* summary,std::string* narration,
@@ -3054,10 +3079,39 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     if(distribution)messages[0].content+=" On first creation, choose investigation_placement yourself from investigation_authoring. Empty and grouped selections are equally valid. Its catalogue is not an order of discovery. Your public descriptions and deposited_ids MUST match the selected ground objects. Keep a selected obstruction's exit open without announcing the invisible barrier before contact. No evidence or identity is learned at arrival.";
     LlmGenerationResult generation;StreamForwarder forwarder;
     forwarder.callback=config.stream_callback;forwarder.user_data=config.stream_user_data;
-    struct NarrativeStream {StreamForwarder* forwarder;std::string raw;} stream{&forwarder,{}};
-    auto capture=[](const char* text,const char* delta,void* opaque) {
-        auto& stream=*static_cast<NarrativeStream*>(opaque);stream.raw=text?text:"";
-        return !stream.forwarder->callback||ForwardStreamChunk(text,delta,stream.forwarder);
+    struct NarrativeStream {
+        StreamForwarder& forwarder;
+        const SessionState& view;
+        bool arrival_preview;
+        bool card;
+        std::string raw, decoded_prefix, preview;
+    } stream{forwarder, object_view, completed_move, card, {}, {}, {}};
+    auto capture = [](const char* text, const char* delta, void* opaque) {
+        auto& stream = *static_cast<NarrativeStream*>(opaque);
+        stream.raw = text ? text : "";
+        if (!stream.forwarder.callback) return true;
+        if (!stream.arrival_preview) return ForwardStreamChunk(text, delta, &stream.forwarder);
+
+        std::string extension;
+        if (delta && *delta) {
+            auto decoded = ReadStreamedString(text, "narration");
+            if (!decoded.empty() && decoded != stream.decoded_prefix) {
+                stream.decoded_prefix = std::move(decoded);
+                auto prose = ConstrainNarrationText(stream.decoded_prefix, stream.card ? 1800 : 320, stream.card ? 10 : 2);
+                prose = ConstrainArrivalDirections(prose, stream.view.language, {}, kDirectionUnknown, false);
+                if (prose.find("volume_") != std::string::npos || prose.find("portal") != std::string::npos ||
+                    !NarrationPreviewAllowed(stream.view, prose)) prose.clear();
+                if (prose.compare(0, stream.preview.size(), stream.preview) == 0)
+                    extension = prose.substr(stream.preview.size());
+                stream.preview = std::move(prose);
+            }
+        }
+        return stream.forwarder.callback(kHeadlessTurnStreamArrivalPreview, stream.preview.c_str(),
+                                         extension.c_str(), stream.forwarder.user_data);
+    };
+    const auto clear_preview = [&] {
+        if (!stream.preview.empty())
+            forwarder.callback(kHeadlessTurnStreamArrivalPreview, "", "", forwarder.user_data);
     };
     std::string selection,budget_error;
     const auto unbounded=messages;
@@ -3114,6 +3168,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             result->narrative_metrics_json=json({{"success",false},{"proposal_accepted",false},
                 {"fallback_reason",error},{"prompt_tokens",generation.prompt_tokens},{"tokens",generation.generated_tokens},
                 {"continuity_selection",json::parse(selection)}}).dump();
+            clear_preview();
             return false;
         }
         result->updated_investigation=selected.investigation;result->investigation_prepared=true;
@@ -3270,7 +3325,10 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             {"balance",ExitBalanceJson(constraints.balance)}}},
         {"wall_ms",generation.wall_time_ms},{"tokens",generation.generated_tokens},
         {"outcome",outcome},{"displayed",*narration}}).dump();
-    if(!reason.empty())result->used_turn_fallback=true;
+    if(!reason.empty()) {
+        result->used_turn_fallback=true;
+        clear_preview();
+    }
     return reason.empty();
 }
 
@@ -3555,13 +3613,6 @@ static std::string ReadDialogueReply(const std::string& wire_text)
     return ConstrainNarrationText(response["reply"].get_ref<const std::string&>(), 650, 3);
 }
 
-static bool DialogueReplyAllowed(const SessionState& state, const std::string& reply)
-{
-    return !reply.empty() && reply.front() != '#' && reply.find('\0') == std::string::npos &&
-        !IsClearlyWrongNarrativeLanguage(reply, state.language) &&
-        ObjectNarrationAllowed(state, reply, "", "", nullptr);
-}
-
 static bool ReplyToDialogue(const SessionState& state,const std::string& command,const ObjectResolution& interpretation,
     const HeadlessTurnConfig& config,HeadlessTurnResult* result,char* error,size_t error_size) {
     using nlohmann::ordered_json;
@@ -3657,14 +3708,9 @@ static bool ReplyToDialogue(const SessionState& state,const std::string& command
 
         std::string extension;
         if (text && delta && *delta) {
-            const std::string wire_text(text);
-            // Let the JSON parser decode the prefix by closing the object or its open string.
-            // A fragment ending mid-escape or mid-UTF-8 sequence will still fail to parse.
-            auto reply = ReadDialogueReply(wire_text);
-            if (reply.empty()) reply = ReadDialogueReply(wire_text + "}");
-            if (reply.empty()) reply = ReadDialogueReply(wire_text + "\"}");
+            auto reply = ConstrainNarrationText(ReadStreamedString(text, "reply"), 650, 3);
             if (reply.size() > stream.preview.size() && reply.compare(0, stream.preview.size(), stream.preview) == 0 &&
-                DialogueReplyAllowed(stream.state, reply)) {
+                NarrationPreviewAllowed(stream.state, reply)) {
                 extension = reply.substr(stream.preview.size());
                 stream.preview = std::move(reply);
             }
@@ -3676,7 +3722,7 @@ static bool ReplyToDialogue(const SessionState& state,const std::string& command
     const bool ok=fits && (completion?completion(cfg,messages,forward_reply,&stream,&generation):
         GenerateChatCompletion(cfg,messages,forward_reply,&stream,&generation));
     std::string answer = ReadDialogueReply(generation.response_text);
-    if (!ok || !generation.reached_eog || !DialogueReplyAllowed(state, answer)) {
+    if (!ok || !generation.reached_eog || !NarrationPreviewAllowed(state, answer)) {
         result->used_turn_fallback=true;
         answer=PlayerText(state.language,"I can't tell from what we know here.",
             "Difficile de le dire avec ce qu'on sait ici.","Det er vanskelig å si ut fra det vi vet her.",

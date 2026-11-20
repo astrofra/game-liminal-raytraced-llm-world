@@ -441,8 +441,13 @@ static void LocalPilot() {
     HeadlessTurnConfig cfg;cfg.interaction_completion=FixturePlayerCompletion;cfg.generation_config.prompt_token_counter=FakePromptCount;cfg.local_scenes=true;cfg.investigation_opportunities=false; // Composition seam; no real inference in this test.
     cfg.interaction_completion=FixturePlayerCompletion;
     int narratives=0;
+    // Observes the prose published while the narration string is still open.
+    struct ArrivalProbe {
+        std::string text, first;
+        bool finished = false, seen = false, cancel = false;
+    } arrival;
     cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
-        LlmStreamCallback,void*,LlmGenerationResult* r) {
+        LlmStreamCallback stream,void* stream_user,LlmGenerationResult* r) {
         ++narratives;CHECK(messages[0].content.find("ENGINE OUTCOME")!=std::string::npos);
         CHECK(messages[1].content.find("portal")==std::string::npos);
         r->success=true;r->reached_eog=true;
@@ -456,7 +461,31 @@ static void LocalPilot() {
         response["exits"]={{"north",false},{"east",true},{"south",false},{"west",true}};
         for(auto it=request["exit_proposal"]["fixed"].begin();it!=request["exit_proposal"]["fixed"].end();++it)response["exits"][it.key()]=it.value();
         response["exits"]=FitTestExitSchema(c,response["exits"]);
-        r->response_text=response.dump();
+        // Cumulative JSON fragments: two bounds land inside the narration string,
+        // so arrival prose can be published before the object closes.
+        const std::string wire=response.dump();r->response_text=wire;
+        const std::string narration_key="\"narration\":\"";
+        const auto key=wire.find(narration_key);
+        CHECK(key!=std::string::npos);
+        const auto prose_begin=key+narration_key.size();
+        const auto prose_end=wire.find('"',prose_begin);
+        CHECK(prose_end!=std::string::npos&&prose_end>prose_begin);
+        auto cut=[&](size_t from) {
+            const auto space=wire.find(' ',from);
+            CHECK(space!=std::string::npos&&space<prose_end);
+            return space+1;
+        };
+        const auto first_prose=cut(prose_begin+8),second_prose=cut(first_prose);
+        if(stream) {
+            arrival.finished=false;size_t sent=0;
+            for(const auto bound:{key,first_prose,second_prose,wire.size()}) {
+                const auto cumulative=wire.substr(0,bound);
+                const auto delta=wire.substr(sent,bound-sent);
+                sent=bound;
+                if(!stream(cumulative.c_str(),delta.c_str(),stream_user))return false;
+            }
+            arrival.finished=true;
+        }
         return true;
     };
     int calls=0;bool bad=true,truncated=false;
@@ -476,15 +505,43 @@ static void LocalPilot() {
     cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char*,void*){return false;};
     CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==0);
     CHECK(turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());cfg.stream_callback=nullptr;
+    cfg.stream_callback=[](HeadlessTurnStreamPhase phase,const char* text,const char* delta,void* data) {
+        auto& probe=*static_cast<ArrivalProbe*>(data);
+        if(phase!=kHeadlessTurnStreamArrivalPreview)return true;
+        if(!delta||!*delta)return true;
+        CHECK(!probe.finished);                    // Published inside the narrative completion.
+        probe.seen=true;if(probe.first.empty())probe.first=delta;
+        probe.text+=delta;CHECK(text&&probe.text==text); // Only decoded prose accumulates.
+        return !probe.cancel;
+    };
+    // Cancelling on the first visible arrival prose publishes no place or link.
+    calls=0;arrival=ArrivalProbe();arrival.cancel=true;cfg.stream_user_data=&arrival;
+    CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));
+    CHECK(arrival.seen&&!turn.generated_room_created&&turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());
+    UpdateSessionStateFromTurn("east",turn,&state);CHECK(SerializeSessionStateToJsonString(state,&after));CHECK(after==before);
+    // A surviving preview is prose only, published before the JSON closes.
+    calls=0;arrival=ArrivalProbe();
     CHECK(RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==1);
+    const auto arrival_field=json::parse(turn.raw_response_text).at("narration").get<std::string>();
+    CHECK(arrival.seen&&!arrival.first.empty()&&arrival.first.size()<turn.turn_result.narration.size());
+    CHECK(turn.turn_result.narration.compare(0,arrival.first.size(),arrival.first)==0);
+    CHECK(turn.turn_result.narration.compare(0,arrival.text.size(),arrival.text)==0);
+    CHECK(arrival_field.compare(0,arrival.text.size(),arrival.text)==0);
+    CHECK(arrival.text.find("title")==std::string::npos&&arrival.text.find("summary")==std::string::npos&&
+          arrival.text.find("exits")==std::string::npos&&arrival.text.find("thermal")==std::string::npos&&
+          arrival.text.find("Les masses et le ciel")==std::string::npos);
     CHECK(turn.generated_room_scene_source=="local_direct_v2");
     CHECK(turn.generated_rooms_to_add[0].spatial_state.room_title=="Les masses et le ciel");
     UpdateSessionStateFromTurn("east",turn,&state);CHECK(state.generated_rooms.back().scene_contract_version==3);
     CHECK(SerializeSessionStateToJsonString(state,&after));SessionState restored;
     CHECK(ParseSessionStateFromJson(after.c_str(),&restored,error,sizeof(error)));
-    CHECK(RunHeadlessTurnFromState(restored,"look",cfg,&turn,error,sizeof(error)));CHECK(calls==1);
+    arrival=ArrivalProbe();
+    CHECK(RunHeadlessTurnFromState(restored,"look",cfg,&turn,error,sizeof(error)));CHECK(calls==1&&!arrival.seen);
     CHECK(turn.rendered_scene_text==local&&!turn.generated_room_cache_refreshed);
-    CHECK(RunHeadlessTurnFromState(restored,"west",cfg,&turn,error,sizeof(error)));UpdateSessionStateFromTurn("west",turn,&restored);
+    arrival=ArrivalProbe();
+    CHECK(RunHeadlessTurnFromState(restored,"west",cfg,&turn,error,sizeof(error)));CHECK(arrival.seen&&!turn.generated_room_created);
+    UpdateSessionStateFromTurn("west",turn,&restored);
+    cfg.stream_user_data=nullptr;cfg.stream_callback=nullptr;
     CHECK(RunHeadlessTurnFromState(restored,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==1&&turn.rendered_scene_text==local);
     UpdateSessionStateFromTurn("east",turn,&restored);
     CHECK(RunHeadlessTurnFromState(restored,"east",cfg,&turn,error,sizeof(error)));

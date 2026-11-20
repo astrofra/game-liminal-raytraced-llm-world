@@ -5,6 +5,9 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-055 / arrivée progressive SDL | Intégré et testé | [Contrat](tasks/DUO-055.md), [revue](reviews/DUO-055.md). Arrivée et revisite progressives avec Gemma local, annulation SDL vérifiée. Quinze CTest passent. |
+| DUO-054 / Recast et Detour | Roadmap mise à jour | [Contrat](tasks/DUO-054.md), [revue](reviews/DUO-054.md), [roadmap](../ROADMAP_DEPLACEMENT_LOCAL_3D.md#recast-et-detour-dans-le-pilote). Comparaison prévue avec le pas direct dans la pièce du cube en verre. |
+| DUO-053 / déplacement local 3D | Roadmap documentée | [Contrat](tasks/DUO-053.md), [revue](reviews/DUO-053.md), [roadmap](../ROADMAP_DEPLACEMENT_LOCAL_3D.md). Pas court dans une scène existante, repères visibles et tirage parmi des trajets valides à éprouver. |
 | DUO-052 / dialogue progressif SDL | Intégré et testé | [Contrat](tasks/DUO-052.md), [revue](reviews/DUO-052.md). Aperçu affiché avec Gemma local, remplacement par la réponse validée et annulation vérifiés dans SDL. Quinze CTest passent. |
 | DUO-051 / plein écran | Intégré et testé | [Contrat](tasks/DUO-051.md), [revue](reviews/DUO-051.md). Fenêtre sans décoration sur le bureau, interface 5:4 et captures avec marges noires. Vérification du menu, de deux inventaires SDL et des 15 CTest. |
 | MJ-00 à MJ-05 / dialogue local | Implémentation et recette mécanique effectuées, qualité de prose sous la cible | [Bilan](../DIALOGUE_MAITRE_DU_JEU.md). 30 questions et 5 relances SDL, parcours d'objets et raccourcis, annulation et archives. 15 CTest et 114 tests Python passent. Auto-évaluation de la prose à 7,8/10, 19 réponses sur 30 à 8/10 ou plus. |

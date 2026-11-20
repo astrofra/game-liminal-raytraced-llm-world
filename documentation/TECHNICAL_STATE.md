@@ -36,6 +36,11 @@ réelles des limites de qualification restantes.
   conservent la capture finale du HUD, les états avant et après et les traces
   par appel LLM.
 
+- À l'arrivée ou au retour dans un lieu, SDL affiche la prose progressive
+  sous « Arrivée en cours ». Le moteur valide d'abord la géométrie d'une nouvelle
+  pièce. La description finale, la vue calculée et la boussole de destination
+  sont publiées ensemble. Échap retire l'aperçu et annule le déplacement.
+
 - [Enquête à indices](ENQUETE_INDICES.md) : état versionné et révisé, quatre
   possibilités dont la [répartition est choisie par le LLM](REPARTITION_INDICES_LLM.md)
   dans l'appel narratif de création, après la géométrie. Schéma 2,

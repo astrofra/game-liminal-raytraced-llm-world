@@ -32,6 +32,7 @@ Les archives de recherche ne servent jamais à reprendre une partie.
 - [Prendre, déposer et retrouver : livraison et qualification](INTERACTIONS_ENVIRONNEMENT.md)
 - [Retour de partie : souplesse des prises et narration](RETOUR_JEU_INTERACTIONS.md)
 - [Roadmap des interactions avec l’environnement](ROADMAP_INTERACTIONS_ENVIRONNEMENT.md)
+- [Roadmap du déplacement à l’intérieur des scènes 3D](ROADMAP_DEPLACEMENT_LOCAL_3D.md)
 - [Vue animée](ANIMATED_VIEW_SPEC.md)
 - [Audio : extraction, mixage et recette](AUDIO_AMBIENCE.md)
 - [Format des scènes](SCENE_FORMAT_V1.md)

@@ -47,7 +47,8 @@ struct WorkerSharedState {
     GameLanguage language = kGameLanguageEnglish;
     std::string status_text;
     std::string error_text;
-    std::string dialogue_preview;
+    std::string narration_preview;
+    bool arrival_preview = false;
     bool terminal_stream_open;
     std::string terminal_stream_phase_label;
     SessionState session_state;
@@ -134,7 +135,7 @@ struct UiTextSpan {
 struct UiTextLine {
     std::vector<UiTextSpan> spans;
     bool command_line;
-    bool dialogue_preview = false;
+    bool narration_preview = false;
 
     UiTextLine()
         : command_line(false)
@@ -253,6 +254,8 @@ static const char* StreamPhaseStatus(HeadlessTurnStreamPhase phase, GameLanguage
             return UiText(language,"Checking the passages...","Vérification des passages...","Sjekker passasjene...","Kontrollerer passagerne...","Durchgänge werden geprüft...","Verifica dei passaggi...");
         case kHeadlessTurnStreamScenePreview:
             return UiText(language,"Preparing the view...","Préparation de la vue...","Forbereder utsikten...","Forbereder udsigten...","Ansicht wird vorbereitet...","Preparazione della vista...");
+        case kHeadlessTurnStreamArrivalPreview:
+            return UiText(language,"Arriving...","Arrivée en cours…","Ankommer...","Ankommer...","Ankunft...","Arrivo in corso...");
         default:
             return UiText(language,"Thinking...","Réflexion...","Tenker...","Tænker...","Überlegt...","Riflessione...");
     }
@@ -1473,8 +1476,9 @@ static bool OnHeadlessTurnStream(
     std::lock_guard<std::mutex> lock(shared_state->mutex);
     shared_state->activity = kWorkerActivityLlm;
     shared_state->status_text = StreamPhaseStatus(phase,shared_state->language);
-    if (phase == kHeadlessTurnStreamDialoguePreview) {
-        if (delta_text && *delta_text) shared_state->dialogue_preview = accumulated_text;
+    if (phase == kHeadlessTurnStreamDialoguePreview || phase == kHeadlessTurnStreamArrivalPreview) {
+        shared_state->narration_preview = accumulated_text ? accumulated_text : "";
+        shared_state->arrival_preview = phase == kHeadlessTurnStreamArrivalPreview;
     } else {
         WriteTerminalStreamChunkLocked(shared_state, phase, delta_text);
     }
@@ -1496,7 +1500,7 @@ static void FinalizeWorkerFailure(WorkerSharedState* shared_state, const char* m
     std::lock_guard<std::mutex> lock(shared_state->mutex);
     CloseTerminalStreamLocked(shared_state);
     shared_state->busy = false;
-    shared_state->dialogue_preview.clear();
+    shared_state->narration_preview.clear();
     shared_state->result_ready = false;
     shared_state->error_ready = true;
     shared_state->activity = kWorkerActivityFailed;
@@ -1633,7 +1637,7 @@ static void RunTurnWorker(
         PrintTurnProvenance(updated_session_state, turn_result);
         PrintHeadlessTurnDebugTrace(turn_result, stdout);
         shared_state->busy = false;
-        shared_state->dialogue_preview.clear();
+        shared_state->narration_preview.clear();
         shared_state->result_ready = true;
         shared_state->error_ready = false;
         shared_state->activity = kWorkerActivityComplete;
@@ -1873,7 +1877,8 @@ static std::string BuildStatusLine(
 static void BuildTranscriptLines(
     const SessionState& session_state,
     const std::string& pending_command,
-    const std::string& dialogue_preview,
+    const std::string& narration_preview,
+    bool arrival_preview,
     const std::string& ui_message,
     const UiFonts& fonts,
     int max_width,
@@ -1915,11 +1920,15 @@ static void BuildTranscriptLines(
         AppendWrappedText(std::string("> ") + pending_command, fonts, max_width, lines);
         MarkWrappedLinesAsCommand(lines, start_line);
 
-        if (!dialogue_preview.empty()) {
+        if (!narration_preview.empty()) {
             const size_t preview_start = lines->size();
-            AppendWrappedText(dialogue_preview, fonts, max_width, lines);
+            if (arrival_preview) {
+                AppendWrappedText(StreamPhaseStatus(kHeadlessTurnStreamArrivalPreview, session_state.language),
+                                  fonts, max_width, lines);
+            }
+            AppendWrappedText(narration_preview, fonts, max_width, lines);
             for (size_t index = preview_start; index < lines->size(); ++index) {
-                (*lines)[index].dialogue_preview = true;
+                (*lines)[index].narration_preview = true;
             }
         }
     }
@@ -1996,7 +2005,7 @@ static void DrawConsoleText(
         float x = text_rect.x + 8.0f;
         SDL_Color color{0, 0, 0, 255};
         if (lines[index].command_line) color = {76, 76, 76, 255};
-        if (lines[index].dialogue_preview) color = {55, 76, 92, 255};
+        if (lines[index].narration_preview) color = {55, 76, 92, 255};
         for (size_t span_index = 0; span_index < lines[index].spans.size(); ++span_index) {
             const UiTextSpan& span = lines[index].spans[span_index];
             float advance_x = 0.0f;
@@ -2538,7 +2547,8 @@ bool RunSdlFrontend(
                     worker_shared_state.language = current_session_state.language;
                     worker_shared_state.status_text = StreamPhaseStatus(kHeadlessTurnStreamPrimaryResponse,current_session_state.language);
                     worker_shared_state.error_text.clear();
-                    worker_shared_state.dialogue_preview.clear();
+                    worker_shared_state.narration_preview.clear();
+                    worker_shared_state.arrival_preview = false;
                 }
                 worker_shared_state.stop_requested.store(false);
                 SdlFrontendConfig request_config=config;
@@ -2606,7 +2616,8 @@ bool RunSdlFrontend(
         bool turn_completed = false;
         bool turn_failed = false;
         std::string failure_text;
-        std::string dialogue_preview;
+        std::string narration_preview;
+        bool arrival_preview = false;
         bool turn_result_ready = false;
         SessionState completed_session_state;
         HeadlessTurnResult completed_turn_result;
@@ -2619,7 +2630,10 @@ bool RunSdlFrontend(
             worker_activity = worker_shared_state.activity;
             worker_status = worker_shared_state.status_text.empty() ? "idle" : worker_shared_state.status_text;
             const bool cancelled = worker_shared_state.stop_requested.load();
-            if (worker_busy && !cancelled) dialogue_preview = worker_shared_state.dialogue_preview;
+            if (worker_busy && !cancelled) {
+                narration_preview = worker_shared_state.narration_preview;
+                arrival_preview = worker_shared_state.arrival_preview;
+            }
 
             if(worker_shared_state.result_ready && cancelled) {
                 worker_shared_state.result_ready=false;
@@ -2886,11 +2900,12 @@ bool RunSdlFrontend(
             SDL_GetTicks());
 
         const std::string display_message = !ui_message.empty() ? ui_message :
-            (worker_busy && dialogue_preview.empty() && config.turn_config.dynamic_scenes ? worker_status : persistent_hint);
+            (worker_busy && narration_preview.empty() && config.turn_config.dynamic_scenes ? worker_status : persistent_hint);
         BuildTranscriptLines(
             current_session_state,
             pending_command,
-            dialogue_preview,
+            narration_preview,
+            arrival_preview,
             display_message,
             ui_fonts,
             console_wrap_width,

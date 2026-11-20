@@ -21,6 +21,7 @@ enum HeadlessTurnStreamPhase {
     kHeadlessTurnStreamSceneAudit,
     kHeadlessTurnStreamScenePreview,
     kHeadlessTurnStreamDialoguePreview, // Decoded, provisional prose. Empty delta polls cancellation.
+    kHeadlessTurnStreamArrivalPreview, // Decoded sensory prose. The accumulated text supersedes any earlier preview.
 };
 
 typedef bool (*HeadlessTurnStreamCallback)(
