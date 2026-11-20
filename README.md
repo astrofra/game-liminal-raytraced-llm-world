@@ -9,8 +9,10 @@ Le moteur C++17 garde l'autorité sur les déplacements, l'inventaire et les tem
 ## Jouer
 
 Lancer `play_within_the_latent_walls.bat` dans le dépôt, ou
-`WithinTheLatentWalls.exe` dans le dossier portable. Choisir une des six langues,
-puis jouer directement. Au seuil, **nord, est et sud** ouvrent l'exploration ; suivre ensuite
+`WithinTheLatentWalls.exe` dans le dossier portable. Le jeu s'ouvre en plein
+écran sans bordure. L'interface reste centrée au format 5:4, sur fond noir.
+Choisir une des six langues, puis jouer directement. Au seuil, **nord, est et
+sud** ouvrent l'exploration ; suivre ensuite
 les issues de la boussole. `inventaire` / `inventory` / `i` consulte les possessions. `déposer la craie`,
 `reprendre la craie` et `regarder tout autour` permettent de laisser et retrouver
 un objet. Une petite cible décrite à l'arrivée ou révélée par une observation peut être ramassée après validation

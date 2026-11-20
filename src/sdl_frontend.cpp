@@ -2157,7 +2157,7 @@ bool RunSdlFrontend(
             "Within the Latent Walls",
             config.window_width,
             config.window_height,
-            SDL_WINDOW_RESIZABLE,
+            SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS,
             &window,
             &renderer)) {
         SetSdlError(error_buffer, error_buffer_size, "SDL_CreateWindowAndRenderer failed");
@@ -2941,9 +2941,24 @@ bool RunSdlFrontend(
             archive_ok=archive.InitialPresentation(current_session_state) && archive_ok;
         // SDL readback must happen before Present invalidates the backbuffer.
         // Write the evidence only once the same frame has been presented.
-        SDL_Surface* screen=capture?SDL_RenderReadPixels(renderer,nullptr):nullptr;
+        SDL_Surface* screen=nullptr;
         std::string capture_error;
-        if (capture && !screen) capture_error=SDL_GetError();
+        if (capture) {
+            // SDL reads only the current viewport, so temporarily expose the
+            // entire backbuffer to include the black margins in the archive.
+            if (SDL_SetRenderLogicalPresentation(renderer,0,0,SDL_LOGICAL_PRESENTATION_DISABLED)) {
+                screen=SDL_RenderReadPixels(renderer,nullptr);
+                if (!screen) capture_error=SDL_GetError();
+                if (!SDL_SetRenderLogicalPresentation(renderer,config.logical_width,config.logical_height,
+                                                      SDL_LOGICAL_PRESENTATION_LETTERBOX)) {
+                    capture_error=SDL_GetError();
+                    SDL_DestroySurface(screen);
+                    screen=nullptr;
+                }
+            } else {
+                capture_error=SDL_GetError();
+            }
+        }
         SDL_Surface* rgb=screen?SDL_ConvertSurface(screen,SDL_PIXELFORMAT_RGB24):nullptr;
         if (screen && !rgb) capture_error=SDL_GetError();
         if (screen) SDL_DestroySurface(screen);

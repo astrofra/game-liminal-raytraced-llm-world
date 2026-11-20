@@ -15,8 +15,11 @@ sans réflexion ; le parseur amont et un garde empêchent d'afficher des canaux 
 Les propositions structurées utilisent un JSON Schema converti en grammaire.
 Annulation coopérative, délais, budgets de tokens et de contexte restent bornés.
 
-Le démarrage sans argument ouvre SDL, demande la langue puis lance directement
-le parcours local. Les ressources sont résolues depuis l'exécutable ; les sorties
+Le démarrage sans argument ouvre SDL en plein écran sans bordure à la résolution
+du bureau, demande la langue puis lance directement le parcours local.
+Le rendu logique reste en 1000 × 800, avec des marges noires centrées selon
+l'écran. Les captures d'interaction couvrent aussi ces marges.
+Les ressources sont résolues depuis l'exécutable ; les sorties
 diagnostiques explicites restent relatives au dossier courant de l'appelant.
 Le [bilan de migration](BILAN_RUNTIME_AUTONOME.md) distingue les vérifications
 réelles des limites de qualification restantes.

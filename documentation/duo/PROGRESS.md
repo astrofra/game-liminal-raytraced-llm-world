@@ -5,6 +5,7 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-051 / plein écran | Intégré et testé | [Contrat](tasks/DUO-051.md), [revue](reviews/DUO-051.md). Fenêtre sans décoration sur le bureau, interface 5:4 et captures avec marges noires. Vérification du menu, de deux inventaires SDL et des 15 CTest. |
 | MJ-00 à MJ-05 / dialogue local | Implémentation et recette mécanique effectuées, qualité de prose sous la cible | [Bilan](../DIALOGUE_MAITRE_DU_JEU.md). 30 questions et 5 relances SDL, parcours d'objets et raccourcis, annulation et archives. 15 CTest et 114 tests Python passent. Auto-évaluation de la prose à 7,8/10, 19 réponses sur 30 à 8/10 ou plus. |
 | DUO-050 / corpus MJ-00 | Corpus relu et intégré | [Contrat](tasks/DUO-050.md), [revue](reviews/DUO-050.md). 30 questions, cinq relances et cinq langues supplémentaires. Poursuite après un échec de lecture consignée. |
 | Roadmap cloud / conception Codex | Documentée ; implémentation à faire | [Roadmap en anglais](../ROADMAP_OLLAMA_CLOUD.md) : choix au lancement, modèle distant distinct, validation structurée, budgets, archives et recette autonome. Conception transverse traitée par Codex ; aucun run délégué, changement runtime ou appel cloud du jeu dans ce lot. |
