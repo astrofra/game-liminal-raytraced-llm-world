@@ -1,10 +1,11 @@
-# Progression du duo — 27 octobre 2026
+# Progression du duo — 20 novembre 2026
 
 Codex coordonne les interfaces, le runtime, la validation et l'intégration.
 DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de ce kit.
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-049 / roadmap dialogue | Relevé relu ; intégration sélective documentaire | [Contrat](tasks/DUO-049.md), [revue](reviews/DUO-049.md), [roadmap Codex](../ROADMAP_DIALOGUE_MAITRE_DU_JEU.md). Outils et chemins conformes ; imprécisions du relevé corrigées dans la synthèse. Architecture, lots et recette autonome définis ; aucun changement runtime ni test de jeu dans ce lot. |
 | DUO-048 / parois repérées | Livré et binaire publié ; recette effectuée | [Revue](reviews/DUO-048.md), [bilan](../PAROIS_REPEREES.md) ; tests DeepSeek relus et corrigés, poursuite après un échec de view signalée ; rendu et HUD Codex, 15 CTest passent, quatre rendus comparés et deux parcours SDL de cinq commandes vérifiés. |
 | DUO-047 / répartition LLM | Livré et binaire publié ; recette effectuée | [Revue](reviews/DUO-047.md), [bilan](../REPARTITION_INDICES_LLM.md) ; six groupes DeepSeek corrigés, un glob hors périmètre signalé ; moteur Codex, 15 CTest et 114 Python passent, trois graines Gemma et 14 commandes SDL vérifiées, migrations préservées. Variété de rythme limitée dans cette série. |
 | DUO-046 / message de refus | Intégré et binaire publié | [Revue](reviews/DUO-046.md) : restriction de transport conservée, explication explicite dans six langues ; deux recherches hors périmètre de lecture signalées ; 15 CTest et reprise réelle de la commande avec Gemma validés. |
