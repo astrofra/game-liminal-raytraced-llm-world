@@ -30,8 +30,11 @@ réelles des limites de qualification restantes.
   formulations libres vers la conversation, l'observation ou une action. Les
   questions utilisent une réponse courte et une mémoire d'échanges bornée en
   tokens. Le moteur conserve l'état de simulation et la vue courante pendant
-  le dialogue. Les interactions SDL disposent d'une capture après composition
-  du HUD, des états avant et après et des traces par appel LLM.
+  le dialogue. Après interprétation de la commande, SDL affiche la réponse en
+  cours de génération sous la question. La narration validée prend la place de
+  cet aperçu. Échap retire l'aperçu et annule l'interaction. Les archives SDL
+  conservent la capture finale du HUD, les états avant et après et les traces
+  par appel LLM.
 
 - [Enquête à indices](ENQUETE_INDICES.md) : état versionné et révisé, quatre
   possibilités dont la [répartition est choisie par le LLM](REPARTITION_INDICES_LLM.md)

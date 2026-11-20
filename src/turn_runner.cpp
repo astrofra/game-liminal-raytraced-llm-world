@@ -3547,6 +3547,21 @@ static bool ReusePlaceView(const SessionState& state,const HeadlessTurnConfig& c
     return LoadSceneForPlace(state,state.current_place_id,&result->rendered_scene,error,error_size);
 }
 
+static std::string ReadDialogueReply(const std::string& wire_text)
+{
+    const auto response = json::parse(wire_text, nullptr, false);
+    if (!response.is_object() || response.size() != 1 || !response.contains("reply") ||
+        !response["reply"].is_string()) return {};
+    return ConstrainNarrationText(response["reply"].get_ref<const std::string&>(), 650, 3);
+}
+
+static bool DialogueReplyAllowed(const SessionState& state, const std::string& reply)
+{
+    return !reply.empty() && reply.front() != '#' && reply.find('\0') == std::string::npos &&
+        !IsClearlyWrongNarrativeLanguage(reply, state.language) &&
+        ObjectNarrationAllowed(state, reply, "", "", nullptr);
+}
+
 static bool ReplyToDialogue(const SessionState& state,const std::string& command,const ObjectResolution& interpretation,
     const HeadlessTurnConfig& config,HeadlessTurnResult* result,char* error,size_t error_size) {
     using nlohmann::ordered_json;
@@ -3630,16 +3645,38 @@ static bool ReplyToDialogue(const SessionState& state,const std::string& command
     else fits=FitContinuityPrompt(memory,cfg.n_ctx,cfg.n_predict,cfg.continuity_memory_tokens,build,
         [&](const auto& m,int* n,std::string* e){return CountChatPromptTokens(cfg,m,heartbeat,user,n,e);},
         &messages,&budget,&why,true);
+    struct DialogueStream {
+        const HeadlessTurnConfig& config;
+        const SessionState& state;
+        std::string preview;
+    } stream{config, state, {}};
+    auto forward_reply = [](const char* text, const char* delta, void* opaque) {
+        auto& stream = *static_cast<DialogueStream*>(opaque);
+        const auto& config = stream.config;
+        if (!config.stream_callback) return true;
+
+        std::string extension;
+        if (text && delta && *delta) {
+            const std::string wire_text(text);
+            // Let the JSON parser decode the prefix by closing the object or its open string.
+            // A fragment ending mid-escape or mid-UTF-8 sequence will still fail to parse.
+            auto reply = ReadDialogueReply(wire_text);
+            if (reply.empty()) reply = ReadDialogueReply(wire_text + "}");
+            if (reply.empty()) reply = ReadDialogueReply(wire_text + "\"}");
+            if (reply.size() > stream.preview.size() && reply.compare(0, stream.preview.size(), stream.preview) == 0 &&
+                DialogueReplyAllowed(stream.state, reply)) {
+                extension = reply.substr(stream.preview.size());
+                stream.preview = std::move(reply);
+            }
+        }
+        return config.stream_callback(kHeadlessTurnStreamDialoguePreview, stream.preview.c_str(),
+                                      extension.c_str(), config.stream_user_data);
+    };
     LlmGenerationResult generation;
-    const bool ok=fits && (completion?completion(cfg,messages,heartbeat,user,&generation):
-        GenerateChatCompletion(cfg,messages,heartbeat,user,&generation));
-    const auto response=json::parse(generation.response_text,nullptr,false);
-    std::string answer;
-    if(response.is_object() && response.size()==1 && response.contains("reply") && response["reply"].is_string())
-        answer=ConstrainNarrationText(response["reply"].get<std::string>(),650,3);
-    bool transfer=false;
-    if(!ok||!generation.reached_eog||answer.empty()||answer.front()=='#'||IsClearlyWrongNarrativeLanguage(answer,state.language)||
-       !ObjectNarrationAllowed(state,answer,"","",&transfer)) {
+    const bool ok=fits && (completion?completion(cfg,messages,forward_reply,&stream,&generation):
+        GenerateChatCompletion(cfg,messages,forward_reply,&stream,&generation));
+    std::string answer = ReadDialogueReply(generation.response_text);
+    if (!ok || !generation.reached_eog || !DialogueReplyAllowed(state, answer)) {
         result->used_turn_fallback=true;
         answer=PlayerText(state.language,"I can't tell from what we know here.",
             "Difficile de le dire avec ce qu'on sait ici.","Det er vanskelig å si ut fra det vi vet her.",

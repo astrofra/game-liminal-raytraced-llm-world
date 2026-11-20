@@ -20,6 +20,7 @@ enum HeadlessTurnStreamPhase {
     kHeadlessTurnStreamSceneDesign,
     kHeadlessTurnStreamSceneAudit,
     kHeadlessTurnStreamScenePreview,
+    kHeadlessTurnStreamDialoguePreview, // Decoded, provisional prose. Empty delta polls cancellation.
 };
 
 typedef bool (*HeadlessTurnStreamCallback)(

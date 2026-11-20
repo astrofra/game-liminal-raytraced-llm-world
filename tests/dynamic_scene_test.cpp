@@ -1389,6 +1389,68 @@ static void DialogueJourney() {
     CHECK(RunHeadlessTurnFromState(state,"Quelle heure est-il ?",config,&clock,error,sizeof(error)));
     CHECK(clock.dialogue_only&&clock.view_unchanged&&!clock.used_turn_fallback);
 
+    struct PreviewProbe {
+        std::string text;
+        bool cancel = false;
+        bool dismissed = false;
+    } preview;
+    const std::string reply = "Une horloge ? Non, rien ici ne mesure l'heure écoulée.";
+    const std::vector<std::pair<std::string, std::string>> clock_chunks = {
+        {"{\"rep", ""},
+        {"ly\":\"Une horloge ? Non", "Une horloge ? Non"},
+        {", rien ici ne mesure l'heure ", "Une horloge ? Non, rien ici ne mesure l'heure"},
+        {"\\u00", "Une horloge ? Non, rien ici ne mesure l'heure"},
+        {"e9coul", "Une horloge ? Non, rien ici ne mesure l'heure écoul"},
+        {"\xC3", "Une horloge ? Non, rien ici ne mesure l'heure écoul"},
+        {"\xA9" "e.", reply},
+        {"\"}", reply},
+    };
+    bool truncated = false;
+    config.narrative_completion = [&](const auto&, const auto&, auto stream, void* user, auto* result) {
+        std::string cumulative;
+        for (const auto& [chunk, expected] : clock_chunks) {
+            if (truncated && chunk == "\"}") break;
+            cumulative += chunk;
+            if (!stream(cumulative.c_str(), chunk.c_str(), user)) return false;
+            CHECK(preview.text == expected);
+            CHECK(stream(cumulative.c_str(), "", user));
+        }
+        result->response_text = cumulative;
+        result->success = result->reached_eog = true;
+        return true;
+    };
+    config.stream_callback = [](HeadlessTurnStreamPhase phase, const char* text, const char* delta, void* user) {
+        if (phase != kHeadlessTurnStreamDialoguePreview || !*delta) return true;
+        auto& probe = *static_cast<PreviewProbe*>(user);
+        if (probe.cancel) {
+            probe.dismissed = true;
+            return false;
+        }
+        probe.text += delta;
+        CHECK(probe.text == text);
+        return true;
+    };
+    config.stream_user_data = &preview;
+    HeadlessTurnResult streamed;
+    CHECK(RunHeadlessTurnFromState(state,"Quelle heure est-il ?",config,&streamed,error,sizeof(error)));
+    CHECK(streamed.accepted && streamed.dialogue_only && streamed.view_unchanged && !streamed.used_turn_fallback);
+    CHECK(streamed.turn_result.narration == reply);
+
+    truncated = true;
+    preview = {};
+    CHECK(RunHeadlessTurnFromState(state,"Quelle heure est-il ?",config,&streamed,error,sizeof(error)));
+    CHECK(streamed.accepted && streamed.used_turn_fallback && streamed.turn_result.narration != preview.text);
+
+    preview = {};
+    preview.cancel = true;
+    const auto prior_history_size = state.history.size();
+    CHECK(!RunHeadlessTurnFromState(state,"Quelle heure est-il ?",config,&streamed,error,sizeof(error)));
+    CHECK(preview.dismissed && !streamed.accepted && streamed.turn_result.narration.empty());
+    UpdateSessionStateFromTurn("Quelle heure est-il ?",streamed,&state);
+    CHECK(world(state) == before && state.history.size() == prior_history_size);
+    config.stream_callback = nullptr;
+    config.stream_user_data = nullptr;
+
     config.interaction_completion=[](const auto&,const auto& messages,auto,void*,auto* result) {
         const auto request=json::parse(messages.back().content);
         result->response_text=json{{"action","talk"},{"reply_topic","objects"},{"object_id",""},{"source",0},

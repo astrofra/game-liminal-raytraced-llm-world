@@ -47,6 +47,7 @@ struct WorkerSharedState {
     GameLanguage language = kGameLanguageEnglish;
     std::string status_text;
     std::string error_text;
+    std::string dialogue_preview;
     bool terminal_stream_open;
     std::string terminal_stream_phase_label;
     SessionState session_state;
@@ -133,6 +134,7 @@ struct UiTextSpan {
 struct UiTextLine {
     std::vector<UiTextSpan> spans;
     bool command_line;
+    bool dialogue_preview = false;
 
     UiTextLine()
         : command_line(false)
@@ -1455,7 +1457,7 @@ static void PrintTurnProvenance(
 
 static bool OnHeadlessTurnStream(
     HeadlessTurnStreamPhase phase,
-    const char*,
+    const char* accumulated_text,
     const char* delta_text,
     void* user_data)
 {
@@ -1471,7 +1473,11 @@ static bool OnHeadlessTurnStream(
     std::lock_guard<std::mutex> lock(shared_state->mutex);
     shared_state->activity = kWorkerActivityLlm;
     shared_state->status_text = StreamPhaseStatus(phase,shared_state->language);
-    WriteTerminalStreamChunkLocked(shared_state, phase, delta_text);
+    if (phase == kHeadlessTurnStreamDialoguePreview) {
+        if (delta_text && *delta_text) shared_state->dialogue_preview = accumulated_text;
+    } else {
+        WriteTerminalStreamChunkLocked(shared_state, phase, delta_text);
+    }
     return !shared_state->stop_requested.load();
 }
 
@@ -1490,6 +1496,7 @@ static void FinalizeWorkerFailure(WorkerSharedState* shared_state, const char* m
     std::lock_guard<std::mutex> lock(shared_state->mutex);
     CloseTerminalStreamLocked(shared_state);
     shared_state->busy = false;
+    shared_state->dialogue_preview.clear();
     shared_state->result_ready = false;
     shared_state->error_ready = true;
     shared_state->activity = kWorkerActivityFailed;
@@ -1626,6 +1633,7 @@ static void RunTurnWorker(
         PrintTurnProvenance(updated_session_state, turn_result);
         PrintHeadlessTurnDebugTrace(turn_result, stdout);
         shared_state->busy = false;
+        shared_state->dialogue_preview.clear();
         shared_state->result_ready = true;
         shared_state->error_ready = false;
         shared_state->activity = kWorkerActivityComplete;
@@ -1865,6 +1873,7 @@ static std::string BuildStatusLine(
 static void BuildTranscriptLines(
     const SessionState& session_state,
     const std::string& pending_command,
+    const std::string& dialogue_preview,
     const std::string& ui_message,
     const UiFonts& fonts,
     int max_width,
@@ -1905,6 +1914,14 @@ static void BuildTranscriptLines(
         const size_t start_line = lines->size();
         AppendWrappedText(std::string("> ") + pending_command, fonts, max_width, lines);
         MarkWrappedLinesAsCommand(lines, start_line);
+
+        if (!dialogue_preview.empty()) {
+            const size_t preview_start = lines->size();
+            AppendWrappedText(dialogue_preview, fonts, max_width, lines);
+            for (size_t index = preview_start; index < lines->size(); ++index) {
+                (*lines)[index].dialogue_preview = true;
+            }
+        }
     }
 
     if (!ui_message.empty()) {
@@ -1977,7 +1994,9 @@ static void DrawConsoleText(
     float y = text_rect.y + 8.0f;
     for (size_t index = start; index < end; ++index) {
         float x = text_rect.x + 8.0f;
-        const SDL_Color color = lines[index].command_line ? SDL_Color{76, 76, 76, 255} : SDL_Color{0, 0, 0, 255};
+        SDL_Color color{0, 0, 0, 255};
+        if (lines[index].command_line) color = {76, 76, 76, 255};
+        if (lines[index].dialogue_preview) color = {55, 76, 92, 255};
         for (size_t span_index = 0; span_index < lines[index].spans.size(); ++span_index) {
             const UiTextSpan& span = lines[index].spans[span_index];
             float advance_x = 0.0f;
@@ -2519,6 +2538,7 @@ bool RunSdlFrontend(
                     worker_shared_state.language = current_session_state.language;
                     worker_shared_state.status_text = StreamPhaseStatus(kHeadlessTurnStreamPrimaryResponse,current_session_state.language);
                     worker_shared_state.error_text.clear();
+                    worker_shared_state.dialogue_preview.clear();
                 }
                 worker_shared_state.stop_requested.store(false);
                 SdlFrontendConfig request_config=config;
@@ -2586,6 +2606,7 @@ bool RunSdlFrontend(
         bool turn_completed = false;
         bool turn_failed = false;
         std::string failure_text;
+        std::string dialogue_preview;
         bool turn_result_ready = false;
         SessionState completed_session_state;
         HeadlessTurnResult completed_turn_result;
@@ -2597,8 +2618,10 @@ bool RunSdlFrontend(
             worker_busy = worker_shared_state.busy;
             worker_activity = worker_shared_state.activity;
             worker_status = worker_shared_state.status_text.empty() ? "idle" : worker_shared_state.status_text;
+            const bool cancelled = worker_shared_state.stop_requested.load();
+            if (worker_busy && !cancelled) dialogue_preview = worker_shared_state.dialogue_preview;
 
-            if(worker_shared_state.result_ready && worker_shared_state.stop_requested.load()) {
+            if(worker_shared_state.result_ready && cancelled) {
                 worker_shared_state.result_ready=false;
                 worker_shared_state.error_ready=true;
                 worker_shared_state.error_text=TurnCancelledText(worker_shared_state.language);
@@ -2615,7 +2638,7 @@ bool RunSdlFrontend(
                 completed_turn_result = worker_shared_state.turn_result;
                 worker_shared_state.error_ready = false;
                 turn_failed = true;
-                ui_message = current_session_state.language == kGameLanguageEnglish
+                ui_message = cancelled || current_session_state.language == kGameLanguageEnglish
                     ? failure_text
                     : UiText(
                         current_session_state.language,
@@ -2863,10 +2886,11 @@ bool RunSdlFrontend(
             SDL_GetTicks());
 
         const std::string display_message = !ui_message.empty() ? ui_message :
-            (worker_busy && config.turn_config.dynamic_scenes ? worker_status : persistent_hint);
+            (worker_busy && dialogue_preview.empty() && config.turn_config.dynamic_scenes ? worker_status : persistent_hint);
         BuildTranscriptLines(
             current_session_state,
             pending_command,
+            dialogue_preview,
             display_message,
             ui_fonts,
             console_wrap_width,
