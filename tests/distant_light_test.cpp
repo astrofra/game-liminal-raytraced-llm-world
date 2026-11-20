@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -40,6 +41,54 @@ static double Mean(const std::vector<unsigned char>& pixels)
     double sum = 0;
     for (unsigned char value : pixels) sum += value;
     return sum / pixels.size();
+}
+
+static size_t ChangedPixels(const std::vector<unsigned char>& a, const std::vector<unsigned char>& b)
+{
+    Check(a.size() == b.size() && a.size() % 3 == 0, "comparable RGB pixel buffers");
+    size_t changed = 0;
+    for (size_t offset = 0; offset < a.size(); offset += 3) {
+        if (a[offset] != b[offset] || a[offset + 1] != b[offset + 1] || a[offset + 2] != b[offset + 2]) ++changed;
+    }
+    return changed;
+}
+
+static size_t ChromaticPixels(const std::vector<unsigned char>& pixels)
+{
+    size_t count = 0;
+    for (size_t i = 0; i < pixels.size(); i += 3) {
+        const auto channels = {pixels[i], pixels[i + 1], pixels[i + 2]};
+        if (std::max(channels) - std::min(channels) >= 3) ++count;
+    }
+    return count;
+}
+
+// Neutral lighting and contrasting edges running through the droplet field.
+static Scene LoadVisorDropScene()
+{
+    std::string text =
+        "camera eye(0,10,0) target(0,0,0) up(0,0,1) fov(60)\n"
+        "plane \"floor\" pos(0,0,0) normal(0,1,0) size(1000,1000) gray(0.8)\n"
+        "distant_light direction(0,-1,0) intensity(2)\n";
+    for (int i = -5; i <= 5; ++i) {
+        char bars[256] = {};
+        std::snprintf(bars, sizeof(bars),
+            "box \"bar_x%d\" pos(%.2f,0.05,0) size(0.5,0.02,14) gray(0.05)\n"
+            "box \"bar_z%d\" pos(0,0.05,%.2f) size(14,0.02,0.5) gray(0.05)\n",
+            i, 1.25 * i, i, 1.25 * i);
+        text += bars;
+    }
+    return Load(text);
+}
+
+static RenderConfig DropConfig(float strength, uint32_t drop_seed)
+{
+    RenderConfig cfg;
+    cfg.width = 128; cfg.height = 96; cfg.samples_per_pixel = 4;
+    cfg.max_bounces = 1; cfg.direct_light_samples = 2;
+    cfg.visor_drop_strength = strength;
+    cfg.visor_drop_seed = drop_seed;
+    return cfg;
 }
 
 int main()
@@ -99,6 +148,24 @@ int main()
     Check(Mean(Render(scene, cfg)) == 0, "wall has no direct light from vertical sun");
     cfg.max_bounces = 3;
     Check(Mean(Render(scene, cfg)) > 10, "sunlight reaches wall through diffuse bounce");
+
+    // Visor drops: deterministic, local chromatic warps of the camera ray field.
+    const Scene drop_scene = LoadVisorDropScene();
+    const auto drop_base = Render(drop_scene, DropConfig(0.0f, 0u));
+    Check(Render(drop_scene, DropConfig(0.0f, 57u)) == drop_base, "zero drop strength ignores the drop seed");
+    const auto hot = DropConfig(1.0f, 0x1234abcdu);
+    const auto dropped = Render(drop_scene, hot);
+    Check(Render(drop_scene, hot) == dropped, "same drop seed reproduces the frame");
+    const auto affected = ChangedPixels(drop_base, dropped);
+    Check(affected > 0 && affected < drop_base.size() / 6, "visor drops alter a localized region");
+    Check(Render(drop_scene, DropConfig(1.0f, 0x0badf00du)) != dropped, "another drop seed moves the warps");
+    Check(Mean(drop_base) > 10 && ChromaticPixels(drop_base) == 0, "a cold visor keeps the neutral scene gray");
+    const auto warm = Render(drop_scene, DropConfig(.45f, hot.visor_drop_seed));
+    const auto warm_pixels = ChromaticPixels(warm);
+    const auto hot_pixels = ChromaticPixels(dropped);
+    Check(warm_pixels > 0 && warm_pixels < hot_pixels, "local chromatic dispersion grows with heat");
+    Check(hot_pixels <= affected, "chromatic dispersion stays within the warped region");
+    std::puts("Visor drops: deterministic, localized warps with heat-dependent chromatic dispersion passed.");
     std::puts("Distant light: parsing, reset, direction, distance, occlusion, softness, color and GI passed.");
     return 0;
 }

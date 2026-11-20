@@ -1596,6 +1596,16 @@ static void RunTurnWorker(
     SessionState updated_session_state = initial_session_state;
     UpdateSessionStateFromTurn(player_command.c_str(), turn_result, &updated_session_state);
 
+    const auto render_config = RenderConfigForVisor(config.render_config,
+        updated_session_state.hard_state.body_temperature_c, updated_session_state.current_place_id);
+    const auto previous_render_config = RenderConfigForVisor(config.render_config,
+        initial_session_state.hard_state.body_temperature_c, initial_session_state.current_place_id);
+    if (turn_result.view_unchanged && turn_config.current_view_scene &&
+        render_config.visor_drop_strength != previous_render_config.visor_drop_strength) {
+        turn_result.rendered_scene = *turn_config.current_view_scene;
+        turn_result.view_unchanged = false;
+    }
+
     std::vector<unsigned char> pixels;
     double render_duration_ms = 0.0;
     if (!turn_result.view_unchanged) {
@@ -1609,7 +1619,7 @@ static void RunTurnWorker(
 
         const std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();
         RenderControl control{[](void* state) { return !static_cast<WorkerSharedState*>(state)->stop_requested.load(); },shared_state};
-        if (!RenderSceneToPixels(turn_result.rendered_scene, config.render_config, &pixels,&control)) {
+        if (!RenderSceneToPixels(turn_result.rendered_scene, render_config, &pixels,&control)) {
             fail_turn("Rendering failed.");
             return;
         }
@@ -2153,7 +2163,9 @@ bool RunSdlFrontend(
 
     const std::chrono::steady_clock::time_point initial_render_start = std::chrono::steady_clock::now();
     std::vector<unsigned char> rgb_pixels;
-    if (!RenderSceneToPixels(initial_scene, config.render_config, &rgb_pixels)) {
+    const auto initial_render_config = RenderConfigForVisor(config.render_config,
+        current_session_state.hard_state.body_temperature_c, current_session_state.current_place_id);
+    if (!RenderSceneToPixels(initial_scene, initial_render_config, &rgb_pixels)) {
         SetError(error_buffer, error_buffer_size, "Cannot render initial scene.");
         return false;
     }
@@ -2176,19 +2188,15 @@ bool RunSdlFrontend(
     }
 
     UiFonts ui_fonts;
-    SDL_Window* window = 0;
-    SDL_Renderer* renderer = 0;
+    SDL_Window* window = SDL_CreateWindow("Within the Latent Walls", config.window_width,
+        config.window_height, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS);
+    SDL_Renderer* renderer = window ? SDL_CreateRenderer(window, nullptr) : nullptr;
     SDL_Texture* scene_texture = 0;
     bool success = false;
 
-    if (!SDL_CreateWindowAndRenderer(
-            "Within the Latent Walls",
-            config.window_width,
-            config.window_height,
-            SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS,
-            &window,
-            &renderer)) {
-        SetSdlError(error_buffer, error_buffer_size, "SDL_CreateWindowAndRenderer failed");
+    if (!renderer) {
+        SetSdlError(error_buffer, error_buffer_size, "Cannot create the game window and renderer");
+        if (window) SDL_DestroyWindow(window);
         DestroyUiFonts(&ui_fonts);
         SDL_Quit();
         return false;
@@ -2319,7 +2327,7 @@ bool RunSdlFrontend(
     std::thread animation_worker_thread;
     animation_shared_state.active_generation_id.store(active_animated_view.generation_id);
     StartAnimationWorker(
-        config.render_config,
+        initial_render_config,
         config.animated_view_config,
         config.post_process_config,
         active_animated_view,
@@ -2836,7 +2844,8 @@ bool RunSdlFrontend(
             !active_animated_view.generation_failed &&
             active_animated_view.available_image_count < kAnimatedViewImageCapacity) {
             StartAnimationWorker(
-                config.render_config,
+                RenderConfigForVisor(config.render_config, current_session_state.hard_state.body_temperature_c,
+                                     current_session_state.current_place_id),
                 config.animated_view_config,
                 config.post_process_config,
                 active_animated_view,
@@ -2936,7 +2945,7 @@ bool RunSdlFrontend(
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDebugText(renderer, 48.0f, 500.0f, status_line.c_str());
 
-        SDL_RenderTexture(renderer, scene_texture, 0, &scene_rect);
+        SDL_RenderTexture(renderer, scene_texture, nullptr, &scene_rect);
         SDL_RenderTexture(renderer, visor_texture, 0, &scene_rect);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderRect(renderer, &scene_frame);

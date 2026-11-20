@@ -82,6 +82,15 @@ static const float kDefaultBodyTemperatureC = 37.0f;
 static const float kMinBodyTemperatureC = 34.0f;
 static const float kMaxBodyTemperatureC = 43.0f;
 
+enum class SuitHeatingMode { Normal, Medium, Extreme };
+
+struct SuitThermalDebug {
+    bool enabled = false;
+    SuitHeatingMode mode = SuitHeatingMode::Normal;
+    int insulation_percent = 0;
+    int hallucination_temperature = 5;
+};
+
 struct HardState {
     int turn_number;
     int move_count;
@@ -91,6 +100,7 @@ struct HardState {
     int spatial_entropy;
     int external_temperature_c;
     float body_temperature_c;
+    SuitThermalDebug thermal_debug;
     ResourceState cooling_state;
     ResourceState water_state;
     ResourceState power_state;
@@ -378,6 +388,8 @@ int ClampSpatialEntropy(int value);
 int ClampExternalTemperatureC(int value);
 float ClampBodyTemperatureC(float value);
 float ComputeLlmSamplingTemperature(float body_temperature_c);
+const char* SuitHeatingModeName(SuitHeatingMode mode);
+float ApplySuitThermalExposure(const HardState& state, float proposed_body_temperature_c);
 
 bool ParseLocationId(const char* text, LocationId* value);
 bool ParseCardinalDirection(const char* text, CardinalDirection* value);

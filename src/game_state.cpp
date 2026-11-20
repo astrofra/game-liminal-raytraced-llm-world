@@ -5,6 +5,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <algorithm>
 
 #include "nlohmann/json.hpp"
 
@@ -194,6 +195,11 @@ static json MakeHardStateJson(const HardState& state)
     node["spatial_entropy"] = ClampSpatialEntropy(state.spatial_entropy);
     node["external_temperature_c"] = ClampExternalTemperatureC(state.external_temperature_c);
     node["body_temperature_c"] = ClampBodyTemperatureC(state.body_temperature_c);
+    if (state.thermal_debug.enabled) {
+        node["thermal_debug"] = {{"mode", SuitHeatingModeName(state.thermal_debug.mode)},
+                                 {"insulation_percent", state.thermal_debug.insulation_percent},
+                                 {"hallucination_temperature", state.thermal_debug.hallucination_temperature}};
+    }
     node["suit_state"] = ResourceStateToString(state.cooling_state);
     node["oxygen_state"] = ResourceStateToString(state.water_state);
     node["instrument_power_state"] = ResourceStateToString(state.power_state);
@@ -336,6 +342,15 @@ static void ParseHardStateNode(const json& node, HardState* state)
         ReadIntNode(node, "external_temperature_c", state->external_temperature_c));
     state->body_temperature_c = ClampBodyTemperatureC(
         ReadFloatNode(node, "body_temperature_c", state->body_temperature_c));
+    if (node.contains("thermal_debug") && node["thermal_debug"].is_object()) {
+        const auto& settings = node["thermal_debug"];
+        const auto mode = ReadStringNode(settings, "mode");
+        state->thermal_debug.enabled = true;
+        if (mode == "medium") state->thermal_debug.mode = SuitHeatingMode::Medium;
+        if (mode == "extreme") state->thermal_debug.mode = SuitHeatingMode::Extreme;
+        state->thermal_debug.insulation_percent = std::clamp(ReadIntNode(settings, "insulation_percent", 0), 0, 100);
+        state->thermal_debug.hallucination_temperature = ReadIntNode(settings, "hallucination_temperature", 5) == 10 ? 10 : 5;
+    }
     const std::string suit_state = ReadStringNode(node, node.contains("suit_state") ? "suit_state" : "cooling_state");
     const std::string oxygen_state = ReadStringNode(node, node.contains("oxygen_state") ? "oxygen_state" : "water_state");
     const std::string power_state = ReadStringNode(node, node.contains("instrument_power_state") ? "instrument_power_state" : "power_state");
@@ -688,6 +703,28 @@ float ComputeLlmSamplingTemperature(float body_temperature_c)
     const float normalized = (ClampBodyTemperatureC(body_temperature_c) - 37.0f) / 5.0f;
     const float clamped = normalized < 0.0f ? 0.0f : (normalized > 1.0f ? 1.0f : normalized);
     return 0.10f + clamped * 0.80f;
+}
+
+const char* SuitHeatingModeName(SuitHeatingMode mode)
+{
+    switch (mode) {
+        case SuitHeatingMode::Medium: return "medium";
+        case SuitHeatingMode::Extreme: return "extreme";
+        default: return "normal";
+    }
+}
+
+float ApplySuitThermalExposure(const HardState& state, float proposed_body_temperature_c)
+{
+    const auto& debug = state.thermal_debug;
+    if (!debug.enabled) return proposed_body_temperature_c;
+    const float bonus = debug.mode == SuitHeatingMode::Extreme ? 2.5f :
+        debug.mode == SuitHeatingMode::Medium ? 1.0f : 0.0f;
+    if (bonus == 0.0f && debug.insulation_percent == 0) return ClampBodyTemperatureC(proposed_body_temperature_c);
+    const float delta = proposed_body_temperature_c - state.body_temperature_c;
+    const float heat_fraction = 1.0f - std::clamp(debug.insulation_percent, 0, 100) / 100.0f;
+    return ClampBodyTemperatureC(state.body_temperature_c + std::min(0.0f, delta) +
+        heat_fraction * (std::max(0.0f, delta) + bonus));
 }
 
 const char* LocationIdToString(LocationId value)

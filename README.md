@@ -26,6 +26,10 @@ situation, demandez un conseil ou reprenez le fil avec « Et pourquoi ? ». Le
 modèle s'appuie sur les faits de la partie et les échanges récents, et la
 conversation laisse les températures et les objets en place.
 
+Pour essayer le couplage entre le scaphandre et Gemma, saisir `/chaleur`.
+Les [commandes thermiques de débogage](documentation/TECHNICAL_STATE.md#diagnostic-thermique)
+permettent d'accélérer la chauffe, de régler l'isolation et de simuler une exposition.
+
 Une [enquête à indices](documentation/ENQUETE_INDICES.md) relie la disparition de
 Vey, les obstructions invisibles et les cristaux. Examiner les traces, prélever
 un spécimen puis demander « faire le point » alimente un carnet de constats et

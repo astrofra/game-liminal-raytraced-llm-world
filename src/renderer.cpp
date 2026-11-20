@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <array>
 #include <atomic>
 #include <mutex>
 
@@ -1005,12 +1006,51 @@ static Vec3 TracePath(
     return ClampColor(radiance, 0.0f, kSampleRadianceClamp);
 }
 
+struct VisorDrop {
+    float u, v, sigma;
+};
+
+static std::array<VisorDrop, 8> BuildVisorDrops(uint32_t seed)
+{
+    std::array<VisorDrop, 8> drops{{
+        {.24f, .24f, .017f}, {.43f, .19f, .011f}, {.67f, .26f, .013f}, {.75f, .40f, .020f},
+        {.32f, .44f, .014f}, {.58f, .54f, .018f}, {.22f, .60f, .015f}, {.82f, .62f, .013f}
+    }};
+    Rng rng(seed);
+    for (auto& drop : drops) {
+        drop.u += (rng.NextFloat() - .5f) * .024f;
+        drop.v += (rng.NextFloat() - .5f) * .040f;
+        drop.sigma *= 1.12f;
+    }
+    return drops;
+}
+
+static void VisorRayOffset(const std::array<VisorDrop, 8>& drops, float u, float v, float aspect,
+                           float strength, float* offset_u, float* offset_v)
+{
+    // Subtract the Gaussian's tangent at three sigmas so both displacement
+    // and its slope fade to zero. Measure radii in units of image height.
+    constexpr float cutoff_weight = .0111089965f;
+    for (const auto& drop : drops) {
+        const float du = u - drop.u, dv = v - drop.v;
+        const float dx = aspect * du / drop.sigma, dy = dv / drop.sigma;
+        const float distance_squared = dx * dx + dy * dy;
+        if (distance_squared >= 9.0f) continue;
+        const float cutoff_tangent = cutoff_weight * (1.0f + .5f * (9.0f - distance_squared));
+        const float weight = strength * (expf(-.5f * distance_squared) - cutoff_tangent);
+        *offset_u -= du * weight;
+        *offset_v -= dv * weight;
+    }
+}
+
 static Ray GenerateCameraRay(
     const Camera& camera,
     const CameraBasis& basis,
     int pixel_x,
     int pixel_y,
     const RenderConfig& config,
+    float offset_u,
+    float offset_v,
     Rng* rng)
 {
     const float aspect = static_cast<float>(config.width) / static_cast<float>(config.height);
@@ -1019,9 +1059,9 @@ static Ray GenerateCameraRay(
     const float jitter_y = rng->NextFloat();
 
     const float sensor_x =
-        (((static_cast<float>(pixel_x) + jitter_x) / static_cast<float>(config.width)) * 2.0f - 1.0f) * aspect * fov_scale;
+        ((((static_cast<float>(pixel_x) + jitter_x) / static_cast<float>(config.width)) + offset_u) * 2.0f - 1.0f) * aspect * fov_scale;
     const float sensor_y =
-        (1.0f - ((static_cast<float>(pixel_y) + jitter_y) / static_cast<float>(config.height)) * 2.0f) * fov_scale;
+        (1.0f - (((static_cast<float>(pixel_y) + jitter_y) / static_cast<float>(config.height)) + offset_v) * 2.0f) * fov_scale;
 
     Ray ray;
     ray.origin = camera.eye;
@@ -1112,6 +1152,12 @@ static bool RenderSceneInternal(
     }
 
     const CameraBasis basis = BuildCameraBasis(scene.camera);
+    const float visor_strength = Clamp(config.visor_drop_strength, 0.0f, 1.0f) * 2.25f;
+    constexpr float visor_dispersion = .46f;
+    const auto visor_drops = BuildVisorDrops(config.visor_drop_seed);
+    const float inverse_width = 1.0f / static_cast<float>(config.width);
+    const float inverse_height = 1.0f / static_cast<float>(config.height);
+    const float aspect = static_cast<float>(config.width) / static_cast<float>(config.height);
     const CameraLightState camera_light = BuildCameraLightState(scene, basis);
     const DistantLightState distant_light = BuildDistantLightState(scene.distant_light);
     pixels->assign(static_cast<size_t>(config.width * config.height * 3), 0u);
@@ -1152,12 +1198,34 @@ static bool RenderSceneInternal(
             const uint32_t pixel_seed =
                 config.seed ^ (static_cast<uint32_t>(x) * 1973u) ^ (static_cast<uint32_t>(y) * 9277u);
             Rng rng(pixel_seed);
+            float offset_u = 0.0f, offset_v = 0.0f;
+            if (visor_strength > 0.0f) {
+                VisorRayOffset(visor_drops, (x + .5f) * inverse_width, (y + .5f) * inverse_height,
+                               aspect, visor_strength, &offset_u, &offset_v);
+            }
+            const bool split_visor_ray = offset_u != 0.0f || offset_v != 0.0f;
 
             Vec3 accumulated(0.0f);
             for (int sample_index = 0; sample_index < config.samples_per_pixel; ++sample_index) {
-                const Ray ray = GenerateCameraRay(scene.camera, basis, x, y, config, &rng);
                 const int dispersion_channel = (sample_index + x + y) % 3;
-                accumulated += TracePath(scene, camera_light, distant_light, config, ray, dispersion_channel, &rng);
+                const auto trace = [&](float warp, Rng* sample_rng) {
+                    const Ray ray = GenerateCameraRay(scene.camera, basis, x, y, config,
+                                                     warp * offset_u, warp * offset_v, sample_rng);
+                    return TracePath(scene, camera_light, distant_light, config, ray, dispersion_channel, sample_rng);
+                };
+                if (!split_visor_ray) {
+                    accumulated += trace(1.0f, &rng);
+                    continue;
+                }
+
+                // Use the same subpixel jitter and random starting state for
+                // all wavelengths. Keep the existing sampling of scene glass.
+                Rng red_rng = rng;
+                Rng blue_rng = rng;
+                const Vec3 green = trace(1.0f, &rng);
+                const Vec3 red = trace(1.0f - visor_dispersion, &red_rng);
+                const Vec3 blue = trace(1.0f + visor_dispersion, &blue_rng);
+                accumulated += Vec3(red.x, green.y, blue.z);
             }
 
             const Vec3 average = accumulated / static_cast<float>(config.samples_per_pixel);
@@ -1182,6 +1250,15 @@ static bool RenderSceneInternal(
 bool ProbeSceneRay(const Scene& scene, const Ray& ray, float max_distance, Hit* hit)
 {
     return hit && IntersectScene(scene, ray, max_distance, hit);
+}
+
+RenderConfig RenderConfigForVisor(const RenderConfig& base, float body_temperature_c, const std::string& place_id)
+{
+    RenderConfig config = base;
+    config.visor_drop_strength = body_temperature_c >= 42.0f ? 1.0f : body_temperature_c > 39.0f ? .45f : 0.0f;
+    config.visor_drop_seed = 2166136261u;
+    for (unsigned char c : place_id) config.visor_drop_seed = (config.visor_drop_seed ^ c) * 16777619u;
+    return config;
 }
 
 bool RenderSceneToPixels(const Scene& scene, const RenderConfig& config, std::vector<unsigned char>* pixels,

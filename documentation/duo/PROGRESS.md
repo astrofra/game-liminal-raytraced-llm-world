@@ -5,6 +5,11 @@ DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-060 / dispersion chromatique des gouttes | Intégré et testé | [Contrat](tasks/DUO-060.md), [revue](reviews/DUO-060.md). Déformation renforcée et séparation RGB progressive, comparatif SDL à température identique. Quinze CTest passent et le binaire est publié. |
+| DUO-059 / description progressive unique | Intégré et testé | [Contrat](tasks/DUO-059.md), [revue](reviews/DUO-059.md). Arrivée à 0,10, revisites à 10 et interruptions vérifiées. Quinze CTest passent et le binaire est publié. |
+| DUO-058 / déformation optique et prose à 5 ou 10 | Intégré et testé | [Contrat](tasks/DUO-058.md), [revue](reviews/DUO-058.md). Gouttes gaussiennes dans les rayons caméra, positions stables par lieu et fragment halluciné à température réglable. Quinze CTest passent et le binaire est publié. |
+| DUO-057 / prose à chaud et sueur | Intégré et testé | [Contrat](tasks/DUO-057.md), [revue](reviews/DUO-057.md). Arrivée et observation à 43 °C, fragment shader de réfraction vérifié par capture, binaire publié. Quinze CTest passent. |
+| DUO-056 / diagnostic thermique | Intégré et testé | [Contrat](tasks/DUO-056.md), [revue](reviews/DUO-056.md). Dix-huit commandes SDL, échantillonnage narratif mesuré à 0,10 et 0,90, comparaison à prompt et graine identiques. Quinze CTest passent. |
 | DUO-055 / arrivée progressive SDL | Intégré et testé | [Contrat](tasks/DUO-055.md), [revue](reviews/DUO-055.md). Arrivée et revisite progressives avec Gemma local, annulation SDL vérifiée. Quinze CTest passent. |
 | DUO-054 / Recast et Detour | Roadmap mise à jour | [Contrat](tasks/DUO-054.md), [revue](reviews/DUO-054.md), [roadmap](../ROADMAP_DEPLACEMENT_LOCAL_3D.md#recast-et-detour-dans-le-pilote). Comparaison prévue avec le pas direct dans la pièce du cube en verre. |
 | DUO-053 / déplacement local 3D | Roadmap documentée | [Contrat](tasks/DUO-053.md), [revue](reviews/DUO-053.md), [roadmap](../ROADMAP_DEPLACEMENT_LOCAL_3D.md). Pas court dans une scène existante, repères visibles et tirage parmi des trajets valides à éprouver. |

@@ -446,8 +446,30 @@ static void LocalPilot() {
         std::string text, first;
         bool finished = false, seen = false, cancel = false;
     } arrival;
+    bool literary_started = false, literary_fails = false, literary_truncated = false;
+    const std::string literary_begin = R"({"fragments":"Pierre, pierre, trois pierres)";
     cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback stream,void* stream_user,LlmGenerationResult* r) {
+        if (c.purpose == "scene_hallucination_v1") {
+            literary_started = true;
+            arrival.finished = false;
+            CHECK(c.temperature == 10.0f && !arrival.seen);
+            const std::string rest = ", souffle et pierre.";
+            if (literary_fails) {
+                CHECK(stream("{", "{", stream_user));
+                return false;
+            }
+            if (!stream(literary_begin.c_str(), literary_begin.c_str(), stream_user)) return false;
+            if (literary_truncated) {
+                r->stop_reason = "token_limit";
+                return true;
+            }
+            r->response_text = literary_begin + rest + "\"}";
+            CHECK(stream(r->response_text.c_str(), rest.c_str(), stream_user));
+            arrival.finished = true;
+            r->success = r->reached_eog = true;
+            return true;
+        }
         ++narratives;CHECK(messages[0].content.find("ENGINE OUTCOME")!=std::string::npos);
         CHECK(messages[1].content.find("portal")==std::string::npos);
         r->success=true;r->reached_eog=true;
@@ -508,7 +530,10 @@ static void LocalPilot() {
     cfg.stream_callback=[](HeadlessTurnStreamPhase phase,const char* text,const char* delta,void* data) {
         auto& probe=*static_cast<ArrivalProbe*>(data);
         if(phase!=kHeadlessTurnStreamArrivalPreview)return true;
-        if(!delta||!*delta)return true;
+        if(!delta||!*delta) {
+            CHECK(text && probe.text == text);
+            return true;
+        }
         CHECK(!probe.finished);                    // Published inside the narrative completion.
         probe.seen=true;if(probe.first.empty())probe.first=delta;
         probe.text+=delta;CHECK(text&&probe.text==text); // Only decoded prose accumulates.
@@ -532,6 +557,36 @@ static void LocalPilot() {
           arrival.text.find("Les masses et le ciel")==std::string::npos);
     CHECK(turn.generated_room_scene_source=="local_direct_v2");
     CHECK(turn.generated_rooms_to_add[0].spatial_state.room_title=="Les masses et le ciel");
+    {
+        SessionState hot = state;
+        hot.hard_state.body_temperature_c = 42.8f;
+        hot.hard_state.thermal_debug.enabled = true;
+        hot.hard_state.thermal_debug.mode = SuitHeatingMode::Extreme;
+        hot.hard_state.thermal_debug.hallucination_temperature = 10;
+        HeadlessTurnResult hot_turn;
+        arrival = ArrivalProbe();
+        CHECK(RunHeadlessTurnFromState(hot,"east",cfg,&hot_turn,error,sizeof(error)));
+        CHECK(literary_started && arrival.seen && arrival.first.find("Pierre, pierre") != std::string::npos);
+        CHECK(arrival.text.size() > arrival.first.size());
+        CHECK(hot_turn.turn_result.narration.compare(0,arrival.text.size(),arrival.text) == 0);
+        CHECK(arrival.text.find("Vous êtes au milieu") == std::string::npos);
+        literary_started = false;
+        literary_fails = true;
+        arrival = ArrivalProbe();
+        CHECK(RunHeadlessTurnFromState(hot,"east",cfg,&hot_turn,error,sizeof(error)));
+        CHECK(literary_started && !arrival.seen && !hot_turn.turn_result.narration.empty());
+        literary_started = false;
+        literary_fails = false;
+        literary_truncated = true;
+        arrival = ArrivalProbe();
+        CHECK(RunHeadlessTurnFromState(hot,"east",cfg,&hot_turn,error,sizeof(error)));
+        CHECK(literary_started && arrival.seen && arrival.text == arrival.first);
+        CHECK(hot_turn.turn_result.narration.compare(0,arrival.text.size(),arrival.text) == 0);
+        CHECK(json::parse(hot_turn.narrative_metrics_json)["hallucination"]["retained_stream_prefix"]==true);
+        literary_truncated = false;
+    }
+    CHECK(calls==4);
+    calls=1;
     UpdateSessionStateFromTurn("east",turn,&state);CHECK(state.generated_rooms.back().scene_contract_version==3);
     CHECK(SerializeSessionStateToJsonString(state,&after));SessionState restored;
     CHECK(ParseSessionStateFromJson(after.c_str(),&restored,error,sizeof(error)));
@@ -1528,6 +1583,123 @@ static void DialogueJourney() {
     CHECK(world(state)==before&&state.history.back().clarification_candidates==clarification.clarification_candidates);
 }
 
+static void ThermalDebugCommands() {
+    SessionState state;char error[1024]={};HeadlessTurnResult turn;
+    HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.reuse_unchanged_view=true;
+    cfg.investigation_opportunities=false;cfg.generation_config.prompt_token_counter=FakePromptCount;
+    cfg.interaction_completion=[](const auto&,const auto&,auto,void*,auto*) -> bool {
+        throw std::runtime_error("A thermal debug command invoked the interaction model");
+    };
+    cfg.narrative_completion=[](const auto&,const auto&,auto,void*,auto*) -> bool {
+        throw std::runtime_error("A thermal debug command invoked the narrative model");
+    };
+    cfg.dynamic_scene_config.completion=[](const auto&,const auto&,auto,void*,auto*) -> bool {
+        throw std::runtime_error("A thermal debug command regenerated a scene");
+    };
+    CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+    state.language=kGameLanguageFrench;
+    CHECK(state.hard_state.body_temperature_c==kDefaultBodyTemperatureC);
+    // Thermal debug commands are direct: no model, no view, no simulation time.
+    auto command=[&](const char* text) {
+        const int turn_number=state.hard_state.turn_number,moves=state.hard_state.move_count;
+        const auto time_of_day=state.spatial_state.time_of_day;
+        const int external=state.hard_state.external_temperature_c;
+        CHECK(RunHeadlessTurnFromState(state,text,cfg,&turn,error,sizeof(error)));
+        CHECK(turn.accepted&&turn.view_unchanged&&turn.llm_call_count==0);
+        CHECK(turn.rendered_scene_text.empty()&&turn.rendered_scene.triangles.empty());
+        CHECK(turn.updated_hard_state.turn_number==turn_number);
+        CHECK(turn.updated_hard_state.move_count==moves);
+        CHECK(turn.updated_hard_state.external_temperature_c==external);
+        CHECK(turn.updated_spatial_state.time_of_day==time_of_day);
+        UpdateSessionStateFromTurn(text,turn,&state);
+    };
+    auto step=[&](float expected) {
+        const auto before=state.hard_state.body_temperature_c;
+        command("/chaleur pas");
+        CHECK(fabsf(state.hard_state.body_temperature_c-expected)<.001f);
+        CHECK(state.hard_state.body_temperature_c>=before);
+    };
+    auto reset=[&]() {command("/chaleur reset");CHECK(state.hard_state.body_temperature_c==kDefaultBodyTemperatureC);};
+    // One step from the 37 C threshold: baseline +0.4 C plus the profile supplement.
+    command("/chaleur normal");step(37.4f);
+    reset();command("/chaleur moyen");step(38.4f);
+    reset();command("/chaleur extreme");step(39.9f);
+    // Reset restores BODY but keeps the active profile.
+    reset();step(39.9f);
+    // Full isolation keeps BODY, including across a reset.
+    reset();command("/isolation 100");step(37.0f);
+    reset();step(37.0f);
+    command("/isolation 0");step(39.9f);
+    // An invalid isolation prints usage and leaves the thermal state intact.
+    const auto hot=state.hard_state.body_temperature_c;
+    CHECK(RunHeadlessTurnFromState(state,"/isolation 101",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.accepted&&turn.view_unchanged&&turn.llm_call_count==0);
+    CHECK(turn.updated_hard_state.body_temperature_c==hot);
+    const auto& usage=turn.turn_result.narration;
+    CHECK(usage.find("isolation")!=std::string::npos||usage.find("Isolation")!=std::string::npos);
+    UpdateSessionStateFromTurn("/isolation 101",turn,&state);
+    CHECK(state.hard_state.body_temperature_c==hot);
+    reset();step(39.9f); // The rejected value did not alter the active profile.
+    // Settings persist through serialization and keep steering the exposure.
+    reset();command("/chaleur moyen");command("/isolation 50");
+    std::string saved;CHECK(SerializeSessionStateToJsonString(state,&saved));
+    SessionState restored;CHECK(ParseSessionStateFromJson(saved.c_str(),&restored,error,sizeof(error)));
+    CHECK(restored.language==kGameLanguageFrench&&restored.hard_state.body_temperature_c==state.hard_state.body_temperature_c);
+    CHECK(RunHeadlessTurnFromState(state,"/chaleur pas",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.accepted&&turn.view_unchanged&&turn.llm_call_count==0);
+    const float original=turn.updated_hard_state.body_temperature_c;
+    CHECK(original>state.hard_state.body_temperature_c);
+    UpdateSessionStateFromTurn("/chaleur pas",turn,&state);
+    CHECK(RunHeadlessTurnFromState(restored,"/chaleur pas",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.accepted&&turn.view_unchanged&&turn.llm_call_count==0);
+    CHECK(fabsf(turn.updated_hard_state.body_temperature_c-original)<.001f);
+
+    reset();command("/chaleur extrême");command("/isolation 0");step(39.9f);step(42.8f);
+    cfg.generation_config.temperature = 0.10f;
+    cfg.interaction_completion = [](const auto& model, const auto& messages, auto stream, void* data, auto* result) {
+        CHECK(fabsf(model.temperature-0.10f)<.001f);
+        return FixturePlayerCompletion(model,messages,stream,data,result);
+    };
+    float expected_delirium_temperature = 5.0f;
+    cfg.narrative_completion = [&](const auto& model, const auto& messages, auto, void*, auto* result) {
+        if (model.purpose == "scene_hallucination_v1") {
+            CHECK(model.temperature == expected_delirium_temperature);
+            result->response_text = R"({"fragments":"Pierre, pierre, trois pierres, le souffle à rebours."})";
+            result->success=result->reached_eog=true;
+            return true;
+        }
+        CHECK(fabsf(model.temperature-.45f)<.001f);
+        CHECK(messages.front().content.find("short, plain fact")!=std::string::npos);
+        const auto request=json::parse(messages.back().content);
+        const float body=request["temperature_body_c"].get<float>();
+        CHECK(body>=42.8f && body<=kMaxBodyTemperatureC);
+        const auto schema=json::parse(model.json_schema);
+        const auto& allowed=schema["properties"]["thermal"]["properties"]["body_temperature_c"]["enum"];
+        CHECK(!allowed.empty());
+        for (const auto& candidate : allowed) CHECK(candidate.get<float>()<=kMaxBodyTemperatureC);
+        CHECK(request["continuity"].dump().find("thermal_debug")==std::string::npos);
+        json exits=request["exit_proposal"]["fixed"];
+        result->response_text=json{{"title",request["current_title"]},{"summary",request["base_description"]},
+            {"narration","La dalle prend une teinte trouble et la chaleur se tient au bord de votre souffle."},
+            {"exits",exits},{"thermal",{{"external_temperature_c",request["temperature_external_c"]},
+                {"body_temperature_c",request["temperature_body_c"]},{"reason","Protection stable."}}}}.dump();
+        result->success=result->reached_eog=true;
+        return true;
+    };
+    CHECK(RunHeadlessTurnFromState(state,"look",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.accepted && !turn.used_turn_fallback && turn.turn_result.intent=="perceive_accepted_scene");
+    CHECK(turn.updated_hard_state.body_temperature_c==kMaxBodyTemperatureC);
+    CHECK(turn.subjective_narration && turn.accepted_observation.empty());
+    auto metrics=json::parse(turn.narrative_metrics_json);
+    CHECK(metrics["thermal_prose"]=="delirious" && metrics["hallucination"]["accepted"]==true);
+    CHECK(turn.turn_result.narration.find("Pierre, pierre, trois pierres")!=std::string::npos);
+    UpdateSessionStateFromTurn("look",turn,&state);
+    command("/chaleur llm 10");
+    expected_delirium_temperature = 10.0f;
+    CHECK(RunHeadlessTurnFromState(state,"look",cfg,&turn,error,sizeof(error)));
+    CHECK(turn.accepted && !turn.used_turn_fallback && turn.updated_hard_state.body_temperature_c==kMaxBodyTemperatureC);
+}
+
 int main() {
     extern void RunInvestigationContractTests();
     extern void RunInvestigationJourneyTests();
@@ -1536,6 +1708,6 @@ int main() {
     RunAudioTurnTests();
     try {DialogueJourney();}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
-    try {RunKnownBarrierTests();RunInvestigationDistributionTests();RunInvestigationContractTests();RunInvestigationJourneyTests();RunObjectSemanticTests();RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass and save integrity passed");return 0;}
+    try {RunKnownBarrierTests();RunInvestigationDistributionTests();RunInvestigationContractTests();RunInvestigationJourneyTests();RunObjectSemanticTests();RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();ThermalDebugCommands();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass, thermal debug commands and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
 }

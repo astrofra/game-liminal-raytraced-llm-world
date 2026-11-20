@@ -72,6 +72,7 @@ struct HeadlessTurnResult {
     std::vector<std::string> clarification_candidates;
     size_t initial_history_size = 0;
     bool dialogue_only = false; // Publish the transcript without advancing simulation.
+    bool subjective_narration = false; // Heat-distorted prose is visible in the transcript.
     std::string accepted_observation;
     bool accepted = false; // Set only after the full turn and last cancellation poll succeed.
     bool view_unchanged = false; // No replacement scene or pixels supplied to the frontend.

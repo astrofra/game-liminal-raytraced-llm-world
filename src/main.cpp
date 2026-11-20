@@ -1253,7 +1253,11 @@ int main(int argc, char** argv)
         std::chrono::duration<double, std::milli>(load_end - load_start).count());
 
     const std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();
-    if (!liminal::RenderSceneToImage(scene, config, output_path)) {
+    const auto final_render_config = have_pending_save
+        ? liminal::RenderConfigForVisor(config, pending_saved_session.hard_state.body_temperature_c,
+                                        pending_saved_session.current_place_id)
+        : config;
+    if (!liminal::RenderSceneToImage(scene, final_render_config, output_path)) {
         fprintf(stderr, "Rendering failed.\n");
         return 1;
     }

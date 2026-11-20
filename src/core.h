@@ -327,6 +327,8 @@ struct RenderConfig {
     int direct_light_samples;
     uint32_t seed;
     float exposure;
+    float visor_drop_strength = 0.0f;
+    uint32_t visor_drop_seed = 0u;
 
     RenderConfig()
         : width(800)

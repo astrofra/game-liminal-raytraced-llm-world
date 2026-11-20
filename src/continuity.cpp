@@ -106,14 +106,15 @@ bool FitContinuityPrompt(const ContinuityContextV1& original,int context_tokens,
 
 ContinuityContextV1 DialogueContext(const SessionState& state) {
     ContinuityContextV1 context;
-    const size_t first=state.history.size()>12?state.history.size()-12:0;
-    for(size_t i=first;i<state.history.size();++i) {
-        const auto& event=state.history[i];
-        context.events_json.push_back(json{{"id","exchange-"+std::to_string(i+1)},
+    for(size_t i=state.history.size();i>0&&context.events_json.size()<12;--i) {
+        const auto& event=state.history[i-1];
+        if(event.intent=="thermal_debug") continue;
+        context.events_json.push_back(json{{"id","exchange-"+std::to_string(i)},
             {"place_id",event.place_id},{"command",event.player_command},{"intent",event.intent},
             {"outcome",event.engine_outcome},{"object_reference",event.object_reference},
             {"description",event.narration}}.dump());
     }
+    std::reverse(context.events_json.begin(), context.events_json.end());
     return context;
 }
 }

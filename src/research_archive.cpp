@@ -245,8 +245,10 @@ bool ResearchArchive::Presentation(const SessionState& state, const std::string&
         WriteNewFile(directory/"scene.json",json{{"place",state.current_place_id},{"base",base},
             {"effective",effective_scene_reference_},{"effective_sha256",effective_scene_hash_},
             {"object_revision",state.objects.revision},{"investigation_revision",state.investigation.revision}}.dump(2));
+        const auto optics = RenderConfigForVisor(render_, state.hard_state.body_temperature_c, state.current_place_id);
         WriteNewFile(directory/"presentation.json",json{{"utc",UtcTime()},{"presented",presented},
             {"text",displayed},{"width",width},{"height",height},{"generation",generation},{"frame",frame},
+            {"visor_drops",{{"strength",optics.visor_drop_strength},{"seed",optics.visor_drop_seed}}},
             {"submission_to_present_ms",elapsed_ms}}.dump(2));
         if (rgb && presented) WriteNewFile(directory/"screen.png",EncodePng(width,height,pitch,rgb));
     });
@@ -291,6 +293,9 @@ void ResearchArchive::Result(const std::string& status,const HeadlessTurnResult&
         {"narrative_metrics",turn.narrative_metrics_json},
         {"audio",json::parse(AudioDecisionJson(turn.audio_mix,status=="accepted"))},
         {"scene_provenance",turn.dynamic_scene_design_json},{"scene_metrics",turn.dynamic_scene_metrics_json},
+        {"thermal",{{"body_before_c",turn.initial_hard_state.body_temperature_c},
+            {"body_after_c",status=="accepted"?turn.updated_hard_state.body_temperature_c:turn.initial_hard_state.body_temperature_c},
+            {"narrative_sampling_at_start",turn.effective_llm_temperature}}},
         {"thermal_prompt",turn.thermal_prompt_text},{"thermal_response",turn.thermal_response_text}}).dump(2)+"\n");
     if(!turn.rendered_scene_text.empty()) {
         Write(stem+".scene",turn.rendered_scene_text);

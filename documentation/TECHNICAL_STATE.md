@@ -39,7 +39,9 @@ réelles des limites de qualification restantes.
 - À l'arrivée ou au retour dans un lieu, SDL affiche la prose progressive
   sous « Arrivée en cours ». Le moteur valide d'abord la géométrie d'une nouvelle
   pièce. La description finale, la vue calculée et la boussole de destination
-  sont publiées ensemble. Échap retire l'aperçu et annule le déplacement.
+  sont publiées ensemble. Lorsqu'un fragment halluciné est demandé, la
+  description structurée sert de préparation interne et l'aperçu commence
+  avec le fragment. Échap retire l'aperçu et annule le déplacement.
 
 - [Enquête à indices](ENQUETE_INDICES.md) : état versionné et révisé, quatre
   possibilités dont la [répartition est choisie par le LLM](REPARTITION_INDICES_LLM.md)
@@ -147,6 +149,52 @@ Le post-traitement périphérique, les huit vues de respiration, les matériaux
 diélectriques et la lumière distante restent inchangés.
 Les parcours hybrides et en deux passes sont des diagnostics explicites ;
 ils ne remplacent pas le parcours local normal.
+
+## Diagnostic thermique
+
+Le HUD affiche le corps et l'extérieur. Avec le profil Gemma par défaut,
+37 °C corporels donnent une température d'échantillonnage de 0,10 et chaque
+degré supplémentaire ajoute 0,16 jusqu'au plateau de 0,90 à 42 °C. Le réglage
+utilise la température corporelle au début du tour. Le modèle propose ensuite
+une variation bornée à environ 0,4 °C dans le parcours narratif local. En jeu
+normal, une proposition stable laisse le corps stable.
+
+| Commande à saisir dans le jeu | Effet |
+|---|---|
+| `/chaleur` | Inspecte le profil, l'isolation, la température corporelle et le réglage du prochain appel narratif. |
+| `/chaleur normal`, `/chaleur moyen`, `/chaleur extrême` | Ajoute respectivement 0, 1 ou 2,5 °C aux expositions admissibles, après validation de la proposition thermique. |
+| `/isolation 0` à `/isolation 100` | Atténue la composante de chauffe de 0 à 100 %. Le refroidissement proposé reste applicable. |
+| `/chaleur pas` | Simule immédiatement une exposition de base de +0,4 °C, avec le supplément et l'isolation choisis. |
+| `/chaleur reset` | Ramène le corps à 37 °C avec les réglages courants. |
+| `/chaleur llm 5` ou `/chaleur llm 10` | Choisit la température du fragment halluciné. La valeur par défaut est 5. |
+
+Les réglages commencent à normal et 0 % d'isolation additionnelle à chaque
+nouvelle partie. Les commandes directes utilisent zéro appel LLM et laissent le
+temps de simulation en place. Elles recalculent la vue si la visière franchit
+un palier optique. Deux `pas` en mode extrême à 0 % passent de 37 à
+42,8 °C. Le corps reste borné à 34–43 °C. Dans ce diagnostic, l'interprétation
+des commandes et la génération du script local utilisent le réglage de référence
+à 37 °C. La description et le dialogue suivent la température corporelle réelle.
+Les archives contiennent les températures avant et après et la température
+d'échantillonnage de chaque appel.
+
+En mode extrême, la prose de scène se dérègle dès 39,5 °C. À partir de 42 °C,
+un bref appel dédié à la prose est échantillonné à 5 ou à 10, après validation
+de la proposition structurée. Il part d'un fait visible et joue avec des
+inventaires, des répétitions, des comptes contradictoires et des phrases
+disloquées. Si la génération échoue, la description structurée reste disponible.
+Le moteur fournit les objets au sol et les sorties validées. L'écriture sous
+contrainte s'inspire des procédés oulipiens. [Georges Perec et l'Oulipo](https://oulipo.net/fr/Oulipiens/GP)
+
+Au-dessus de 39 °C corporels, huit déformations gaussiennes modifient les rayons
+caméra avant leur intersection avec le décor. L'effet est plus marqué à 42 °C.
+Les rayons rouge, vert et bleu suivent des déviations d'amplitudes différentes.
+La déformation et la dispersion s'atténuent progressivement jusqu'au bord des
+gouttes.
+Les gouttes restent aux mêmes coordonnées pendant la respiration dans une pièce.
+Leur position se décale légèrement d'un lieu à l'autre et se retrouve à la
+revisite. SDL compose le masque et le HUD sur le résultat du raytracer. Les
+captures des interactions et les rendus des sessions headless incluent l'effet.
 
 ## Distribution et construction
 

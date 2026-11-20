@@ -5,6 +5,8 @@
 
 namespace liminal {
 
+RenderConfig RenderConfigForVisor(const RenderConfig& base, float body_temperature_c, const std::string& place_id);
+
 struct RenderControl {
     // Return false to cancel. Calls are serialized even with OpenMP enabled.
     bool (*continue_render)(void*) = nullptr;
