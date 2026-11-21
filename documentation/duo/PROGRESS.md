@@ -1,10 +1,12 @@
-# Progression du duo — 20 novembre 2026
+# Progression du duo — 21 novembre 2026
 
 Codex coordonne les interfaces, le runtime, la validation et l'intégration.
 DeepSeek intervient via le kit externe ; le runtime du jeu reste indépendant de ce kit.
 
 | Lot | État | Preuves et suite |
 |---|---|---|
+| DUO-062 / boussole et prose d'inventaire | Intégré et testé | [Contrat](tasks/DUO-062.md), [revue](reviews/DUO-062.md). Arrivée et retour vérifiés en SDL, trois raccourcis à température narrative active, état et vue conservés. Quinze CTest et 114 tests Python passent. Binaire publié. |
+| DUO-061 / première image avant la prose | Intégré et testé | [Contrat](tasks/DUO-061.md), [revue](reviews/DUO-061.md). Rendu et narration en parallèle, ordre d'affichage et restauration après Échap vérifiés en SDL. Quinze CTest passent et le binaire est publié. |
 | DUO-060 / dispersion chromatique des gouttes | Intégré et testé | [Contrat](tasks/DUO-060.md), [revue](reviews/DUO-060.md). Déformation renforcée et séparation RGB progressive, comparatif SDL à température identique. Quinze CTest passent et le binaire est publié. |
 | DUO-059 / description progressive unique | Intégré et testé | [Contrat](tasks/DUO-059.md), [revue](reviews/DUO-059.md). Arrivée à 0,10, revisites à 10 et interruptions vérifiées. Quinze CTest passent et le binaire est publié. |
 | DUO-058 / déformation optique et prose à 5 ou 10 | Intégré et testé | [Contrat](tasks/DUO-058.md), [revue](reviews/DUO-058.md). Gouttes gaussiennes dans les rayons caméra, positions stables par lieu et fragment halluciné à température réglable. Quinze CTest passent et le binaire est publié. |

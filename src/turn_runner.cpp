@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <algorithm>
 #include <charconv>
 #include <regex>
 #include <sstream>
@@ -2706,12 +2707,6 @@ static std::string InventoryReply(const SessionState& state,const InventoryReque
     const auto& items=state.hard_state.inventory_items;
     const bool owned=!request.item_id.empty()&&std::find(items.begin(),items.end(),request.item_id)!=items.end();
     const auto name=InventoryItemName(request.item_id,lang);
-    if(request.command==InventoryCommand::List) {
-        *intent="read_inventory";
-        std::vector<std::string> labels;
-        for(const auto& id:items)labels.push_back(ObjectName(state,id));
-        return FormatInventory(labels,lang);
-    }
     if(request.command==InventoryCommand::Ambiguous) {
         *intent="clarify_inventory";
         return PlayerText(lang,"Which tool would you like to examine?","Quel outil souhaitez-vous examiner ?",
@@ -2990,7 +2985,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     std::string prompt=json({{"language",GameLanguageEnglishName(state.language)},{"language_code",GameLanguageToString(state.language)},
         {"world","Eryx: Venusian quarry, human explorer inside a protective suit. Material, embodied strangeness; no invented supernatural events."},
         {"facts",json::parse(facts,nullptr,false)},{"current_title",discovery_constraints?"":*title},{"base_description",discovery_constraints?"":*summary},
-        {"orientation_rule","Write sensory prose without cardinal directions or a claim about the way back. The engine appends open routes and the return direction from the accepted exit map. Describe the actual destination geometry in facts; origin geometry is only a comparison."},
+        {"orientation_rule","Write sensory prose without listing exits, compass directions or the way back. The compass shows accessible routes. Describe the destination geometry in facts; origin geometry is only a comparison."},
         {"objects",object_context},{"investigation",json::parse(InvestigationContext(object_view))},
         {"ambience",config.ambience_catalog?json::parse(AmbiencePrompt(*config.ambience_catalog,state.audio_targets,
             config.audio_current_known?&config.audio_current_gains:nullptr)):json(nullptr)},
@@ -3099,12 +3094,16 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     if(distribution) {
         schema["properties"]["investigation_placement"]=json::parse(InvestigationPlacementSchema(state,distribution->sites));
         schema["required"].push_back("investigation_placement");
-        // Select before writing prose and exits so both can follow the choice.
+    }
+    const bool stream_narration_first = completed_move && prose_heat != SceneProseHeat::Delirious;
+    if (distribution || stream_narration_first) {
         auto ordered=nlohmann::ordered_json::parse(schema.dump());
         auto properties=nlohmann::ordered_json::object();
-        properties["investigation_placement"]=ordered["properties"]["investigation_placement"];
+        // An authored placement must precede any prose about its objects.
+        if (distribution) properties["investigation_placement"]=ordered["properties"]["investigation_placement"];
+        if (stream_narration_first) properties["narration"]=ordered["properties"]["narration"];
         for(auto it=ordered["properties"].begin();it!=ordered["properties"].end();++it)
-            if(it.key()!="investigation_placement")properties[it.key()]=it.value();
+            if(!properties.contains(it.key()))properties[it.key()]=it.value();
         ordered["properties"]=properties;cfg.json_schema=ordered.dump();
     } else cfg.json_schema=schema.dump();
     std::vector<LlmPromptMessage> messages={{"system",
@@ -3156,7 +3155,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             if (!decoded.empty() && decoded != stream.decoded_prefix) {
                 stream.decoded_prefix = std::move(decoded);
                 auto prose = ConstrainNarrationText(stream.decoded_prefix, stream.card ? 1800 : 320, stream.card ? 10 : 2);
-                prose = ConstrainArrivalDirections(prose, stream.view.language, {}, kDirectionUnknown, false);
+                prose = ConstrainArrivalDirections(prose, stream.view.language);
                 if (prose.find("volume_") != std::string::npos || prose.find("portal") != std::string::npos ||
                     !NarrationPreviewAllowed(stream.view, prose)) prose.clear();
                 if (prose.compare(0, stream.preview.size(), stream.preview) == 0)
@@ -3332,7 +3331,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             std::string extension;
             if (delta && *delta) {
                 auto part = ConstrainNarrationText(ReadStreamedString(text, "fragments"), 400, 0);
-                part = ConstrainArrivalDirections(part, draft.view.language, {}, kDirectionUnknown, false);
+                part = ConstrainArrivalDirections(part, draft.view.language);
                 if (part.size() >= 20 && part.find("volume_") == std::string::npos && NarrationPreviewAllowed(draft.view, part)) {
                     auto prose = draft.anchor + " " + part;
                     if (prose.compare(0, draft.preview.size(), draft.preview) == 0) {
@@ -3352,7 +3351,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         std::string fragments;
         if (response.is_object() && response.size() == 1 && response.contains("fragments") && response["fragments"].is_string())
             fragments = ConstrainNarrationText(response["fragments"].get_ref<const std::string&>(), 400, 0);
-        fragments = ConstrainArrivalDirections(fragments, state.language, {}, kDirectionUnknown, false);
+        fragments = ConstrainArrivalDirections(fragments, state.language);
         const bool accepted = generated && literature.reached_eog && fragments.size() >= 20 &&
             fragments.find("volume_") == std::string::npos && NarrationPreviewAllowed(object_view, fragments);
         const auto final_prose = literary_stream.anchor + " " + fragments;
@@ -3362,20 +3361,12 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             (!accepted || final_prose.compare(0, literary_stream.preview.size(), literary_stream.preview) != 0);
         if (keep_preview) *narration = literary_stream.preview;
         else if (accepted) *narration = final_prose;
-        // Keep the engine's route list in a separate sentence even if the
-        // fragment ended mid-thought.
-        if (completed_move && (keep_preview || accepted) &&
-            narration->back() != '.' && narration->back() != '?' && narration->back() != '!')
-            narration->push_back('.');
         hallucination = {{"temperature", literary.temperature}, {"accepted", accepted},
             {"retained_stream_prefix", keep_preview}, {"stop", literature.stop_reason}};
     }
     if(card) {
-        std::map<std::string,bool> exits;
-        for(const auto* direction:{"north","east","south","west"})
-            exits[direction]=std::find(result->updated_spatial_state.blocked_exits.begin(),result->updated_spatial_state.blocked_exits.end(),direction)==result->updated_spatial_state.blocked_exits.end();
-        *narration=ConstrainArrivalDirections(*narration,state.language,exits,OppositeCardinalDirection(result->traversal_direction),true);
-        const auto clean_summary=ConstrainArrivalDirections(*summary,state.language,exits,kDirectionUnknown,false);
+        *narration=ConstrainArrivalDirections(*narration,state.language);
+        const auto clean_summary=ConstrainArrivalDirections(*summary,state.language);
         *summary=clean_summary.empty()?SceneLanguageFallback(state.language):clean_summary;
     }
     if(pending&&proposal_accepted) {
@@ -3817,6 +3808,84 @@ static std::string ReadDialogueReply(const std::string& wire_text)
     return ConstrainNarrationText(response["reply"].get_ref<const std::string&>(), 650, 3);
 }
 
+static void NarrateInventory(const SessionState& state, const HeadlessTurnConfig& config, HeadlessTurnResult* result)
+{
+    std::vector<std::string> labels;
+    for (const auto& id : state.hard_state.inventory_items) {
+        const auto label = ObjectName(state, id);
+        if (!label.empty() && std::find(labels.begin(), labels.end(), label) == labels.end()) labels.push_back(label);
+    }
+    const auto source = FormatInventory(labels, state.language);
+    auto model = config.generation_config;
+    model.purpose = "inventory_paraphrase_v1";
+    model.n_predict = 180;
+    model.timeout_ms = std::min(model.timeout_ms, 20000);
+    model.use_json_grammar = true;
+    const auto heat = SceneProseHeatLevel(state.hard_state);
+    model.temperature = heat == SceneProseHeat::Delirious ?
+        static_cast<float>(state.hard_state.thermal_debug.hallucination_temperature) :
+        SceneProseSamplingTemperature(model.temperature, heat);
+    const bool impression_only = heat == SceneProseHeat::Delirious || labels.empty();
+    model.json_schema = R"({"type":"object","properties":{"reply":{"type":"string","minLength":1,"maxLength":540}},"required":["reply"],"additionalProperties":false})";
+
+    std::string instruction = PlayerLanguageInstruction(state.language) +
+        " Paraphrase the displayed inventory in the explorer's literary register. Return one JSON object with the single string reply. "
+        "Describe only what is carried. Keep the explorer stationary with both hands at rest. Do not describe handling, taking or putting down anything. ";
+    json request{{"inventory_text", source}, {"names_in_order", labels}};
+    if (labels.empty()) {
+        instruction += "Express only that the inventory is empty, in your own words.";
+    } else if (impression_only) {
+        instruction += "Write a very short fragment of subjective heat, weight or repetition. Follow the language of the example. "
+            "Leave all item names and counts to the game's inventory list.";
+        request["style_example"] = PlayerText(state.language,
+            "The weight. Again, that weight, close against you.",
+            "Le poids. Encore ce poids, tout contre vous.",
+            "Vekten. Igjen denne vekten, tett inntil deg.",
+            "Vægten. Igen den vægt, tæt ind til dig.",
+            "Das Gewicht. Wieder dieses Gewicht, dicht an dir.",
+            "Il peso. Ancora quel peso, contro di te.");
+    } else {
+        instruction += "Use each exact name from names_in_order once, in one natural sentence. Mention only the supplied possessions.";
+        if (heat == SceneProseHeat::Unsteady)
+            instruction += " Let heat unsettle the rhythm while keeping the list clear.";
+    }
+    const std::vector<LlmPromptMessage> messages{{"system", instruction}, {"user", request.dump()}};
+    auto heartbeat = [](const char*, const char*, void* user) {
+        const auto& c = *static_cast<const HeadlessTurnConfig*>(user);
+        return !c.stream_callback || c.stream_callback(kHeadlessTurnStreamPrimaryResponse, "", "", c.stream_user_data);
+    };
+    LlmGenerationResult generation;
+    auto* user = const_cast<HeadlessTurnConfig*>(&config);
+    const bool ok = config.narrative_completion ? config.narrative_completion(model, messages, heartbeat, user, &generation) :
+        GenerateChatCompletion(model, messages, heartbeat, user, &generation);
+    const auto reply = ReadDialogueReply(generation.response_text);
+    std::string prose;
+    if (ok && generation.reached_eog && NarrationPreviewAllowed(state, reply)) {
+        std::string connective = reply;
+        const bool complete = !labels.empty() && std::all_of(labels.begin(), labels.end(), [&](const std::string& label) {
+            const auto pos = connective.find(label);
+            if (pos == std::string::npos || connective.find(label, pos + label.size()) != std::string::npos) return false;
+            connective.replace(pos, label.size(), " ");
+            return true;
+        });
+        if (complete && !IsClearlyWrongNarrativeLanguage(connective, state.language)) prose = reply;
+        else if (impression_only &&
+            std::none_of(labels.begin(), labels.end(), [&](const std::string& label) {return reply.find(label) != std::string::npos;}))
+            prose = reply + "\n" + source;
+    }
+    result->turn_result.intent = "read_inventory";
+    result->used_turn_fallback = prose.empty();
+    result->turn_result.narration = result->used_turn_fallback ? source : prose;
+    result->effective_llm_temperature = model.temperature;
+    result->request_text = messages.back().content;
+    result->prompt_text = generation.prompt_text;
+    result->raw_response_text = generation.response_text;
+    result->narrative_metrics_json = json{{"engine_only", false}, {"purpose", model.purpose},
+        {"inventory", state.hard_state.inventory_items}, {"sampling_temperature", model.temperature},
+        {"fallback", result->used_turn_fallback}, {"impression_only", impression_only}, {"stop", generation.stop_reason},
+        {"displayed", result->turn_result.narration}}.dump();
+}
+
 static bool ReplyToDialogue(const SessionState& state,const std::string& command,const ObjectResolution& interpretation,
     const HeadlessTurnConfig& config,HeadlessTurnResult* result,char* error,size_t error_size) {
     using nlohmann::ordered_json;
@@ -3998,6 +4067,40 @@ static bool RunObjectTurn(const SessionState& state,const std::string& command,c
     return true;
 }
 
+static bool ComposeSceneObjects(const SessionState& view, std::string& program, Scene& scene, std::string& why)
+{
+    const auto deposits = view.objects.deposits.find(view.current_place_id);
+    const bool has_deposits = deposits != view.objects.deposits.end() && !deposits->second.empty();
+    const bool has_source = std::any_of(view.objects.sources.begin(), view.objects.sources.end(), [&](const auto& source) {
+        return source.place_id == view.current_place_id && !source.visual_id.empty();
+    });
+    return (!has_deposits && !has_source) || BuildObjectScene(program, view, &program, &scene, &why);
+}
+
+static bool ComposeSceneBarriers(const SessionState& view, std::string& program, Scene& scene, std::string& why)
+{
+    for (const auto direction : {kDirectionNorth, kDirectionEast, kDirectionSouth, kDirectionWest}) {
+        if (HasKnownBarrier(view, direction)) return BuildKnownBarrierScene(program, view, &program, &scene, &why);
+    }
+    return true;
+}
+
+static void PrepareArrivalView(const HeadlessTurnConfig& config, const SessionState& state,
+                               const HeadlessTurnResult& result, const Scene& scene, const std::string& program)
+{
+    if (!config.arrival_scene_ready) return;
+    SessionState view = state;
+    view.current_place_id = result.updated_place_id;
+    Scene decorated = scene;
+    std::string effective_program = program;
+    std::string why;
+    if (ComposeSceneObjects(view, effective_program, decorated, why) &&
+        ComposeSceneBarriers(view, effective_program, decorated, why)) {
+        config.arrival_scene_ready(decorated, effective_program, view.current_place_id,
+                                   result.updated_hard_state.body_temperature_c);
+    }
+}
+
 static bool RunHeadlessTurnFromStateImpl(
     const SessionState& provided_session_state,
     const char* player_command,
@@ -4127,22 +4230,20 @@ static bool RunHeadlessTurnFromStateImpl(
     const bool object_action=inventory_request.command==InventoryCommand::Take||
         inventory_request.command==InventoryCommand::Drop||inventory_request.command==InventoryCommand::Unsupported;
     if(inventory_request.command!=InventoryCommand::None&&!object_action) {
-        result->turn_result.narration=InventoryReply(initial_session_state,inventory_request,&result->turn_result.intent);
+        if (inventory_request.command == InventoryCommand::List) {
+            NarrateInventory(initial_session_state,body_driven_config,result);
+        } else {
+            result->turn_result.narration=InventoryReply(initial_session_state,inventory_request,&result->turn_result.intent);
+            result->narrative_metrics_json=json({{"engine_only",true},{"purpose","inventory_v1"},
+                {"intent",result->turn_result.intent},{"item_id",inventory_request.item_id},
+                {"inventory",result->updated_hard_state.inventory_items},{"displayed",result->turn_result.narration}}).dump();
+        }
         if(semantic_commands)result->dialogue_only=true;
         if(!semantic_commands) {
             result->updated_soft_state.rolling_summary=result->turn_result.narration;
             ++result->updated_hard_state.turn_number;
         }
-        result->narrative_metrics_json=json({{"engine_only",true},{"purpose","inventory_v1"},
-            {"intent",result->turn_result.intent},{"item_id",inventory_request.item_id},
-            {"inventory",result->updated_hard_state.inventory_items},{"displayed",result->turn_result.narration}}).dump();
-        if(config.reuse_unchanged_view) {result->view_unchanged=true;return true;}
-        const auto* room=FindGeneratedRoomById(initial_session_state,result->initial_place_id);
-        std::string program;
-        if(room)program=room->scene_text;
-        else if(!BuildSceneTextFromSpatialState(result->initial_spatial_state,&program,error_buffer,error_buffer_size))return false;
-        CaptureSceneDebugArtifacts(result->initial_spatial_state,&program,&result->rendered_scene_text,&result->rendered_scene_debug_text);
-        return LoadSceneForPlace(initial_session_state,result->initial_place_id,&result->rendered_scene,error_buffer,error_buffer_size);
+        return ReusePlaceView(initial_session_state,config,result,error_buffer,error_buffer_size);
     }
 
     if(object_action)return RunObjectTurn(initial_session_state,player_command?player_command:"",body_driven_config,result,error_buffer,error_buffer_size);
@@ -4280,23 +4381,18 @@ static bool RunHeadlessTurnFromStateImpl(
             ++result->updated_hard_state.move_count;
             ++result->updated_hard_state.turn_number;
             const GeneratedRoom* linked_room = FindGeneratedRoomById(initial_session_state, linked_place_id);
+            CaptureSceneDebugArtifacts(result->updated_spatial_state, linked_room ? &linked_room->scene_text : nullptr,
+                                       &result->rendered_scene_text, &result->rendered_scene_debug_text);
+            if (!LoadSceneForPlace(initial_session_state, linked_place_id, &result->rendered_scene, error_buffer, error_buffer_size)) {
+                return false;
+            }
             if(config.local_scenes) {
-                std::string program;
-                if(linked_room)program=linked_room->scene_text;
-                else BuildSceneTextFromSpatialState(result->updated_spatial_state,&program,error_buffer,error_buffer_size);
+                PrepareArrivalView(config, initial_session_state, *result, result->rendered_scene, result->rendered_scene_text);
                 std::string title=result->updated_spatial_state.room_title,summary=result->updated_spatial_state.room_summary;
-                NarrateScene(initial_session_state,body_driven_config,SceneFacts(program),player_command?player_command:"",
+                NarrateScene(initial_session_state,body_driven_config,SceneFacts(result->rendered_scene_text),player_command?player_command:"",
                     "The engine moved to the previously visited place named in current_title. Its geometry and links are unchanged. Write a brief recognition/revisit, informed by history; no new discovery or item.",
                     false,result,&title,&summary,&result->turn_result.narration);
                 result->updated_soft_state.rolling_summary=result->turn_result.narration;
-            }
-            CaptureSceneDebugArtifacts(
-                result->updated_spatial_state,
-                linked_room ? &linked_room->scene_text : 0,
-                &result->rendered_scene_text,
-                &result->rendered_scene_debug_text);
-            if (!LoadSceneForPlace(initial_session_state, linked_place_id, &result->rendered_scene, error_buffer, error_buffer_size)) {
-                return false;
             }
             return true;
         }
@@ -4401,6 +4497,7 @@ static bool RunHeadlessTurnFromStateImpl(
                 const auto fallback_exits=BalanceExplorationExits(discovery_constraints.fixed,discovery_constraints.fixed,
                     discovery_constraints.possible,discovery_constraints.balance);
                 for(const auto& exit:fallback_exits)if(!exit.second)result->updated_spatial_state.blocked_exits.push_back(exit.first);
+                PrepareArrivalView(config, initial_session_state, *result, generated.scene, generated.scene_text);
                 NarrateScene(initial_session_state,body_driven_config,room.narrative_facts_json,player_command?player_command:"east",
                     "The engine has accepted this new place and the requested move. The fixed return exit leads to the previous place. Propose the other exits and thermal evolution. No item gained.",
                     true,result,&room.spatial_state.room_title,&room.spatial_state.room_summary,&generated.design.arrival,&discovery_constraints,&context.continuity,
@@ -5053,16 +5150,9 @@ bool RunHeadlessTurnFromState(
             result->audio_mix.catalog_version=config.ambience_catalog->version;
     }
     if(success&&result&&result->traversal_requested&&result->updated_place_id!=result->initial_place_id) {
-        std::map<std::string,bool> exits;
-        for(const auto* direction:{"north","east","south","west"})
-            exits[direction]=std::find(result->updated_spatial_state.blocked_exits.begin(),result->updated_spatial_state.blocked_exits.end(),direction)==result->updated_spatial_state.blocked_exits.end();
-        // Arrival text and HUD both describe known accessibility, not only the
-        // immutable architectural openings. Hidden obstructions remain hidden.
-        for(const auto& barrier:initial_session_state.invisible_barriers)
-            if(barrier.discovered&&barrier.place_id==result->updated_place_id)
-                exits[CardinalDirectionToString(barrier.direction)]=false;
-        result->turn_result.narration=ConstrainArrivalDirections(result->turn_result.narration,initial_session_state.language,
-            exits,OppositeCardinalDirection(result->traversal_direction),true);
+        result->turn_result.narration=ConstrainArrivalDirections(result->turn_result.narration,initial_session_state.language);
+        if (result->turn_result.narration.empty())
+            result->turn_result.narration = SceneLanguageFallback(initial_session_state.language);
         result->updated_soft_state.rolling_summary=result->turn_result.narration;
         auto metrics=json::parse(result->narrative_metrics_json,nullptr,false);
         if(!metrics.is_object())metrics=json::object();
@@ -5072,14 +5162,9 @@ bool RunHeadlessTurnFromState(
     if(success&&result&&(!result->objects_prepared||result->generated_room_created)&&!result->view_unchanged) {
         SessionState view=initial_session_state;view.current_place_id=result->updated_place_id;
         if(result->objects_prepared)view.objects=result->updated_objects;
-        const auto deposits=view.objects.deposits.find(view.current_place_id);
-        bool dynamic=deposits!=view.objects.deposits.end()&&!deposits->second.empty();
-        for(const auto& source:view.objects.sources)if(source.place_id==view.current_place_id&&!source.visual_id.empty())dynamic=true;
-        if(dynamic) {
-            std::string why;
-            success=BuildObjectScene(result->rendered_scene_text,view,&result->rendered_scene_text,&result->rendered_scene,&why);
-            if(!success)SetError(error_buffer,error_buffer_size,"Object rendering: %s",why.c_str());
-        }
+        std::string why;
+        success=ComposeSceneObjects(view,result->rendered_scene_text,result->rendered_scene,why);
+        if(!success)SetError(error_buffer,error_buffer_size,"Object rendering: %s",why.c_str());
     }
     if(success&&result) {
         // Validate the complete candidate including new rooms, objects and barrier
@@ -5096,11 +5181,8 @@ bool RunHeadlessTurnFromState(
             success=false;SetError(error_buffer,error_buffer_size,"Candidate invariants: %s",why.c_str());
         } else {
             result->updated_hard_state.unresolved_threats=candidate.hard_state.unresolved_threats;
-            bool known=false;
-            for(const auto d:{kDirectionNorth,kDirectionEast,kDirectionSouth,kDirectionWest})known=known||HasKnownBarrier(candidate,d);
-            if(known&&!result->view_unchanged) {
-                success=BuildKnownBarrierScene(result->rendered_scene_text,candidate,
-                    &result->rendered_scene_text,&result->rendered_scene,&why);
+            if(!result->view_unchanged) {
+                success=ComposeSceneBarriers(candidate,result->rendered_scene_text,result->rendered_scene,why);
                 if(!success)SetError(error_buffer,error_buffer_size,"Known obstruction rendering: %s",why.c_str());
             }
         }

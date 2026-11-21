@@ -69,6 +69,7 @@ struct Harness {
                 {"material_source",false},{"durable",false},{"reason","Requested action"},{"revision",p["revision"]},
                 {"investigation_id",clue},{"investigation_revision",p["investigation"]["revision"].get<int>()+(stale?1:0)}}).dump();return true;};
         cfg.narrative_completion=[this](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback,void*,LlmGenerationResult* r) {
+            if (c.purpose=="inventory_paraphrase_v1") return false;
             ++narration_calls;delivered=true;const auto p=json::parse(messages[1].content);
             const auto schema=json::parse(c.json_schema)["properties"]["exits"];
             auto exits=p["exit_proposal"]["fixed"];
@@ -168,10 +169,8 @@ void BarrierContactView() {
     INV(s.current_place_id==s.origin_place_id&&away.rendered_scene_text.find("known_obstruction_")==std::string::npos);
     const auto back=h.Turn(s,"north");
     INV(s.current_place_id==place&&HasKnownBarrier(s,direction)&&back.rendered_scene_text==contact.rendered_scene_text);
-    const auto routes=back.turn_result.narration.find("Open passages: ");
-    INV(routes!=std::string::npos);
-    const auto route_text=back.turn_result.narration.substr(routes,back.turn_result.narration.find('.',routes)-routes);
-    INV(route_text.find(opportunity.direction)==std::string::npos);
+    INV(back.turn_result.narration.find("Open passages: ")==std::string::npos);
+    INV(back.turn_result.narration.find("Way back: ")==std::string::npos);
     INV(s.generated_rooms.back().scene_text==base&&SerializeInvestigation(s.investigation)==evidence);
     SessionState restored;const auto saved=Snapshot(s);
     INV(ParseSessionStateFromJson(saved.c_str(),&restored,error,sizeof(error)));

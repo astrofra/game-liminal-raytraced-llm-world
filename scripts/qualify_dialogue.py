@@ -91,7 +91,8 @@ def inspect_journey(run, rows):
         def state(index):
             return read_json(run / "interactions" / f"{index:05d}" / "state-after.json")
 
-        assert rows[0]["intent"] == "read_inventory" and not rows[0]["calls"] and rows[0]["view_reused"]
+        assert rows[0]["intent"] == "read_inventory" and rows[0]["view_reused"]
+        assert [call["purpose"] for call in rows[0]["calls"]] == ["inventory_paraphrase_v1"]
         assert rows[1]["intent"] == "move_west_blocked" and not rows[1]["calls"] and rows[1]["view_reused"]
         assert rows[2]["intent"] == "object_drop" and not rows[2]["view_reused"]
         origin = state(3)["current_place_id"]
@@ -177,7 +178,9 @@ def inspect_shortcuts(run, rows):
     try:
         assert not any(call["purpose"].startswith("player_interpretation") for row in rows for call in row["calls"])
         assert not any(call["purpose"].startswith("scene_program") for row in rows[1:] for call in row["calls"])
-        assert all(row["view_reused"] and not row["calls"] for row in rows[4:])
+        assert all(row["view_reused"] and not row["calls"] for row in rows[4:6])
+        assert all(row["view_reused"] and [call["purpose"] for call in row["calls"]] == ["inventory_paraphrase_v1"]
+                   for row in rows[6:])
         states = [read_json(run / "interactions" / f"{i:05d}" / "state-after.json") for i in range(10)]
         place = [state["current_place_id"] for state in states]
         assert place[0] == place[2] == place[4] == place[-1]

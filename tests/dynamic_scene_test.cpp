@@ -444,8 +444,16 @@ static void LocalPilot() {
     // Observes the prose published while the narration string is still open.
     struct ArrivalProbe {
         std::string text, first;
+        std::string scene_program, place;
+        float temperature = 0.0f;
         bool finished = false, seen = false, cancel = false;
     } arrival;
+    cfg.arrival_scene_ready = [&](const Scene& scene, const std::string& scene_text, const std::string& place, float temperature) {
+        CHECK(!arrival.seen && arrival.place.empty() && !scene.triangles.empty());
+        arrival.scene_program = scene_text;
+        arrival.place = place;
+        arrival.temperature = temperature;
+    };
     bool literary_started = false, literary_fails = false, literary_truncated = false;
     const std::string literary_begin = R"({"fragments":"Pierre, pierre, trois pierres)";
     cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
@@ -476,6 +484,13 @@ static void LocalPilot() {
         r->response_text=R"({"title":"Les masses et le ciel","summary":"Le passage s'inscrit entre deux masses sombres.","narration":"Les blocs découpent une bande de ciel. Vous êtes au milieu des masses, votre regard suit la distance qui les sépare. La lumière s’attarde sur leurs arêtes, tandis que le sol prend devant vous la teinte sourde des masses environnantes."})";
         auto response=json::parse(r->response_text);
         const auto request=json::parse(messages[1].content);
+        if (cfg.arrival_scene_ready) {
+            CHECK(request.at("completed_movement").get<bool>() == !arrival.place.empty());
+            if (!arrival.place.empty() && arrival.temperature < 42.0f) {
+                const auto schema = nlohmann::ordered_json::parse(c.json_schema);
+                CHECK(schema["properties"].begin().key() == "narration");
+            }
+        }
         CHECK(request.at("carried_items").size()==3);
         CHECK(request.at("carried_items")[0].at("id")=="survey map slate");
         response["thermal"]={{"external_temperature_c",request.at("temperature_external_c")},
@@ -520,6 +535,7 @@ static void LocalPilot() {
     std::string before,after;CHECK(SerializeSessionStateToJsonString(state,&before));HeadlessTurnResult turn;
     CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));
     CHECK(calls==3&&turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());
+    CHECK(arrival.place.empty());
     UpdateSessionStateFromTurn("east",turn,&state);CHECK(SerializeSessionStateToJsonString(state,&after));CHECK(before==after);
     bad=false;truncated=true;calls=0;
     CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==3);
@@ -543,6 +559,7 @@ static void LocalPilot() {
     calls=0;arrival=ArrivalProbe();arrival.cancel=true;cfg.stream_user_data=&arrival;
     CHECK(!RunHeadlessTurnFromState(state,"east",cfg,&turn,error,sizeof(error)));
     CHECK(arrival.seen&&!turn.generated_room_created&&turn.generated_rooms_to_add.empty()&&turn.room_links_to_add.empty());
+    CHECK(!arrival.place.empty());
     UpdateSessionStateFromTurn("east",turn,&state);CHECK(SerializeSessionStateToJsonString(state,&after));CHECK(after==before);
     // A surviving preview is prose only, published before the JSON closes.
     calls=0;arrival=ArrivalProbe();
@@ -556,6 +573,7 @@ static void LocalPilot() {
           arrival.text.find("exits")==std::string::npos&&arrival.text.find("thermal")==std::string::npos&&
           arrival.text.find("Les masses et le ciel")==std::string::npos);
     CHECK(turn.generated_room_scene_source=="local_direct_v2");
+    CHECK(arrival.place == turn.updated_place_id && arrival.scene_program == turn.rendered_scene_text);
     CHECK(turn.generated_rooms_to_add[0].spatial_state.room_title=="Les masses et le ciel");
     {
         SessionState hot = state;
@@ -567,6 +585,7 @@ static void LocalPilot() {
         arrival = ArrivalProbe();
         CHECK(RunHeadlessTurnFromState(hot,"east",cfg,&hot_turn,error,sizeof(error)));
         CHECK(literary_started && arrival.seen && arrival.first.find("Pierre, pierre") != std::string::npos);
+        CHECK(arrival.temperature == 42.8f);
         CHECK(arrival.text.size() > arrival.first.size());
         CHECK(hot_turn.turn_result.narration.compare(0,arrival.text.size(),arrival.text) == 0);
         CHECK(arrival.text.find("Vous êtes au milieu") == std::string::npos);
@@ -595,8 +614,10 @@ static void LocalPilot() {
     CHECK(turn.rendered_scene_text==local&&!turn.generated_room_cache_refreshed);
     arrival=ArrivalProbe();
     CHECK(RunHeadlessTurnFromState(restored,"west",cfg,&turn,error,sizeof(error)));CHECK(arrival.seen&&!turn.generated_room_created);
+    CHECK(arrival.place == turn.updated_place_id && arrival.scene_program == turn.rendered_scene_text);
     UpdateSessionStateFromTurn("west",turn,&restored);
     cfg.stream_user_data=nullptr;cfg.stream_callback=nullptr;
+    cfg.arrival_scene_ready = {};
     CHECK(RunHeadlessTurnFromState(restored,"east",cfg,&turn,error,sizeof(error)));CHECK(calls==1&&turn.rendered_scene_text==local);
     UpdateSessionStateFromTurn("east",turn,&restored);
     CHECK(RunHeadlessTurnFromState(restored,"east",cfg,&turn,error,sizeof(error)));
@@ -689,6 +710,7 @@ static void LocalPilot() {
     };
     cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* r) {
+        if (c.purpose=="inventory_paraphrase_v1") return false;
         ++proposal_calls;narrative_temperatures.push_back(c.temperature);
         if(refuse_proposal)return false;
         const auto request=json::parse(messages[1].content);
@@ -1032,8 +1054,26 @@ static void InventoryTurns() {
     CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
     state.language=kGameLanguageFrench;cfg.local_scenes=true;cfg.investigation_opportunities=false;
     int narrative_calls=0,scene_calls=0;
-    cfg.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,
-        LlmStreamCallback,void*,LlmGenerationResult*) {++narrative_calls;return false;};
+    float expected_temperature = .1f;
+    cfg.narrative_completion=[&](const LlmGenerationConfig& model,const std::vector<LlmPromptMessage>& messages,
+        LlmStreamCallback,void*,LlmGenerationResult* result) {
+        ++narrative_calls;
+        CHECK(model.purpose=="inventory_paraphrase_v1" && model.use_json_grammar);
+        CHECK(fabsf(model.temperature-expected_temperature)<.001f);
+        const auto request=json::parse(messages.back().content);
+        CHECK(!request["inventory_text"].get<std::string>().empty());
+        if (request["names_in_order"].size()==1) {
+            result->response_text=R"({"reply":"Une dague."})";
+            result->success=result->reached_eog=true;
+            return true;
+        }
+        if (request["names_in_order"].size()!=3) return false;
+        const auto names=request["names_in_order"].get<std::vector<std::string>>();
+        result->response_text=json{{"reply",expected_temperature==10.0f? "Le poids se rappelle à vous." :
+                "Le poids contre vous : "+names[0]+", puis "+names[1]+" et "+names[2]+"."}}.dump();
+        result->success=result->reached_eog=true;
+        return true;
+    };
     cfg.dynamic_scene_config.completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,
         LlmStreamCallback,void*,LlmGenerationResult*) {++scene_calls;return false;};
     const auto possessions=state.hard_state.inventory_items;
@@ -1043,7 +1083,7 @@ static void InventoryTurns() {
         "regarder la craie","examiner les pinces","prendre la craie","utiliser les pinces",
         "examiner la craie et les pinces"}) {
         CHECK(RunHeadlessTurnFromState(state,command,cfg,&turn,error,sizeof(error)));
-        CHECK(json::parse(turn.narrative_metrics_json).at("engine_only")==true);
+        CHECK(json::parse(turn.narrative_metrics_json).at("engine_only") == (turn.turn_result.intent!="read_inventory"));
         CHECK(turn.updated_hard_state.inventory_items==possessions);
         CHECK(turn.updated_hard_state.body_temperature_c==37.f&&turn.updated_hard_state.external_temperature_c==464);
         CHECK(turn.updated_hard_state.move_count==0&&turn.updated_spatial_state.blocked_exits==blocked);
@@ -1052,18 +1092,32 @@ static void InventoryTurns() {
         CHECK(turn.rendered_scene_text==canonical&&!turn.turn_result.narration.empty());
         UpdateSessionStateFromTurn(command,turn,&state);
     }
-    CHECK(narrative_calls==0&&scene_calls==0&&state.history.size()==9);
+    CHECK(narrative_calls==3&&scene_calls==0&&state.history.size()==9);
     cfg.reuse_unchanged_view=true;
     CHECK(RunHeadlessTurnFromState(state,"inventaire",cfg,&turn,error,sizeof(error)));
     CHECK(turn.accepted&&turn.view_unchanged&&turn.rendered_scene.triangles.empty()&&turn.rendered_scene_text.empty());
-    CHECK(turn.updated_hard_state.inventory_items==possessions&&narrative_calls==0&&scene_calls==0);
+    CHECK(turn.updated_hard_state.inventory_items==possessions&&narrative_calls==4&&scene_calls==0);
+    CHECK(!turn.used_turn_fallback && turn.turn_result.narration.find("Le poids") == 0);
+    CHECK(turn.turn_result.narration.find("craie")!=std::string::npos);
+    auto hot=state;
+    hot.hard_state.body_temperature_c=42.8f;
+    hot.hard_state.thermal_debug.enabled=true;
+    hot.hard_state.thermal_debug.mode=SuitHeatingMode::Extreme;
+    hot.hard_state.thermal_debug.hallucination_temperature=10;
+    expected_temperature=10.0f;
+    CHECK(RunHeadlessTurnFromState(hot,"i",cfg,&turn,error,sizeof(error)));
+    CHECK(!turn.used_turn_fallback && turn.updated_hard_state.body_temperature_c==42.8f);
+    CHECK(turn.turn_result.narration.find("Le poids se rappelle à vous.")==0);
+    CHECK(turn.turn_result.narration.find("craie")!=std::string::npos);
+    expected_temperature=.1f;
     cfg.reuse_unchanged_view=false;
     CHECK(RunHeadlessTurnFromState(state,"prendre la craie",cfg,&turn,error,sizeof(error)));
     CHECK(turn.turn_result.intent=="inventory_already_carried");
     CHECK(turn.turn_result.narration.find("déjà")!=std::string::npos);
     state.hard_state.inventory_items={"legacy keepsake"};state.objects=ObjectState();
     CHECK(RunHeadlessTurnFromState(state,"inventaire",cfg,&turn,error,sizeof(error)));
-    CHECK(turn.turn_result.narration.find("legacy keepsake")!=std::string::npos);
+    CHECK(turn.used_turn_fallback && turn.turn_result.narration.find("legacy keepsake")!=std::string::npos);
+    CHECK(turn.turn_result.narration.find("dague")==std::string::npos);
     CHECK(RunHeadlessTurnFromState(state,"examiner la craie",cfg,&turn,error,sizeof(error)));
     CHECK(turn.turn_result.intent=="object_refused");
     CHECK(RunHeadlessTurnFromState(state,"utiliser les pinces",cfg,&turn,error,sizeof(error)));
@@ -1073,7 +1127,7 @@ static void InventoryTurns() {
     CHECK(restored.hard_state.inventory_items==state.hard_state.inventory_items);
     state.hard_state.inventory_items.clear();state.objects=ObjectState();cfg.local_scenes=false;
     CHECK(RunHeadlessTurnFromState(state,"i",cfg,&turn,error,sizeof(error)));
-    CHECK(turn.turn_result.intent=="read_inventory"&&narrative_calls==0&&scene_calls==0);
+    CHECK(turn.turn_result.intent=="read_inventory"&&turn.used_turn_fallback&&narrative_calls==7&&scene_calls==0);
     CHECK(turn.turn_result.narration.find("craie")==std::string::npos);
     cfg.local_scenes=true;cfg.investigation_opportunities=false;
     // Prose cannot invent an acquisition, even on the general narrative path.
@@ -1099,6 +1153,10 @@ static void InventoryTurns() {
 
     cfg.stream_callback=nullptr;
     cfg.reuse_unchanged_view=true;
+    cfg.narrative_completion=[](const auto& model,const auto&,auto,void*,auto*) {
+        CHECK(model.purpose=="inventory_paraphrase_v1");
+        return false;
+    };
     cfg.interaction_completion=[](const auto&,const auto&,auto,void*,auto*) -> bool {
         throw std::runtime_error("An exact inventory shortcut invoked the model");
     };

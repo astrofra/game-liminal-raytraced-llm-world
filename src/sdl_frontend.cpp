@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
+#include <future>
 #include <math.h>
 #include <mutex>
 #include <stdio.h>
@@ -49,6 +51,9 @@ struct WorkerSharedState {
     std::string error_text;
     std::string narration_preview;
     bool arrival_preview = false;
+    std::shared_ptr<const std::vector<unsigned char>> arrival_pixels;
+    std::condition_variable arrival_frame_changed;
+    bool waiting_for_arrival_frame = false;
     bool terminal_stream_open;
     std::string terminal_stream_phase_label;
     SessionState session_state;
@@ -1275,7 +1280,7 @@ static void DrawThermalHud(
     DrawThermalIndicator(renderer, fonts, body_rect, body_buffer);
 }
 
-static void UploadSceneTexture(
+static bool UploadSceneTexture(
     const std::vector<unsigned char>& rgb_pixels,
     int width,
     int height,
@@ -1283,7 +1288,7 @@ static void UploadSceneTexture(
     SDL_Texture* texture)
 {
     if (!rgba_pixels || !texture || width <= 0 || height <= 0) {
-        return;
+        return false;
     }
 
     rgba_pixels->resize(static_cast<size_t>(width * height * 4));
@@ -1297,7 +1302,7 @@ static void UploadSceneTexture(
         (*rgba_pixels)[dst + 3] = 255u;
     }
 
-    SDL_UpdateTexture(texture, 0, &(*rgba_pixels)[0], width * 4);
+    return SDL_UpdateTexture(texture, 0, &(*rgba_pixels)[0], width * 4);
 }
 
 static void CloseTerminalStreamLocked(WorkerSharedState* shared_state)
@@ -1473,9 +1478,16 @@ static bool OnHeadlessTurnStream(
         return false;
     }
 
-    std::lock_guard<std::mutex> lock(shared_state->mutex);
+    std::unique_lock<std::mutex> lock(shared_state->mutex);
     shared_state->activity = kWorkerActivityLlm;
     shared_state->status_text = StreamPhaseStatus(phase,shared_state->language);
+    if (phase == kHeadlessTurnStreamArrivalPreview && accumulated_text && *accumulated_text) {
+        // Pause on the first visible chunk so even a fast model keeps streaming
+        // after the first image. An Escape or window close also releases it.
+        while (shared_state->waiting_for_arrival_frame && !shared_state->stop_requested.load())
+            shared_state->arrival_frame_changed.wait_for(lock, std::chrono::milliseconds(25));
+        if (shared_state->stop_requested.load()) return false;
+    }
     if (phase == kHeadlessTurnStreamDialoguePreview || phase == kHeadlessTurnStreamArrivalPreview) {
         shared_state->narration_preview = accumulated_text ? accumulated_text : "";
         shared_state->arrival_preview = phase == kHeadlessTurnStreamArrivalPreview;
@@ -1501,6 +1513,7 @@ static void FinalizeWorkerFailure(WorkerSharedState* shared_state, const char* m
     CloseTerminalStreamLocked(shared_state);
     shared_state->busy = false;
     shared_state->narration_preview.clear();
+    shared_state->arrival_pixels.reset();
     shared_state->result_ready = false;
     shared_state->error_ready = true;
     shared_state->activity = kWorkerActivityFailed;
@@ -1565,8 +1578,57 @@ static void RunTurnWorker(
     char error_buffer[512];
     memset(error_buffer, 0, sizeof(error_buffer));
 
+    struct RenderStops {
+        const std::atomic<bool>& cancelled;
+        std::atomic<bool> abandoned{false};
+    } stops{shared_state->stop_requested};
+    auto render_first_image = [&](const Scene& scene, const RenderConfig& render_config,
+                                  std::vector<unsigned char>& pixels, double& duration_ms) {
+        const auto start = std::chrono::steady_clock::now();
+        RenderControl control{[](void* data) {
+            const auto& stops = *static_cast<RenderStops*>(data);
+            return !stops.cancelled.load() && !stops.abandoned.load();
+        }, &stops};
+        const bool ok = RenderSceneToPixels(scene, render_config, &pixels, &control) &&
+            ApplyPeripheralViewPostProcess(&pixels, render_config.width, render_config.height,
+                PostProcessConfigForAnimationImage(config.post_process_config, target_generation_id, 0), 0);
+        duration_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+        return ok;
+    };
+    struct ArrivalImage {
+        std::string program;
+        RenderConfig config;
+        double duration_ms = 0.0;
+        std::shared_ptr<const std::vector<unsigned char>> pixels;
+    };
+    std::future<ArrivalImage> pending_arrival;
+    turn_config.arrival_scene_ready = [&](const Scene& scene, const std::string& program,
+                                          const std::string& place, float temperature) {
+        const auto optics = RenderConfigForVisor(config.render_config, temperature, place);
+        {
+            std::lock_guard<std::mutex> lock(shared_state->mutex);
+            shared_state->waiting_for_arrival_frame = true;
+        }
+        pending_arrival = std::async(std::launch::async, [&, scene, program, optics] {
+            ArrivalImage image{program, optics};
+            auto pixels = std::make_shared<std::vector<unsigned char>>();
+            const bool ok = render_first_image(scene, optics, *pixels, image.duration_ms);
+            std::lock_guard<std::mutex> lock(shared_state->mutex);
+            if (ok && !stops.cancelled.load() && !stops.abandoned.load()) {
+                image.pixels = pixels;
+                shared_state->arrival_pixels = std::move(pixels);
+            } else {
+                shared_state->waiting_for_arrival_frame = false;
+                shared_state->arrival_frame_changed.notify_all();
+            }
+            return image;
+        });
+    };
+
     HeadlessTurnResult turn_result;
     auto fail_turn = [&](const char* message) {
+        stops.abandoned.store(true);
+        if (pending_arrival.valid()) pending_arrival.wait();
         {
             std::lock_guard<std::mutex> lock(shared_state->mutex);
             shared_state->turn_result = turn_result;
@@ -1608,32 +1670,26 @@ static void RunTurnWorker(
 
     std::vector<unsigned char> pixels;
     double render_duration_ms = 0.0;
+    const ArrivalImage arrival = pending_arrival.valid() ? pending_arrival.get() : ArrivalImage{};
     if (!turn_result.view_unchanged) {
-        {
-            std::lock_guard<std::mutex> lock(shared_state->mutex);
-            CloseTerminalStreamLocked(shared_state);
-            shared_state->activity = kWorkerActivityRenderer;
-            shared_state->status_text = UiText(shared_state->language,"Calculating the view...","Calcul de la vue...",
-                "Beregner utsikten...","Beregner udsigten...","Ansicht wird berechnet...","Calcolo della vista...");
+        if (arrival.pixels && arrival.program == turn_result.rendered_scene_text &&
+            arrival.config.visor_drop_strength == render_config.visor_drop_strength &&
+            arrival.config.visor_drop_seed == render_config.visor_drop_seed) {
+            pixels = *arrival.pixels;
+            render_duration_ms = arrival.duration_ms;
+        } else {
+            {
+                std::lock_guard<std::mutex> lock(shared_state->mutex);
+                CloseTerminalStreamLocked(shared_state);
+                shared_state->activity = kWorkerActivityRenderer;
+                shared_state->status_text = UiText(shared_state->language,"Calculating the view...","Calcul de la vue...",
+                    "Beregner utsikten...","Beregner udsigten...","Ansicht wird berechnet...","Calcolo della vista...");
+            }
+            if (!render_first_image(turn_result.rendered_scene, render_config, pixels, render_duration_ms)) {
+                fail_turn("Rendering failed.");
+                return;
+            }
         }
-
-        const std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();
-        RenderControl control{[](void* state) { return !static_cast<WorkerSharedState*>(state)->stop_requested.load(); },shared_state};
-        if (!RenderSceneToPixels(turn_result.rendered_scene, render_config, &pixels,&control)) {
-            fail_turn("Rendering failed.");
-            return;
-        }
-        if (!ApplyPeripheralViewPostProcess(
-                &pixels,
-                config.render_config.width,
-                config.render_config.height,
-                PostProcessConfigForAnimationImage(config.post_process_config, target_generation_id, 0),
-                0)) {
-            fail_turn("View post-processing failed.");
-            return;
-        }
-        render_duration_ms = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - render_start).count();
     }
 
     if (shared_state->stop_requested.load()) {
@@ -2303,6 +2359,10 @@ bool RunSdlFrontend(
         scene_texture);
     uint64_t uploaded_generation_id = active_animated_view.generation_id;
     int uploaded_image_index = 0;
+    bool arrival_view_uploaded = false;
+    bool arrival_frame_attempted = false;
+    bool arrival_frame_presented = false;
+    bool arrival_prose_presented = false;
 
     const SDL_FRect title_rect = {40.0f, 4.0f, 920.0f, 22.0f};
     const SDL_FRect scene_frame = {40.0f, 28.0f, 920.0f, 460.0f};
@@ -2538,6 +2598,9 @@ bool RunSdlFrontend(
                 }
 
                 pending_command = command;
+                arrival_frame_attempted = false;
+                arrival_frame_presented = false;
+                arrival_prose_presented = false;
                 command_submitted_at=SDL_GetTicks();
                 archive_ok = archive.Command(command,&current_session_state) && archive_ok;
                 persistent_hint.clear();
@@ -2557,6 +2620,8 @@ bool RunSdlFrontend(
                     worker_shared_state.error_text.clear();
                     worker_shared_state.narration_preview.clear();
                     worker_shared_state.arrival_preview = false;
+                    worker_shared_state.arrival_pixels.reset();
+                    worker_shared_state.waiting_for_arrival_frame = false;
                 }
                 worker_shared_state.stop_requested.store(false);
                 SdlFrontendConfig request_config=config;
@@ -2626,6 +2691,7 @@ bool RunSdlFrontend(
         std::string failure_text;
         std::string narration_preview;
         bool arrival_preview = false;
+        std::shared_ptr<const std::vector<unsigned char>> arrival_pixels;
         bool turn_result_ready = false;
         SessionState completed_session_state;
         HeadlessTurnResult completed_turn_result;
@@ -2638,7 +2704,8 @@ bool RunSdlFrontend(
             worker_activity = worker_shared_state.activity;
             worker_status = worker_shared_state.status_text.empty() ? "idle" : worker_shared_state.status_text;
             const bool cancelled = worker_shared_state.stop_requested.load();
-            if (worker_busy && !cancelled) {
+            if (!cancelled) arrival_pixels = worker_shared_state.arrival_pixels;
+            if (worker_busy && !cancelled && (arrival_frame_presented || !worker_shared_state.arrival_preview)) {
                 narration_preview = worker_shared_state.narration_preview;
                 arrival_preview = worker_shared_state.arrival_preview;
             }
@@ -2648,7 +2715,9 @@ bool RunSdlFrontend(
                 worker_shared_state.error_ready=true;
                 worker_shared_state.error_text=TurnCancelledText(worker_shared_state.language);
             }
-            if (worker_shared_state.result_ready) {
+            if (worker_shared_state.result_ready && (!arrival_pixels || arrival_frame_attempted)) {
+                arrival_pixels.reset();
+                worker_shared_state.arrival_pixels.reset();
                 std::swap(completed_session_state, worker_shared_state.session_state);
                 std::swap(completed_turn_result, worker_shared_state.turn_result);
                 completed_first_image.swap(worker_shared_state.pixels);
@@ -2656,6 +2725,7 @@ bool RunSdlFrontend(
                 worker_shared_state.result_ready = false;
                 turn_result_ready = true;
             } else if (worker_shared_state.error_ready) {
+                arrival_pixels.reset();
                 failure_text = worker_shared_state.error_text;
                 completed_turn_result = worker_shared_state.turn_result;
                 worker_shared_state.error_ready = false;
@@ -2724,6 +2794,7 @@ bool RunSdlFrontend(
                     scene_texture);
                 uploaded_generation_id = active_animated_view.generation_id;
                 uploaded_image_index = 0;
+                arrival_view_uploaded = false;
                 turn_completed = true;
                 archive_ok = archive.Turn(current_session_state,last_turn_result,
                     active_animated_view.images[0].pixels) && archive_ok;
@@ -2874,7 +2945,15 @@ bool RunSdlFrontend(
             &active_animated_view,
             playback_elapsed_seconds,
             config.animated_view_config.playback_images_per_second);
-        if (active_animated_view.displayed_image_index >= 0 &&
+        if (arrival_pixels && !arrival_frame_attempted) {
+            arrival_view_uploaded = UploadSceneTexture(*arrival_pixels, config.render_config.width,
+                config.render_config.height, &texture_rgba_pixels, scene_texture);
+        } else if (!arrival_pixels && arrival_view_uploaded) {
+            // The provisional texture never replaces the committed animation.
+            arrival_view_uploaded = false;
+            uploaded_generation_id = 0;
+        }
+        if (!arrival_view_uploaded && active_animated_view.displayed_image_index >= 0 &&
             active_animated_view.displayed_image_index < active_animated_view.available_image_count &&
             (uploaded_generation_id != active_animated_view.generation_id ||
                 uploaded_image_index != active_animated_view.displayed_image_index)) {
@@ -2950,7 +3029,7 @@ bool RunSdlFrontend(
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderRect(renderer, &scene_frame);
         DrawThermalHud(renderer, ui_fonts, current_session_state, scene_rect);
-        DrawExitCompass(renderer, ui_fonts, current_session_state, scene_rect);
+        if (!arrival_view_uploaded) DrawExitCompass(renderer, ui_fonts, current_session_state, scene_rect);
         DrawConsoleText(renderer, ui_fonts, console_rect, transcript_lines, console_line_capacity,static_cast<size_t>(console_scroll));
 
         const SDL_Color player_text_color = {0, 0, 0, 255};
@@ -3011,6 +3090,26 @@ bool RunSdlFrontend(
         if (screen && !rgb) capture_error=SDL_GetError();
         if (screen) SDL_DestroySurface(screen);
         const bool presented=SDL_RenderPresent(renderer);
+        if (arrival_pixels && !arrival_frame_attempted) {
+            arrival_frame_attempted = true;
+            arrival_frame_presented = presented && arrival_view_uploaded;
+            if (arrival_frame_presented && config.animated_view_config.debug_logging) {
+                fprintf(stdout,"[arrival-view] image presented after %llu ms\n",
+                    static_cast<unsigned long long>(SDL_GetTicks()-command_submitted_at));
+                fflush(stdout);
+            }
+            std::lock_guard<std::mutex> lock(worker_shared_state.mutex);
+            worker_shared_state.waiting_for_arrival_frame = false;
+            worker_shared_state.arrival_frame_changed.notify_all();
+        }
+        if (presented && arrival_preview && !narration_preview.empty() && !arrival_prose_presented) {
+            arrival_prose_presented = true;
+            if (config.animated_view_config.debug_logging) {
+                fprintf(stdout,"[arrival-view] prose presented after %llu ms\n",
+                    static_cast<unsigned long long>(SDL_GetTicks()-command_submitted_at));
+                fflush(stdout);
+            }
+        }
         if (capture) {
             if (!presented) capture_error=SDL_GetError();
             const std::string displayed=turn_completed?last_turn_result.turn_result.narration:

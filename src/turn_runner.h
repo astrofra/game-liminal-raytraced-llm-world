@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <functional>
 #include <string>
 #include <memory>
 
@@ -43,6 +44,8 @@ struct HeadlessTurnConfig {
     DynamicSceneConfig dynamic_scene_config;
     SceneCompletion narrative_completion; // Optional deterministic seam for fiction tests.
     SceneCompletion interaction_completion; // Structured free-command interpretation, independently testable.
+    // Stable geometry for an uncommitted arrival, before its narrative call.
+    std::function<void(const Scene&, const std::string&, const std::string&, float)> arrival_scene_ready;
     bool request_candidate_scene;
     bool prefer_candidate_scene;
     HeadlessTurnStreamCallback stream_callback;

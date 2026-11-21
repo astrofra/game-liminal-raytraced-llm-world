@@ -20,9 +20,11 @@ void RunAudioTurnTests() {
     for(auto& track:catalog->tracks)track.description="Measured low frequency energy, stable envelope.";
     config.ambience_catalog=catalog;config.audio_current_known=true;config.audio_current_gains={.05f,.1f,.15f,.2f};
     int calls=0;json mix={{"blade",.8},{"bug",.7},{"night",.6},{"static",.5}};
+    int inventories=0;
     bool omit=false,fallback=false,cancel=false,delivered=false;
     config.narrative_completion=[&](const LlmGenerationConfig& cfg,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* result) {
+        if (cfg.purpose=="inventory_paraphrase_v1") {++inventories;return false;}
         ++calls;delivered=true;
         const auto schema=json::parse(cfg.json_schema);
         RequireAudio(schema["properties"].contains("audio_mix"),"audio not in grammar");
@@ -65,7 +67,7 @@ void RunAudioTurnTests() {
     const int previous_calls=calls;
     RequireAudio(RunHeadlessTurnFromState(state,"i",config,&turn,error,sizeof(error)),error);
     UpdateSessionStateFromTurn("i",turn,&state);
-    RequireAudio(calls==previous_calls&&state.audio_targets==accepted,"inventory changed audio or called model");
+    RequireAudio(inventories==1&&calls==previous_calls&&state.audio_targets==accepted,"inventory changed the audio mix");
     std::string saved;RequireAudio(SerializeSessionStateToJsonString(state,&saved),"audio snapshot serialization");
     SessionState restored;RequireAudio(ParseSessionStateFromJson(saved.c_str(),&restored,error,sizeof(error)),error);
     RequireAudio(restored.audio_targets==accepted&&restored.audio_catalog_version==catalog->version,"audio snapshot lost");

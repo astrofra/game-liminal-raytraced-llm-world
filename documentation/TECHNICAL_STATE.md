@@ -36,12 +36,15 @@ réelles des limites de qualification restantes.
   conservent la capture finale du HUD, les états avant et après et les traces
   par appel LLM.
 
-- À l'arrivée ou au retour dans un lieu, SDL affiche la prose progressive
-  sous « Arrivée en cours ». Le moteur valide d'abord la géométrie d'une nouvelle
-  pièce. La description finale, la vue calculée et la boussole de destination
-  sont publiées ensemble. Lorsqu'un fragment halluciné est demandé, la
-  description structurée sert de préparation interne et l'aperçu commence
-  avec le fragment. Échap retire l'aperçu et annule le déplacement.
+- À l'arrivée ou au retour dans un lieu, le raytracer calcule la première image
+  pendant que le modèle prépare la description. Pour une nouvelle pièce, les
+  deux attendent la validation de la géométrie. SDL présente d'abord la vue
+  provisoire, puis la prose progressive sous « Arrivée en cours ». La boussole
+  de destination apparaît avec la validation du déplacement, qui publie aussi
+  la description et la vue finales.
+  Lorsqu'un fragment halluciné est demandé, la description structurée sert de
+  préparation interne et l'aperçu commence avec le fragment. Échap retire
+  l'aperçu et revient au lieu de départ.
 
 - [Enquête à indices](ENQUETE_INDICES.md) : état versionné et révisé, quatre
   possibilités dont la [répartition est choisie par le LLM](REPARTITION_INDICES_LLM.md)
@@ -97,9 +100,10 @@ réelles des limites de qualification restantes.
   et archives séparées. Aucun appel LLM supplémentaire ; bruit optique encore visible.
 - Narration, propositions d'issues et chaleur par le modèle, puis validation autoritative.
 - Température corporelle couplée à la température d'échantillonnage des prochains appels.
-- Inventaire : trois outils initiaux ; les raccourcis exacts `i` / `inventaire` / `inventory`
-  répondent sans inférence ni évolution thermique. SDL réutilise la vue et l'animation,
-  sans nouveau rendu ; les archives référencent la dernière preuve visuelle.
+- Les raccourcis `i`, `inventaire` et `inventory` ouvrent directement l'inventaire.
+  Gemma reformule le texte à la température narrative active. Le moteur vérifie
+  les noms des objets portés et peut joindre la liste exacte à une phrase générée.
+  La consultation conserve la température corporelle, la vue et l'animation.
 - Le LLM interprète toutes les formulations libres du parcours local en un appel
   structuré : déplacement, observation, inventaire, prise/dépôt, carnet et instruments.
   Le C++ distribue les intentions, vérifie les identités, la provenance et les préconditions,
@@ -123,7 +127,7 @@ instantané du lieu quitté, de son décor accepté et des événements publiés
 la composition locale et ses corrections. Pour une nouvelle arrivée, la narration
 conserve la géométrie de départ et les événements validés, mais retire leurs anciens
 paragraphes descriptifs du prompt. Son contexte d'objets est celui de la destination.
-Les indications cardinales d'arrivée et de retour proviennent des sorties validées.
+La boussole indique les sorties validées pendant l'exploration.
 Le catalogue cyclique de
 cinq briefs est retiré du runtime ; `portal` reste un identifiant de visibilité,
 sans imposer une porte. Aucun appel de planification ou de résumé n'est ajouté.
@@ -183,7 +187,7 @@ un bref appel dédié à la prose est échantillonné à 5 ou à 10, après vali
 de la proposition structurée. Il part d'un fait visible et joue avec des
 inventaires, des répétitions, des comptes contradictoires et des phrases
 disloquées. Si la génération échoue, la description structurée reste disponible.
-Le moteur fournit les objets au sol et les sorties validées. L'écriture sous
+Le moteur fournit les objets au sol et affiche les sorties sur la boussole. L'écriture sous
 contrainte s'inspire des procédés oulipiens. [Georges Perec et l'Oulipo](https://oulipo.net/fr/Oulipiens/GP)
 
 Au-dessus de 39 °C corporels, huit déformations gaussiennes modifient les rayons

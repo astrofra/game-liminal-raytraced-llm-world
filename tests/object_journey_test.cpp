@@ -51,6 +51,7 @@ struct Harness {
             auto p=FixturePlayerAction(context,proposal);r->response_text=FixtureWireAction(p,context).dump();return true;
         };
         cfg.narrative_completion=[this](const LlmGenerationConfig& config,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback,void*,LlmGenerationResult* r) {
+            if (config.purpose=="inventory_paraphrase_v1") return false;
             ++narrations;const auto request=json::parse(messages[1].content);
             REQUIRE(config.temperature==ComputeLlmSamplingTemperature(request["temperature_body_c"].get<float>()));
             if(mode=="cancel")cancel=true;

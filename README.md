@@ -12,14 +12,15 @@ Lancer `play_within_the_latent_walls.bat` dans le dépôt, ou
 `WithinTheLatentWalls.exe` dans le dossier portable. Le jeu s'ouvre en plein
 écran sans bordure. L'interface reste centrée au format 5:4, sur fond noir.
 Choisir une des six langues, puis jouer directement. Au seuil, **nord, est et
-sud** ouvrent l'exploration ; suivre ensuite
-les issues de la boussole. `inventaire` / `inventory` / `i` consulte les possessions. `déposer la craie`,
+sud** ouvrent l'exploration. La boussole indique les issues accessibles.
+`inventaire` / `inventory` / `i` consulte les possessions. `déposer la craie`,
 `reprendre la craie` et `regarder tout autour` permettent de laisser et retrouver
 un objet. Une petite cible décrite à l'arrivée ou révélée par une observation peut être ramassée après validation
 par le moteur ; les objets et leurs retraits persistent pendant la partie.
-Les formulations libres sont interprétées par le LLM ; le moteur vérifie puis exécute
-la proposition. Les raccourcis exacts d'inventaire et de boussole restent directs.
-Consulter l'inventaire conserve la vue et l'animation déjà calculées.
+Le LLM interprète les formulations libres et le moteur vérifie puis exécute
+la proposition. Les raccourcis exacts ouvrent directement l'inventaire. Gemma
+reformule le texte à la température narrative active, à partir des possessions
+fournies par le moteur. La consultation conserve la vue et l'animation.
 
 Parler au maître du jeu conserve aussi la vue. Posez une question sur votre
 situation, demandez un conseil ou reprenez le fil avec « Et pourquoi ? ». Le
