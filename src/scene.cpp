@@ -2876,4 +2876,19 @@ bool LoadSceneFromSceneText(
     return FinalizeSceneLoad(scene_name, scene, error_buffer, error_buffer_size);
 }
 
+void RebuildSceneGeometry(Scene* scene)
+{
+    for (auto& triangle : scene->triangles) {
+        const Vec3 cross = Cross(triangle.v1 - triangle.v0, triangle.v2 - triangle.v0);
+        triangle.normal = Normalize(cross);
+        triangle.area = Length(cross) * 0.5f;
+        triangle.centroid = (triangle.v0 + triangle.v1 + triangle.v2) / 3.0f;
+        triangle.bounds = Aabb();
+        triangle.bounds.Expand(triangle.v0);
+        triangle.bounds.Expand(triangle.v1);
+        triangle.bounds.Expand(triangle.v2);
+    }
+    FinalizeSceneGeometry(scene);
+}
+
 }  // namespace liminal

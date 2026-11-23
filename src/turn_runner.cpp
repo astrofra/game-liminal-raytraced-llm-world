@@ -608,8 +608,6 @@ enum class SceneProseHeat { Normal, Unsteady, Delirious };
 
 static SceneProseHeat SceneProseHeatLevel(const HardState& state)
 {
-    if (!state.thermal_debug.enabled || state.thermal_debug.mode != SuitHeatingMode::Extreme)
-        return SceneProseHeat::Normal;
     if (state.body_temperature_c >= 42.0f) return SceneProseHeat::Delirious;
     if (state.body_temperature_c >= 39.5f) return SceneProseHeat::Unsteady;
     return SceneProseHeat::Normal;
@@ -2899,6 +2897,15 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
                           const PlaceProposalConstraints* discovery_constraints=nullptr,
                           const ContinuityContextV1* discovery_continuity=nullptr,
                           const InvestigationCreation* distribution=nullptr) {
+    const bool completed_move = arrival || result->updated_place_id != result->initial_place_id;
+    const bool traversal_heating = completed_move && !state.hard_state.thermal_debug.enabled;
+    HardState thermal_state = state.hard_state;
+    if(traversal_heating) {
+        thermal_state.body_temperature_c = TraversalBodyTemperature(state.hard_state);
+        // This is still a candidate. Cancellation/rejection never publishes it;
+        // an accepted move keeps its exertion even if prose needs a fallback.
+        result->updated_hard_state.body_temperature_c = thermal_state.body_temperature_c;
+    }
     result->engine_outcome=outcome;
     auto continuity=discovery_continuity?*discovery_continuity:
         BuildContinuityContext(state,command,result->traversal_direction,outcome);
@@ -2969,11 +2976,10 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     }
     // A completed traversal is an observation request at the destination, not
     // another attempt to execute the same direction against its exit map.
-    const bool completed_move = arrival || result->updated_place_id != result->initial_place_id;
     const bool revisit=completed_move&&!arrival;
     const bool transfer=!result->authorized_object_action.empty();
     const bool brief=revisit||transfer;
-    const auto prose_heat = transfer ? SceneProseHeat::Normal : SceneProseHeatLevel(state.hard_state);
+    const auto prose_heat = transfer ? SceneProseHeat::Normal : SceneProseHeatLevel(thermal_state);
     const bool engine_lists_deposits = prose_heat != SceneProseHeat::Normal;
     const char* prose_style = prose_heat == SceneProseHeat::Delirious ?
         "Start the narration with one short, plain fact about a visible detail. Use simple sensory clauses and keep the title and summary matter-of-fact. " :
@@ -3005,7 +3011,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         {"completed_movement",completed_move||arrival},{"engine_outcome",outcome},
         {"continuity",json::parse(SerializeContinuityContext(continuity))},
         {"carried_items",carried},{"inventory_rule","This is the complete authoritative inventory. Known initial tools were carried from the start, not found here. Only the exact transfer in engine_outcome is permitted, and is already represented in these candidate possessions. No extra tool is consumed, acquired, lost, deposited or used by narration. Unknown legacy IDs confer no inferred ability. Mention possessions only when relevant; do not repeat an inventory menu."},
-        {"temperature_external_c",state.hard_state.external_temperature_c},{"temperature_body_c",state.hard_state.body_temperature_c},
+        {"temperature_external_c",state.hard_state.external_temperature_c},{"temperature_body_c",thermal_state.body_temperature_c},
         {"exit_proposal",{{"may_improvise",propose_exits},{"fixed",constraints.fixed},
             {"geometrically_possible",constraints.possible},{"view_to_compass",constraints.relative_directions},
             {"exploration_required",constraints.exploration_required},
@@ -3017,12 +3023,19 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             revisit?"Acknowledge the return in one or two short sentences. Bring back one distinctive detail or a relevant deposit. Leave the room description and route list to their existing displays.":
             transfer?"Lead with what happened to the authorized object. Use one or two short sentences. Mention its resulting location when useful. Keep attention on the action and leave the surrounding architecture in the background.":
             "Respond to the actual intent and details of the command in 20-60 words, longer only if needed. Keep title and summary unchanged only if already in the selected language; otherwise translate them without changing their meaning. Recall relevant prior encounters, avoid repeating a menu."}}).dump();
+    if(traversal_heating) {
+        auto request=json::parse(prompt);
+        request["thermal_rule"]="The engine has already applied this traversal's exertion (+0.5 C, capped at 43 C). Echo temperature_body_c EXACTLY; do not add or cancel the heating. Propose external_temperature_c in [300,520], change at most 20. Describe sensations consistent with the supplied body temperature; inference time is not physical exposure.";
+        prompt=request.dump();
+    }
     if(distribution) {
         auto request=json::parse(prompt);
         request["investigation_authoring"]=json::parse(InvestigationAuthoringContext(state,distribution->sites));
         prompt=request.dump();
     }
     LlmGenerationConfig cfg=config.generation_config;cfg.purpose=card?"scene_fiction_card_v2":"scene_fiction_turn_v2";
+    if(traversal_heating)cfg.temperature += ComputeLlmSamplingTemperature(thermal_state.body_temperature_c) -
+        ComputeLlmSamplingTemperature(state.hard_state.body_temperature_c);
     cfg.temperature = SceneProseSamplingTemperature(cfg.temperature, prose_heat);
     result->effective_llm_temperature = cfg.temperature;
     cfg.seed=(cfg.seed+65537u*static_cast<unsigned int>(state.hard_state.turn_number))&0x7fffffffu;
@@ -3033,7 +3046,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     auto schema=json::parse(cfg.json_schema);
     if (prose_heat == SceneProseHeat::Delirious) {
         // Give the sampler useful legal proposals even at the physical ceiling.
-        const int body_tenths = static_cast<int>(std::lround(state.hard_state.body_temperature_c * 10.0f));
+        const int body_tenths = static_cast<int>(std::lround(thermal_state.body_temperature_c * 10.0f));
         auto options = json::array();
         for (const int offset : {-2, 0, 2}) {
             const int candidate = body_tenths + offset;
@@ -3089,8 +3102,9 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     auto& thermal_schema=schema["properties"]["thermal"]["properties"];
     thermal_schema["external_temperature_c"]["minimum"]=std::max(300,state.hard_state.external_temperature_c-20);
     thermal_schema["external_temperature_c"]["maximum"]=std::min(520,state.hard_state.external_temperature_c+20);
-    thermal_schema["body_temperature_c"]["minimum"]=std::max(34.f,state.hard_state.body_temperature_c-.4f);
-    thermal_schema["body_temperature_c"]["maximum"]=std::min(43.f,state.hard_state.body_temperature_c+.4f);
+    thermal_schema["body_temperature_c"]["minimum"]=std::max(34.f,thermal_state.body_temperature_c-.4f);
+    thermal_schema["body_temperature_c"]["maximum"]=std::min(43.f,thermal_state.body_temperature_c+.4f);
+    if(traversal_heating)thermal_schema["body_temperature_c"]={{"enum",{thermal_state.body_temperature_c}}};
     if(distribution) {
         schema["properties"]["investigation_placement"]=json::parse(InvestigationPlacementSchema(state,distribution->sites));
         schema["required"].push_back("investigation_placement");
@@ -3254,7 +3268,9 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             proposal_text=narrative.dump();
         }
         if(!ParsePlaceProposal(proposal_text,state.hard_state.external_temperature_c,
-            state.hard_state.body_temperature_c,constraints.fixed,constraints.possible,&proposal,&reason)) {}
+            thermal_state.body_temperature_c,constraints.fixed,constraints.possible,&proposal,&reason)) {}
+        else if(traversal_heating && std::fabs(proposal.body_temperature_c-thermal_state.body_temperature_c)>.0001f)
+            reason="traversal_temperature_mismatch";
         else {
             proposal_accepted=true;
             proposed_exits=proposal.exits;
@@ -3266,7 +3282,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             }
             result->updated_hard_state.external_temperature_c=proposal.external_temperature_c;
             result->updated_hard_state.body_temperature_c=thermal_exposure
-                ? ApplySuitThermalExposure(state.hard_state, proposal.body_temperature_c)
+                ? ApplySuitThermalExposure(thermal_state, proposal.body_temperature_c)
                 : proposal.body_temperature_c;
             if(propose_exits) {
                 result->updated_spatial_state.blocked_exits.clear();
@@ -3444,6 +3460,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
         {"thermal_prose",prose_heat==SceneProseHeat::Delirious?"delirious":prose_heat==SceneProseHeat::Unsteady?"unsteady":"normal"},
         {"hallucination",hallucination},
         {"body_before_c",state.hard_state.body_temperature_c},{"body_after_c",result->updated_hard_state.body_temperature_c},
+        {"traversal_heating",traversal_heating},{"body_for_narration_c",thermal_state.body_temperature_c},
         {"body_proposed_c",proposal_accepted?json(proposal.body_temperature_c):json(nullptr)},
         {"external_after_c",result->updated_hard_state.external_temperature_c},{"thermal_reason",proposal_accepted?proposal.thermal_reason:""},
         {"accepted_exits",proposal_accepted?json(proposal.exits):json(nullptr)},
@@ -3480,7 +3497,11 @@ static std::string SceneActionOutcome(const SessionState& state,const std::strin
     result->turn_result.intent="perceive_accepted_scene";
     if(action=="perceive")
         return "Perception/reflection only at the current fixed viewpoint. Address the requested detail using accepted geometry and memory. "
-            "If an alleged object/gap is absent or unverifiable, say so naturally. No manipulation or displacement. Evaluate thermal exposure during perception or waiting; no other resource change.";
+            "A simple exploratory touch of nearby scenery may be narrated as a sensory gesture through the protective glove, without moving or altering anything. "
+            "Narrate only the sensory gesture requested NOW: looking does not repeat an earlier touch. The glove separates skin from the surface; do not assert a hot or cold surface unless its temperature is established. "
+            "Answer the specific gesture or sensory focus rather than repeating the whole room description. "
+            "If an alleged object/gap is absent or unverifiable, say so naturally. Do not invent tactile measurements, injury, a hidden mechanism or an investigation discovery. "
+            "No object manipulation or displacement. Evaluate thermal exposure during perception or waiting; no other resource change.";
     result->turn_result.intent="unavailable_scene_action";
     return "The requested physical action is NOT performed. No movement, inventory, geometry or topology change. Thermal exposure may continue. "
         "Respond to its intended purpose specifically and sensitively using the place. Questions may be answered from facts; do not invent a mechanical reason or a new hazard for refusal.";
@@ -4097,7 +4118,7 @@ static void PrepareArrivalView(const HeadlessTurnConfig& config, const SessionSt
     if (ComposeSceneObjects(view, effective_program, decorated, why) &&
         ComposeSceneBarriers(view, effective_program, decorated, why)) {
         config.arrival_scene_ready(decorated, effective_program, view.current_place_id,
-                                   result.updated_hard_state.body_temperature_c);
+                                   TraversalBodyTemperature(state.hard_state));
     }
 }
 

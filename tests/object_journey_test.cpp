@@ -53,7 +53,10 @@ struct Harness {
         cfg.narrative_completion=[this](const LlmGenerationConfig& config,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback,void*,LlmGenerationResult* r) {
             if (config.purpose=="inventory_paraphrase_v1") return false;
             ++narrations;const auto request=json::parse(messages[1].content);
-            REQUIRE(config.temperature==ComputeLlmSamplingTemperature(request["temperature_body_c"].get<float>()));
+            const float body=request["temperature_body_c"].get<float>();
+            const bool perception=request["resolved_object_action"].is_null();
+            const float sampling=ComputeLlmSamplingTemperature(body);
+            REQUIRE(std::abs(config.temperature-(perception&&body>=39.5f?std::max(.72f,sampling):sampling))<.0001f);
             if(mode=="cancel")cancel=true;
             if(mode=="failure")return false;
             json ids=json::array();std::string prose="La lumière glisse sur les masses silencieuses. Votre souffle accompagne cette pause derrière la visière.";
@@ -66,7 +69,7 @@ struct Harness {
             if(mode=="observe")prose=observed_prose;
             if(mode=="resurrect")prose="Un petit caillou repose ici, toujours disponible à vos pieds.";
             json response={{"title","Le seuil clair"},{"summary","Les masses claires bordent ce passage ouvert."},{"narration",prose},
-                {"thermal",{{"external_temperature_c",464},{"body_temperature_c",request["temperature_body_c"].get<float>()+.1f},{"reason","Une brève exposition."}}},
+                {"thermal",{{"external_temperature_c",464},{"body_temperature_c",body+(json::parse(config.json_schema)["properties"]["thermal"]["properties"]["body_temperature_c"].contains("enum")?0.f:.1f)},{"reason","Une brève exposition."}}},
                 {"exits",request["exit_proposal"]["fixed"]}};
             if(json::parse(config.json_schema)["properties"].contains("deposited_ids"))response["deposited_ids"]=ids;
             r->success=true;r->reached_eog=true;r->response_text=response.dump();return true;

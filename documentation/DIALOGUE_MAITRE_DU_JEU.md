@@ -16,6 +16,23 @@ comportement d'ambiance. Le premier contact avec une paroi reste une découverte
 visible. Les tentatives suivantes peuvent réutiliser la vue. Les raccourcis
 exacts d'inventaire et de boussole restent disponibles.
 
+Depuis le correctif du 23 novembre 2026, un geste sensoriel simple, comme poser
+la main gantée sur une dalle ou en effleurer la surface, relève aussi de
+l'observation. Le modèle choisit toujours cette intention ; aucun vocabulaire
+français n'est interprété par le C++. Le narrateur répond au geste demandé à
+partir du décor accepté, sans déplacement, transfert d'objet ou découverte
+d'enquête. L'exposition thermique et la mémoire des observations conservent
+leur comportement habituel.
+
+Une proposition `perceive` peut contenir une source littéraire, un libellé ou
+un identifiant éligible superflu. Le moteur écarte ces métadonnées sans jeter
+l'intention sensorielle. Cette correction ne s'applique pas aux transferts,
+aux références invalides, aux ambiguïtés entre plusieurs candidats ni aux
+propositions d'extraction ou de découverte. L'examen explicite d'un indice
+enregistré conserve sa validation dédiée. La proposition brute et le marqueur
+`perception_metadata_discarded` restent dans les métriques ; les exceptions
+de validation exposent aussi `validation_error` pour le diagnostic.
+
 ## Mémoire et autorité
 
 Chaque réponse de conversation utilise un champ `reply`. Le contrat ne

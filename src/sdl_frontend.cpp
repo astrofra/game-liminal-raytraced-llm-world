@@ -259,8 +259,6 @@ static const char* StreamPhaseStatus(HeadlessTurnStreamPhase phase, GameLanguage
             return UiText(language,"Checking the passages...","Vérification des passages...","Sjekker passasjene...","Kontrollerer passagerne...","Durchgänge werden geprüft...","Verifica dei passaggi...");
         case kHeadlessTurnStreamScenePreview:
             return UiText(language,"Preparing the view...","Préparation de la vue...","Forbereder utsikten...","Forbereder udsigten...","Ansicht wird vorbereitet...","Preparazione della vista...");
-        case kHeadlessTurnStreamArrivalPreview:
-            return UiText(language,"Arriving...","Arrivée en cours…","Ankommer...","Ankommer...","Ankunft...","Arrivo in corso...");
         default:
             return UiText(language,"Thinking...","Réflexion...","Tenker...","Tænker...","Überlegt...","Riflessione...");
     }
@@ -1148,7 +1146,8 @@ static void DrawExitCompass(
     SDL_Renderer* renderer,
     const UiFonts& fonts,
     const SessionState& session_state,
-    const SDL_FRect& scene_rect)
+    const SDL_FRect& scene_rect,
+    bool awaiting_exits = false)
 {
     if (!renderer) {
         return;
@@ -1174,29 +1173,29 @@ static void DrawExitCompass(
         fonts.regular,
         north_rect,
         LocalizedDirectionShortcut(kDirectionNorth,session_state.language),
-        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionNorth)&&!HasKnownBarrier(session_state,kDirectionNorth),
-        HasKnownBarrier(session_state,kDirectionNorth));
+        !awaiting_exits&&!SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionNorth)&&!HasKnownBarrier(session_state,kDirectionNorth),
+        !awaiting_exits&&HasKnownBarrier(session_state,kDirectionNorth));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         east_rect,
         LocalizedDirectionShortcut(kDirectionEast,session_state.language),
-        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionEast)&&!HasKnownBarrier(session_state,kDirectionEast),
-        HasKnownBarrier(session_state,kDirectionEast));
+        !awaiting_exits&&!SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionEast)&&!HasKnownBarrier(session_state,kDirectionEast),
+        !awaiting_exits&&HasKnownBarrier(session_state,kDirectionEast));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         south_rect,
         LocalizedDirectionShortcut(kDirectionSouth,session_state.language),
-        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionSouth)&&!HasKnownBarrier(session_state,kDirectionSouth),
-        HasKnownBarrier(session_state,kDirectionSouth));
+        !awaiting_exits&&!SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionSouth)&&!HasKnownBarrier(session_state,kDirectionSouth),
+        !awaiting_exits&&HasKnownBarrier(session_state,kDirectionSouth));
     DrawCompassDirectionCell(
         renderer,
         fonts.regular,
         west_rect,
         LocalizedDirectionShortcut(kDirectionWest,session_state.language),
-        !SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest)&&!HasKnownBarrier(session_state,kDirectionWest),
-        HasKnownBarrier(session_state,kDirectionWest));
+        !awaiting_exits&&!SpatialStateBlocksDirectionForUi(session_state.spatial_state, kDirectionWest)&&!HasKnownBarrier(session_state,kDirectionWest),
+        !awaiting_exits&&HasKnownBarrier(session_state,kDirectionWest));
 }
 
 static void DrawThermalIndicator(
@@ -1944,7 +1943,6 @@ static void BuildTranscriptLines(
     const SessionState& session_state,
     const std::string& pending_command,
     const std::string& narration_preview,
-    bool arrival_preview,
     const std::string& ui_message,
     const UiFonts& fonts,
     int max_width,
@@ -1988,10 +1986,6 @@ static void BuildTranscriptLines(
 
         if (!narration_preview.empty()) {
             const size_t preview_start = lines->size();
-            if (arrival_preview) {
-                AppendWrappedText(StreamPhaseStatus(kHeadlessTurnStreamArrivalPreview, session_state.language),
-                                  fonts, max_width, lines);
-            }
             AppendWrappedText(narration_preview, fonts, max_width, lines);
             for (size_t index = preview_start; index < lines->size(); ++index) {
                 (*lines)[index].narration_preview = true;
@@ -2987,13 +2981,11 @@ bool RunSdlFrontend(
             worker_busy,
             SDL_GetTicks());
 
-        const std::string display_message = !ui_message.empty() ? ui_message :
-            (worker_busy && narration_preview.empty() && config.turn_config.dynamic_scenes ? worker_status : persistent_hint);
+        const std::string display_message = !ui_message.empty() ? ui_message : persistent_hint;
         BuildTranscriptLines(
             current_session_state,
             pending_command,
             narration_preview,
-            arrival_preview,
             display_message,
             ui_fonts,
             console_wrap_width,
@@ -3029,7 +3021,7 @@ bool RunSdlFrontend(
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderRect(renderer, &scene_frame);
         DrawThermalHud(renderer, ui_fonts, current_session_state, scene_rect);
-        if (!arrival_view_uploaded) DrawExitCompass(renderer, ui_fonts, current_session_state, scene_rect);
+        DrawExitCompass(renderer, ui_fonts, current_session_state, scene_rect, arrival_view_uploaded);
         DrawConsoleText(renderer, ui_fonts, console_rect, transcript_lines, console_line_capacity,static_cast<size_t>(console_scroll));
 
         const SDL_Color player_text_color = {0, 0, 0, 255};

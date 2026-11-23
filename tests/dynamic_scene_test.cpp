@@ -711,6 +711,11 @@ static void LocalPilot() {
     cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* r) {
         if (c.purpose=="inventory_paraphrase_v1") return false;
+        if (c.purpose=="scene_hallucination_v1") {
+            r->success=r->reached_eog=true;
+            r->response_text=R"({"fragments":"Pierre, deux pierres, encore la pierre. Le souffle revient et recompte les arêtes."})";
+            return true;
+        }
         ++proposal_calls;narrative_temperatures.push_back(c.temperature);
         if(refuse_proposal)return false;
         const auto request=json::parse(messages[1].content);
@@ -724,7 +729,8 @@ static void LocalPilot() {
             {"summary","Vous retrouvez la ligne des masses sous le ciel."},
             {"narration","Vous distinguez des masses sombres sous le ciel. Leurs arêtes prolongent la perspective, sans livrer de mesure certaine. Devant cette étendue, votre regard suit patiemment les intervalles et revient aux distances. "+std::to_string(proposal_calls)},
             {"exits",proposed},{"thermal",{{"external_temperature_c",request.at("temperature_external_c")},
-            {"body_temperature_c",request.at("temperature_body_c").get<float>()+(excessive_heat?2.f:.2f)},
+            {"body_temperature_c",request.at("temperature_body_c").get<float>()+(excessive_heat?2.f:
+                json::parse(c.json_schema)["properties"]["thermal"]["properties"]["body_temperature_c"].contains("enum")?0.f:.2f)},
             {"reason","Exposition modérée pendant cette action."}}}}).dump();
         cancel_now=cancel_after_proposal;return true;
     };
@@ -734,17 +740,17 @@ static void LocalPilot() {
         UpdateSessionStateFromTurn(command,turn,&state);
     };
     act("east");
-    CHECK(fabsf(state.hard_state.body_temperature_c-37.2f)<.001f);
+    CHECK(fabsf(state.hard_state.body_temperature_c-37.5f)<.001f);
     CHECK(std::find(state.spatial_state.blocked_exits.begin(),state.spatial_state.blocked_exits.end(),"north")==state.spatial_state.blocked_exits.end());
     CHECK(state.spatial_state.blocked_exits.size()==4-DrawExplorationExitTarget(cfg.generation_config.seed,1));
-    CHECK(fabsf(narrative_temperatures.back()-.1f)<.001f&&fabsf(scene_temperatures.back()-.1f)<.001f);
+    CHECK(fabsf(narrative_temperatures.back()-.18f)<.001f&&fabsf(scene_temperatures.back()-.1f)<.001f);
     const auto first_scene=state.generated_rooms[0].scene_text;
-    act("attendre");CHECK(fabsf(state.hard_state.body_temperature_c-37.4f)<.001f);
-    CHECK(fabsf(narrative_temperatures.back()-.132f)<.001f);
+    act("attendre");CHECK(fabsf(state.hard_state.body_temperature_c-37.7f)<.001f);
+    CHECK(fabsf(narrative_temperatures.back()-.18f)<.001f);
     CHECK(scene_temperatures.size()==1);
     next_exit="east";act("north");CHECK(turn.generated_room_created);
     CHECK(json::parse(state.generated_rooms.back().scene_design_json).at("return_direction")=="south");
-    CHECK(fabsf(scene_temperatures.back()-.164f)<.001f);
+    CHECK(fabsf(scene_temperatures.back()-.212f)<.001f);
     act("south");CHECK(turn.rendered_scene_text==first_scene&&scene_temperatures.size()==2);
     act("north");CHECK(scene_temperatures.size()==2&&proposal_calls==5);
     next_exit="south";act("east");next_exit="west";act("south");next_exit="north";act("west");
@@ -822,6 +828,11 @@ static void ExplorationContinuity() {
         };
         cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
             LlmStreamCallback,void*,LlmGenerationResult* r) {
+            if(c.purpose=="scene_hallucination_v1") {
+                r->success=r->reached_eog=true;
+                r->response_text=R"({"fragments":"Stone, still stone. The pale edges return, repeat, retreat; breath counts the intervals again."})";
+                return true;
+            }
             ++narrations;request=json::parse(messages[1].content);schema=json::parse(c.json_schema);
             if(fail)return false;
             json exits={{"north",false},{"east",false},{"south",false},{"west",false}};
@@ -865,7 +876,7 @@ static void ExplorationContinuity() {
         CHECK(reserved.size()==expected-1);
         CHECK(state.spatial_state.blocked_exits.size()==3-reserved.size());
         CHECK(third.metadata_fallback_used==(fail||violate));
-        CHECK(state.hard_state.body_temperature_c==body&&compositions==3);
+        CHECK(state.hard_state.body_temperature_c==ClampBodyTemperatureC(body+.5f)&&compositions==3);
         CHECK(policy.at("allow_dead_end")==false);
         for(const auto& option:schema["properties"]["exits"]["anyOf"]) {
             int count=0;for(const auto* direction:{"north","east","south","west"})
@@ -1759,12 +1770,14 @@ static void ThermalDebugCommands() {
 }
 
 int main() {
+    extern void RunDefaultTraversalHeatTests();
+    extern void RunObjectPerceptionTests();
     extern void RunInvestigationContractTests();
     extern void RunInvestigationJourneyTests();
     extern void RunKnownBarrierTests();
     extern void RunInvestigationDistributionTests();
     RunAudioTurnTests();
-    try {DialogueJourney();}
+    try {RunDefaultTraversalHeatTests();RunObjectPerceptionTests();DialogueJourney();}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
     try {RunKnownBarrierTests();RunInvestigationDistributionTests();RunInvestigationContractTests();RunInvestigationJourneyTests();RunObjectSemanticTests();RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();ThermalDebugCommands();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass, thermal debug commands and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}

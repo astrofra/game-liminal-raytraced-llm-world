@@ -1054,7 +1054,9 @@ static Ray GenerateCameraRay(
     Rng* rng)
 {
     const float aspect = static_cast<float>(config.width) / static_cast<float>(config.height);
-    const float fov_scale = tanf((camera.vertical_fov_degrees * kPi / 180.0f) * 0.5f);
+    const float fov_scale = config.orthographic_height > 0.0f
+        ? config.orthographic_height * 0.5f
+        : tanf((camera.vertical_fov_degrees * kPi / 180.0f) * 0.5f);
     const float jitter_x = rng->NextFloat();
     const float jitter_y = rng->NextFloat();
 
@@ -1064,6 +1066,11 @@ static Ray GenerateCameraRay(
         (1.0f - (((static_cast<float>(pixel_y) + jitter_y) / static_cast<float>(config.height)) + offset_v) * 2.0f) * fov_scale;
 
     Ray ray;
+    if (config.orthographic_height > 0.0f) {
+        ray.origin = camera.eye + basis.right * sensor_x + basis.up * sensor_y;
+        ray.direction = basis.forward;
+        return ray;
+    }
     ray.origin = camera.eye;
     ray.direction = Normalize(basis.forward + basis.right * sensor_x + basis.up * sensor_y);
     return ray;

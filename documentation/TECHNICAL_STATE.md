@@ -1,4 +1,4 @@
-# État technique — 20 novembre 2026
+# État technique — 23 novembre 2026
 
 ## Runtime actuel
 
@@ -35,13 +35,21 @@ réelles des limites de qualification restantes.
   cet aperçu. Échap retire l'aperçu et annule l'interaction. Les archives SDL
   conservent la capture finale du HUD, les états avant et après et les traces
   par appel LLM.
+  Les gestes sensoriels simples sur le décor suivent l'observation : le moteur
+  peut écarter les métadonnées de transfert superflues d'un `perceive` valide,
+  sans modifier les validations de prise, dépôt ou déplacement. Le narrateur
+  répond au geste courant à travers la protection du scaphandre ; l'observation
+  conserve son exposition thermique et sa mémoire habituelles. Voir le
+  [correctif et sa recette](duo/reviews/DUO-067.md).
 
 - À l'arrivée ou au retour dans un lieu, le raytracer calcule la première image
   pendant que le modèle prépare la description. Pour une nouvelle pièce, les
   deux attendent la validation de la géométrie. SDL présente d'abord la vue
-  provisoire, puis la prose progressive sous « Arrivée en cours ». La boussole
-  de destination apparaît avec la validation du déplacement, qui publie aussi
-  la description et la vue finales.
+  provisoire, puis la prose progressive directement après la commande, sans
+  en-tête de chargement ni message de calcul dans le récit. La boussole
+  reste visible, avec les quatre voies fermées et sans les repères de paroi du
+  lieu précédent. Les sorties de destination s'affichent avec la validation du
+  déplacement, qui publie aussi la description et la vue finales.
   Lorsqu'un fragment halluciné est demandé, la description structurée sert de
   préparation interne et l'aperçu commence avec le fragment. Échap retire
   l'aperçu et revient au lieu de départ.
@@ -158,10 +166,17 @@ ils ne remplacent pas le parcours local normal.
 
 Le HUD affiche le corps et l'extérieur. Avec le profil Gemma par défaut,
 37 °C corporels donnent une température d'échantillonnage de 0,10 et chaque
-degré supplémentaire ajoute 0,16 jusqu'au plateau de 0,90 à 42 °C. Le réglage
-utilise la température corporelle au début du tour. Le modèle propose ensuite
-une variation bornée à environ 0,4 °C dans le parcours narratif local. En jeu
-normal, une proposition stable laisse le corps stable.
+degré supplémentaire ajoute 0,16 jusqu'au plateau de 0,90 à 42 °C.
+Sans diagnostic activé, un déplacement local réussi ajoute exactement 0,5 °C,
+revisites comprises, avec un plafond de 43 °C. Dix déplacements depuis 37 °C
+atteignent donc 42 °C. Le moteur prépare cette valeur avant l'aperçu visuel et
+la narration ; le schéma impose au modèle de la recopier. L'échantillonnage
+narratif utilise cette nouvelle valeur, avec un plancher de 0,72 dès 39,5 °C.
+L'interprétation et la composition géométrique utilisent encore le début du tour.
+Un secours narratif ne retire pas la chauffe d'un déplacement accepté ; une
+annulation ne publie ni le déplacement ni sa chauffe. Un déplacement bloqué,
+une conversation et un inventaire ne reçoivent pas ce supplément. Les autres
+expositions narratives conservent leur variation proposée bornée à 0,4 °C.
 
 | Commande à saisir dans le jeu | Effet |
 |---|---|
@@ -172,8 +187,11 @@ normal, une proposition stable laisse le corps stable.
 | `/chaleur reset` | Ramène le corps à 37 °C avec les réglages courants. |
 | `/chaleur llm 5` ou `/chaleur llm 10` | Choisit la température du fragment halluciné. La valeur par défaut est 5. |
 
-Les réglages commencent à normal et 0 % d'isolation additionnelle à chaque
-nouvelle partie. Les commandes directes utilisent zéro appel LLM et laissent le
+Le diagnostic est désactivé au démarrage ; ses réglages commencent à normal et
+0 % d'isolation additionnelle. L'activation explicite d'un réglage thermique
+remplace la chauffe automatique par déplacement par les règles du diagnostic.
+La simple consultation `/chaleur` ne l'active pas.
+Les commandes directes utilisent zéro appel LLM et laissent le
 temps de simulation en place. Elles recalculent la vue si la visière franchit
 un palier optique. Deux `pas` en mode extrême à 0 % passent de 37 à
 42,8 °C. Le corps reste borné à 34–43 °C. Dans ce diagnostic, l'interprétation
@@ -182,7 +200,7 @@ des commandes et la génération du script local utilisent le réglage de réfé
 Les archives contiennent les températures avant et après et la température
 d'échantillonnage de chaque appel.
 
-En mode extrême, la prose de scène se dérègle dès 39,5 °C. À partir de 42 °C,
+La prose de scène se dérègle dès 39,5 °C, y compris en jeu normal. À partir de 42 °C,
 un bref appel dédié à la prose est échantillonné à 5 ou à 10, après validation
 de la proposition structurée. Il part d'un fait visible et joue avec des
 inventaires, des répétitions, des comptes contradictoires et des phrases

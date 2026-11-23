@@ -390,6 +390,9 @@ float ClampBodyTemperatureC(float value);
 float ComputeLlmSamplingTemperature(float body_temperature_c);
 const char* SuitHeatingModeName(SuitHeatingMode mode);
 float ApplySuitThermalExposure(const HardState& state, float proposed_body_temperature_c);
+// Candidate temperature for one successful traversal; explicit thermal diagnostics
+// retain their existing model-driven exposure policy. No state is mutated here.
+float TraversalBodyTemperature(const HardState& state);
 
 bool ParseLocationId(const char* text, LocationId* value);
 bool ParseCardinalDirection(const char* text, CardinalDirection* value);

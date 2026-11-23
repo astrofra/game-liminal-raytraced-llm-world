@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20)
+project(liminal_archive_render LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+get_filename_component(LIMINAL_ROOT "../.." ABSOLUTE)
+enable_testing()
+include("${LIMINAL_ROOT}/tools/archive_render/targets.cmake")

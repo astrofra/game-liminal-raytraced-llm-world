@@ -727,6 +727,11 @@ float ApplySuitThermalExposure(const HardState& state, float proposed_body_tempe
         heat_fraction * (std::max(0.0f, delta) + bonus));
 }
 
+float TraversalBodyTemperature(const HardState& state)
+{
+    return ClampBodyTemperatureC(state.body_temperature_c + (state.thermal_debug.enabled ? 0.0f : 0.5f));
+}
+
 const char* LocationIdToString(LocationId value)
 {
     switch (value) {

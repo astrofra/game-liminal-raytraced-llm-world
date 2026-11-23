@@ -12,7 +12,9 @@ Lancer `play_within_the_latent_walls.bat` dans le dépôt, ou
 `WithinTheLatentWalls.exe` dans le dossier portable. Le jeu s'ouvre en plein
 écran sans bordure. L'interface reste centrée au format 5:4, sur fond noir.
 Choisir une des six langues, puis jouer directement. Au seuil, **nord, est et
-sud** ouvrent l'exploration. La boussole indique les issues accessibles.
+sud** ouvrent l'exploration. La boussole indique les issues accessibles. Pendant
+l'arrivée provisoire, elle reste visible avec les quatre voies fermées jusqu'à
+la validation des sorties.
 `inventaire` / `inventory` / `i` consulte les possessions. `déposer la craie`,
 `reprendre la craie` et `regarder tout autour` permettent de laisser et retrouver
 un objet. Une petite cible décrite à l'arrivée ou révélée par une observation peut être ramassée après validation
@@ -27,7 +29,14 @@ situation, demandez un conseil ou reprenez le fil avec « Et pourquoi ? ». Le
 modèle s'appuie sur les faits de la partie et les échanges récents, et la
 conversation laisse les températures et les objets en place.
 
-Pour essayer le couplage entre le scaphandre et Gemma, saisir `/chaleur`.
+La zone de récit privilégie une fiction écrite : la prose apparaît directement,
+sans en-tête « Arrivée en cours » ni étapes de calcul intercalées dans le texte.
+
+Par défaut, chaque déplacement réussi ajoute 0,5 °C corporels, revisites comprises.
+En dix déplacements depuis 37 °C, le corps atteint 42 °C : la visière se déforme
+progressivement au-dessus de 39 °C et la prose se fragmente à 42 °C.
+Une voie bloquée ou une annulation n'ajoute pas cette chauffe.
+Pour inspecter le couplage entre le scaphandre et Gemma, saisir `/chaleur`.
 Les [commandes thermiques de débogage](documentation/TECHNICAL_STATE.md#diagnostic-thermique)
 permettent d'accélérer la chauffe, de régler l'isolation et de simuler une exposition.
 

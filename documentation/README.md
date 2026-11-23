@@ -7,7 +7,10 @@ Les archives de recherche ne servent jamais à reprendre une partie.
 ## Jouer, construire et distribuer
 
 - [État technique actuel](TECHNICAL_STATE.md)
+- [Du texte du joueur au modèle, au raytracer et au son — diagrammes de flux](FLUX_TEXTE_MODELE_RENDU.md)
+- [Transcription chronologique de la partie du 21 novembre 2026 : commandes, prompts et réponses](TRANSCRIPTION_CHRONOLOGIQUE_2026-11-21.md)
 - [Partie, génération et archives](SINGLE_START_RESEARCH.md)
+- [Atlas des lieux explorés : outil C++ et rendu PNG](rendus-scenes/README.md)
 - [Continuité des scènes : implémentation et recette](CONTINUITE_SCENES.md)
 - [Note : influence possible du scénario sur la qualité des scènes](NOTE_SCENARIO_ET_QUALITE_SCENES.md)
 - [Correction des faces coplanaires avant le verre](CORRECTION_COPLANAIRE.md)
