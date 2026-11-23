@@ -1,6 +1,7 @@
 # Roadmap: optional Ollama Cloud inference
 
-Date: 20 November 2026. Status: **proposed, not implemented**.
+Date: 20 November 2026; implementation update: 23 November 2026.
+Status: **experimental Windows implementation; see delivery status below**.
 
 ## 1. Goal and scope
 
@@ -50,6 +51,11 @@ provider availability or evaluate hosting that artifact if this becomes essentia
 It is not a prerequisite for the explicitly labeled 31B comparison proposed here.
 
 ## 3. Startup experience
+
+The user's implementation request supersedes the menu proposal below:
+selection is exclusively through `--llm-backend local|ollama-cloud`, with
+local as the default, plus a dedicated cloud batch launcher. No selector UI
+is added after language selection. The original proposal was:
 
 After language selection, offer two choices in the selected language:
 
@@ -289,6 +295,38 @@ and unresolved limitations, not claims of universal model parity.
 
 ## 9. Current delivery status
 
-This change delivers documentation only. No cloud backend, startup selector,
-credential storage, installer change or live API test has been implemented.
-The current local runtime remains the reference implementation.
+The Windows runtime now dispatches all inference and prompt budgeting through
+the selected backend. The user requested command-line selection instead of
+the proposed menu: `--llm-backend local|ollama-cloud`, default local, and
+`play_within_the_latent_walls_cloud.bat`. `--cloud-model` now defaults to
+`deepseek-v4.1-flash`; the initial `gemma4:31b` pilot remains selectable explicitly.
+The key is read from `OLLAMA_API_KEY`; there is no credential file or installer change.
+
+WinHTTP uses asynchronous HTTPS with cancellation, certificate verification,
+no redirects, bounded buffers and deadlines. Hosted structured output remains
+unsupported per the provider documentation checked again on 23 November.
+The adapter sends the schema in the prompt, validates final JSON, and permits
+one repair within the same deadline. Existing semantic checks remain authoritative.
+Structured previews are withheld until schema validation; ordinary text streams.
+Cloud errors discard the pending turn instead of switching backend or committing
+a transport-failure fallback. The previous world can be retried.
+Optional thermal prose rewrites may retain their validated preparatory text on
+invalid/truncated content, without vetoing a valid movement or object transfer.
+Their wire sampling temperature is capped at 1; thermal instructions remain.
+Schema repair includes the rejected candidate and caps temperature at 0.2.
+Whole Markdown JSON fences are normalized before strict validation. Network,
+cancellation, deadline, context and shared-turn budget failures still roll back.
+See [DUO-076](duo/reviews/DUO-076.md) for the late-game diagnosis and model comparison.
+
+The conservative input estimate counts UTF-8 bytes plus message overhead and
+the injected schema. The default cloud context accounting cap is 32,768 with
+an output reserve; this is not an exact provider token count. Local accounting
+remains unchanged. Each call permits at most two output budgets (one repair);
+the whole turn is limited to 180 seconds, 24 attempts and 32,768 output tokens.
+No automatic transport retry is performed. Archives identify each attempt,
+requested/reported model, exact payload, usage availability and validation errors;
+the hosted template, revision and effective sampling settings remain unavailable.
+
+See [the user guide](OLLAMA_CLOUD.md) and [the implementation review](duo/reviews/DUO-074.md)
+for observed qualification and remaining limits. This delivery does not claim
+identical generated worlds or complete CLOUD-05 statistical/quality qualification.

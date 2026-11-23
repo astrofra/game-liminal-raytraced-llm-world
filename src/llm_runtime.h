@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <memory>
+#include <chrono>
 
 namespace liminal {
 
@@ -13,7 +15,21 @@ struct LlmPromptMessage {
     std::string content;
 };
 
+// Shared by all calls and repairs in one cloud interaction; never persisted as world state.
+struct LlmCloudBudget {
+    std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() + std::chrono::seconds(180);
+    int remaining_calls = 24;
+    int remaining_output_tokens = 32768;
+    bool failed = false;
+};
+
 struct LlmGenerationConfig {
+    std::string backend = "local";
+    std::string cloud_model = "deepseek-v4.1-flash";
+    std::shared_ptr<LlmCloudBudget> cloud_budget;
+    // Cosmetic rewrite only: invalid cloud content may keep the validated prose.
+    // Transport, cancellation, deadlines and shared budgets remain fatal.
+    bool cloud_optional_prose = false;
     int continuity_memory_tokens = 1024;
     // Deterministic tokenizer seam for tests. Production uses the resident model/template.
     std::function<bool(const std::vector<LlmPromptMessage>&, int*, std::string*)> prompt_token_counter;
@@ -44,6 +60,9 @@ struct LlmGenerationConfig {
 };
 
 struct LlmGenerationResult {
+    std::string reported_model;
+    bool usage_reported = false;
+    int cloud_attempts = 0;
     bool success;
     std::string prompt_text;
     std::string response_text; // Final channel only.

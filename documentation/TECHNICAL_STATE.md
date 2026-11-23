@@ -5,7 +5,28 @@
 C++17, SDL3/SDL_ttf, raytracer CPU et llama.cpp lié dans le processus.
 Gemma 4 E4B Instruct Q4_K_M, artefact unique défini par `scripts/models.json`.
 Vendor épinglé : `620d2225cc436ab0b001e3200e590e3b286ef9ab`.
-Aucun service d'inférence n'est nécessaire au jeu.
+Aucun service d'inférence n'est nécessaire au mode local, qui reste le défaut.
+
+Option Windows expérimentale : `--llm-backend ollama-cloud`, modèle
+`deepseek-v4.1-flash` par défaut, configurable avec `--cloud-model`. Authentification
+par `OLLAMA_API_KEY` héritée de l'environnement ; HTTPS direct WinHTTP vers
+ollama.com, certificats vérifiés et redirections interdites. Le lanceur
+`play_within_the_latent_walls_cloud.bat` active ce mode. Aucun menu ajouté.
+Toutes les finalités LLM utilisent le backend choisi pour la session ; les
+schémas et validations métier restent ceux du jeu. Le cloud ne charge pas le
+GGUF pour compter le contexte. Voir le [guide et les limites](OLLAMA_CLOUD.md).
+Le quota de mémoire récente cloud conserve le dernier événement utile même
+au-delà de sa cible, si la requête entière tient dans le contexte. Le plafond
+total demeure strict ; cela corrige le blocage des sorties après une observation
+dont le résultat moteur dépassait 1 024 octets estimés ([DUO-075](duo/reviews/DUO-075.md)).
+Les deux réécritures littéraires de chaleur sont facultatives : un contenu cloud
+invalide garde leur prose préparatoire validée, sans annuler le déplacement ou
+le transfert d'objet. Leur température réseau est plafonnée à 1 ; les consignes
+thermiques restent dans les prompts. Une correction JSON utilise au plus 0,2
+et reçoit le candidat rejeté. Les enveloppes Markdown JSON complètes sont
+retirées avant validation stricte ; aucun JSON n'est extrait d'un commentaire.
+Les pannes réseau, annulations, délais et limites de tour restent bloquants.
+Voir la [qualification DUO-076](duo/reviews/DUO-076.md).
 
 Les poids sont vérifiés par SHA-256 au premier chargement, puis conservés
 jusqu'à la fermeture. Les appels sont sérialisés ; contexte, cache KV, sampler

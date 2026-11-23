@@ -103,8 +103,9 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
         result->metrics_json=json({{"version",1},{"method",config.fixed_frame?"local-fixed-v1":config.direct?"direct":"two-pass"},
             {"success",success},{"cancelled",gate.cancelled},{"timeout",gate.expired},
             {"repairs",result->repairs},{"calls",calls},{"seed",model.seed},{"profile",model.profile_name},{"temperature",model.temperature},
-            {"model_path",model.model_path},
-            {"backend","llama.cpp"},{"model_sha256",model.model_sha256},
+            {"model_path",model.backend=="ollama-cloud"?model.cloud_model:model.model_path},
+            {"backend",model.backend=="ollama-cloud"?"ollama-cloud":"llama.cpp"},
+            {"model_sha256",model.backend=="ollama-cloud"?"":model.model_sha256},
             {"removed_code_wrappers",removed_wrappers},
             {"program_patch_repairs",patch_repairs},
             {"audit_ms",audit_ms},{"preview_ms",preview_ms},
@@ -175,8 +176,9 @@ bool GenerateDynamicScene(const SceneDesignContext& context,const LlmGenerationC
                     return bounded;
                 },[&](const std::vector<LlmPromptMessage>& m,int* tokens,std::string* error) {
                     return CountChatPromptTokens(cfg,m,Gate::Stream,&gate,tokens,error);
-                },&messages,&selection,&budget_error);
+                },&messages,&selection,&budget_error,false,cfg.backend=="ollama-cloud");
         }
+        if(!fits&&cfg.cloud_budget)cfg.cloud_budget->failed=true;
         const bool ok=fits&&(config.completion?config.completion(cfg,messages,Gate::Stream,&gate,&generation):
             GenerateChatCompletion(cfg,messages,Gate::Stream,&gate,&generation));
         if(fits)++result->calls;

@@ -1,6 +1,7 @@
 #include "resource_paths.h"
 #include "llm_runtime.h"
 #include "llm_channels.h"
+#include "ollama_cloud.h"
 #include "model_profiles.generated.h"
 #include "nlohmann/json.hpp"
 #include <algorithm>
@@ -529,6 +530,10 @@ bool CountChatPromptTokens(const LlmGenerationConfig& config,
     const std::vector<LlmPromptMessage>& messages,LlmStreamCallback callback,void* user,
     int* tokens,std::string* error) {
     if(config.prompt_token_counter)return config.prompt_token_counter(messages,tokens,error);
+    if(config.backend=="ollama-cloud") {
+        if(callback&&!callback("","",user)){*error="Cancelled during cloud budgeting";return false;}
+        *tokens=EstimateCloudPromptTokens(config,messages);error->clear();return true;
+    }
     LlmGenerationResult result;
     const bool ok=ChatCompletionInternal(config,messages,callback,user,&result,true);
     *tokens=result.prompt_tokens;*error=result.error_message;return ok;
@@ -537,6 +542,24 @@ bool CountChatPromptTokens(const LlmGenerationConfig& config,
 bool GenerateChatCompletion(const LlmGenerationConfig& config,
     const std::vector<LlmPromptMessage>& messages,LlmStreamCallback callback,void* user,
     LlmGenerationResult* result) {
+    if(config.backend=="ollama-cloud") {
+        const bool ok=GenerateOllamaCompletion(config,messages,callback,user,result);
+        if(result) {
+            g_generation_totals.calls+=result->cloud_attempts;
+            g_generation_totals.prompt_tokens+=result->prompt_tokens;
+            g_generation_totals.generated_tokens+=result->generated_tokens;
+            g_generation_totals.final_tokens+=result->final_tokens;
+            g_generation_totals.inference_time_ms+=result->inference_time_ms;
+            g_generation_totals.wall_time_ms+=result->wall_time_ms;
+            const nlohmann::json metric={{"backend","ollama-cloud"},{"model",config.cloud_model},
+                {"reported_model",result->reported_model},{"purpose",config.purpose},{"success",ok},
+                {"stop_reason",result->stop_reason},{"wall_time_ms",result->wall_time_ms},
+                {"prompt_tokens",result->prompt_tokens},{"generated_tokens",result->generated_tokens},
+                {"usage_reported",result->usage_reported},{"temperature",config.temperature}};
+            fprintf(stderr,"LIMINAL_LLM_METRIC %s\n",metric.dump().c_str());
+        }
+        return ok;
+    }
     return ChatCompletionInternal(config,messages,callback,user,result,false);
 }
 

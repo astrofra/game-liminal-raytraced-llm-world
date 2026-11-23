@@ -1782,6 +1782,32 @@ static void ThermalDebugCommands() {
     CHECK(turn.accepted && !turn.used_turn_fallback && turn.updated_hard_state.body_temperature_c==kMaxBodyTemperatureC);
 }
 
+static void CloudFailureRollback() {
+    SessionState state;char error[512]={};
+    CHECK(InitializeSessionState(kLocationQuarryThreshold,&state,error,sizeof(error)));
+    state.language=kGameLanguageFrench;EnsureObjectRegistry(&state);
+    std::string before;CHECK(SerializeSessionStateToJsonString(state,&before));
+    HeadlessTurnConfig cfg;cfg.local_scenes=true;cfg.generation_config.backend="ollama-cloud";
+    cfg.generation_config.prompt_token_counter=FakePromptCount;
+    cfg.interaction_completion=FixturePlayerCompletion;
+    bool reached_narration=false;
+    cfg.narrative_completion=[&](const auto& model,const auto&,auto,void*,auto* response) {
+        reached_narration=true;CHECK(model.cloud_budget!=nullptr);
+        model.cloud_budget->failed=true;response->stop_reason="http_429";return false;
+    };
+    HeadlessTurnResult result;
+    CHECK(!RunHeadlessTurnFromState(state,"drop chalk",cfg,&result,error,sizeof(error)));
+    CHECK(reached_narration&&!result.accepted&&!result.objects_prepared);
+    CHECK(result.generated_rooms_to_add.empty()&&result.room_links_to_add.empty());
+    UpdateSessionStateFromTurn("drop chalk",result,&state);
+    std::string after;CHECK(SerializeSessionStateToJsonString(state,&after));CHECK(before==after);
+    cfg.generation_config.n_ctx=128;reached_narration=false;
+    CHECK(!RunHeadlessTurnFromState(state,"drop chalk",cfg,&result,error,sizeof(error)));
+    CHECK(!result.accepted&&!result.objects_prepared&&!reached_narration);
+    UpdateSessionStateFromTurn("drop chalk",result,&state);
+    CHECK(SerializeSessionStateToJsonString(state,&after));CHECK(before==after);
+}
+
 int main() {
     extern void RunPlayerProseHeatTests();
     extern void RunDefaultTraversalHeatTests();
@@ -1793,7 +1819,7 @@ int main() {
     const char* test_name="RunAudioTurnTests";
 #define RUN_TEST(name) do { test_name=#name; name(); } while(false)
     RUN_TEST(RunAudioTurnTests);
-    try {RUN_TEST(RunPlayerProseHeatTests);RUN_TEST(RunDefaultTraversalHeatTests);RUN_TEST(RunObjectPerceptionTests);RUN_TEST(DialogueJourney);}
+    try {RUN_TEST(CloudFailureRollback);RUN_TEST(RunPlayerProseHeatTests);RUN_TEST(RunDefaultTraversalHeatTests);RUN_TEST(RunObjectPerceptionTests);RUN_TEST(DialogueJourney);}
     catch(const std::exception& e){std::fprintf(stderr,"%s: %s\n",test_name,e.what());return 1;}
     try {RUN_TEST(RunKnownBarrierTests);RUN_TEST(RunInvestigationDistributionTests);RUN_TEST(RunInvestigationContractTests);RUN_TEST(RunInvestigationJourneyTests);RUN_TEST(RunObjectSemanticTests);RUN_TEST(RunObjectConservationTests);RUN_TEST(RunObjectJourneyTests);RUN_TEST(RunObjectNarrativeTests);RUN_TEST(Geometry);RUN_TEST(Pipeline);RUN_TEST(PersistenceAndNavigation);RUN_TEST(CanonicalBranches);RUN_TEST(LocalPilot);RUN_TEST(ExplorationContinuity);RUN_TEST(ContinuityJourney);RUN_TEST(InventoryTurns);RUN_TEST(LanguageContinuity);RUN_TEST(SingleStart);RUN_TEST(ResearchArchives);RUN_TEST(GlassSupportJourney);RUN_TEST(CoplanarSupportJourney);RUN_TEST(ThermalDebugCommands);std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass, thermal debug commands and save integrity passed");return 0;}
     catch(const std::exception& e){std::fprintf(stderr,"%s: %s\n",test_name,e.what());return 1;}

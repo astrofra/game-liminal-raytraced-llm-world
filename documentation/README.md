@@ -7,6 +7,7 @@ Les archives de recherche ne servent jamais à reprendre une partie.
 ## Jouer, construire et distribuer
 
 - [État technique actuel](TECHNICAL_STATE.md)
+- [Jouer avec Ollama Cloud, option expérimentale](OLLAMA_CLOUD.md)
 - [Du texte du joueur au modèle, au raytracer et au son — diagrammes de flux](FLUX_TEXTE_MODELE_RENDU.md)
 - [Transcription chronologique de la partie du 21 novembre 2026 : commandes, prompts et réponses](TRANSCRIPTION_CHRONOLOGIQUE_2026-11-21.md)
 - [Partie, génération et archives](SINGLE_START_RESEARCH.md)

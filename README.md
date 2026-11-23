@@ -11,6 +11,13 @@ Le moteur C++17 garde l'autorité sur les déplacements, l'inventaire et les tem
 Lancer `play_within_the_latent_walls.bat` dans le dépôt, ou
 `WithinTheLatentWalls.exe` dans le dossier portable. Le jeu s'ouvre en plein
 écran sans bordure. L'interface reste centrée au format 5:4, sur fond noir.
+Le mode **local reste le défaut**. Pour Ollama Cloud, définir `OLLAMA_API_KEY`
+dans l'environnement puis lancer `play_within_the_latent_walls_cloud.bat`, ou
+ajouter `--llm-backend ollama-cloud` à l'exécutable. `--llm-backend local`
+sélectionne explicitement le mode local. Le cloud utilise `deepseek-v4.1-flash`
+(`--cloud-model` pour le changer), envoie les prompts en ligne et conserve les
+mêmes règles du moteur. Les textes et lieux générés peuvent différer du Gemma
+E4B local. Voir le [guide cloud](documentation/OLLAMA_CLOUD.md).
 Choisir une des six langues, puis jouer directement. Au seuil, **nord, est et
 sud** ouvrent l'exploration. La boussole indique les issues accessibles. Pendant
 l'arrivée provisoire, elle reste visible avec les quatre voies fermées jusqu'à
@@ -64,7 +71,7 @@ continue de cinq secondes. Le seuil initial possède un mix pré-scripté, audib
 dès le premier écran par cette même montée progressive, sans attendre une commande.
 Voir le [guide audio et le diagnostic de mixage](documentation/AUDIO_AMBIENCE.md).
 
-Gemma 4 E4B Q4_K_M tourne dans le processus via **llama.cpp intégré**. Aucun
+En mode local, Gemma 4 E4B Q4_K_M tourne dans le processus via **llama.cpp intégré**. Aucun
 service, serveur, compte ou accès Internet n'est nécessaire pour jouer après installation.
 L'installeur télécharge le modèle en dernière phase, puis le jeu fonctionne hors ligne.
 Le modèle est vérifié au premier appel et reste chargé jusqu'à la fermeture.

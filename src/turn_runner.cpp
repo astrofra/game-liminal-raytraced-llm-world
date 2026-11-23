@@ -3210,7 +3210,8 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
             bounded[1].content=request.dump();return bounded;
         },[&](const std::vector<LlmPromptMessage>& m,int* tokens,std::string* error) {
             return CountChatPromptTokens(cfg,m,capture,&stream,tokens,error);
-        },&messages,&selection,&budget_error);
+        },&messages,&selection,&budget_error,false,cfg.backend=="ollama-cloud");
+    if(!fits&&cfg.cloud_budget)cfg.cloud_budget->failed=true;
     const bool ok=fits&&(config.narrative_completion?
         config.narrative_completion(cfg,messages,capture,&stream,&generation):
         GenerateChatCompletion(cfg,messages,capture,&stream,&generation));
@@ -3336,6 +3337,7 @@ static bool NarrateScene(const SessionState& state,const HeadlessTurnConfig& con
     if (reason.empty() && needs_literary_pass) {
         auto literary = cfg;
         literary.purpose = "scene_hallucination_v1";
+        literary.cloud_optional_prose = true;
         literary.temperature = LiterarySamplingTemperature(thermal_state.body_temperature_c,
             state.hard_state.thermal_debug.hallucination_temperature);
         literary.seed ^= 0x4c9e31abu;
@@ -4026,7 +4028,8 @@ static bool ReplyToDialogue(const SessionState& state,const std::string& command
     if(completion && !cfg.prompt_token_counter)messages=build(memory);
     else fits=FitContinuityPrompt(memory,cfg.n_ctx,cfg.n_predict,cfg.continuity_memory_tokens,build,
         [&](const auto& m,int* n,std::string* e){return CountChatPromptTokens(cfg,m,heartbeat,user,n,e);},
-        &messages,&budget,&why,true);
+        &messages,&budget,&why,true,cfg.backend=="ollama-cloud");
+    if(!fits&&cfg.cloud_budget)cfg.cloud_budget->failed=true;
     struct DialogueStream {
         const HeadlessTurnConfig& config;
         const SessionState& state;
@@ -4600,7 +4603,8 @@ static bool RunHeadlessTurnFromStateImpl(
             room.opaque_scene_text=generated.opaque_scene_text;room.glass_supports_json=generated.glass_supports_json;
             room.scene_contract_version=1;room.scene_design_json=generated.plan_json;room.scene_hash=generated.scene_hash;
             room.scene_plan_hash=SceneTextHash(generated.plan_json);room.scene_profile=config.generation_config.profile_name;
-            const auto& model_path=config.generation_config.model_path;
+            const auto& model_path=config.generation_config.backend=="ollama-cloud"?
+                config.generation_config.cloud_model:config.generation_config.model_path;
             const auto model_separator=model_path.find_last_of("/\\");
             room.scene_model_filename=model_path.substr(model_separator==std::string::npos?0:model_separator+1);
             room.scene_seed=result->scene_attempts.empty()?scene_generation_config.seed:result->scene_attempts.back().seed;room.scene_repairs=generated.repairs;
@@ -5185,6 +5189,7 @@ static void ApplyPlayerProseHeat(const SessionState& view, const std::string& co
 
     auto model = config.generation_config;
     model.purpose = "player_prose_heat_v1";
+    model.cloud_optional_prose = true;
     model.temperature = LiterarySamplingTemperature(body, view.hard_state.thermal_debug.hallucination_temperature);
     model.seed = (model.seed ^ 0x4c9e31abu ^ (65537u * static_cast<unsigned>(view.history.size()))) & 0x7fffffffu;
     model.n_predict = 280;
@@ -5276,6 +5281,8 @@ bool RunHeadlessTurnFromState(
         std::string last_text;
     } gate{config.stream_callback, config.stream_user_data};
     HeadlessTurnConfig guarded = config;
+    if(guarded.generation_config.backend=="ollama-cloud")
+        guarded.generation_config.cloud_budget=std::make_shared<LlmCloudBudget>();
     if (config.stream_callback) {
         guarded.stream_user_data = &gate;
         guarded.stream_callback = [](HeadlessTurnStreamPhase phase, const char* text, const char* delta, void* data) {
@@ -5357,8 +5364,11 @@ bool RunHeadlessTurnFromState(
         result->inference_time_ms = after.inference_time_ms - before.inference_time_ms;
         result->llm_wall_time_ms = after.wall_time_ms - before.wall_time_ms;
     }
-    if (config.stream_callback &&
-        (gate.cancelled || !config.stream_callback(gate.phase, gate.last_text.c_str(), "", config.stream_user_data))) {
+    const bool cloud_failed=guarded.generation_config.cloud_budget &&
+        (guarded.generation_config.cloud_budget->failed ||
+         std::chrono::steady_clock::now()>=guarded.generation_config.cloud_budget->deadline);
+    if (cloud_failed || (config.stream_callback &&
+        (gate.cancelled || !config.stream_callback(gate.phase, gate.last_text.c_str(), "", config.stream_user_data)))) {
         if (result) {
             // Keep research evidence, discard all proposed state changes.
             result->accepted=false;result->generated_room_created=false;
@@ -5371,7 +5381,7 @@ bool RunHeadlessTurnFromState(
             result->view_unchanged=false;
             result->rendered_scene=Scene();result->rendered_scene_text.clear();result->turn_result.narration.clear();
         }
-        SetError(error_buffer, error_buffer_size, "Turn cancelled: %s", "state was not committed");
+        SetError(error_buffer, error_buffer_size, cloud_failed ? "Ollama Cloud failed: %s" : "Turn cancelled: %s", "state was not committed; retry the command");
         return false;
     }
     if(result) result->accepted=success;

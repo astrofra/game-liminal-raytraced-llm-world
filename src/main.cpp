@@ -17,6 +17,7 @@
 #include "animated_view.h"
 #include "game_state.h"
 #include "llm_runtime.h"
+#include "ollama_cloud.h"
 #include "renderer.h"
 #include "sdl_frontend.h"
 #include "scene_compiler.h"
@@ -73,6 +74,8 @@ static void PrintUsage()
     printf("  --sdl-smoke-test-ms <n> Auto-select a language and close SDL cleanly after n milliseconds\n");
     printf("  --sdl-smoke-command <text> Inject text and Return during the timed SDL smoke test\n");
     printf("  --write-initial-state <json> Export canonical initial state without inference\n");
+    printf("  --llm-backend <mode>     local (default) or ollama-cloud (OLLAMA_API_KEY)\n");
+    printf("  --cloud-model <name>     Hosted model (default deepseek-v4.1-flash)\n");
     printf("  --llm-profile <name>     gemma-4-e4b-q4\n");
     printf("  --llm-context <n>        Fixed context limit (default 8192)\n");
     printf("  --continuity-memory-tokens <n>  Recent memory cap (default 1024; output reserve unchanged)\n");
@@ -641,6 +644,14 @@ int main(int argc, char** argv)
             sdl_smoke_test_command = argv[++index];
             continue;
         }
+        if (strcmp(argv[index], "--llm-backend") == 0 && index + 1 < argc) {
+            const std::string backend=argv[++index];
+            if(backend!="local"&&backend!="ollama-cloud") {fprintf(stderr,"Expected --llm-backend local|ollama-cloud\n");return 1;}
+            headless_turn_config.generation_config.backend=backend;continue;
+        }
+        if (strcmp(argv[index], "--cloud-model") == 0 && index + 1 < argc) {
+            headless_turn_config.generation_config.cloud_model=argv[++index];continue;
+        }
         if (strcmp(argv[index], "--llm-profile") == 0 && index + 1 < argc) {
             std::string error;
             if (!liminal::ConfigureLlmProfile(argv[++index], &headless_turn_config.generation_config, &error)) {
@@ -782,6 +793,17 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    if(headless_turn_config.generation_config.backend=="ollama-cloud") {
+        bool context_explicit=false;
+        for(int i=1;i<argc;++i)if(strcmp(argv[i],"--llm-context")==0)context_explicit=true;
+        if(!context_explicit)headless_turn_config.generation_config.n_ctx=32768;
+        std::string why;
+        if(!liminal::CheckOllamaConfiguration(headless_turn_config.generation_config,&why)) {
+            fprintf(stderr,"%s\n",why.c_str());return 1;
+        }
+        fprintf(stderr,"Ollama Cloud (%s): game prompts are sent to https://ollama.com. Experimental.\n",
+            headless_turn_config.generation_config.cloud_model.c_str());
+    }
     if(run_sdl||run_turn||run_session) {
         auto catalog=std::make_shared<liminal::AmbienceCatalog>();std::string why;
         if(liminal::LoadAmbienceCatalog(liminal::ResourcePath("assets/sfx/ambience_features.json"),catalog.get(),&why))
@@ -934,6 +956,12 @@ int main(int argc, char** argv)
             {"reasoning_tokens",result.reasoning_tokens},{"final_tokens",result.final_tokens},
             {"wall_time_ms",result.wall_time_ms},{"offloaded_layers",result.offloaded_layers}};
         output["model_reused"] = result.model_reused;
+        output["backend"] = headless_turn_config.generation_config.backend;
+        output["reported_model"] = result.reported_model;
+        output["usage_reported"] = result.usage_reported;
+        output["prompt_tokens"] = result.prompt_tokens;
+        output["generated_tokens"] = result.generated_tokens;
+        output["cloud_attempts"] = result.cloud_attempts;
         output["load_time_ms"] = result.load_time_ms;
         output["prompt_time_ms"] = result.prompt_time_ms;
         output["generation_time_ms"] = result.generation_time_ms;

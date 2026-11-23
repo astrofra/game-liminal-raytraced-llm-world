@@ -32,7 +32,8 @@ static bool FirstSentence(json& value) {
 bool FitContinuityPrompt(const ContinuityContextV1& original,int context_tokens,int output_tokens,
                          int memory_tokens,const ContinuityPromptBuilder& build,
                          const ContinuityTokenCounter& count,std::vector<LlmPromptMessage>* messages,
-                         std::string* metrics,std::string* error,bool allow_empty_memory) {
+                         std::string* metrics,std::string* error,bool allow_empty_memory,
+                         bool preserve_latest_within_context) {
     constexpr int margin=32;
     const auto started=std::chrono::steady_clock::now();
     ContinuityContextV1 selected=original;
@@ -43,6 +44,8 @@ bool FitContinuityPrompt(const ContinuityContextV1& original,int context_tokens,
         *metrics=json({{"policy","continuity-v1/recent6-places2"},{"context_tokens",context_tokens},
             {"output_reserved",output_tokens},{"technical_margin",margin},{"memory_cap",memory_tokens},
             {"memory_available",available},{"mandatory_prompt_tokens",mandatory},
+            {"memory_cap_kind",preserve_latest_within_context?"soft_latest_event":"hard"},
+            {"memory_soft_limit_exceeded",preserve_latest_within_context&&success&&after-mandatory>memory_tokens},
             {"prompt_tokens_before",before},{"prompt_tokens_after",after},
             {"memory_tokens",std::max(0,after-mandatory)},{"retained_event_ids",ids},
             {"omitted_events",original.events_json.size()-selected.events_json.size()},
@@ -80,6 +83,12 @@ bool FitContinuityPrompt(const ContinuityContextV1& original,int context_tokens,
         if(after+output_tokens+margin<=context_tokens && after-mandatory<=available)return finish(true);
         if(!selected.notes.empty()){selected.notes.erase(selected.notes.begin());continue;}
         if(selected.events_json.size()>1){selected.events_json.erase(selected.events_json.begin());continue;}
+        // Cloud accounting uses a conservative byte estimate, not the local tokenizer.
+        // Its small memory allowance must not veto an otherwise fitting request just
+        // because the latest published engine outcome is longer than that allowance.
+        // Only this protected event may exceed it; the total context cap is unchanged.
+        if(preserve_latest_within_context && selected.events_json.size()==1 &&
+           after+output_tokens+margin<=context_tokens)return finish(true);
         if(!compacted_events) {
             compacted_events=true;
             for(auto& text:selected.events_json) {

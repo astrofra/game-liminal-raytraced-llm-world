@@ -155,7 +155,8 @@ ObjectResolution ResolveObjectAction(const SessionState& state,const std::string
         if(completion && !cfg.prompt_token_counter)fitted=build(memory);
         else fits=FitContinuityPrompt(memory,cfg.n_ctx,cfg.n_predict,cfg.continuity_memory_tokens,build,
             [&](const auto& m,int* n,std::string* error){return CountChatPromptTokens(count_config,m,heartbeat,user,n,error);},
-            &fitted,&budget,&fit_error,true);
+            &fitted,&budget,&fit_error,true,cfg.backend=="ollama-cloud");
+        if(!fits&&cfg.cloud_budget)cfg.cloud_budget->failed=true;
         if(fits){calls=1;prompt=fitted.back().content;}
         const bool ok=fits && (completion?completion(cfg,fitted,heartbeat,user,&generation):
             GenerateChatCompletion(cfg,fitted,heartbeat,user,&generation));

@@ -259,10 +259,88 @@ static void UnicodeSentences() {
         CHECK(original.events_json[0].find("chelles")!=std::string::npos);
     }
 }
+// DUO-075: variante cloud de FitContinuityPrompt (preserve_latest_within_context).
+static json RunFitPreserve(const ContinuityContextV1& context, int context_tokens, int output, int memory_cap,
+    bool allow_empty, bool preserve, bool expected, std::vector<LlmPromptMessage>* messages, std::string* error) {
+    std::string metrics_text;
+    const bool fitted = FitContinuityPrompt(context, context_tokens, output, memory_cap, BuildPrompt, Counter(),
+        messages, &metrics_text, error, allow_empty, preserve);
+    CHECK(!metrics_text.empty());
+    const json metrics = json::parse(metrics_text); CheckMetricsKeys(metrics);
+    CHECK(fitted == expected && metrics["success"].get<bool>() == expected);
+    return metrics;
+}
+// Le mode cloud tolere un dernier evenement utile au-dela de memory_tokens si le prompt complet,
+// la sortie reservee et la marge de 32 tiennent dans context_tokens ; son outcome n'est pas coupe.
+static void PreserveLatestEventWithinContext() {
+    std::string long_outcome;
+    while (long_outcome.size() < 1200)
+        long_outcome += "La verriere garde des eclats ternes et une trace humide sur toute la longueur du montant. ";
+    CHECK(long_outcome.size() > 1100);
+    const std::string note = "NOTE-ANCIENNE a oublier avant le dernier resultat.";
+    const std::string old_event = EventJson(1, "atrium", "aller_1", "moved", "Traversee 1 sans obstacle.");
+    const std::string latest_event = EventJson(2, "serre", "examiner_verriere", long_outcome, "Verriere pale examinee.");
+    ContinuityContextV1 context; context.core_json = CoreJson();
+    context.events_json = {old_event, latest_event}; context.notes = {note};
+    const std::string core_before = context.core_json;
+    const std::vector<std::string> events_before = context.events_json;
+
+    const int output = 64, context_tokens = 32768, memory_cap = 1024;
+    const int mandatory = TokenBytes(BuildPrompt(CoreOnly(context)));
+    CHECK(TokenBytes(BuildPrompt(context)) - mandatory > memory_cap);
+
+    // Comportement strict existant : apres retrait de la note et de l'ancien evenement, le dernier
+    // evenement depasse memory_tokens et l'outcome n'etant pas coupe, l'ajustement echoue.
+    std::vector<LlmPromptMessage> strict_messages; std::string strict_error;
+    const json strict_metrics = RunFitPreserve(context, context_tokens, output, memory_cap, false, false, false,
+        &strict_messages, &strict_error);
+    CHECK(strict_error.find("context_limit") != std::string::npos);
+    CHECK(strict_metrics["error"].get<std::string>().find("context_limit") != std::string::npos);
+    CHECK(strict_metrics["omitted_notes"].get<int>() == 1 && strict_metrics["omitted_events"].get<int>() >= 1);
+    CHECK(context.core_json == core_before && context.events_json == events_before && context.notes.size() == 1);
+
+    // Mode cloud : le dernier evenement utile et son outcome sont conserves entiers.
+    std::vector<LlmPromptMessage> messages; std::string error;
+    const json metrics = RunFitPreserve(context, context_tokens, output, memory_cap, false, true, true, &messages, &error);
+    const int after = TokenBytes(messages);
+    CHECK(error.empty() && metrics["prompt_tokens_after"] == after && metrics["mandatory_prompt_tokens"] == mandatory);
+    CHECK(after + output + 32 <= context_tokens);
+    CHECK(metrics["memory_tokens"] == after - mandatory && metrics["memory_tokens"].get<int>() > memory_cap);
+    CHECK(metrics.find("memory_soft_limit_exceeded") != metrics.end());
+    CHECK(metrics["memory_soft_limit_exceeded"].is_boolean() && metrics["memory_soft_limit_exceeded"].get<bool>());
+    CHECK(PromptContains(messages, long_outcome));
+    CHECK(PromptContains(messages, "\"ev2\"") && !PromptContains(messages, "\"ev1\""));
+    CHECK(!PromptContains(messages, note));
+    CHECK(RetainedIds(metrics) == std::vector<std::string>{"ev2"});
+    CHECK(metrics["omitted_events"] == 1 && metrics["omitted_notes"] == 1);
+    CHECK(context.core_json == core_before && context.events_json == events_before && context.notes.size() == 1);
+
+    // Limite totale trop petite : la tolerance memoire ne doit pas contourner context_tokens.
+    const int tiny_tokens = mandatory + 300 + output + 32;
+    std::vector<LlmPromptMessage> tiny_messages; std::string tiny_error;
+    const json tiny_metrics = RunFitPreserve(context, tiny_tokens, output, memory_cap, false, true, false,
+        &tiny_messages, &tiny_error);
+    CHECK(tiny_error.find("context_limit") != std::string::npos);
+    CHECK(tiny_metrics["error"].get<std::string>().find("context_limit") != std::string::npos);
+    CHECK(context.core_json == core_before && context.events_json == events_before && context.notes.size() == 1);
+
+    // allow_empty_memory=true ne doit pas perdre le dernier evenement utile quand il tient.
+    std::vector<LlmPromptMessage> empty_messages; std::string empty_error;
+    const json empty_metrics = RunFitPreserve(context, context_tokens, output, memory_cap, true, true, true,
+        &empty_messages, &empty_error);
+    CHECK(empty_error.empty() && TokenBytes(empty_messages) + output + 32 <= context_tokens);
+    CHECK(PromptContains(empty_messages, long_outcome) && PromptContains(empty_messages, "\"ev2\""));
+    CHECK(!PromptContains(empty_messages, "\"ev1\"") && !PromptContains(empty_messages, note));
+    CHECK(RetainedIds(empty_metrics) == std::vector<std::string>{"ev2"});
+    CHECK(empty_metrics.find("memory_soft_limit_exceeded") != empty_metrics.end());
+    CHECK(empty_metrics["memory_soft_limit_exceeded"].is_boolean() && empty_metrics["memory_soft_limit_exceeded"].get<bool>());
+    CHECK(context.core_json == core_before && context.events_json == events_before && context.notes.size() == 1);
+}
 int main() {
     try {
         SerializationContract(); SelectionNotesAndBudget(); ConsultationsAndDuplicates();
         BudgetWithRepairAndNotes(); OriginShortenedToSentence(); MandatoryDiagnosticTooLarge(); UnicodeSentences();
-        std::puts("Continuity budget: selection 6/2, order, dedup, consultations, notes, repair load, UTF-8 sentence and context_limit passed"); return 0;
+        PreserveLatestEventWithinContext();
+        std::puts("Continuity budget: selection 6/2, order, dedup, consultations, notes, repair load, UTF-8 sentence, context_limit and cloud latest-event preservation passed"); return 0;
     } catch (const std::exception& e) { std::fprintf(stderr, "%s\n", e.what()); return 1; }
 }

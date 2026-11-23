@@ -50,9 +50,11 @@ std::string WithoutHistory(const SessionState& state) {
 
 struct Harness {
     HeadlessTurnConfig cfg;
-    int dialogue_calls=0,heat_calls=0;
+    int dialogue_calls=0,heat_calls=0,interaction_calls=0;
     float dialogue_temperature=0.0f,heat_temperature=0.0f;
     json heat_request=nullptr;
+    std::string heat_profile;
+    bool dialogue_cloud_optional=false,heat_cloud_optional=false,interaction_cloud_optional=false;
     bool fail_heat=false,poison_heat=false,stream_dialogue=false,stream_heat=false,cancel_first_heat_delta=false;
     bool heat_started=false,leaked=false,heat_preview=false;
     std::string last_preview;
@@ -60,12 +62,14 @@ struct Harness {
         cfg.local_scenes=true;cfg.investigation_opportunities=false;cfg.reuse_unchanged_view=true;
         cfg.generation_config.prompt_token_counter=[](const std::vector<LlmPromptMessage>& messages,int* count,std::string*) {
             size_t total=0;for(const auto& message:messages)total+=message.content.size();*count=static_cast<int>(total/4+1);return true;};
-        cfg.interaction_completion=[](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback,void*,LlmGenerationResult* result) {
+        cfg.interaction_completion=[this](const LlmGenerationConfig& config,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback,void*,LlmGenerationResult* result) {
+            ++interaction_calls;interaction_cloud_optional=config.cloud_optional_prose;
             const auto context=json::parse(messages.at(1).content);auto wire=FixtureWireAction(FixturePlayerAction(context),context);
             wire["action"]="talk";result->success=true;result->reached_eog=true;result->response_text=wire.dump();return true;};
         cfg.narrative_completion=[this](const LlmGenerationConfig& config,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback stream,void* user,LlmGenerationResult* result) {
             if(config.purpose=="game_master_dialogue_v2") {
-                ++dialogue_calls;dialogue_temperature=config.temperature;const std::string wire=json{{"reply",kDialogue}}.dump();
+                ++dialogue_calls;dialogue_temperature=config.temperature;dialogue_cloud_optional=config.cloud_optional_prose;
+                const std::string wire=json{{"reply",kDialogue}}.dump();
                 result->success=true;result->reached_eog=true;result->response_text=wire;
                 if(stream_dialogue&&stream) {
                     const std::string part=json{{"reply",std::string(kDialogue).substr(0,14)}}.dump();
@@ -78,7 +82,9 @@ struct Harness {
                 result->response_text=json{{"reply","Les outils restent à portée, immobiles."}}.dump();return true;
             }
             if(config.purpose=="player_prose_heat_v1") {
-                ++heat_calls;heat_temperature=config.temperature;heat_request=json::parse(messages.at(1).content);heat_started=true;
+                ++heat_calls;heat_temperature=config.temperature;heat_cloud_optional=config.cloud_optional_prose;
+                heat_profile=config.backend;
+                heat_request=json::parse(messages.at(1).content);heat_started=true;
                 if(fail_heat){result->success=false;return false;}
                 const std::string fragments=poison_heat?kPoison:kHot;const std::string wire=json{{"fragments",fragments}}.dump();
                 result->success=true;result->reached_eog=true;result->response_text=wire;
@@ -221,6 +227,42 @@ void TestObjectTransferAndCancellation() {
         REQUIRE(state.generated_rooms.front().scene_text==original.generated_rooms.front().scene_text);
     }
 }
+
+void TestCloudProseFailureKeepsDialogue() {
+    SessionState state=Fixture();state.hard_state.body_temperature_c=42.0f;
+    Harness harness;harness.fail_heat=true;
+    harness.cfg.generation_config.backend="ollama-cloud";
+    harness.cfg.generation_config.n_ctx=32768;
+    const std::string before=WithoutHistory(state);
+    const auto turn=harness.Run(state,kTalk);
+    REQUIRE(turn.accepted&&turn.dialogue_only&&turn.view_unchanged);
+    REQUIRE(harness.interaction_calls==1&&harness.dialogue_calls==1&&harness.heat_calls==1);
+    REQUIRE(harness.heat_cloud_optional);
+    REQUIRE(!harness.dialogue_cloud_optional);
+    REQUIRE(!harness.interaction_cloud_optional);
+    REQUIRE(harness.heat_profile=="ollama-cloud");
+    REQUIRE(std::fabs(harness.heat_temperature-5.0f)<0.001f);
+    REQUIRE(turn.turn_result.narration.find(kDialogue)!=std::string::npos);
+    REQUIRE(turn.turn_result.narration.find('{')==std::string::npos);
+    REQUIRE(WithoutHistory(state)==before);
+}
+
+void TestCloudProseFailureKeepsObjectTransfer() {
+    SessionState state=Fixture();state.hard_state.body_temperature_c=42.0f;
+    const auto inventory=state.hard_state.inventory_items;
+    const std::string place=state.current_place_id;
+    const std::string scene=state.generated_rooms.front().scene_text;
+    Harness harness;harness.cfg.interaction_completion=FixturePlayerCompletion;harness.fail_heat=true;
+    harness.cfg.generation_config.backend="ollama-cloud";
+    harness.cfg.generation_config.n_ctx=32768;
+    const auto turn=harness.Run(state,"poser la craie");
+    REQUIRE(turn.accepted&&turn.authorized_object_action=="drop");
+    REQUIRE(harness.heat_calls==1&&harness.heat_cloud_optional);
+    REQUIRE(state.hard_state.inventory_items.size()+1==inventory.size());
+    REQUIRE(turn.turn_result.narration.find("craie")!=std::string::npos);
+    REQUIRE(state.current_place_id==place);
+    REQUIRE(state.generated_rooms.front().scene_text==scene);
+}
 }  // namespace
 void RunPlayerProseHeatTests() {
     TestTemperatureLadder();
@@ -231,4 +273,6 @@ void RunPlayerProseHeatTests() {
     TestDialogueDoesNotLeakAndHeatStreams();
     TestCancellationOnFirstHeatDelta();
     TestObjectTransferAndCancellation();
+    TestCloudProseFailureKeepsDialogue();
+    TestCloudProseFailureKeepsObjectTransfer();
 }
