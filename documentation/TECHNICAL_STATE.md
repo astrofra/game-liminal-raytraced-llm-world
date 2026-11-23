@@ -171,7 +171,12 @@ Sans diagnostic activé, un déplacement local réussi ajoute exactement 0,5 °C
 revisites comprises, avec un plafond de 43 °C. Dix déplacements depuis 37 °C
 atteignent donc 42 °C. Le moteur prépare cette valeur avant l'aperçu visuel et
 la narration ; le schéma impose au modèle de la recopier. L'échantillonnage
-narratif utilise cette nouvelle valeur, avec un plancher de 0,72 dès 39,5 °C.
+narratif utilise cette nouvelle valeur. Dès 38 °C, les réponses destinées au joueur
+reçoivent un passage littéraire distinct, dont la température augmente
+continûment de 0,26 à 5 à 42 °C (ou 10 avec le réglage explicite). La proposition
+structurée et le dialogue préparatoire restent plafonnés à 0,45. Le même
+passage progressif s'applique aux observations, gestes, dialogues, refus,
+inventaire et carnet ; leurs anciennes exceptions thermiques sont remplacées.
 L'interprétation et la composition géométrique utilisent encore le début du tour.
 Un secours narratif ne retire pas la chauffe d'un déplacement accepté ; une
 annulation ne publie ni le déplacement ni sa chauffe. Un déplacement bloqué,
@@ -200,16 +205,32 @@ des commandes et la génération du script local utilisent le réglage de réfé
 Les archives contiennent les températures avant et après et la température
 d'échantillonnage de chaque appel.
 
-La prose de scène se dérègle dès 39,5 °C, y compris en jeu normal. À partir de 42 °C,
-un bref appel dédié à la prose est échantillonné à 5 ou à 10, après validation
-de la proposition structurée. Il part d'un fait visible et joue avec des
-inventaires, des répétitions, des comptes contradictoires et des phrases
-disloquées. Si la génération échoue, la description structurée reste disponible.
+Toute la prose de jeu se dérègle progressivement dès 38 °C, y compris en jeu normal.
+Le passage littéraire suit une courbe de puissance 1,5 entre 38 et 42 °C,
+avec des consignes successives : hésitation, écho, dislocation, fracture et
+délire. L'arrivée conserve un ancrage concret ; les autres réponses conservent
+leur sens, leur incertitude et leurs refus. Les listes, relevés, indices et
+confirmations de transfert sont ajoutés sans réécriture à une réaction subjective.
+Si la génération échoue, la réponse préparatoire reste disponible.
+Un seul texte est affiché progressivement, sans exposer la
+préparation structurée ni ajouter un en-tête d'interface.
+Un contrôle de format commun au streaming et au texte final refuse les
+fragments qui recopient le contexte JSON ou ses identifiants techniques.
+Le contexte littéraire contient la perception, sans la géométrie brute. Les métriques
+`literary_heat_stage`, `hallucination.temperature` pour les arrivées et
+`player_prose_heat.temperature` pour les autres échanges distinguent ce passage de
+`sampling_temperature`, qui désigne l'appel structuré. La passe commune intervient
+après validation de l'état candidat, sans changer les faits ni la géométrie.
+Les commandes de diagnostic restent directes. Voir
+[l'évaluation et la courbe](PROGRESSION_PROSE_THERMIQUE.md).
 Le moteur fournit les objets au sol et affiche les sorties sur la boussole. L'écriture sous
 contrainte s'inspire des procédés oulipiens. [Georges Perec et l'Oulipo](https://oulipo.net/fr/Oulipiens/GP)
 
 Au-dessus de 39 °C corporels, huit déformations gaussiennes modifient les rayons
 caméra avant leur intersection avec le décor. L'effet est plus marqué à 42 °C.
+L'amplitude optique est multipliée par 3,15 (contre 2,25 auparavant, soit +40 %).
+Ce réglage accentue l'effet de lentille ; il ne représente pas un IOR physique.
+La lampe caméra reste active et aucun spéculaire de goutte n'est ajouté.
 Les rayons rouge, vert et bleu suivent des déviations d'amplitudes différentes.
 La déformation et la dispersion s'atténuent progressivement jusqu'au bord des
 gouttes.

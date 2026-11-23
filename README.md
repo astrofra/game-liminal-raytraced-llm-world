@@ -34,7 +34,13 @@ sans en-tête « Arrivée en cours » ni étapes de calcul intercalées dans le 
 
 Par défaut, chaque déplacement réussi ajoute 0,5 °C corporels, revisites comprises.
 En dix déplacements depuis 37 °C, le corps atteint 42 °C : la visière se déforme
-progressivement au-dessus de 39 °C et la prose se fragmente à 42 °C.
+progressivement au-dessus de 39 °C. Toute la prose destinée au joueur se
+dérègle dès 38 °C : d'abord une hésitation, puis des échos, des phrases
+interrompues et enfin des mots fragmentés à 42 °C. Cela comprend les dialogues,
+les gestes, les refus de passage et la prose accompagnant l'inventaire ou le
+carnet. Les listes et relevés exacts sont conservés, ainsi que les règles de
+génération du monde. Voir la
+[comparaison des textes et des températures](documentation/PROGRESSION_PROSE_THERMIQUE.md).
 Une voie bloquée ou une annulation n'ajoute pas cette chauffe.
 Pour inspecter le couplage entre le scaphandre et Gemma, saisir `/chaleur`.
 Les [commandes thermiques de débogage](documentation/TECHNICAL_STATE.md#diagnostic-thermique)

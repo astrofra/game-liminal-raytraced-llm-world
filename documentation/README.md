@@ -22,6 +22,8 @@ Les archives de recherche ne servent jamais à reprendre une partie.
 
 ## Fiction, état et interface
 
+- [Progression de la prose avec la chaleur : lecture de la capture et comparaison](PROGRESSION_PROSE_THERMIQUE.md)
+
 - [Roadmap : dialogue fluide et maître du jeu](ROADMAP_DIALOGUE_MAITRE_DU_JEU.md) — proposition du 20 novembre 2026 : routage des intentions, mémoire, objets, archives complètes et recette autonome.
 - [Dialogue du maître du jeu : implémentation et recette](DIALOGUE_MAITRE_DU_JEU.md)
 - [Enquête à indices : fonctionnement et qualification](ENQUETE_INDICES.md)

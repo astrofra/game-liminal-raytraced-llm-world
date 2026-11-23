@@ -1159,7 +1159,7 @@ static bool RenderSceneInternal(
     }
 
     const CameraBasis basis = BuildCameraBasis(scene.camera);
-    const float visor_strength = Clamp(config.visor_drop_strength, 0.0f, 1.0f) * 2.25f;
+    const float visor_strength = Clamp(config.visor_drop_strength, 0.0f, 1.0f) * 3.15f;
     constexpr float visor_dispersion = .46f;
     const auto visor_drops = BuildVisorDrops(config.visor_drop_seed);
     const float inverse_width = 1.0f / static_cast<float>(config.width);

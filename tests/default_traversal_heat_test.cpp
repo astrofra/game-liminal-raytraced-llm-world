@@ -57,7 +57,11 @@ struct Harness {
     HeadlessTurnConfig cfg;
     int normal_calls=0,hallucination_calls=0;
     float last_body_temperature=std::numeric_limits<float>::quiet_NaN();
-    bool fail_narration=false,cancel=false,cancel_on_narration=false;
+    std::vector<float> structured_temperatures,literary_temperatures;
+    std::string last_literary_stage,last_literary_system;
+    float last_literary_body_temperature=std::numeric_limits<float>::quiet_NaN();
+    bool fail_narration=false,cancel=false,cancel_on_narration=false,fail_literary=false,stream_literary=false;
+    bool technical_literary=false;
     Harness() {
         cfg.local_scenes=true;cfg.investigation_opportunities=false;
         cfg.generation_config.prompt_token_counter=[](const std::vector<LlmPromptMessage>& messages,int* count,std::string*) {
@@ -66,15 +70,32 @@ struct Harness {
         cfg.interaction_completion=FixturePlayerCompletion;
         cfg.dynamic_scene_config.completion=[](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>&,LlmStreamCallback,void*,LlmGenerationResult*)->bool {
             throw std::runtime_error("A cached traversal composed a new room");};
-        cfg.narrative_completion=[this](const LlmGenerationConfig& config,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback,void*,LlmGenerationResult* result) {
+        cfg.narrative_completion=[this](const LlmGenerationConfig& config,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback stream,void* stream_user,LlmGenerationResult* result) {
             if(config.purpose=="inventory_paraphrase_v1")return false;
             if(config.purpose=="scene_hallucination_v1") {
                 ++hallucination_calls;
+                literary_temperatures.push_back(config.temperature);
+                const json request=json::parse(messages.at(1).content);
+                last_literary_body_temperature=request.at("temperature_body_c").get<float>();
+                last_literary_stage=request.at("heat_stage").get<std::string>();
+                last_literary_system=messages.at(0).content;
+                if(fail_literary)return false;
+                if(technical_literary) {
+                    result->success=result->reached_eog=true;
+                    result->response_text=json({{"fragments",R"({"heat_stage":"hesitation","perception":"texte du contexte"})"}}).dump();
+                    if(stream&&!stream(result->response_text.c_str(),result->response_text.c_str(),stream_user))return false;
+                    return true;
+                }
+                if(stream_literary) {
+                    const char* fragment=R"({"fragments":"Les arêtes claires reviennent, lentement, autour de vous.)";
+                    if(!stream||!stream(fragment,fragment,stream_user))return false;
+                }
                 result->success=true;result->reached_eog=true;
                 result->response_text=json({{"fragments","Les arêtes claires restent stables autour de vous. Le sol montre les mêmes gravats fins, et la lumière tombe sans changer. Votre souffle marque seul le rythme, tandis que les murs gardent leur distance. Aucun détail nouveau ne se détache dans la pièce."}}).dump();
                 return true;
             }
             ++normal_calls;
+            structured_temperatures.push_back(config.temperature);
             const auto request=json::parse(messages.at(1).content);
             last_body_temperature=request.at("temperature_body_c").get<float>();
             if(fail_narration)return false;
@@ -107,6 +128,23 @@ std::string Snapshot(const SessionState& state) {
 }
 
 void RunDefaultTraversalHeatTests() {
+    // Serialized context must never be streamed as literary prose or retained.
+    {
+        SessionState state=Fixture();state.hard_state.body_temperature_c=37.5f;
+        Harness harness;harness.technical_literary=true;
+        std::string preview;
+        harness.cfg.stream_user_data=&preview;
+        harness.cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char* delta,void* data) {
+            if(delta)*static_cast<std::string*>(data)+=delta;return true;
+        };
+        const auto turn=harness.Run(state,"north");
+        REQUIRE(turn.accepted&&state.hard_state.body_temperature_c==38.f);
+        REQUIRE(preview.empty());
+        REQUIRE(turn.turn_result.narration.find("heat_stage")==std::string::npos);
+        REQUIRE(turn.turn_result.narration.find('{')==std::string::npos);
+        REQUIRE(!turn.turn_result.narration.empty());
+        REQUIRE(json::parse(turn.narrative_metrics_json)["hallucination"]["accepted"]==false);
+    }
     // 1. The pure helper heats by 0.5 C, caps at 43 C, never mutates its input,
     // and leaves explicitly enabled thermal diagnostics unchanged.
     {
@@ -167,6 +205,7 @@ void RunDefaultTraversalHeatTests() {
                 const float expected=std::min(37.0f+0.5f*move,temperature_cap);
                 const int normal_before=harness.normal_calls;
                 const int hallucination_before=harness.hallucination_calls;
+                const size_t structured_before=harness.structured_temperatures.size();
                 const HeadlessTurnResult turn=harness.Run(state,command);
                 REQUIRE(turn.accepted&&!turn.used_turn_fallback);
                 REQUIRE(state.current_place_id==expected_place);
@@ -179,6 +218,10 @@ void RunDefaultTraversalHeatTests() {
                 REQUIRE(turn.rendered_scene_text==kFixtureScene);
                 if(harness.normal_calls>normal_before)
                     REQUIRE(std::abs(harness.last_body_temperature-expected)<1e-3f);
+                REQUIRE(harness.hallucination_calls==hallucination_before+(move>=2?1:0));
+                if(move>=2)
+                    for(size_t i=structured_before;i<harness.structured_temperatures.size();++i)
+                        REQUIRE(harness.structured_temperatures[i]<=0.45f+1e-3f);
                 if(move==6)
                     REQUIRE(RenderConfigForVisor(RenderConfig(),state.hard_state.body_temperature_c,state.current_place_id).visor_drop_strength>0.0f);
                 if(move==10) {
@@ -191,7 +234,13 @@ void RunDefaultTraversalHeatTests() {
         REQUIRE(std::abs(state.hard_state.body_temperature_c-42.0f)<1e-3f);
         REQUIRE(state.current_place_id==kRoomA);
         REQUIRE(state.hard_state.move_count==initial_moves+10);
-        REQUIRE(harness.hallucination_calls>0);
+        REQUIRE(harness.hallucination_calls==9);
+        REQUIRE(harness.literary_temperatures.size()==9);
+        const float expected_literary[9]={0.26f,0.469480f,0.8525f,1.348510f,1.935843f,2.602072f,3.338950f,4.139709f,5.0f};
+        for(size_t i=0;i<harness.literary_temperatures.size();++i) {
+            REQUIRE(std::abs(harness.literary_temperatures[i]-expected_literary[i])<1e-3f);
+            if(i>0)REQUIRE(harness.literary_temperatures[i]>harness.literary_temperatures[i-1]);
+        }
     }
 
     // 3. A blocked exact compass shortcut neither displaces nor heats.
@@ -240,6 +289,85 @@ void RunDefaultTraversalHeatTests() {
         HeadlessTurnResult turn;char error[512]={};
         REQUIRE(!RunHeadlessTurnFromState(state,"north",harness.cfg,&turn,error,sizeof(error)));
         REQUIRE(!turn.accepted);
+        UpdateSessionStateFromTurn("north",turn,&state);
+        REQUIRE(Snapshot(state)==before);
+    }
+
+    // 6. The literary rewrite escalates through named stages with distinct system instructions.
+    {
+        SessionState state=Fixture();
+        Harness harness;
+        const char* stages[5]={"hesitation","echo","dislocation","fracture","delirium"};
+        const float bodies[5]={38.0f,39.0f,40.0f,41.0f,42.0f};
+        std::vector<std::string> systems;
+        for(int move=1;move<=10;++move) {
+            const int normal_before=harness.normal_calls;
+            const int literary_before=harness.hallucination_calls;
+            harness.Run(state,move%2==1?"north":"south");
+            REQUIRE(harness.normal_calls>normal_before);
+            REQUIRE(harness.hallucination_calls==literary_before+(move>=2?1:0));
+            if(move>=2) {
+                REQUIRE(std::abs(harness.last_literary_body_temperature-(38.0f+0.5f*(move-2)))<1e-3f);
+                if(move%2==0) {
+                    REQUIRE(harness.last_literary_stage==stages[move/2-1]);
+                    REQUIRE(std::abs(harness.last_literary_body_temperature-bodies[move/2-1])<1e-3f);
+                    systems.push_back(harness.last_literary_system);
+                }
+            }
+        }
+        REQUIRE(systems.size()==5);
+        for(size_t i=0;i<systems.size();++i) {
+            REQUIRE(!systems[i].empty());
+            for(size_t j=i+1;j<systems.size();++j)REQUIRE(systems[i]!=systems[j]);
+        }
+    }
+
+    // 7. A failed literary rewrite keeps the structured narration and one heating step.
+    {
+        SessionState state=Fixture();
+        Harness harness;
+        harness.Run(state,"north");
+        harness.Run(state,"south");
+        REQUIRE(std::abs(state.hard_state.body_temperature_c-38.0f)<1e-3f);
+        const auto inventory=state.hard_state.inventory_items;
+        const int normal_before=harness.normal_calls;
+        const int literary_before=harness.hallucination_calls;
+        harness.fail_literary=true;
+        const HeadlessTurnResult turn=harness.Run(state,"north");
+        REQUIRE(turn.accepted&&!turn.used_turn_fallback);
+        REQUIRE(harness.normal_calls>normal_before);
+        REQUIRE(harness.hallucination_calls==literary_before+1);
+        REQUIRE(state.current_place_id==kRoomB);
+        REQUIRE(state.hard_state.inventory_items==inventory);
+        REQUIRE(std::abs(state.hard_state.body_temperature_c-38.5f)<1e-3f);
+        REQUIRE(std::abs(turn.updated_hard_state.body_temperature_c-38.5f)<1e-3f);
+        REQUIRE(!turn.turn_result.narration.empty());
+    }
+
+    // 8. Cancellation on the first visible literary fragment publishes nothing.
+    {
+        SessionState state=Fixture();
+        Harness harness;
+        harness.Run(state,"north");
+        harness.Run(state,"south");
+        harness.Run(state,"north");
+        harness.Run(state,"south");
+        REQUIRE(std::abs(state.hard_state.body_temperature_c-39.0f)<1e-3f);
+        const int literary_before=harness.hallucination_calls;
+        harness.stream_literary=true;
+        bool cancelled=false;
+        harness.cfg.stream_callback=[](HeadlessTurnStreamPhase,const char*,const char* delta,void* user) {
+            if(delta&&*delta) {
+                *static_cast<bool*>(user)=true;return false;
+            }
+            return true;
+        };
+        harness.cfg.stream_user_data=&cancelled;
+        const std::string before=Snapshot(state);
+        HeadlessTurnResult turn;char error[512]={};
+        REQUIRE(!RunHeadlessTurnFromState(state,"north",harness.cfg,&turn,error,sizeof(error)));
+        REQUIRE(cancelled&&!turn.accepted);
+        REQUIRE(harness.hallucination_calls==literary_before+1);
         UpdateSessionStateFromTurn("north",turn,&state);
         REQUIRE(Snapshot(state)==before);
     }

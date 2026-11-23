@@ -1,6 +1,7 @@
 #include "investigation.h"
 #include "player_action_fixture.h"
 #include "narrative_language.h"
+#include "narrative_heat.h"
 #include "dynamic_scene.h"
 #include "renderer.h"
 #include "turn_runner.h"
@@ -458,22 +459,25 @@ static void LocalPilot() {
     const std::string literary_begin = R"({"fragments":"Pierre, pierre, trois pierres)";
     cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback stream,void* stream_user,LlmGenerationResult* r) {
-        if (c.purpose == "scene_hallucination_v1") {
+        if (c.purpose == "scene_hallucination_v1" || c.purpose == "player_prose_heat_v1") {
             literary_started = true;
             arrival.finished = false;
-            CHECK(c.temperature == 10.0f && !arrival.seen);
+            CHECK(std::abs(c.temperature-LiterarySamplingTemperature(
+                json::parse(messages[1].content).at("temperature_body_c").get<float>(),
+                json::parse(messages[1].content).at("temperature_body_c").get<float>()>=42.0f?10:5))<.001f);
+            CHECK(!cfg.stream_callback || !arrival.seen);
             const std::string rest = ", souffle et pierre.";
             if (literary_fails) {
                 CHECK(stream("{", "{", stream_user));
                 return false;
             }
-            if (!stream(literary_begin.c_str(), literary_begin.c_str(), stream_user)) return false;
+            if (stream && !stream(literary_begin.c_str(), literary_begin.c_str(), stream_user)) return false;
             if (literary_truncated) {
                 r->stop_reason = "token_limit";
                 return true;
             }
             r->response_text = literary_begin + rest + "\"}";
-            CHECK(stream(r->response_text.c_str(), rest.c_str(), stream_user));
+            if(stream)CHECK(stream(r->response_text.c_str(), rest.c_str(), stream_user));
             arrival.finished = true;
             r->success = r->reached_eog = true;
             return true;
@@ -486,7 +490,7 @@ static void LocalPilot() {
         const auto request=json::parse(messages[1].content);
         if (cfg.arrival_scene_ready) {
             CHECK(request.at("completed_movement").get<bool>() == !arrival.place.empty());
-            if (!arrival.place.empty() && arrival.temperature < 42.0f) {
+            if (!arrival.place.empty() && arrival.temperature < 38.0f) {
                 const auto schema = nlohmann::ordered_json::parse(c.json_schema);
                 CHECK(schema["properties"].begin().key() == "narration");
             }
@@ -637,8 +641,9 @@ static void LocalPilot() {
         for(auto& cached:italian.generated_rooms)if(cached.room_id==italian.current_place_id)
             cached.spatial_state.room_summary=italian.spatial_state.room_summary;
         HeadlessTurnConfig translated=cfg;int localization_calls=0;
-        translated.narrative_completion=[&](const LlmGenerationConfig&,const std::vector<LlmPromptMessage>& messages,
+        translated.narrative_completion=[&](const LlmGenerationConfig& model,const std::vector<LlmPromptMessage>& messages,
             LlmStreamCallback,void*,LlmGenerationResult* r) {
+            if(model.purpose=="player_prose_heat_v1")return false; // Exercise metadata localization independently.
             ++localization_calls;const auto request=json::parse(messages.at(1).content);
             CHECK(request.at("language_code")=="it");CHECK(request.at("exit_proposal").at("may_improvise")==false);
             CHECK(!request.at("metadata_language_repair").get<std::string>().empty());
@@ -711,7 +716,7 @@ static void LocalPilot() {
     cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* r) {
         if (c.purpose=="inventory_paraphrase_v1") return false;
-        if (c.purpose=="scene_hallucination_v1") {
+        if (c.purpose=="scene_hallucination_v1" || c.purpose=="player_prose_heat_v1") {
             r->success=r->reached_eog=true;
             r->response_text=R"({"fragments":"Pierre, deux pierres, encore la pierre. Le souffle revient et recompte les arêtes."})";
             return true;
@@ -828,7 +833,7 @@ static void ExplorationContinuity() {
         };
         cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
             LlmStreamCallback,void*,LlmGenerationResult* r) {
-            if(c.purpose=="scene_hallucination_v1") {
+            if(c.purpose=="scene_hallucination_v1" || c.purpose=="player_prose_heat_v1") {
                 r->success=r->reached_eog=true;
                 r->response_text=R"({"fragments":"Stone, still stone. The pale edges return, repeat, retreat; breath counts the intervals again."})";
                 return true;
@@ -969,6 +974,7 @@ static void ContinuityJourney() {
     };
     cfg.narrative_completion=[&](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* result) {
+        if(c.purpose=="scene_hallucination_v1" || c.purpose=="player_prose_heat_v1")return false;
         ++narrative_calls;const auto request=json::parse(messages[1].content);
         CHECK(request.at("continuity").at("origin").at("id")==expected_origin);
         if(request.at("exit_proposal").at("may_improvise")==true) {
@@ -1069,6 +1075,13 @@ static void InventoryTurns() {
     cfg.narrative_completion=[&](const LlmGenerationConfig& model,const std::vector<LlmPromptMessage>& messages,
         LlmStreamCallback,void*,LlmGenerationResult* result) {
         ++narrative_calls;
+        if(model.purpose=="player_prose_heat_v1") {
+            CHECK(fabsf(model.temperature-expected_temperature)<.001f);
+            CHECK(json::parse(messages.back().content)["source_text"].get<std::string>().find("craie")!=std::string::npos);
+            result->response_text=R"({"fragments":"Le poids se rappelle à vous."})";
+            result->success=result->reached_eog=true;
+            return true;
+        }
         CHECK(model.purpose=="inventory_paraphrase_v1" && model.use_json_grammar);
         CHECK(fabsf(model.temperature-expected_temperature)<.001f);
         const auto request=json::parse(messages.back().content);
@@ -1731,7 +1744,7 @@ static void ThermalDebugCommands() {
     };
     float expected_delirium_temperature = 5.0f;
     cfg.narrative_completion = [&](const auto& model, const auto& messages, auto, void*, auto* result) {
-        if (model.purpose == "scene_hallucination_v1") {
+        if (model.purpose == "scene_hallucination_v1" || model.purpose == "player_prose_heat_v1") {
             CHECK(model.temperature == expected_delirium_temperature);
             result->response_text = R"({"fragments":"Pierre, pierre, trois pierres, le souffle à rebours."})";
             result->success=result->reached_eog=true;
@@ -1760,7 +1773,7 @@ static void ThermalDebugCommands() {
     CHECK(turn.updated_hard_state.body_temperature_c==kMaxBodyTemperatureC);
     CHECK(turn.subjective_narration && turn.accepted_observation.empty());
     auto metrics=json::parse(turn.narrative_metrics_json);
-    CHECK(metrics["thermal_prose"]=="delirious" && metrics["hallucination"]["accepted"]==true);
+    CHECK(metrics["thermal_prose"]=="delirious" && metrics["player_prose_heat"]["accepted"]==true);
     CHECK(turn.turn_result.narration.find("Pierre, pierre, trois pierres")!=std::string::npos);
     UpdateSessionStateFromTurn("look",turn,&state);
     command("/chaleur llm 10");
@@ -1770,15 +1783,18 @@ static void ThermalDebugCommands() {
 }
 
 int main() {
+    extern void RunPlayerProseHeatTests();
     extern void RunDefaultTraversalHeatTests();
     extern void RunObjectPerceptionTests();
     extern void RunInvestigationContractTests();
     extern void RunInvestigationJourneyTests();
     extern void RunKnownBarrierTests();
     extern void RunInvestigationDistributionTests();
-    RunAudioTurnTests();
-    try {RunDefaultTraversalHeatTests();RunObjectPerceptionTests();DialogueJourney();}
-    catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
-    try {RunKnownBarrierTests();RunInvestigationDistributionTests();RunInvestigationContractTests();RunInvestigationJourneyTests();RunObjectSemanticTests();RunObjectConservationTests();RunObjectJourneyTests();RunObjectNarrativeTests();Geometry();Pipeline();PersistenceAndNavigation();CanonicalBranches();LocalPilot();ExplorationContinuity();ContinuityJourney();InventoryTurns();LanguageContinuity();SingleStart();ResearchArchives();GlassSupportJourney();CoplanarSupportJourney();ThermalDebugCommands();std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass, thermal debug commands and save integrity passed");return 0;}
-    catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());return 1;}
+    const char* test_name="RunAudioTurnTests";
+#define RUN_TEST(name) do { test_name=#name; name(); } while(false)
+    RUN_TEST(RunAudioTurnTests);
+    try {RUN_TEST(RunPlayerProseHeatTests);RUN_TEST(RunDefaultTraversalHeatTests);RUN_TEST(RunObjectPerceptionTests);RUN_TEST(DialogueJourney);}
+    catch(const std::exception& e){std::fprintf(stderr,"%s: %s\n",test_name,e.what());return 1;}
+    try {RUN_TEST(RunKnownBarrierTests);RUN_TEST(RunInvestigationDistributionTests);RUN_TEST(RunInvestigationContractTests);RUN_TEST(RunInvestigationJourneyTests);RUN_TEST(RunObjectSemanticTests);RUN_TEST(RunObjectConservationTests);RUN_TEST(RunObjectJourneyTests);RUN_TEST(RunObjectNarrativeTests);RUN_TEST(Geometry);RUN_TEST(Pipeline);RUN_TEST(PersistenceAndNavigation);RUN_TEST(CanonicalBranches);RUN_TEST(LocalPilot);RUN_TEST(ExplorationContinuity);RUN_TEST(ContinuityJourney);RUN_TEST(InventoryTurns);RUN_TEST(LanguageContinuity);RUN_TEST(SingleStart);RUN_TEST(ResearchArchives);RUN_TEST(GlassSupportJourney);RUN_TEST(CoplanarSupportJourney);RUN_TEST(ThermalDebugCommands);std::puts("Dynamic/local scenes: geometry, single start, exploration, archives, repairs, cancellation, COP before glass, thermal debug commands and save integrity passed");return 0;}
+    catch(const std::exception& e){std::fprintf(stderr,"%s: %s\n",test_name,e.what());return 1;}
 }

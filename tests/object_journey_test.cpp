@@ -52,11 +52,14 @@ struct Harness {
         };
         cfg.narrative_completion=[this](const LlmGenerationConfig& config,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback,void*,LlmGenerationResult* r) {
             if (config.purpose=="inventory_paraphrase_v1") return false;
+            if (config.purpose=="scene_hallucination_v1" || config.purpose=="player_prose_heat_v1") return false; // Preserve the structured object prose under test.
             ++narrations;const auto request=json::parse(messages[1].content);
             const float body=request["temperature_body_c"].get<float>();
             const bool perception=request["resolved_object_action"].is_null();
             const float sampling=ComputeLlmSamplingTemperature(body);
-            REQUIRE(std::abs(config.temperature-(perception&&body>=39.5f?std::max(.72f,sampling):sampling))<.0001f);
+            const float expected=body>=38.f
+                ?std::min(.45f,sampling):(perception&&body>=39.5f?std::max(.72f,sampling):sampling);
+            REQUIRE(std::abs(config.temperature-expected)<.0001f);
             if(mode=="cancel")cancel=true;
             if(mode=="failure")return false;
             json ids=json::array();std::string prose="La lumière glisse sur les masses silencieuses. Votre souffle accompagne cette pause derrière la visière.";

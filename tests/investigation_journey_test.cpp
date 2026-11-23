@@ -70,6 +70,7 @@ struct Harness {
                 {"investigation_id",clue},{"investigation_revision",p["investigation"]["revision"].get<int>()+(stale?1:0)}}).dump();return true;};
         cfg.narrative_completion=[this](const LlmGenerationConfig& c,const std::vector<LlmPromptMessage>& messages,LlmStreamCallback,void*,LlmGenerationResult* r) {
             if (c.purpose=="inventory_paraphrase_v1") return false;
+            if (c.purpose=="scene_hallucination_v1" || c.purpose=="player_prose_heat_v1") return false; // This fixture exercises the structured investigation proposal.
             ++narration_calls;delivered=true;const auto p=json::parse(messages[1].content);
             const auto schema=json::parse(c.json_schema)["properties"]["exits"];
             auto exits=p["exit_proposal"]["fixed"];
